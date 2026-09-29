@@ -3,7 +3,6 @@ package io.github.nytka_app.ui.conversations
 import io.github.nytka_app.core.api.ServerStatus
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 import java.time.ZoneOffset
@@ -19,27 +18,6 @@ class TranscriptionNoticeTest {
     @Test
     fun `a server with nothing wrong says nothing`() {
         assertNull(notice(ServerStatus(pendingChunks = 0)))
-    }
-
-    @Test
-    fun `a failed batch shows the error the server reports`() {
-        assertEquals(
-            "Some speech could not be transcribed. The transcription endpoint answered 401.",
-            notice(ServerStatus(0, null, "The transcription endpoint answered 401.")),
-        )
-    }
-
-    @Test
-    fun `a failed batch without an error text still says so`() {
-        assertEquals("Some speech could not be transcribed.", notice(ServerStatus(0, null, "  ")))
-    }
-
-    @Test
-    fun `a long error is cut to a line`() {
-        val text = notice(ServerStatus(0, null, "x".repeat(300)))!!
-
-        assertTrue(text.endsWith("…"))
-        assertEquals("Some speech could not be transcribed. ".length + 120, text.length)
     }
 
     @Test
@@ -69,9 +47,14 @@ class TranscriptionNoticeTest {
     }
 
     @Test
-    fun `a failed batch comes before a backlog`() {
+    fun `a failed batch alone says nothing, since the server never clears its error`() {
+        assertNull(notice(ServerStatus(0, null, "The transcription endpoint answered 503.")))
+    }
+
+    @Test
+    fun `a failed batch does not hide a backlog`() {
         assertEquals(
-            "Some speech could not be transcribed. The transcription endpoint answered 503.",
+            "The server is behind: 40 chunks have waited since 08:00.",
             notice(ServerStatus(40, "2026-09-29T08:00:00Z", "The transcription endpoint answered 503.")),
         )
     }

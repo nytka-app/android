@@ -340,19 +340,6 @@ class ConversationsViewModelTest {
         }
 
     @Test
-    fun `a failed batch on the server shows on the status card`() {
-        api.pages[null] = ApiResult.Ok(firstPage)
-        serverStatus = ApiResult.Ok(ServerStatus(0, null, "The transcription endpoint answered 401."))
-
-        val viewModel = newViewModel()
-
-        assertEquals(
-            "Some speech could not be transcribed. The transcription endpoint answered 401.",
-            viewModel.notice.value,
-        )
-    }
-
-    @Test
     fun `audio the server has held for over a quarter of an hour shows on the status card`() {
         api.pages[null] = ApiResult.Ok(firstPage)
         serverStatus = ApiResult.Ok(ServerStatus(12, "2026-09-29T11:30:00Z"))
@@ -360,6 +347,14 @@ class ConversationsViewModelTest {
         val viewModel = newViewModel()
 
         assertEquals("The server is behind: 12 chunks have waited since 11:30.", viewModel.notice.value)
+    }
+
+    @Test
+    fun `a failed batch alone shows nothing, since the server never clears its error`() {
+        api.pages[null] = ApiResult.Ok(firstPage)
+        serverStatus = ApiResult.Ok(ServerStatus(0, null, "The transcription endpoint answered 503."))
+
+        assertNull(newViewModel().notice.value)
     }
 
     @Test
@@ -373,16 +368,13 @@ class ConversationsViewModelTest {
     @Test
     fun `a status call that fails keeps what the card showed`() {
         api.pages[null] = ApiResult.Ok(firstPage)
-        serverStatus = ApiResult.Ok(ServerStatus(0, null, "The transcription endpoint answered 401."))
+        serverStatus = ApiResult.Ok(ServerStatus(12, "2026-09-29T11:30:00Z"))
         val viewModel = newViewModel()
         serverStatus = ApiResult.Failure(FailureKind.Network, "timeout")
 
         viewModel.refresh()
 
-        assertEquals(
-            "Some speech could not be transcribed. The transcription endpoint answered 401.",
-            viewModel.notice.value,
-        )
+        assertEquals("The server is behind: 12 chunks have waited since 11:30.", viewModel.notice.value)
     }
 
     @Test
@@ -390,14 +382,11 @@ class ConversationsViewModelTest {
         api.pages[null] = ApiResult.Ok(firstPage)
         val viewModel = newViewModel()
         assertNull(viewModel.notice.value)
-        serverStatus = ApiResult.Ok(ServerStatus(0, null, "The transcription endpoint answered 404."))
+        serverStatus = ApiResult.Ok(ServerStatus(12, "2026-09-29T11:30:00Z"))
 
         viewModel.refresh()
 
-        assertEquals(
-            "Some speech could not be transcribed. The transcription endpoint answered 404.",
-            viewModel.notice.value,
-        )
+        assertEquals("The server is behind: 12 chunks have waited since 11:30.", viewModel.notice.value)
     }
 
     @Test
@@ -409,15 +398,12 @@ class ConversationsViewModelTest {
             runCurrent()
             assertNull(viewModel.notice.value)
 
-            serverStatus = ApiResult.Ok(ServerStatus(0, null, "The transcription endpoint answered 401."))
+            serverStatus = ApiResult.Ok(ServerStatus(12, "2026-09-29T11:30:00Z"))
             advanceTimeBy(ConversationsViewModel.REFRESH_MS)
             runCurrent()
-            assertEquals(
-                "Some speech could not be transcribed. The transcription endpoint answered 401.",
-                viewModel.notice.value,
-            )
+            assertEquals("The server is behind: 12 chunks have waited since 11:30.", viewModel.notice.value)
 
-            // Deleting the conversation with the failed batch clears the server's error.
+            // The server catches up.
             serverStatus = ApiResult.Ok(ServerStatus(0))
             advanceTimeBy(ConversationsViewModel.REFRESH_MS)
             runCurrent()
