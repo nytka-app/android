@@ -3,6 +3,7 @@ package io.github.nytka_app.core.upload
 import io.github.nytka_app.core.api.UploadClient
 import io.github.nytka_app.core.api.UploadResult
 import io.github.nytka_app.core.settings.Settings
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 
 data class UploadState(
     val lastUploadAtMs: Long? = null,
@@ -101,8 +103,13 @@ class Uploader(
     /** Uploads for as long as the caller's scope lives. */
     suspend fun run() {
         while (true) {
-            when (val result = drain()) {
-                DrainResult.Empty -> chunks.usage.first { it.chunks > 0 }
+            when (val result = drainSafely()) {
+                DrainResult.Empty -> {
+                    // The usage count can lag the table (it refreshes on seal and remove): pause briefly so a
+                    // stale non-zero count cannot spin the loop, and look again after a minute regardless.
+                    delay(EMPTY_PAUSE_MS)
+                    withTimeoutOrNull(EMPTY_RECHECK_MS) { chunks.usage.first { it.chunks > 0 } }
+                }
                 is DrainResult.Failed -> delay(result.retryAfterMs)
                 is DrainResult.Paused -> {
                     val paused = settings.first().connectionKey
@@ -112,8 +119,25 @@ class Uploader(
         }
     }
 
+    /** An unexpected failure (a malformed token header, a database error) retries later instead of ending the loop. */
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun drainSafely(): DrainResult =
+        try {
+            drain()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            mutableState.update { it.copy(lastResult = "Upload failed: ${e.javaClass.simpleName}") }
+            DrainResult.Failed(backoff.delayMs(mutableState.value.failures + 1))
+        }
+
     private fun pause(reason: String): DrainResult {
         mutableState.update { it.copy(paused = reason, lastResult = reason) }
         return DrainResult.Paused(reason)
+    }
+
+    private companion object {
+        const val EMPTY_PAUSE_MS = 1_000L
+        const val EMPTY_RECHECK_MS = 60_000L
     }
 }
