@@ -8,22 +8,49 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.receiveAsFlow
 
+/**
+ * The tab bar and one slot per tab. Any tab can open a conversation: [tasks] and [memories] receive
+ * `onOpenConversation(id)`, which selects the Conversations tab and hands the id to [conversations] as
+ * `openRequests`; that tab opens `conversation/{id}` in its own NavHost.
+ */
 @Composable
 fun NytkaNavHost(
-    conversations: @Composable () -> Unit,
+    conversations: @Composable (openRequests: Flow<String>) -> Unit,
+    tasks: @Composable (onOpenConversation: (String) -> Unit) -> Unit,
+    memories: @Composable (onOpenConversation: (String) -> Unit) -> Unit,
+    ask: @Composable () -> Unit,
     device: @Composable () -> Unit,
     topBar: @Composable () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
     val current = backStack?.destination?.route
+    // The Conversations tab is not composed while another tab shows: a request waits here until it collects.
+    val requests = remember { Channel<String>(Channel.CONFLATED) }
+    val openRequests = remember(requests) { requests.receiveAsFlow() }
+
+    val select = { tab: AppTab ->
+        navController.navigate(tab.route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+    val onOpenConversation = { id: String ->
+        requests.trySend(id)
+        select(AppTab.Conversations)
+    }
 
     Scaffold(
         topBar = topBar,
@@ -32,13 +59,7 @@ fun NytkaNavHost(
                 AppTab.entries.forEach { tab ->
                     NavigationBarItem(
                         selected = current == tab.route,
-                        onClick = {
-                            navController.navigate(tab.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
+                        onClick = { select(tab) },
                         icon = { Icon(tab.icon, contentDescription = null) },
                         label = { Text(tab.label) },
                     )
@@ -47,7 +68,10 @@ fun NytkaNavHost(
         },
     ) { padding ->
         NavHost(navController, startDestination = AppTab.start.route, modifier = Modifier.padding(padding)) {
-            composable(AppTab.Conversations.route) { conversations() }
+            composable(AppTab.Conversations.route) { conversations(openRequests) }
+            composable(AppTab.Tasks.route) { tasks(onOpenConversation) }
+            composable(AppTab.Memories.route) { memories(onOpenConversation) }
+            composable(AppTab.Ask.route) { ask() }
             composable(AppTab.Device.route) { device() }
         }
     }
