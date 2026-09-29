@@ -23,8 +23,9 @@ import java.time.LocalDate
 import javax.inject.Inject
 
 /**
- * One segment. [speaker] is the label the transcription gave it; [showSpeaker] is true where a run by one speaker
- * begins, and [speakerColor] picks that speaker's color by first appearance.
+ * One segment. [speaker] is what shows above a run: "Me" for the wearer, else the name given to the voice, else the
+ * label the transcription gave it. [showSpeaker] is true where a run by one speaker begins, and [speakerColor] picks
+ * that speaker's color by first appearance. [voiceId] is set where the voice can be named.
  */
 data class Paragraph(
     val time: String,
@@ -32,6 +33,7 @@ data class Paragraph(
     val speaker: String? = null,
     val showSpeaker: Boolean = false,
     val speakerColor: Int = 0,
+    val voiceId: String? = null,
 )
 
 data class TaskLine(
@@ -110,6 +112,25 @@ class ConversationViewModel
             }
         }
 
+        /** Names the voice; the transcript is read again, so every line of that voice shows the name. */
+        fun nameVoice(
+            speakerId: String,
+            name: String,
+        ) {
+            val wanted = name.trim().take(MAX_NAME)
+            if (wanted.isEmpty()) return
+            viewModelScope.launch {
+                when (val result = api.nameVoice(speakerId, wanted)) {
+                    is ApiResult.Ok ->
+                        (api.conversation(id) as? ApiResult.Ok)?.let {
+                            mutableState.value =
+                                show(it.value)
+                        }
+                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.itemNotice()) }
+                }
+            }
+        }
+
         fun regenerate() {
             if (mutableState.value.open) return
             viewModelScope.launch {
@@ -178,7 +199,8 @@ class ConversationViewModel
             var previous: String? = null
             val paragraphs =
                 detail.segments.map {
-                    val speaker = it.speaker?.takeIf(String::isNotBlank)
+                    val speaker =
+                        if (it.isUser == true) ME else (it.personName ?: it.speaker)?.takeIf(String::isNotBlank)
                     val color = speaker?.let { name -> colors.getOrPut(name) { colors.size % SPEAKER_COLORS } } ?: 0
                     Paragraph(
                         Formatting.clock(Formatting.instant(it.startedAt), zone),
@@ -186,6 +208,7 @@ class ConversationViewModel
                         speaker,
                         showSpeaker = speaker != null && speaker != previous,
                         speakerColor = color,
+                        voiceId = it.speakerId.takeIf { _ -> it.isUser != true },
                     ).also { previous = speaker }
                 }
             return ConversationUiState(
@@ -215,6 +238,8 @@ class ConversationViewModel
             const val SPEAKER_COLORS = 6
 
             private const val MAX_TITLE = 120
+            private const val MAX_NAME = 80
+            private const val ME = "Me"
             private const val PENDING_CHIP = "Summarizing"
         }
     }

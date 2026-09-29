@@ -129,6 +129,62 @@ class ConversationViewModelTest {
     }
 
     @Test
+    fun `the wearer shows as Me, a named voice by its name, and only other voices can be named`() {
+        api.detail =
+            ApiResult.Ok(
+                detail(
+                    segments =
+                        listOf(
+                            segment(1, "SPEAKER_0").copy(speakerId = "0", isUser = true),
+                            segment(2, "SPEAKER_4").copy(speakerId = "4", isUser = false, personName = "Anna"),
+                            segment(3, "SPEAKER_5").copy(speakerId = "5", isUser = false),
+                            segment(4, "SPEAKER_5"),
+                        ),
+                ),
+            )
+
+        val paragraphs = viewModel().state.value.paragraphs
+
+        assertEquals(listOf("Me", "Anna", "SPEAKER_5", "SPEAKER_5"), paragraphs.map { it.speaker })
+        assertEquals(listOf(null, "4", "5", null), paragraphs.map { it.voiceId })
+    }
+
+    @Test
+    fun `naming a voice sends it and reads the transcript again`() {
+        api.detail =
+            ApiResult.Ok(detail(segments = listOf(segment(1, "SPEAKER_4").copy(speakerId = "4", isUser = false))))
+        val viewModel = viewModel()
+        api.detail =
+            ApiResult.Ok(
+                detail(
+                    segments =
+                        listOf(
+                            segment(1, "SPEAKER_4").copy(speakerId = "4", isUser = false, personName = "Anna"),
+                        ),
+                ),
+            )
+
+        viewModel.nameVoice("4", "  Anna ")
+
+        assertEquals(listOf("4" to "Anna"), api.named)
+        assertEquals(
+            "Anna",
+            viewModel.state.value.paragraphs
+                .single()
+                .speaker,
+        )
+    }
+
+    @Test
+    fun `an empty name is not sent`() {
+        val viewModel = viewModel()
+
+        viewModel.nameVoice("4", "   ")
+
+        assertEquals(emptyList<Pair<String, String>>(), api.named)
+    }
+
+    @Test
     fun `a seventh speaker starts the colors over`() {
         api.detail = ApiResult.Ok(detail(segments = (1L..7L).map { segment(it, "S$it") }))
 

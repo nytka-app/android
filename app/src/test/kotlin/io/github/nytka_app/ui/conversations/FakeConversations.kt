@@ -15,6 +15,8 @@ class FakeConversations : ConversationsClient {
     val deleted = mutableListOf<String>()
     val renamed = mutableListOf<Pair<String, String?>>()
     val enriched = mutableListOf<String>()
+    val named = mutableListOf<Pair<String, String>>()
+    var nameAnswer: ApiResult<Unit> = ApiResult.Ok(Unit)
     var renameAnswer: ApiResult<ConversationDetail>? = null
     var enrichAnswer: ApiResult<Unit> = ApiResult.Ok(Unit)
 
@@ -40,6 +42,11 @@ class FakeConversations : ConversationsClient {
         renamed += id to title
         return renameAnswer ?: ApiResult.Ok(detail.let { (it as ApiResult.Ok).value.copy(title = title) })
     }
+
+    override suspend fun nameVoice(
+        speakerId: String,
+        name: String,
+    ): ApiResult<Unit> = nameAnswer.also { named += speakerId to name }
 
     override suspend fun enrichConversation(id: String): ApiResult<Unit> = enrichAnswer.also { enriched += id }
 

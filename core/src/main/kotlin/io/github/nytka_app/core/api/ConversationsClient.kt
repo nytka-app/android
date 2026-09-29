@@ -15,6 +15,12 @@ interface ConversationsClient {
         title: String?,
     ): ApiResult<ConversationDetail>
 
+    /** Names the voice [speakerId] [name]; a server before v0.6 answers [FailureKind.NotFound]. */
+    suspend fun nameVoice(
+        speakerId: String,
+        name: String,
+    ): ApiResult<Unit>
+
     /** Queues a new summary run; [FailureKind.Conflict] while the conversation is open or no model is set up. */
     suspend fun enrichConversation(id: String): ApiResult<Unit>
 
