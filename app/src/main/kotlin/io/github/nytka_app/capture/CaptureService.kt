@@ -65,6 +65,9 @@ class CaptureService : LifecycleService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var controller: CaptureController? = null
     private var recorder: DiagnosticsRecorder? = null
+
+    /** Lazy: [appLog] is injected after construction, and onDestroy may stop it before begin started it. */
+    private val power by lazy { PowerBroadcasts(this, appLog) }
     private var started = false
     private var logRun = 0L
 
@@ -81,8 +84,8 @@ class CaptureService : LifecycleService() {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
         )
         when (intent?.action) {
-            ACTION_MUTE -> scope.launch { hub.setMuted(true) }
-            ACTION_UNMUTE -> scope.launch { hub.setMuted(false) }
+            ACTION_MUTE -> scope.launch { hub.setMuted(true, MuteSource.Notification) }
+            ACTION_UNMUTE -> scope.launch { hub.setMuted(false, MuteSource.Notification) }
         }
         if (!started) {
             started = true
@@ -100,6 +103,7 @@ class CaptureService : LifecycleService() {
             return
         }
         logRun = appLog.start()
+        power.start()
         val capture =
             CaptureController(
                 pendants.create(scope, current.fakePendant),
@@ -157,6 +161,7 @@ class CaptureService : LifecycleService() {
         ).also { it.start() }
 
     override fun onDestroy() {
+        power.stop()
         val capture = controller
         val diagnosticsRecorder = recorder
         val logGeneration = logRun

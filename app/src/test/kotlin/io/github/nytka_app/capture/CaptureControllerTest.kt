@@ -1,5 +1,6 @@
 package io.github.nytka_app.capture
 
+import io.github.nytka_app.FakeEventLog
 import io.github.nytka_app.core.queue.FrameSink
 import io.github.nytka_app.pendant.ButtonEvent
 import io.github.nytka_app.pendant.FakePendant
@@ -63,6 +64,7 @@ class CaptureControllerTest {
         val pendant: FakePendant,
         val sink: FakeSink,
         val settings: FakeSettings,
+        val log: FakeEventLog,
     )
 
     private fun TestScope.rig(muted: Boolean = false): Rig {
@@ -70,7 +72,9 @@ class CaptureControllerTest {
         val pendant = FakePendant(listOf(byteArrayOf(1)), backgroundScope, now)
         val sink = FakeSink()
         val settings = FakeSettings(muted)
-        return Rig(CaptureController(pendant, sink, settings, backgroundScope, now), pendant, sink, settings)
+        val log = FakeEventLog()
+        val controller = CaptureController(pendant, sink, settings, backgroundScope, now, log = log)
+        return Rig(controller, pendant, sink, settings, log)
     }
 
     @Test
@@ -164,7 +168,14 @@ class CaptureControllerTest {
             val rig = rig()
             val calls = CountingPendant(rig.pendant)
             val controller =
-                CaptureController(calls, rig.sink, rig.settings, backgroundScope, { testScheduler.currentTime })
+                CaptureController(
+                    calls,
+                    rig.sink,
+                    rig.settings,
+                    backgroundScope,
+                    { testScheduler.currentTime },
+                    log = rig.log,
+                )
             controller.start("fake")
             runCurrent()
             assertEquals(1, calls.setAudioCalls)
@@ -179,6 +190,44 @@ class CaptureControllerTest {
             assertTrue(rig.pendant.audioEnabled)
             assertTrue(rig.sink.frames.isNotEmpty())
             assertEquals(1, calls.setAudioCalls) // the pendant resumed on its own
+        }
+
+    @Test
+    fun `every mute change is logged with who asked for it`() =
+        runTest {
+            val rig = rig()
+            rig.controller.start("fake")
+            runCurrent()
+
+            rig.pendant.press(ButtonEvent.DoubleTap)
+            runCurrent()
+            rig.controller.setMuted(false, MuteSource.Notification)
+            rig.controller.setMuted(true, MuteSource.App)
+
+            assertEquals(
+                listOf("muted by pendant double-tap", "unmuted by notification action", "muted by app UI"),
+                rig.log.messages.filter { it.contains("muted") },
+            )
+        }
+
+    @Test
+    fun `a battery level is logged once per change`() =
+        runTest {
+            val rig = rig()
+            rig.controller.start("fake")
+            runCurrent() // the fake reports 82 when it connects
+
+            rig.pendant.setBattery(82) // no change
+            rig.pendant.setBattery(81)
+            runCurrent()
+            rig.pendant.setBattery(81) // no change
+            rig.pendant.setBattery(80)
+            runCurrent()
+
+            assertEquals(
+                listOf("pendant battery 82%", "pendant battery 81%", "pendant battery 80%"),
+                rig.log.messages.filter { it.startsWith("pendant battery") },
+            )
         }
 
     @Test

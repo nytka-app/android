@@ -94,14 +94,22 @@ class OmiPendant(
 
     private val audioIntent = AudioIntent()
 
-    /** [elapsed] time of the last audio notification, or of switching audio on; the watchdog's clock. */
+    /** [elapsed] time of the last audio notification, or of switching audio on; the watchdog's audio clock. */
     @Volatile private var lastAudioAtMs = 0L
+
+    /**
+     * [elapsed] time of the last notification of any kind, or of the link coming up; the watchdog's liveness clock.
+     * The pendant notifies its battery every 5 s while connected, so a link that has shown that pulse and then says
+     * nothing is dead.
+     */
+    @Volatile private var lastAnyNotificationAtMs = 0L
     private var watchingAdapter = false
     private var emittedFrames = 0L
     private var overflowFrames = 0L
     private var session: Job? = null
     private val resubscribeFailures = FailureStreak(MAX_RESUBSCRIBE_FAILURES)
-    private val silence = SilenceWatchdog()
+    private val watchdog = LinkWatchdog()
+    private val resume = ResumeDetector()
 
     /** What the last `onMtuChanged` reported; observed only, nothing acts on it. Reset per connection. */
     @Volatile private var mtu: Int? = null
@@ -133,6 +141,7 @@ class OmiPendant(
             audioIntent.set(enabled)
             val current = gatt ?: return@withLock
             if (mutableConnection.value !is PendantConnection.Connected) return@withLock
+            if (enabled) resume.switchedOn(elapsed()) // before the write: audio can arrive before it returns
             subscribe(current, OmiUuids.AUDIO_DATA, enabled)
             synchronized(assembler) { assembler.reset() }
             lastAudioAtMs = elapsed()
@@ -291,6 +300,7 @@ class OmiPendant(
         // published, instead of relying on the caller to notice the reconnect.
         audioLock.withLock {
             if (audioIntent.wanted) {
+                resume.switchedOn(elapsed())
                 subscribe(current, OmiUuids.AUDIO_DATA, true)
                 synchronized(assembler) { assembler.reset() }
                 lastAudioAtMs = elapsed()
@@ -300,10 +310,14 @@ class OmiPendant(
         }
         connectTimeout.cancel()
         info("setUp: connected")
+        lastAnyNotificationAtMs = elapsed() // the link just answered our reads: the liveness clock starts here
         watch(current)
     }
 
-    /** Resubscribes with backoff when audio is wanted but absent; reconnects after a long silence. */
+    /**
+     * Watches the link while audio is wanted. Quiet audio is only noted, once: the pendant's microphone sleeps in a
+     * quiet room. A resubscribe is rare and slow, and a reconnect needs a link that had a pulse and says nothing.
+     */
     private suspend fun watch(current: BluetoothGatt) {
         while (true) {
             delay(WATCHDOG_TICK_MS)
@@ -311,14 +325,15 @@ class OmiPendant(
             if (!adapterOn()) continue
             audioLock.withLock {
                 if (!audioIntent.wanted) return@withLock // muted: silence is intended
-                when (val action = silence.check(elapsed(), lastAudioAtMs)) {
+                when (val action = watchdog.check(elapsed(), lastAudioAtMs, lastAnyNotificationAtMs)) {
                     WatchdogAction.None -> Unit
+                    is WatchdogAction.AudioIdle -> info("audio idle, pendant mic asleep?")
                     is WatchdogAction.Escalate -> {
-                        warn("watchdog: no audio for ${action.silentMs}ms, reconnecting")
+                        warn("watchdog: no notification of any kind for ${action.quietMs}ms, reconnecting")
                         return recoverLink()
                     }
                     is WatchdogAction.Resubscribe -> {
-                        warn("watchdog: no audio for ${action.silentMs}ms, resubscribing, next in ${action.nextMs}ms")
+                        info("watchdog: no audio for ${action.silentMs}ms, resubscribing, next in ${action.nextMs}ms")
                         subscribe(current, OmiUuids.AUDIO_DATA, false)
                         if (subscribe(current, OmiUuids.AUDIO_DATA, true)) {
                             resubscribeFailures.succeeded()
@@ -338,10 +353,13 @@ class OmiPendant(
         uuid: UUID,
         value: ByteArray,
     ) {
+        val nowMs = elapsed()
+        lastAnyNotificationAtMs = nowMs // audio or not: any notification shows the link is alive
+        if (uuid != OmiUuids.AUDIO_DATA) watchdog.pulseArrived() // the battery's or the button's: silence can be judged
         when (uuid) {
             OmiUuids.AUDIO_DATA -> {
-                lastAudioAtMs = elapsed()
-                silence.audioArrived()
+                lastAudioAtMs = nowMs
+                resume.arrived(nowMs)?.let { info("audio resumed after ${it}ms") }
                 val frame = synchronized(assembler) { assembler.accept(value) }
                 if (frame != null) {
                     if (mutableFrames.tryEmit(frame)) emittedFrames++ else overflowFrames++
@@ -385,16 +403,31 @@ class OmiPendant(
         uuid: UUID,
         enabled: Boolean,
     ): Boolean {
-        val characteristic = find(current, uuid) ?: return false
-        guarded(false) { current.setCharacteristicNotification(characteristic, enabled) }
-        val descriptor = characteristic.getDescriptor(OmiUuids.CCCD) ?: return false
+        val name = uuid.toString().take(UUID_HEAD)
+        val characteristic = find(current, uuid)
+        if (characteristic == null) {
+            warn("subscribe: no characteristic $name")
+            return false
+        }
+        val descriptor = characteristic.getDescriptor(OmiUuids.CCCD)
+        if (descriptor == null) {
+            warn("subscribe: characteristic $name has no notification descriptor")
+            return false
+        }
         val value =
             if (enabled) {
                 BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
             } else {
                 BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
             }
-        return operation(OperationKind.DescriptorWrite, uuid) { write(current, descriptor, value) } != null
+        // Audio, the button and the battery pulse all depend on this write: a failed one is tried once more at once.
+        return retrying(
+            SUBSCRIBE_ATTEMPTS,
+            onFailed = { warn("notification write for $name failed (enabled=$enabled, attempt $it)") },
+        ) {
+            guarded(false) { current.setCharacteristicNotification(characteristic, enabled) }
+            operation(OperationKind.DescriptorWrite, uuid) { write(current, descriptor, value) } != null
+        }
     }
 
     /** One GATT operation at a time; returns the callback's value, or null on failure or timeout. */
@@ -484,6 +517,7 @@ class OmiPendant(
                             BluetoothProfile.STATE_CONNECTED -> {
                                 mtu = null
                                 mtuStatus = null
+                                watchdog.linkUp()
                                 connectTimeout.cancel() // connected: setUp's own operation timeouts take over
                                 session?.cancel()
                                 session = scope.launch { setUp(current) }
@@ -599,6 +633,8 @@ class OmiPendant(
     private companion object {
         const val MTU = 247
         const val MAX_RESUBSCRIBE_FAILURES = 3
+        const val UUID_HEAD = 8
+        const val SUBSCRIBE_ATTEMPTS = 2
         const val OPERATION_TIMEOUT_MS = 5_000L
         const val WATCHDOG_TICK_MS = 1_000L
         const val RECONNECT_DELAY_MS = 3_000L

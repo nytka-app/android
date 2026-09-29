@@ -39,7 +39,10 @@ class CaptureHub
             mutableStatus.value = status
         }
 
-        suspend fun setMuted(muted: Boolean) {
-            controller.value?.setMuted(muted) ?: settings.update { it.copy(muted = muted) }
+        suspend fun setMuted(
+            muted: Boolean,
+            source: MuteSource,
+        ) {
+            controller.value?.setMuted(muted, source) ?: settings.update { it.copy(muted = muted) }
         }
     }
