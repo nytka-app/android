@@ -23,6 +23,10 @@ class FakeDeviceActions : DeviceActions {
         calls += "stop"
     }
 
+    override fun openAppSettings() {
+        calls += "open settings"
+    }
+
     override suspend fun shareDiagnostics(): Int {
         calls += "share diagnostics"
         shareFailure?.let { throw it }

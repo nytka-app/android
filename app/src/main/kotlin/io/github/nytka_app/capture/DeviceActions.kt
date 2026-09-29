@@ -3,6 +3,8 @@ package io.github.nytka_app.capture
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.core.content.FileProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.nytka_app.core.diagnostics.DiagnosticsCsv
@@ -24,6 +26,12 @@ interface DeviceActions {
     fun stopCapture()
 
     /**
+     * Opens Nytka's app info in the system settings. A permission Android has stopped asking for can only be allowed
+     * there.
+     */
+    fun openAppSettings()
+
+    /**
      * Writes the last 7 days of diagnostics as CSV to the app's cache, page by page off the main thread, and opens
      * the share sheet for it. Returns how many samples it holds; with none, nothing is written or shared.
      */
@@ -43,6 +51,14 @@ class AndroidDeviceActions
         override fun restartCapture() = CaptureService.restart(context)
 
         override fun stopCapture() = CaptureService.stop(context)
+
+        override fun openAppSettings() =
+            context.startActivity(
+                Intent(
+                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.fromParts("package", context.packageName, null),
+                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
 
         override suspend fun shareDiagnostics(): Int {
             val (file, count) = withContext(Dispatchers.IO) { writeDiagnostics() }

@@ -2,6 +2,7 @@ package io.github.nytka_app.capture
 
 import android.app.Application
 import android.content.Intent
+import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import io.github.nytka_app.FakeDiagnostics
 import io.github.nytka_app.sample
@@ -69,4 +70,14 @@ class AndroidDeviceActionsTest {
 
             assertNull(shadowOf(app).nextStartedActivity)
         }
+
+    @Test
+    fun `opens the app info of this app in the system settings`() {
+        AndroidDeviceActions(app, FakeDiagnostics()).openAppSettings()
+
+        val intent = shadowOf(app).nextStartedActivity
+        assertEquals(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, intent.action)
+        assertEquals("package:io.github.nytka_app", intent.dataString)
+        assertTrue(intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK != 0)
+    }
 }

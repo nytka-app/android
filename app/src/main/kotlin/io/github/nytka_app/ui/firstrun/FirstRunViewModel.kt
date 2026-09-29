@@ -11,6 +11,7 @@ import io.github.nytka_app.core.api.ServerUrl
 import io.github.nytka_app.core.api.UrlCheck
 import io.github.nytka_app.core.settings.FirstRunStep
 import io.github.nytka_app.core.settings.SettingsSource
+import io.github.nytka_app.ui.PermissionAnswer
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,6 +34,8 @@ data class FirstRunUiState(
     val testing: Boolean = false,
     val serverError: String? = null,
     val serverVersion: String? = null,
+    /** How the user last answered the nearby-devices prompt, unless it was allowed. */
+    val permissions: PermissionAnswer? = null,
     val consentChecked: Boolean = false,
     val pairError: String? = null,
     val done: Boolean = false,
@@ -128,12 +131,24 @@ class FirstRunViewModel
             }
         }
 
+        /** Nearby devices is required to go on; a refused notification permission does not hold anyone back. */
+        fun permissionsAnswered(answer: PermissionAnswer) {
+            if (answer == PermissionAnswer.Granted) {
+                permissionsDone()
+            } else {
+                mutableState.update { it.copy(permissions = answer) }
+            }
+        }
+
         fun permissionsDone() {
             viewModelScope.launch {
                 settings.update { it.copy(firstRunStep = FirstRunStep.Consent) }
                 mutableState.update { it.copy(step = FirstRunStep.Consent) }
             }
         }
+
+        /** For a permission Android no longer asks for: the app info page is where it can be allowed. */
+        fun openSettings() = actions.openAppSettings()
 
         fun setConsent(checked: Boolean) {
             mutableState.update { it.copy(consentChecked = checked) }

@@ -9,7 +9,9 @@ import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.settings.FirstRunStep
 import io.github.nytka_app.core.settings.Settings
+import io.github.nytka_app.ui.PermissionAnswer
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -83,7 +85,7 @@ class FirstRunViewModelTest {
     fun `consent needs the box ticked`() {
         viewModel.edit("https://nytka.example", token, privateNetwork = false)
         viewModel.testConnection()
-        viewModel.permissionsDone()
+        viewModel.permissionsAnswered(PermissionAnswer.Granted)
 
         viewModel.acceptConsent()
         assertEquals(FirstRunStep.Consent, viewModel.state.value.step)
@@ -100,7 +102,7 @@ class FirstRunViewModelTest {
         viewModel.testConnection()
         assertEquals(FirstRunStep.Permissions, settings.state.value.firstRunStep)
 
-        viewModel.permissionsDone()
+        viewModel.permissionsAnswered(PermissionAnswer.Granted)
         assertEquals(FirstRunStep.Consent, settings.state.value.firstRunStep)
 
         viewModel.setConsent(true)
@@ -122,7 +124,7 @@ class FirstRunViewModelTest {
     fun `a restart resumes at the step the user reached`() {
         viewModel.edit("https://nytka.example", token, privateNetwork = false)
         viewModel.testConnection()
-        viewModel.permissionsDone()
+        viewModel.permissionsAnswered(PermissionAnswer.Granted)
 
         val restarted = newViewModel()
 
@@ -149,6 +151,44 @@ class FirstRunViewModelTest {
         settings.state.value = Settings(consentGiven = true, firstRunStep = FirstRunStep.Pairing)
 
         assertEquals(FirstRunStep.Pairing, newViewModel().state.value.step)
+    }
+
+    @Test
+    fun `allowing nearby devices moves on to consent`() {
+        viewModel.permissionsAnswered(PermissionAnswer.Granted)
+
+        assertEquals(FirstRunStep.Consent, viewModel.state.value.step)
+        assertNull(viewModel.state.value.permissions)
+    }
+
+    @Test
+    fun `a refusal keeps the user on the permissions step to be asked again`() {
+        viewModel.edit("https://nytka.example", token, privateNetwork = false)
+        viewModel.testConnection()
+
+        viewModel.permissionsAnswered(PermissionAnswer.Denied)
+
+        assertEquals(FirstRunStep.Permissions, viewModel.state.value.step)
+        assertEquals(PermissionAnswer.Denied, viewModel.state.value.permissions)
+        assertEquals(emptyList<String>(), actions.calls)
+    }
+
+    @Test
+    fun `a refusal Android will not repeat leads to the system settings`() {
+        viewModel.permissionsAnswered(PermissionAnswer.Blocked)
+
+        assertEquals(PermissionAnswer.Blocked, viewModel.state.value.permissions)
+        viewModel.openSettings()
+        assertEquals(listOf("open settings"), actions.calls)
+    }
+
+    @Test
+    fun `allowing it after a refusal moves on`() {
+        viewModel.permissionsAnswered(PermissionAnswer.Blocked)
+
+        viewModel.permissionsAnswered(PermissionAnswer.Granted)
+
+        assertEquals(FirstRunStep.Consent, viewModel.state.value.step)
     }
 
     @Test
