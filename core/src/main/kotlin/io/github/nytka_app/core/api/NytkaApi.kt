@@ -117,6 +117,20 @@ class NytkaApi(
             body = buildJsonObject { put("title", title?.let(::JsonPrimitive) ?: JsonNull) }.toString(),
         ) { json.decodeFromString(it) }
 
+    override suspend fun nameVoice(
+        speakerId: String,
+        name: String,
+    ): ApiResult<Unit> =
+        request(
+            "POST",
+            "api/v1/people",
+            body =
+                buildJsonObject {
+                    put("name", name)
+                    put("speakerId", speakerId)
+                }.toString(),
+        ) { }
+
     override suspend fun enrichConversation(id: String): ApiResult<Unit> =
         request("POST", "api/v1/conversations/$id/enrich") { }
 

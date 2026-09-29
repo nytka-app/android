@@ -129,6 +129,40 @@ class V02ApiTest {
         }
 
     @Test
+    fun `a v0_6 segment decodes the voice id, the wearer flag and the person`() =
+        runTest {
+            answer(
+                200,
+                """{"id":"a","startedAt":"2026-09-29T08:00:00Z","endedAt":"2026-09-29T08:01:00Z","status":"closed",
+                "segments":[{"id":1,"startedAt":"2026-09-29T08:00:00Z","endedAt":"2026-09-29T08:00:04Z",
+                "text":"Hi.","speaker":"SPEAKER_4","speakerId":"4","isUser":false,"personId":"p1",
+                "personName":"Anna"}]}""",
+            )
+
+            val segment = ok(api.conversation("a")).segments.single()
+
+            assertEquals("4", segment.speakerId)
+            assertEquals(false, segment.isUser)
+            assertEquals("Anna", segment.personName)
+        }
+
+    @Test
+    fun `naming a voice posts the name and the voice id, and an older server is not found`() =
+        runTest {
+            answer(201, "{}")
+            answer(404)
+
+            assertTrue(api.nameVoice("4", "Anna") is ApiResult.Ok)
+            val failure = api.nameVoice("4", "Anna") as ApiResult.Failure
+
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertEquals("/api/v1/people", request.url.encodedPath)
+            assertEquals("""{"name":"Anna","speakerId":"4"}""", request.body?.utf8())
+            assertEquals(FailureKind.NotFound, failure.kind)
+        }
+
+    @Test
     fun `enrich posts and reads 202, and 409 is a conflict`() =
         runTest {
             answer(202, """{"aiStatus":"pending"}""")

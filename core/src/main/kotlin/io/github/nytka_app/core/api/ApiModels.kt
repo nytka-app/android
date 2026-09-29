@@ -74,6 +74,13 @@ data class Segment(
     val endedAt: String,
     val text: String,
     val speaker: String? = null,
+    /** The provider's stable id for the voice; only a segment with one can be named. */
+    val speakerId: String? = null,
+    /** True for the wearer's own lines; null when the provider did not say. */
+    val isUser: Boolean? = null,
+    val personId: String? = null,
+    /** The name given to the voice, or null. */
+    val personName: String? = null,
 )
 
 /** A task the model found. The `conversation*` fields spare a list a request per source. */

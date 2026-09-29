@@ -1,5 +1,6 @@
 package io.github.nytka_app.ui.conversations
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -60,6 +61,7 @@ fun ConversationScreen(
     var menuOpen by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
+    var naming by remember { mutableStateOf<Pair<String, String>?>(null) }
     LaunchedEffect(state.deleted) { if (state.deleted) onDeleted() }
     // A summary in the making shows up on its own, while the screen is in front.
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -137,12 +139,7 @@ fun ConversationScreen(
             items(state.paragraphs) { paragraph ->
                 Column {
                     if (paragraph.showSpeaker) {
-                        Text(
-                            paragraph.speaker.orEmpty(),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = speakerColor(paragraph.speakerColor),
-                            modifier = Modifier.padding(top = 8.dp),
-                        )
+                        SpeakerLabel(paragraph, onName = { naming = it })
                     }
                     Row {
                         Text(
@@ -158,6 +155,17 @@ fun ConversationScreen(
                 item { Text(raw, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall) }
             }
         }
+    }
+
+    naming?.let { (voiceId, label) ->
+        NameVoiceDialog(
+            initial = label.takeUnless { it.startsWith("SPEAKER_") }.orEmpty(),
+            onDismiss = { naming = null },
+            onSave = {
+                naming = null
+                viewModel.nameVoice(voiceId, it)
+            },
+        )
     }
 
     if (renaming) {
@@ -199,6 +207,52 @@ private fun InfoCard(
         }
     }
 }
+
+/** The speaker above a run. A voice that can be named opens the dialog with its id and label. */
+@Composable
+private fun SpeakerLabel(
+    paragraph: Paragraph,
+    onName: (Pair<String, String>) -> Unit,
+) {
+    val voiceId = paragraph.voiceId
+    val label = paragraph.speaker.orEmpty()
+    Text(
+        label,
+        style = MaterialTheme.typography.labelLarge,
+        color = speakerColor(paragraph.speakerColor),
+        modifier =
+            Modifier
+                .padding(top = 8.dp)
+                .then(if (voiceId != null) Modifier.clickable { onName(voiceId to label) } else Modifier),
+    )
+}
+
+/** Names one voice; every line of it, past and future, shows the name. */
+@Composable
+private fun NameVoiceDialog(
+    initial: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit,
+) {
+    var text by rememberSaveable { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Who is this?") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it.take(MAX_NAME) },
+                label = { Text("Name") },
+                supportingText = { Text("The same name on another voice joins them into one person.") },
+                singleLine = true,
+            )
+        },
+        confirmButton = { TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank()) { Text("Save") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+private const val MAX_NAME = 80
 
 /** An empty title restores the generated one. */
 @Composable
