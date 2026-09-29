@@ -45,6 +45,9 @@ class FakeRing(
     /** A transfer goes quiet after this many bytes of a window, like a stalled link; null means never. */
     var stallAfterBytes: Long? = null
 
+    /** At a stall the firmware has already sent this many more bytes than the phone received. */
+    var unseenBytesAtStall: Long = 0
+
     /** DATA notifications sent after the STOP ACK, as the firmware can. */
     var strayDataAfterStop = 0
 
@@ -247,7 +250,10 @@ class FakeRing(
             notify(byteArrayOf(NOTIFY_DATA.toByte()) + bytes.copyOfRange(sent, sent + n))
             sent += n
             sentBytes = sent.toLong()
-            if (stallAfterBytes?.let { sent >= it } == true) awaitCancellation()
+            if (stallAfterBytes?.let { sent >= it } == true) {
+                sentBytes += unseenBytesAtStall
+                awaitCancellation()
+            }
             yield()
         }
         if (autoAdvance) moveReadTo(startSeq + sentBytes / RingProtocol.RECORD_BYTES)

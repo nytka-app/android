@@ -134,7 +134,11 @@ class OmiStorage(
             }
         }
 
-    /** Emits one window's events; false when the firmware ended it or the link is gone, so no stop is needed. */
+    /**
+     * Emits one window's events; false when no stop is needed: the firmware ended it, the link is gone, or it went
+     * quiet. A STOP after silence would let firmware 3.0.21 free everything it sent, though the phone read only
+     * part of it; the caller reads again from what it holds, and that READ replaces the transfer.
+     */
     private suspend fun FlowCollector<RingEvent>.transfer(
         box: Channel<ByteArray>,
         fromSeq: Long,
@@ -147,7 +151,7 @@ class OmiStorage(
             when (val n = box.receiveWithin(waitMs)) {
                 RingNotification.Timeout -> {
                     emit(RingEvent.Done(RingStatus.TIMEOUT, nextSeq))
-                    return true
+                    return false
                 }
                 RingNotification.Closed -> {
                     emit(RingEvent.Done(RingStatus.LINK_LOST, nextSeq))
