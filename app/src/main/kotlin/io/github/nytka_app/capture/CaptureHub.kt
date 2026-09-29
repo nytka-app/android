@@ -17,11 +17,21 @@ class CaptureHub
     @Inject
     constructor(
         private val settings: SettingsSource,
+        private val muteLog: MuteLogRecorder?,
     ) {
+        /** For screens' tests: no mute log. */
+        constructor(settings: SettingsSource) : this(settings, null)
+
         private val mutableStatus = MutableStateFlow(CaptureStatus())
         val status: StateFlow<CaptureStatus> = mutableStatus.asStateFlow()
 
+        private val mutableSync = MutableStateFlow(StorageSyncStatus())
+
+        /** The offline sync, whether or not the service runs. */
+        val syncStatus: StateFlow<StorageSyncStatus> = mutableSync.asStateFlow()
+
         private val controller = MutableStateFlow<CaptureController?>(null)
+        private val sync = MutableStateFlow<StorageSyncController?>(null)
 
         @OptIn(ExperimentalCoroutinesApi::class)
         val captured: Flow<CapturedFrame> = controller.flatMapLatest { it?.captured ?: emptyFlow() }
@@ -30,9 +40,35 @@ class CaptureHub
             this.controller.value = controller
         }
 
+        fun attachSync(controller: StorageSyncController) {
+            sync.value = controller
+        }
+
         fun detach() {
             controller.value = null
+            sync.value = null
             mutableStatus.value = CaptureStatus()
+            mutableSync.value = StorageSyncStatus()
+        }
+
+        fun publishSync(status: StorageSyncStatus) {
+            mutableSync.value = status
+        }
+
+        fun syncNow() {
+            sync.value?.syncNow()
+        }
+
+        fun stopSync() {
+            sync.value?.stopSync()
+        }
+
+        fun importBacklog() {
+            sync.value?.importBacklog()
+        }
+
+        fun discardBacklog() {
+            sync.value?.discardBacklog()
         }
 
         fun publish(status: CaptureStatus) {
@@ -43,6 +79,10 @@ class CaptureHub
             muted: Boolean,
             source: MuteSource,
         ) {
-            controller.value?.setMuted(muted, source) ?: settings.update { it.copy(muted = muted) }
+            controller.value?.setMuted(muted, source) ?: run {
+                // No service: nobody else sees this change, and the sync needs its time for the mute log.
+                muteLog?.record(muted)
+                settings.update { it.copy(muted = muted) }
+            }
         }
     }

@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -85,6 +86,7 @@ class CaptureController(
     private val now: () -> Long = System::currentTimeMillis,
     private val sealEveryMs: Long = 30_000,
     private val log: EventLog = EventLog.Logcat,
+    private val muteLog: MuteLogRecorder? = null,
 ) {
     private val mutableStatus = MutableStateFlow(CaptureStatus())
     val status: StateFlow<CaptureStatus> = mutableStatus.asStateFlow()
@@ -101,10 +103,19 @@ class CaptureController(
     /** True until the settings say otherwise: nothing is recorded before the mute state is known. */
     @Volatile private var muted = true
 
+    /** What the pendant was last told about audio; null before the first call of a start. */
+    private var intent: Boolean? = null
+
+    private suspend fun setIntent(audio: Boolean) {
+        intent = audio
+        pendant.setAudio(audio)
+    }
+
     fun start(address: String) {
         if (jobs != null) return
         session = UUID.randomUUID()
         nextSeq = 0
+        intent = null
         val job = SupervisorJob(scope.coroutineContext[Job])
         jobs = job
         val inner = CoroutineScope(scope.coroutineContext + job)
@@ -125,7 +136,8 @@ class CaptureController(
                             },
                     )
                 }
-                if (connection is PendantConnection.Connected) pendant.setAudio(!isMuted)
+                // The pendant keeps the intent across a lost link, so only a change needs telling.
+                if (connection is PendantConnection.Connected && intent != !isMuted) setIntent(!isMuted)
             }
         }
         inner.launch {
@@ -138,6 +150,7 @@ class CaptureController(
                 }
             }
         }
+        muteLog?.let { recorder -> inner.launch { settings.muted.collect { recorder.record(it) } } }
         inner.launch {
             pendant.buttons
                 .filter { it == ButtonEvent.DoubleTap }
@@ -156,6 +169,17 @@ class CaptureController(
                 stored { sink.seal() }
             }
         }
+        inner.launch { connectWithIntent(address) }
+    }
+
+    /**
+     * The audio intent comes from the persisted setting before the link exists, so a service that starts as the
+     * phone comes back subscribes inside setUp instead of after Connected; until then the pendant drops frames.
+     */
+    private suspend fun connectWithIntent(address: String) {
+        val isMuted = settings.muted.first()
+        muted = isMuted
+        setIntent(!isMuted)
         pendant.connect(address)
     }
 
