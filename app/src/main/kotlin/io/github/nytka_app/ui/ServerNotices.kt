@@ -9,7 +9,7 @@ const val NEEDS_UPDATE = "This server needs an update"
 /** The sentence for a failure. Fixed wording, never the server's own text. */
 fun ApiResult.Failure.notice(): String =
     when (kind) {
-        FailureKind.NotFound -> NEEDS_UPDATE
+        FailureKind.NotFound, FailureKind.Unsupported -> NEEDS_UPDATE
         FailureKind.Forbidden -> "The app needs an admin token."
         else -> message
     }

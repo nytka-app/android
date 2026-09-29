@@ -157,7 +157,8 @@ class NytkaApi(
             401 -> ApiResult.Failure(FailureKind.Unauthorized, "The server refused the token.")
             403 -> ApiResult.Failure(FailureKind.Forbidden, "The token is not allowed to do this.")
             // A v0.1 server answers 405 on a method it lacks, such as PATCH /conversations/{id}.
-            404, 405 -> ApiResult.Failure(FailureKind.NotFound, "Not found.")
+            404 -> ApiResult.Failure(FailureKind.NotFound, "Not found.")
+            405 -> ApiResult.Failure(FailureKind.Unsupported, "The server does not know this call.")
             409 -> ApiResult.Failure(FailureKind.Conflict, "This conflicts with what the server holds.")
             else -> ApiResult.Failure(FailureKind.Server, "The server answered ${response.code}.")
         }

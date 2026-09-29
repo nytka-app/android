@@ -181,9 +181,20 @@ internal data class ProblemErrors(
 
 /**
  * Why a call failed. [Forbidden] is a 403 (the token's scope is too small), [Conflict] a 409 and
- * [Invalid] a 400 that names what was wrong in [ApiResult.Failure.errors].
+ * [Invalid] a 400 that names what was wrong in [ApiResult.Failure.errors]. [Unsupported] is a 405: the server does
+ * not know the endpoint, whatever the item.
  */
-enum class FailureKind { NotConfigured, Unauthorized, Forbidden, NotFound, Conflict, Invalid, Server, Network }
+enum class FailureKind {
+    NotConfigured,
+    Unauthorized,
+    Forbidden,
+    NotFound,
+    Conflict,
+    Invalid,
+    Server,
+    Network,
+    Unsupported,
+}
 
 sealed interface ApiResult<out T> {
     data class Ok<T>(

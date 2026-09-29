@@ -161,6 +161,16 @@ class ConversationViewModelTest {
     }
 
     @Test
+    fun `renaming on a v0_1 server says it needs an update`() {
+        api.renameAnswer = ApiResult.Failure(FailureKind.Unsupported, "x")
+        val viewModel = viewModel()
+
+        viewModel.rename("x")
+
+        assertEquals("This server needs an update", viewModel.state.value.error)
+    }
+
+    @Test
     fun `renaming a conversation that is gone says so`() {
         api.renameAnswer = ApiResult.Failure(FailureKind.NotFound, "Not found.")
         val viewModel = viewModel()

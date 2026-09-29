@@ -256,11 +256,11 @@ class V02ApiTest {
         }
 
     @Test
-    fun `a 405 from a v0_1 server reads as not found`() =
+    fun `a 405 from a v0_1 server is unsupported, not a missing item`() =
         runTest {
             answer(405)
 
-            assertEquals(FailureKind.NotFound, (api.renameConversation("a", "x") as ApiResult.Failure).kind)
+            assertEquals(FailureKind.Unsupported, (api.renameConversation("a", "x") as ApiResult.Failure).kind)
         }
 
     @Test
