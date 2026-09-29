@@ -5,8 +5,18 @@ import org.junit.Test
 
 class AppTabTest {
     @Test
-    fun `v0_1 ships the conversations and device tabs in that order`() {
-        assertEquals(listOf("Conversations", "Device"), AppTab.entries.map { it.label })
+    fun `the bar has the five tabs of the vision in that order`() {
+        assertEquals(
+            listOf("Conversations", "Tasks", "Memories", "Ask", "Device"),
+            AppTab.entries.map { it.label },
+        )
         assertEquals(AppTab.Conversations, AppTab.start)
+    }
+
+    @Test
+    fun `every tab has a route of its own`() {
+        val routes = AppTab.entries.map { it.route }
+
+        assertEquals(routes.distinct(), routes)
     }
 }

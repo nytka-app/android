@@ -24,7 +24,8 @@ class NytkaApi(
     InfoClient,
     StatusClient,
     DiagnosticsClient {
-    private val json = Json { ignoreUnknownKeys = true }
+    /** What the clients in this module decode and encode with; unknown keys are ignored, so a newer server works. */
+    internal val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun upload(body: ByteArray): UploadResult {
         val target =
@@ -104,10 +105,16 @@ class NytkaApi(
     override suspend fun transcriptionsJson(id: String): ApiResult<String> =
         request("GET", "api/v1/conversations/$id/transcriptions") { it }
 
-    private suspend fun <T> request(
+    /**
+     * One call to the API, for the clients in this module. [body] is the JSON text to send; a POST or PATCH
+     * without one sends an empty body. [parse] reads a success. A failure carries a fixed sentence, never the
+     * server's own text, except the field messages of a 400 that names them.
+     */
+    internal suspend fun <T> request(
         method: String,
         path: String,
         query: Map<String, String?> = emptyMap(),
+        body: String? = null,
         parse: (String) -> T,
     ): ApiResult<T> {
         val target =
@@ -116,13 +123,8 @@ class NytkaApi(
                 is Target.Ready -> t
             }
         return try {
-            execute(target, method, path, null, query).use { response ->
-                when {
-                    response.isSuccessful -> ApiResult.Ok(parse(response.body.string()))
-                    response.code == 401 -> ApiResult.Failure(FailureKind.Unauthorized, "The server refused the token.")
-                    response.code == 404 -> ApiResult.Failure(FailureKind.NotFound, "Not found.")
-                    else -> ApiResult.Failure(FailureKind.Server, "The server answered ${response.code}.")
-                }
+            execute(target, method, path, requestBody(method, body), query).use { response ->
+                if (response.isSuccessful) ApiResult.Ok(parse(response.body.string())) else failure(response)
             }
         } catch (e: IOException) {
             ApiResult.Failure(FailureKind.Network, e.message ?: "Network error")
@@ -130,6 +132,37 @@ class NytkaApi(
             ApiResult.Failure(FailureKind.Server, "Unexpected answer: ${e.message}")
         }
     }
+
+    private fun failure(response: Response): ApiResult.Failure =
+        when (response.code) {
+            400 -> invalid(response.body.string()) ?: ApiResult.Failure(FailureKind.Server, "The server answered 400.")
+            401 -> ApiResult.Failure(FailureKind.Unauthorized, "The server refused the token.")
+            403 -> ApiResult.Failure(FailureKind.Forbidden, "The token is not allowed to do this.")
+            404 -> ApiResult.Failure(FailureKind.NotFound, "Not found.")
+            409 -> ApiResult.Failure(FailureKind.Conflict, "This conflicts with what the server holds.")
+            else -> ApiResult.Failure(FailureKind.Server, "The server answered ${response.code}.")
+        }
+
+    /** A 400 counts as invalid values only when its problem details carry `errors`. */
+    private fun invalid(problem: String): ApiResult.Failure? =
+        try {
+            json.decodeFromString<ProblemErrors>(problem).errors?.let {
+                ApiResult.Failure(FailureKind.Invalid, "The server rejected the request.", it)
+            }
+        } catch (_: SerializationException) {
+            null
+        }
+
+    /** OkHttp refuses a POST or PATCH without a body, and calls such as "enrich" have none to send. */
+    private fun requestBody(
+        method: String,
+        body: String?,
+    ): RequestBody? =
+        when {
+            body != null -> body.toRequestBody("application/json".toMediaType())
+            method == "POST" || method == "PATCH" || method == "PUT" -> ByteArray(0).toRequestBody()
+            else -> null
+        }
 
     private suspend fun execute(
         target: Target.Ready,

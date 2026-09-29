@@ -3,11 +3,17 @@ package io.github.nytka_app.ui.conversations
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,19 +34,35 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import io.github.nytka_app.ui.StatusCard
 import io.github.nytka_app.ui.StatusUiState
+import io.github.nytka_app.ui.search.SEARCH_ENABLED
+import io.github.nytka_app.ui.search.SearchScreen
+import kotlinx.coroutines.flow.Flow
 
-/** The Conversations tab: the list, and a conversation opened from it. */
+/**
+ * The Conversations tab: the list, a conversation opened from it, and search. A conversation that another
+ * tab asks for arrives in [openRequests] and opens over the list, not over what this tab showed last.
+ */
 @Composable
 fun ConversationsTab(
     status: StatusUiState,
     onMute: (Boolean) -> Unit,
+    openRequests: Flow<String>,
 ) {
     val navController = rememberNavController()
+    LaunchedEffect(navController, openRequests) {
+        openRequests.collect { id -> navController.navigate("conversation/$id") { popUpTo("list") } }
+    }
     NavHost(navController, startDestination = "list") {
         composable("list") { entry ->
             // A conversation deleted on its own screen comes back as this entry's result.
             val deleted by entry.savedStateHandle.getStateFlow<String?>(DELETED, null).collectAsStateWithLifecycle()
-            ConversationsScreen(status, onMute, deleted, onOpen = { navController.navigate("conversation/$it") })
+            ConversationsScreen(
+                status,
+                onMute,
+                deleted,
+                onOpen = { navController.navigate("conversation/$it") },
+                onSearch = { navController.navigate("search") },
+            )
         }
         composable("conversation/{id}") { entry ->
             ConversationScreen(
@@ -55,6 +77,14 @@ fun ConversationsTab(
                 },
             )
         }
+        if (SEARCH_ENABLED) {
+            composable("search") {
+                SearchScreen(
+                    onOpenConversation = { navController.navigate("conversation/$it") },
+                    onBack = { navController.popBackStack() },
+                )
+            }
+        }
     }
 }
 
@@ -67,6 +97,7 @@ fun ConversationsScreen(
     onMute: (Boolean) -> Unit,
     deleted: String?,
     onOpen: (String) -> Unit,
+    onSearch: () -> Unit,
     viewModel: ConversationsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -83,6 +114,7 @@ fun ConversationsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
+            if (SEARCH_ENABLED) item { SearchButton(onSearch) }
             item { StatusCard(status, onMute, notice) }
             state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
             state.days.forEach { day ->
@@ -108,5 +140,12 @@ fun ConversationsScreen(
                 item { Text("No conversations yet. Speech shows up here a few minutes after it is said.") }
             }
         }
+    }
+}
+
+@Composable
+private fun SearchButton(onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        IconButton(onClick = onClick) { Icon(Icons.Filled.Search, contentDescription = "Search") }
     }
 }

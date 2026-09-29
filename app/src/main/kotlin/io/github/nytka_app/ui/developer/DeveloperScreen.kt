@@ -3,6 +3,7 @@ package io.github.nytka_app.ui.developer
 import android.content.ClipData
 import android.content.ClipDescription.EXTRA_IS_SENSITIVE
 import android.os.PersistableBundle
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
@@ -48,6 +50,9 @@ import java.util.Locale
 @Composable
 fun DeveloperScreen(
     onBack: () -> Unit,
+    onOpenServerSettings: () -> Unit,
+    onOpenTokens: () -> Unit,
+    onOpenWebhooks: () -> Unit,
     viewModel: DeveloperViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -92,6 +97,9 @@ fun DeveloperScreen(
                 Section("Server") {
                     Text(state.serverStatus)
                     OutlinedButton(onClick = viewModel::refreshServerStatus) { Text("Check status") }
+                    ServerRow("Server settings", onOpenServerSettings)
+                    ServerRow("Access tokens", onOpenTokens)
+                    ServerRow("Webhooks", onOpenWebhooks)
                 }
             }
             item {
@@ -182,6 +190,20 @@ private fun NumberField(
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         modifier = Modifier.width(280.dp),
     )
+}
+
+@Composable
+private fun ServerRow(
+    title: String,
+    onClick: () -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(title, Modifier.weight(1f))
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
+    }
 }
 
 @Composable
