@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/nytka-app/android/compare/v0.2.0...v0.3.0) (2026-09-29)
+
+
+### Features
+
+* send the app's own log events to the server with the diagnostics ([#9](https://github.com/nytka-app/android/issues/9)) ([0f97c19](https://github.com/nytka-app/android/commit/0f97c1950e71ade5fc6c755855570fd73a0d71fa))
+
+
+### Bug Fixes
+
+* **pendant:** survive a dead Bluetooth stack in GATT calls ([#10](https://github.com/nytka-app/android/issues/10)) ([570ba10](https://github.com/nytka-app/android/commit/570ba104acd985bac58e381fa34781b096716b50))
+
 ## [0.2.0](https://github.com/nytka-app/android/compare/v0.1.1...v0.2.0) (2026-09-29)
 
 
