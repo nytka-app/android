@@ -107,11 +107,11 @@ class StoredQueueTest {
             queue.commit(timed(40L..43L), position(committedNext = 44, epoch = 3, nextFrame = 4))
             queue.add(live, 1, 30, byteArrayOf(2))
 
-            assertEquals(3, queue.seal())
+            assertEquals(2, queue.seal())
 
             val chunks = drain(queue)
-            assertEquals(listOf(false, false, true), chunks.map { it.stored }) // live ones go first
-            val ring = chunks[2]
+            assertEquals(listOf(false, true), chunks.map { it.stored }) // live ones go first
+            val ring = chunks[1]
             assertEquals(40L, ring.ringFirst)
             assertEquals(43L, ring.ringLast)
             assertEquals(3L, ring.epoch)
@@ -350,6 +350,80 @@ class StoredQueueTest {
             assertEquals(3L, queue.position()!!.committedNext)
             assertEquals(1, queue.seal())
             assertEquals(0L, queue.ackedThrough.first())
+        }
+
+    /** Commits [count] ring records (one frame each) in batches of [batch], like the sync window does. */
+    private suspend fun FrameQueue.commitBatches(
+        count: Int,
+        batch: Int = 20,
+        onBatch: suspend (Int) -> Unit = {},
+    ) {
+        var from = 0
+        while (from < count) {
+            val to = minOf(from + batch, count)
+            commit(
+                timed(from.toLong() until to.toLong(), firstSeq = from.toLong()),
+                position(committedNext = to.toLong(), nextFrame = to.toLong()),
+            )
+            onBatch(to)
+            from = to
+        }
+    }
+
+    @Test
+    fun `stored frames committed in small batches seal into full chunks`() =
+        runTest {
+            val queue = FrameQueue(inMemory())
+            queue.commitBatches(2_000)
+
+            queue.seal()
+
+            val chunks = drain(queue)
+            assertEquals(listOf(1_500, 500), chunks.map { it.frameCount })
+            assertTrue(chunks.all { it.stored })
+        }
+
+    @Test
+    fun `live frames arriving between stored batches do not cut stored chunks`() =
+        runTest {
+            val queue = FrameQueue(inMemory())
+            var liveSeq = 0L
+            queue.commitBatches(2_000) {
+                queue.add(live, liveSeq, 5_000_000 + liveSeq * 20, byteArrayOf(1))
+                liveSeq++
+            }
+
+            queue.seal()
+
+            val chunks = drain(queue)
+            assertEquals(listOf(false, true, true), chunks.map { it.stored })
+            assertEquals(listOf(100, 1_500, 500), chunks.map { it.frameCount })
+        }
+
+    @Test
+    fun `a periodic seal keeps a partial stored run and the window end seals it`() =
+        runTest {
+            val queue = FrameQueue(inMemory())
+            var sealed = 0
+            queue.commitBatches(2_000) { sealed += queue.seal(includePartialStored = false) }
+
+            assertEquals(1, sealed) // only the full 1500-frame chunk
+            assertEquals(1, queue.seal())
+            assertEquals(listOf(1_500, 500), drain(queue).map { it.frameCount })
+        }
+
+    @Test
+    fun `a periodic seal cuts a stored run that a later session ends`() =
+        runTest {
+            val queue = FrameQueue(inMemory())
+            val other = UUID.fromString("00000000-0000-0000-0000-00000000000c")
+            queue.commit(timed(0L..9L), position(committedNext = 10, nextFrame = 10))
+            queue.commit(timed(10L..14L, session = other), position(committedNext = 15, session = other, nextFrame = 5))
+
+            assertEquals(1, queue.seal(includePartialStored = false))
+
+            assertEquals(listOf(10), drain(queue).map { it.frameCount })
+            assertEquals(1, queue.seal())
         }
 
     private suspend fun FrameQueue.usageNow(): QueueUsage {
