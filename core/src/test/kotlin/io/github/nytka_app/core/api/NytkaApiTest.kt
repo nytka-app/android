@@ -170,4 +170,85 @@ class NytkaApiTest {
             assertEquals(DiagnosticsResult.NotConfigured("No token is set."), api.uploadDiagnostics("[]"))
             assertEquals(0, server.requestCount)
         }
+
+    @Test
+    fun `request sends the json body with the token`() =
+        runTest {
+            answer(200, """{"title":"Renamed"}""")
+
+            val result = api.request("PATCH", "api/v1/conversations/a", body = """{"title":"Renamed"}""") { it }
+
+            assertEquals(ApiResult.Ok("""{"title":"Renamed"}"""), result)
+            val request = server.takeRequest()
+            assertEquals("PATCH", request.method)
+            assertEquals("/api/v1/conversations/a", request.url.encodedPath)
+            assertEquals("Bearer token-1", request.headers["Authorization"])
+            assertTrue(request.headers["Content-Type"]!!.startsWith("application/json"))
+            assertEquals("""{"title":"Renamed"}""", request.body?.utf8())
+        }
+
+    @Test
+    fun `request posts an empty body when there is nothing to send`() =
+        runTest {
+            answer(202, """{"aiStatus":"pending"}""")
+
+            val result = api.request("POST", "api/v1/conversations/a/enrich") { it }
+
+            assertEquals(ApiResult.Ok("""{"aiStatus":"pending"}"""), result)
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertEquals(0L, request.body?.size?.toLong())
+        }
+
+    @Test
+    fun `request tells 403 and 409 apart from other failures`() =
+        runTest {
+            answer(403)
+            answer(409)
+
+            assertEquals(FailureKind.Forbidden, failureOf("GET", "api/v1/tokens").kind)
+            assertEquals(FailureKind.Conflict, failureOf("POST", "api/v1/tokens").kind)
+        }
+
+    @Test
+    fun `request reads the errors of a 400 as invalid values`() =
+        runTest {
+            answer(
+                400,
+                """{"title":"One or more validation errors occurred.","status":400,
+               "errors":{"llm.model":["Too long."],"stt.language":["Not a tag.","Try uk."]}}""",
+            )
+
+            val failure = failureOf("PATCH", "api/v1/settings", body = "{}")
+
+            assertEquals(FailureKind.Invalid, failure.kind)
+            assertEquals(
+                mapOf("llm.model" to listOf("Too long."), "stt.language" to listOf("Not a tag.", "Try uk.")),
+                failure.errors,
+            )
+            // The server's words stay in errors; the message is ours.
+            assertEquals("The server rejected the request.", failure.message)
+        }
+
+    @Test
+    fun `a 400 without errors stays a plain server failure`() =
+        runTest {
+            answer(400, """{"title":"Bad Request","status":400}""")
+            answer(400, "<html>Bad gateway</html>")
+            answer(400)
+
+            repeat(3) {
+                assertEquals(
+                    ApiResult.Failure(FailureKind.Server, "The server answered 400."),
+                    failureOf("PATCH", "api/v1/tasks/a", body = "{}"),
+                )
+            }
+        }
+
+    /** The call must fail, and a failure is never parsed. */
+    private suspend fun failureOf(
+        method: String,
+        path: String,
+        body: String? = null,
+    ) = api.request(method, path, body = body) { error("A failure is never parsed: $it") } as ApiResult.Failure
 }

@@ -57,7 +57,17 @@ internal data class DiagnosticsAnswer(
     val accepted: Int,
 )
 
-enum class FailureKind { NotConfigured, Unauthorized, NotFound, Server, Network }
+/** The part of a 400's problem details that matters: ASP.NET's `errors`, a key or field to its messages. */
+@Serializable
+internal data class ProblemErrors(
+    val errors: Map<String, List<String>>? = null,
+)
+
+/**
+ * Why a call failed. [Forbidden] is a 403 (the token's scope is too small), [Conflict] a 409 and
+ * [Invalid] a 400 that names what was wrong in [ApiResult.Failure.errors].
+ */
+enum class FailureKind { NotConfigured, Unauthorized, Forbidden, NotFound, Conflict, Invalid, Server, Network }
 
 sealed interface ApiResult<out T> {
     data class Ok<T>(
@@ -67,6 +77,8 @@ sealed interface ApiResult<out T> {
     data class Failure(
         val kind: FailureKind,
         val message: String,
+        /** [FailureKind.Invalid] only: the server's messages by key or field, for the screen and nothing else. */
+        val errors: Map<String, List<String>> = emptyMap(),
     ) : ApiResult<Nothing>
 }
 
