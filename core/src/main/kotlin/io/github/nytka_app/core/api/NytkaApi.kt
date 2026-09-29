@@ -22,7 +22,8 @@ class NytkaApi(
 ) : UploadClient,
     ConversationsClient,
     InfoClient,
-    StatusClient {
+    StatusClient,
+    DiagnosticsClient {
     private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun upload(body: ByteArray): UploadResult {
@@ -49,6 +50,34 @@ class NytkaApi(
             UploadResult.Retry(e.message ?: "Network error")
         } catch (e: SerializationException) {
             UploadResult.Retry("Unexpected answer: ${e.message}")
+        }
+    }
+
+    override suspend fun uploadDiagnostics(samplesJson: String): DiagnosticsResult {
+        val target =
+            when (val t = target()) {
+                is Target.Missing -> return DiagnosticsResult.NotConfigured(t.reason)
+                is Target.Ready -> t
+            }
+        return try {
+            val requestBody = samplesJson.toRequestBody("application/json".toMediaType())
+            execute(target, "POST", "api/v1/diagnostics", requestBody).use { response ->
+                when (response.code) {
+                    200 ->
+                        DiagnosticsResult.Accepted(
+                            json.decodeFromString<DiagnosticsAnswer>(response.body.string()).accepted,
+                        )
+                    401 -> DiagnosticsResult.Unauthorized
+                    404 -> DiagnosticsResult.NotSupported
+                    400 -> DiagnosticsResult.BadRequest
+                    413 -> DiagnosticsResult.TooLarge
+                    else -> DiagnosticsResult.Retry("The server answered ${response.code}.")
+                }
+            }
+        } catch (e: IOException) {
+            DiagnosticsResult.Retry(e.message ?: "Network error")
+        } catch (e: SerializationException) {
+            DiagnosticsResult.Retry("Unexpected answer: ${e.message}")
         }
     }
 

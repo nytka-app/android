@@ -61,6 +61,10 @@ only on a network you trust.
   range; Nytka need not be opened.
 - The **Device** tab shows the pendant and the server, and holds the settings: server address,
   token and the private-network switch.
+- **Diagnostics** (Device → Developer mode) record link quality, queue and upload health every
+  10 seconds while Nytka records, and keep the last 7 days. **Export diagnostics** shares them as a
+  CSV file through Android's share sheet. **Send diagnostics to my server** is off by default; on, it
+  uploads the samples to your server every 5 minutes (needs server 0.2.0 or later).
 
 ## When something is off
 
@@ -78,6 +82,10 @@ Audio waiting to upload, in the app's private storage, until the server has it; 
 the token, encrypted with a key that never leaves the Android Keystore. Android backups and
 phone-to-phone transfers skip all of it, so a new phone starts with first run. The app talks to
 your server and nothing else: no analytics, no crash reporting, no Omi cloud.
+
+Diagnostics samples hold counters and short status words: no audio, no words, no server address, no
+token. They stay on the phone for 7 days and leave it only when you export them or switch on *Send
+diagnostics to my server*, which sends them to your own server and nowhere else.
 
 ## Developer mode
 

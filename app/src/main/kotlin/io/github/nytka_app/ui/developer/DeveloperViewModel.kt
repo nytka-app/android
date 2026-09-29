@@ -10,6 +10,8 @@ import io.github.nytka_app.capture.DeviceActions
 import io.github.nytka_app.capture.FixtureRecorder
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.StatusClient
+import io.github.nytka_app.core.diagnostics.DiagnosticsSource
+import io.github.nytka_app.core.diagnostics.DiagnosticsUploader
 import io.github.nytka_app.core.settings.SettingsSource
 import io.github.nytka_app.core.upload.ChunkSource
 import io.github.nytka_app.core.upload.Uploader
@@ -17,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -39,6 +42,10 @@ data class DeveloperUiState(
     val disconnectedMinutes: Int = 5,
     val unreachableMinutes: Int = 15,
     val batteryPercent: Int = 20,
+    val diagnosticsSamples: Int = 0,
+    val diagnosticsUpload: Boolean = false,
+    val diagnosticsNote: String? = null,
+    val diagnosticsExport: String? = null,
 )
 
 @HiltViewModel
@@ -52,10 +59,13 @@ class DeveloperViewModel
         private val uploader: Uploader,
         private val status: StatusClient,
         private val fixtures: FixtureRecorder,
+        private val diagnostics: DiagnosticsSource,
+        private val diagnosticsUploader: DiagnosticsUploader,
     ) : ViewModel() {
         private data class Local(
             val serverStatus: String = "Not checked",
             val fixture: String? = null,
+            val diagnosticsExport: String? = null,
         )
 
         private val meter = RateMeter()
@@ -67,8 +77,8 @@ class DeveloperViewModel
                 queue.usage,
                 uploader.state,
                 settings.settings,
-                local,
-            ) { capture, usage, upload, current, screen ->
+                combine(local, diagnostics.count, diagnosticsUploader.note, ::Triple),
+            ) { capture, usage, upload, current, (screen, samples, note) ->
                 DeveloperUiState(
                     packetsPerSecond = meter.sample(capture.stats.notifications, System.currentTimeMillis()),
                     lossPercent = capture.stats.lossFraction * 100,
@@ -86,6 +96,10 @@ class DeveloperViewModel
                     disconnectedMinutes = current.alertDisconnectedMinutes,
                     unreachableMinutes = current.alertUnreachableMinutes,
                     batteryPercent = current.alertBatteryPercent,
+                    diagnosticsSamples = samples,
+                    diagnosticsUpload = current.diagnosticsUpload,
+                    diagnosticsNote = note,
+                    diagnosticsExport = screen.diagnosticsExport,
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, DeveloperUiState())
 
@@ -131,6 +145,30 @@ class DeveloperViewModel
             }
         }
 
+        fun exportDiagnostics() {
+            viewModelScope.launch {
+                val text =
+                    runCatching { actions.shareDiagnostics() }.fold(
+                        {
+                            if (it == 0) {
+                                "Nothing to export yet: samples are taken while capture runs."
+                            } else {
+                                "Exported $it samples from the last 7 days."
+                            }
+                        },
+                        { it.message ?: "Exporting failed." },
+                    )
+                local.update { it.copy(diagnosticsExport = text) }
+            }
+        }
+
+        fun setDiagnosticsUpload(on: Boolean) {
+            viewModelScope.launch {
+                settings.update { it.copy(diagnosticsUpload = on) }
+                if (on) diagnosticsUploader.clearNote()
+            }
+        }
+
         fun setThresholds(
             disconnectedMinutes: Int,
             unreachableMinutes: Int,
@@ -165,6 +203,7 @@ class DeveloperViewModel
                 upload = uploader.state.value,
                 usage = queue.usage.value,
                 serverStatus = state.value.serverStatus,
+                diagnosticsSamples = diagnostics.count.first(),
             )
 
         private companion object {

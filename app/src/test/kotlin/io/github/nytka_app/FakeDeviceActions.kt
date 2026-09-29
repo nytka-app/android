@@ -4,6 +4,8 @@ import io.github.nytka_app.capture.DeviceActions
 
 class FakeDeviceActions : DeviceActions {
     val calls = mutableListOf<String>()
+    var sharedCount = 0
+    var shareFailure: Exception? = null
 
     override fun forgetPendant(address: String) {
         calls += "forget $address"
@@ -19,5 +21,11 @@ class FakeDeviceActions : DeviceActions {
 
     override fun stopCapture() {
         calls += "stop"
+    }
+
+    override suspend fun shareDiagnostics(): Int {
+        calls += "share diagnostics"
+        shareFailure?.let { throw it }
+        return sharedCount
     }
 }

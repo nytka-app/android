@@ -120,6 +120,21 @@ fun DeveloperScreen(
                     }) { Text("Copy debug report") }
                 }
             }
+            item {
+                Section("Diagnostics") {
+                    Text("${state.diagnosticsSamples} samples kept for 7 days, one every 10 seconds while capture runs")
+                    FilledTonalButton(onClick = viewModel::exportDiagnostics) { Text("Export diagnostics") }
+                    state.diagnosticsExport?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Switch(checked = state.diagnosticsUpload, onCheckedChange = viewModel::setDiagnosticsUpload)
+                        Text("Send diagnostics to my server")
+                    }
+                    state.diagnosticsNote?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                }
+            }
             item { AlertSection(state, viewModel::setThresholds) }
             item { OutlinedButton(onClick = viewModel::turnOff) { Text("Turn off developer mode") } }
         }

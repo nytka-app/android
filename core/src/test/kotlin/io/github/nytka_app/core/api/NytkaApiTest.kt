@@ -127,4 +127,47 @@ class NytkaApiTest {
             assertEquals(ApiResult.Ok(Unit), api.deleteConversation("a"))
             assertEquals("DELETE", server.takeRequest().method)
         }
+
+    @Test
+    fun `diagnostics are posted as json with the token`() =
+        runTest {
+            answer(200, """{"accepted":2}""")
+
+            val result = api.uploadDiagnostics("""[{"id":"a"},{"id":"b"}]""")
+
+            assertEquals(DiagnosticsResult.Accepted(2), result)
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertEquals("/api/v1/diagnostics", request.url.encodedPath)
+            assertEquals("Bearer token-1", request.headers["Authorization"])
+            assertTrue(request.headers["Content-Type"]!!.startsWith("application/json"))
+            assertEquals("""[{"id":"a"},{"id":"b"}]""", request.body?.utf8())
+        }
+
+    @Test
+    fun `diagnostics map every answer`() =
+        runTest {
+            answer(404)
+            answer(401)
+            answer(400)
+            answer(413)
+            answer(503)
+            answer(200, "not json")
+
+            assertEquals(DiagnosticsResult.NotSupported, api.uploadDiagnostics("[]"))
+            assertEquals(DiagnosticsResult.Unauthorized, api.uploadDiagnostics("[]"))
+            assertEquals(DiagnosticsResult.BadRequest, api.uploadDiagnostics("[]"))
+            assertEquals(DiagnosticsResult.TooLarge, api.uploadDiagnostics("[]"))
+            assertEquals(DiagnosticsResult.Retry("The server answered 503."), api.uploadDiagnostics("[]"))
+            assertTrue(api.uploadDiagnostics("[]") is DiagnosticsResult.Retry)
+        }
+
+    @Test
+    fun `diagnostics need a token`() =
+        runTest {
+            settings = settings.copy(token = "")
+
+            assertEquals(DiagnosticsResult.NotConfigured("No token is set."), api.uploadDiagnostics("[]"))
+            assertEquals(0, server.requestCount)
+        }
 }
