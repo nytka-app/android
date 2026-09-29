@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/nytka-app/android/compare/v0.3.0...v0.3.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **pendant:** back off the audio watchdog and log the negotiated MTU ([#12](https://github.com/nytka-app/android/issues/12)) ([fc1ac84](https://github.com/nytka-app/android/commit/fc1ac8446b613a49c2b328be861682831da8fae5))
+
 ## [0.3.0](https://github.com/nytka-app/android/compare/v0.2.0...v0.3.0) (2026-09-29)
 
 
