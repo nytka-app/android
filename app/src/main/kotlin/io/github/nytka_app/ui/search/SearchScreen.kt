@@ -1,17 +1,141 @@
 package io.github.nytka_app.ui.search
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import io.github.nytka_app.ui.PlaceholderScreen
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
-/** The search icon and route of the Conversations tab stay hidden until v0.4's track I sets this to true. */
-const val SEARCH_ENABLED = false
+/**
+ * The Conversations tab's search icon shows only while this is true. A server without search answers 404 and the
+ * screen says so.
+ */
+const val SEARCH_ENABLED = true
 
-/** Full-text search: a placeholder until v0.4's track I builds it. A hit opens through [onOpenConversation]. */
-@Suppress("UnusedParameter") // the placeholder keeps the signature its track builds on
+/** Full-text search over conversations and memories. A hit opens through [onOpenConversation]. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     onOpenConversation: (String) -> Unit,
     onBack: () -> Unit,
+    viewModel: SearchViewModel = hiltViewModel(),
 ) {
-    PlaceholderScreen("Search", onBack)
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focus.requestFocus() }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Search") },
+                navigationIcon = {
+                    IconButton(
+                        onClick = onBack,
+                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                },
+            )
+        },
+    ) { padding ->
+        LazyColumn(
+            Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            item {
+                OutlinedTextField(
+                    value = state.query,
+                    onValueChange = viewModel::setQuery,
+                    label = { Text("Search conversations and memories") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().focusRequester(focus),
+                )
+            }
+            item {
+                Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SearchFilter.entries.forEach { filter ->
+                        FilterChip(
+                            selected = state.filter == filter,
+                            onClick = { viewModel.setFilter(filter) },
+                            label = { Text(filter.label) },
+                        )
+                    }
+                }
+            }
+            state.error?.let { error ->
+                item {
+                    Text(error, color = MaterialTheme.colorScheme.error)
+                    TextButton(onClick = viewModel::retry) { Text("Retry") }
+                }
+            }
+            items(state.rows, key = { it.key }) { row ->
+                ListItem(
+                    overlineContent =
+                        row.title?.let { title ->
+                            { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                        },
+                    headlineContent = {
+                        Text(
+                            snippetText(row.snippet),
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    supportingContent = { Text(row.date) },
+                    modifier = row.openId?.let { id -> Modifier.clickable { onOpenConversation(id) } } ?: Modifier,
+                )
+            }
+            if (state.rows.isNotEmpty() && !state.endReached) {
+                item(key = "more") { LaunchedEffect(state.rows.size) { viewModel.loadMore() } }
+            }
+            if (state.nothingFound) {
+                item { Text("Nothing found.") }
+            }
+        }
+    }
 }
+
+private fun snippetText(spans: List<SnippetSpan>): AnnotatedString =
+    buildAnnotatedString {
+        spans.forEach { span ->
+            if (span.bold) {
+                withStyle(
+                    SpanStyle(fontWeight = FontWeight.Bold),
+                ) { append(span.text) }
+            } else {
+                append(span.text)
+            }
+        }
+    }
