@@ -28,4 +28,21 @@ data class DiagnosticSample(
     val lastResult: String?,
     val appVersion: String,
     val device: String,
+    // Offline sync (v0.3). Additive: every field has a default, so older samples still read, and with the
+    // default encoder a field at its default is left out of the JSON.
+    val syncState: String? = null,
+    val ringReadSeq: Long? = null,
+    val ringWriteSeq: Long? = null,
+    val ringCapacity: Long? = null,
+    val ringDropped: Long? = null,
+    val lastDoneStatus: Int? = null,
+    val syncedPackets: Long = 0,
+    val lostPackets: Long = 0,
+    val syncKbPerSecond: Double? = null,
+    val syncLiveLoss: Double? = null,
+    val mutedFrames: Long = 0,
+    val badStampRecords: Long = 0,
+    val clockSkewS: Long? = null,
+    val segments: Long = 0,
+    val parkedChunks: Int = 0,
 )
