@@ -20,7 +20,8 @@ class NytkaApi(
     private val client: OkHttpClient,
     private val settings: suspend () -> Settings,
 ) : UploadClient,
-    ConversationsClient {
+    ConversationsClient,
+    InfoClient {
     private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun upload(body: ByteArray): UploadResult {
@@ -50,7 +51,7 @@ class NytkaApi(
         }
     }
 
-    suspend fun info(): ApiResult<ServerInfo> = request("GET", "api/v1/info") { json.decodeFromString(it) }
+    override suspend fun info(): ApiResult<ServerInfo> = request("GET", "api/v1/info") { json.decodeFromString(it) }
 
     suspend fun status(): ApiResult<ServerStatus> = request("GET", "api/v1/status") { json.decodeFromString(it) }
 

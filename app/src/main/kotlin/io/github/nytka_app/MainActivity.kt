@@ -15,6 +15,7 @@ import io.github.nytka_app.ui.NytkaNavHost
 import io.github.nytka_app.ui.StatusChip
 import io.github.nytka_app.ui.StatusViewModel
 import io.github.nytka_app.ui.conversations.ConversationsTab
+import io.github.nytka_app.ui.device.DeviceScreen
 import io.github.nytka_app.ui.theme.NytkaTheme
 
 @AndroidEntryPoint
@@ -32,7 +33,7 @@ class MainActivity : ComponentActivity() {
                         CenterAlignedTopAppBar(title = { Text("Nytka") }, actions = { StatusChip(status) })
                     },
                     conversations = { ConversationsTab(status, statusViewModel::setMuted) },
-                    device = { Text("Device") },
+                    device = { DeviceScreen(status, statusViewModel::setMuted, onOpenDeveloper = {}) },
                 )
             }
         }

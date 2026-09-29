@@ -18,13 +18,13 @@ import kotlinx.coroutines.flow.map
 class SettingsStore(
     private val dataStore: DataStore<Preferences>,
     private val cipher: TokenCipher,
-) {
+) : SettingsSource {
     // Decrypting the token calls the Keystore: keep it off the collector's (often main) thread.
-    val settings: Flow<Settings> = dataStore.data.map(::read).flowOn(Dispatchers.IO)
+    override val settings: Flow<Settings> = dataStore.data.map(::read).flowOn(Dispatchers.IO)
 
-    suspend fun current(): Settings = settings.first()
+    override suspend fun current(): Settings = settings.first()
 
-    suspend fun update(transform: (Settings) -> Settings) {
+    override suspend fun update(transform: (Settings) -> Settings) {
         dataStore.edit { preferences ->
             val current = read(preferences)
             val next = transform(current)
