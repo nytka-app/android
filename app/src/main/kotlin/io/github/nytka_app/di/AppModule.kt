@@ -42,6 +42,9 @@ object AppModule {
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
+            // A redirect could carry audio to plain http or another host, past the ServerUrl check.
+            .followRedirects(false)
+            .followSslRedirects(false)
             .build()
 
     @Provides
