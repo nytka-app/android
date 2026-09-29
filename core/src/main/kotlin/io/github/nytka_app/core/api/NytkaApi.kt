@@ -6,6 +6,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -97,6 +101,19 @@ class NytkaApi(
 
     override suspend fun conversation(id: String): ApiResult<ConversationDetail> =
         request("GET", "api/v1/conversations/$id") { json.decodeFromString(it) }
+
+    override suspend fun renameConversation(
+        id: String,
+        title: String?,
+    ): ApiResult<ConversationDetail> =
+        request(
+            "PATCH",
+            "api/v1/conversations/$id",
+            body = buildJsonObject { put("title", title?.let(::JsonPrimitive) ?: JsonNull) }.toString(),
+        ) { json.decodeFromString(it) }
+
+    override suspend fun enrichConversation(id: String): ApiResult<Unit> =
+        request("POST", "api/v1/conversations/$id/enrich") { }
 
     override suspend fun deleteConversation(id: String): ApiResult<Unit> =
         request("DELETE", "api/v1/conversations/$id") { }

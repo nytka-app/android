@@ -13,6 +13,10 @@ class FakeConversations : ConversationsClient {
     var raw: ApiResult<String> = ApiResult.Ok("{}")
     val requestedBefore = mutableListOf<String?>()
     val deleted = mutableListOf<String>()
+    val renamed = mutableListOf<Pair<String, String?>>()
+    val enriched = mutableListOf<String>()
+    var renameAnswer: ApiResult<ConversationDetail>? = null
+    var enrichAnswer: ApiResult<Unit> = ApiResult.Ok(Unit)
 
     /** Each gate holds back the next request's answer, which is fixed when the request comes in, until it completes. */
     val gates = ArrayDeque<CompletableDeferred<Unit>>()
@@ -28,6 +32,16 @@ class FakeConversations : ConversationsClient {
     }
 
     override suspend fun conversation(id: String) = detail!!
+
+    override suspend fun renameConversation(
+        id: String,
+        title: String?,
+    ): ApiResult<ConversationDetail> {
+        renamed += id to title
+        return renameAnswer ?: ApiResult.Ok(detail.let { (it as ApiResult.Ok).value.copy(title = title) })
+    }
+
+    override suspend fun enrichConversation(id: String): ApiResult<Unit> = enrichAnswer.also { enriched += id }
 
     override suspend fun deleteConversation(id: String): ApiResult<Unit> = ApiResult.Ok(Unit).also { deleted += id }
 

@@ -8,6 +8,7 @@ import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.InfoClient
+import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.ServerUrl
 import io.github.nytka_app.core.api.UrlCheck
 import io.github.nytka_app.core.settings.FirstRunStep
@@ -26,6 +27,9 @@ import javax.inject.Inject
 const val CONSENT_TEXT =
     "Recording people without their consent is illegal in some places. " +
         "You are responsible for following the law where you use Nytka."
+
+/** The app edits settings and tokens, so a `read` token is no use to it (docs/specs/v0.2.md, tokens and scopes). */
+const val READ_TOKEN_REFUSED = "The app needs an admin token."
 
 data class FirstRunUiState(
     /** False until the saved step and server details are read; the screen shows nothing before, not step 1. */
@@ -143,6 +147,11 @@ class FirstRunViewModel
                     )
                 }
                 when (val result = info.info()) {
+                    is ApiResult.Ok if result.value.scope == ServerInfo.SCOPE_READ -> {
+                        // Not kept: the uploader would send audio with a token that cannot upload it.
+                        settings.update { it.copy(token = "") }
+                        mutableState.update { it.copy(testing = false, serverError = READ_TOKEN_REFUSED) }
+                    }
                     is ApiResult.Ok -> {
                         settings.update { it.copy(firstRunStep = FirstRunStep.Permissions) }
                         mutableState.update {

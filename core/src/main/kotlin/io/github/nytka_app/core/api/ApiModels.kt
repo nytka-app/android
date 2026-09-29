@@ -2,10 +2,26 @@ package io.github.nytka_app.core.api
 
 import kotlinx.serialization.Serializable
 
+/** A server without `scope` (v0.1) counts as `admin`. */
 @Serializable
 data class ServerInfo(
     val serverVersion: String,
     val apiVersion: Int,
+    val scope: String = SCOPE_ADMIN,
+) {
+    companion object {
+        const val SCOPE_ADMIN = "admin"
+        const val SCOPE_READ = "read"
+    }
+}
+
+/** What `/status` says about the model calls, v0.2 servers only. */
+@Serializable
+data class AiStatus(
+    val configured: Boolean = false,
+    val pending: Int = 0,
+    val lastError: String? = null,
+    val lastErrorAt: String? = null,
 )
 
 @Serializable
@@ -13,7 +29,19 @@ data class ServerStatus(
     val pendingChunks: Long,
     val oldestPendingAt: String? = null,
     val lastError: String? = null,
+    val lastErrorAt: String? = null,
+    val lastSuccessAt: String? = null,
+    val ai: AiStatus? = null,
 )
+
+/** `aiStatus` of a v0.1 server is absent: nothing was ever summarized. */
+object AiState {
+    const val NONE = "none"
+    const val PENDING = "pending"
+    const val DONE = "done"
+    const val SKIPPED = "skipped"
+    const val FAILED = "failed"
+}
 
 @Serializable
 data class ConversationSummary(
@@ -22,6 +50,9 @@ data class ConversationSummary(
     val endedAt: String,
     val status: String,
     val preview: String,
+    val title: String? = null,
+    val summary: String? = null,
+    val aiStatus: String = AiState.NONE,
 )
 
 @Serializable
@@ -36,6 +67,26 @@ data class Segment(
     val startedAt: String,
     val endedAt: String,
     val text: String,
+    val speaker: String? = null,
+)
+
+/** A task the model found. The `conversation*` fields spare a list a request per source. */
+@Serializable
+data class NytkaTask(
+    val id: String,
+    val conversationId: String,
+    val text: String,
+    val done: Boolean = false,
+    val conversationTitle: String? = null,
+    val conversationStartedAt: String? = null,
+    val doneAt: String? = null,
+    val createdAt: String? = null,
+)
+
+@Serializable
+data class TaskPage(
+    val items: List<NytkaTask>,
+    val nextBefore: String? = null,
 )
 
 @Serializable
@@ -45,6 +96,68 @@ data class ConversationDetail(
     val endedAt: String,
     val status: String,
     val segments: List<Segment>,
+    val title: String? = null,
+    val summary: String? = null,
+    val aiStatus: String = AiState.NONE,
+    val titleEdited: Boolean = false,
+    val aiMessage: String? = null,
+    val aiUpdatedAt: String? = null,
+    val tasks: List<NytkaTask> = emptyList(),
+)
+
+/** One entry of `GET /settings`; values travel as strings, and a secret has no value, only [isSet]. */
+@Serializable
+data class ServerSetting(
+    val key: String,
+    val type: String,
+    val value: String? = null,
+    val isSet: Boolean = false,
+    val source: String = "default",
+    val locked: Boolean = false,
+    val default: String? = null,
+) {
+    val secret: Boolean get() = type == TYPE_SECRET
+
+    companion object {
+        const val TYPE_SECRET = "secret"
+        const val TYPE_INT = "int"
+        const val TYPE_BOOL = "bool"
+    }
+}
+
+@Serializable
+internal data class SettingsAnswer(
+    val items: List<ServerSetting>,
+)
+
+@Serializable
+data class AccessToken(
+    val id: String,
+    val name: String,
+    val scope: String,
+    val hint: String = "",
+    val createdAt: String? = null,
+    val lastUsedAt: String? = null,
+    val revokedAt: String? = null,
+)
+
+/** The create answer: the token's fields and [token], the secret, which the server shows once. */
+@Serializable
+data class CreatedToken(
+    val id: String,
+    val name: String,
+    val scope: String,
+    val token: String,
+    val hint: String = "",
+    val createdAt: String? = null,
+) {
+    /** The listing's view of it, without the secret. */
+    fun listed() = AccessToken(id, name, scope, hint, createdAt)
+}
+
+@Serializable
+internal data class TokensAnswer(
+    val items: List<AccessToken>,
 )
 
 @Serializable

@@ -3,6 +3,7 @@ package io.github.nytka_app.ui.conversations
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.nytka_app.core.api.AiState
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.ConversationPage
 import io.github.nytka_app.core.api.ConversationSummary
@@ -24,7 +25,12 @@ data class ConversationRow(
     val id: String,
     val timeRange: String,
     val length: String,
+    /** The summary when there is one, else the transcript's first words. */
     val preview: String,
+    /** The title, generated or set; null until the first run, when the row shows the time range instead. */
+    val title: String? = null,
+    /** "Summarizing" or "Summary failed"; null otherwise, and always on a server before v0.2. */
+    val chip: String? = null,
 )
 
 data class DaySection(
@@ -173,12 +179,21 @@ class ConversationsViewModel
                                 it.id,
                                 Formatting.timeRange(start, end, zone),
                                 Formatting.length(start, end),
-                                it.preview,
+                                it.summary?.takeIf(String::isNotBlank) ?: it.preview,
+                                it.title?.takeIf(String::isNotBlank),
+                                aiChip(it.aiStatus),
                             )
                         },
                     )
                 }
         }
+
+        private fun aiChip(aiStatus: String): String? =
+            when (aiStatus) {
+                AiState.PENDING -> "Summarizing"
+                AiState.FAILED -> "Summary failed"
+                else -> null
+            }
 
         /** Newest first, as the server lists them: is this one later in that order than [other]? */
         private fun ConversationSummary.isOlderThan(other: ConversationSummary): Boolean {
