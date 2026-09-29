@@ -4,10 +4,16 @@ import io.github.nytka_app.core.chunks.Chunk
 import io.github.nytka_app.core.chunks.ChunkFormat
 import io.github.nytka_app.core.chunks.ChunkFrame
 import io.github.nytka_app.core.chunks.ChunkWriter
+import io.github.nytka_app.core.ring.MuteChange
+import io.github.nytka_app.core.ring.RingPosition
+import io.github.nytka_app.core.ring.TimedFrame
 import io.github.nytka_app.core.upload.ChunkSource
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.util.UUID
@@ -18,13 +24,15 @@ data class QueueUsage(
     val frames: Int = 0,
     val capBytes: Long = FrameQueue.CAP_BYTES,
     val droppedChunks: Long = 0,
+    val parkedChunks: Int = 0,
 ) {
     val fraction: Double get() = bytes.toDouble() / capBytes
 }
 
 /**
  * The durable queue between the pendant and the server. Frames are stored as they arrive;
- * [seal] turns them into wire-format chunks; the uploader takes chunks oldest first.
+ * [seal] turns them into wire-format chunks; the uploader takes live chunks before stored ones, each oldest
+ * first. Frames read from the pendant's ring arrive through [commit], with the sync position.
  */
 class FrameQueue(
     database: QueueDatabase,
@@ -39,16 +47,53 @@ class FrameQueue(
 
     override val usage: StateFlow<QueueUsage> = state.asStateFlow()
 
+    override val ackedThrough: Flow<Long> = dao.ackedThrough().filterNotNull().distinctUntilChanged()
+
     override suspend fun add(
         session: UUID,
         seq: Long,
         capturedAtMs: Long,
         payload: ByteArray,
     ) {
-        dao.insertFrame(
-            QueuedFrame(session = session.toString(), seq = seq, capturedAtMs = capturedAtMs, payload = payload),
+        dao.insertFrames(
+            listOf(
+                QueuedFrame(session = session.toString(), seq = seq, capturedAtMs = capturedAtMs, payload = payload),
+            ),
         )
     }
+
+    override suspend fun commit(
+        frames: List<TimedFrame>,
+        position: RingPosition,
+    ) {
+        dao.commitStored(
+            frames.map {
+                QueuedFrame(
+                    session = it.session.toString(),
+                    seq = it.seq,
+                    capturedAtMs = it.capturedAtMs,
+                    payload = it.payload,
+                    stored = true,
+                    ringSeq = it.ringSeq,
+                    epoch = position.epoch,
+                )
+            },
+            RingPositionRow.of(position),
+        )
+    }
+
+    override suspend fun position(): RingPosition? = dao.position()?.toPosition()
+
+    override suspend fun markAdvanced(seq: Long) = dao.setAdvanced(seq)
+
+    override suspend fun clearPosition() = dao.deletePosition()
+
+    override suspend fun recordMute(
+        atMs: Long,
+        muted: Boolean,
+    ) = dao.insertMute(MuteLogRow(atMs = atMs, muted = muted))
+
+    override suspend fun muteChanges(): List<MuteChange> = dao.muteChanges().map { MuteChange(it.atMs, it.muted) }
 
     /** Seals every frame queued before the call; returns how many chunks it made. */
     override suspend fun seal(): Int =
@@ -74,6 +119,15 @@ class FrameQueue(
         refreshUsage()
     }
 
+    override suspend fun park(
+        chunkId: Long,
+        code: Int,
+        reason: String,
+    ) {
+        dao.park(chunkId, code, reason, now())
+        refreshUsage()
+    }
+
     suspend fun refreshUsage() {
         state.value =
             QueueUsage(
@@ -82,10 +136,11 @@ class FrameQueue(
                 frames = dao.frameCount(),
                 capBytes = capBytes,
                 droppedChunks = droppedChunks,
+                parkedChunks = dao.parkedCount(),
             )
     }
 
-    /** The longest prefix of [frames] that forms one valid chunk. */
+    /** The longest prefix of [frames] that forms one valid chunk: one source, one session, one ring epoch. */
     private fun takeRun(frames: List<QueuedFrame>): List<QueuedFrame> {
         val first = frames.first()
         var size = ChunkFormat.HEADER_SIZE + ChunkFormat.recordSize(first.payload.size)
@@ -96,6 +151,8 @@ class FrameQueue(
             val offset = next.capturedAtMs - first.capturedAtMs
             val fits =
                 next.session == first.session &&
+                    next.stored == first.stored &&
+                    next.epoch == first.epoch &&
                     next.seq == previous.seq + 1 &&
                     offset in 0..U32_MAX &&
                     size + ChunkFormat.recordSize(next.payload.size) <= ChunkFormat.MAX_BYTES
@@ -117,21 +174,35 @@ class FrameQueue(
                     frames = run.map { ChunkFrame(it.seq, it.capturedAtMs, it.payload) },
                 ),
             )
+        val ringSeqs = run.mapNotNull { it.ringSeq }
         return SealedChunk(
             session = first.session,
             firstSeq = first.seq,
             frameCount = run.size,
             createdAtMs = now(),
             body = body,
+            stored = first.stored,
+            ringFirst = ringSeqs.minOrNull(),
+            ringLast = ringSeqs.maxOrNull(),
+            epoch = first.epoch,
         )
     }
 
-    /** Drops the oldest chunks until the queue fits its cap (open question 2). */
+    /**
+     * Drops the oldest live chunks until the queue fits its cap (open question 2). A stored chunk is never
+     * deleted: the pendant may free its ring range once nothing holds it back, so when only stored chunks are left
+     * over the cap they are parked (code 0), which keeps their range in `ackedThrough`.
+     */
     private suspend fun enforceCap() {
         while (dao.chunkBytes() + dao.frameBytes() > capBytes) {
-            val oldest = dao.oldestChunk() ?: return
-            dao.deleteChunk(oldest.id)
-            droppedChunks++
+            val live = dao.firstChunk(stored = false)
+            if (live != null) {
+                dao.deleteChunk(live.id)
+                droppedChunks++
+            } else {
+                val stored = dao.firstChunk(stored = true) ?: return
+                dao.park(stored.id, 0, "over the queue cap", now())
+            }
         }
     }
 

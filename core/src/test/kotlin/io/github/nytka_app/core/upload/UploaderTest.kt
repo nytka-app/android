@@ -39,6 +39,46 @@ class UploaderTest {
             chunks.removeAll { it.id == chunkId }
             usage.value = QueueUsage(chunks = chunks.size)
         }
+
+        /** Makes the chunk with [id] a stored one, from ring sequence [id]. */
+        fun store(id: Long) {
+            val at = chunks.indexOfFirst { it.id == id }
+            val chunk = chunks[at]
+            chunks[at] =
+                SealedChunk(
+                    id = chunk.id,
+                    session = chunk.session,
+                    firstSeq = chunk.firstSeq,
+                    frameCount = chunk.frameCount,
+                    createdAtMs = chunk.createdAtMs,
+                    body = chunk.body,
+                    stored = true,
+                    ringFirst = id,
+                    ringLast = id,
+                )
+        }
+    }
+
+    private class ParkingChunks(
+        vararg firstSeqs: Long,
+    ) : ChunkSource by FakeChunks(*firstSeqs) {
+        val inner = FakeChunks(*firstSeqs)
+        val parked = mutableListOf<Triple<Long, Int, String>>()
+
+        override val usage get() = inner.usage
+
+        override suspend fun oldest() = inner.oldest()
+
+        override suspend fun remove(chunkId: Long) = inner.remove(chunkId)
+
+        override suspend fun park(
+            chunkId: Long,
+            code: Int,
+            reason: String,
+        ) {
+            parked += Triple(chunkId, code, reason)
+            inner.remove(chunkId)
+        }
     }
 
     private val settings = MutableStateFlow(Settings(serverUrl = "https://nytka.example", token = "old"))
@@ -86,6 +126,83 @@ class UploaderTest {
 
             assertEquals(0, chunks.chunks.size)
             assertEquals(1L, uploader.state.value.droppedChunks)
+        }
+
+    @Test
+    fun `a stored chunk the server refuses is parked, not dropped`() =
+        runTest {
+            val chunks = ParkingChunks(1, 2)
+            chunks.inner.store(1)
+            val uploader =
+                uploader(chunks) {
+                    if (it[0] ==
+                        1.toByte()
+                    ) {
+                        UploadResult.Dropped(409, "overlap")
+                    } else {
+                        accepted
+                    }
+                }
+
+            uploader.drain()
+
+            assertEquals(listOf(Triple(1L, 409, "overlap")), chunks.parked)
+            assertEquals(0, chunks.inner.chunks.size)
+            assertEquals(1L, uploader.state.value.parkedChunks)
+            assertEquals(0L, uploader.state.value.droppedChunks)
+        }
+
+    @Test
+    fun `a live chunk the server refuses is still removed`() =
+        runTest {
+            val chunks = ParkingChunks(1)
+            val uploader = uploader(chunks) { UploadResult.Dropped(413, "too large") }
+
+            uploader.drain()
+
+            assertEquals(emptyList<Triple<Long, Int, String>>(), chunks.parked)
+            assertEquals(1L, uploader.state.value.droppedChunks)
+            assertEquals(0L, uploader.state.value.parkedChunks)
+        }
+
+    @Test
+    fun `a source without a store of its own removes the chunk it is asked to park`() =
+        runTest {
+            val chunks = FakeChunks(1)
+            chunks.store(1)
+            val uploader = uploader(chunks) { UploadResult.Dropped(400, "bad") }
+
+            uploader.drain()
+
+            assertEquals(0, chunks.chunks.size)
+        }
+
+    @Test
+    fun `only an accepted answer removes a stored chunk`() =
+        runTest {
+            val chunks = FakeChunks(1, 2)
+            chunks.store(1)
+            chunks.store(2)
+            val answers = ArrayDeque(listOf<UploadResult>(UploadResult.Retry("down")))
+            val uploader = uploader(chunks) { answers.removeFirstOrNull() ?: accepted }
+
+            assertEquals(DrainResult.Failed(5_000), uploader.drain())
+            assertEquals(2, chunks.chunks.size)
+
+            assertEquals(DrainResult.Empty, uploader.drain())
+            assertEquals(0, chunks.chunks.size)
+        }
+
+    @Test
+    fun `unauthorized keeps a stored chunk in the queue`() =
+        runTest {
+            val chunks = FakeChunks(1)
+            chunks.store(1)
+            val uploader = uploader(chunks) { UploadResult.Unauthorized }
+
+            uploader.drain()
+
+            assertEquals(1, chunks.chunks.size)
         }
 
     @Test

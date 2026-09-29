@@ -23,6 +23,7 @@ data class UploadState(
     val unreachableSinceMs: Long? = null,
     val uploadedChunks: Long = 0,
     val droppedChunks: Long = 0,
+    val parkedChunks: Long = 0,
 )
 
 sealed interface DrainResult {
@@ -49,7 +50,11 @@ class Uploader(
 
     val state: StateFlow<UploadState> = mutableState.asStateFlow()
 
-    /** Uploads chunks oldest first until the queue is empty or an upload does not go through. */
+    /**
+     * Uploads chunks in the order [ChunkSource.oldest] gives them (live before stored, each oldest first) until
+     * the queue is empty or an upload does not go through. Only a 200 or 202 removes a stored chunk; one the
+     * server refuses for good is parked.
+     */
     suspend fun drain(): DrainResult = lock.withLock { drainLocked() }
 
     private suspend fun drainLocked(): DrainResult {
@@ -71,14 +76,15 @@ class Uploader(
                     }
                 }
                 is UploadResult.Dropped -> {
-                    chunks.remove(chunk.id)
+                    if (chunk.stored) chunks.park(chunk.id, result.code, result.reason) else chunks.remove(chunk.id)
                     mutableState.update {
                         it.copy(
                             lastResult = "${result.code}: dropped the chunk from frame ${chunk.firstSeq}",
                             paused = null,
                             failures = 0,
                             unreachableSinceMs = null,
-                            droppedChunks = it.droppedChunks + 1,
+                            droppedChunks = if (chunk.stored) it.droppedChunks else it.droppedChunks + 1,
+                            parkedChunks = if (chunk.stored) it.parkedChunks + 1 else it.parkedChunks,
                         )
                     }
                 }
