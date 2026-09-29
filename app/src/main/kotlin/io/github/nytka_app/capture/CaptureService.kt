@@ -1,8 +1,10 @@
 package io.github.nytka_app.capture
 
+import android.Manifest
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
@@ -140,6 +142,12 @@ class CaptureService : LifecycleService() {
         private const val ALERT_CHECK_MS = 30_000L
 
         fun start(context: Context) {
+            // A connectedDevice foreground service needs BLUETOOTH_CONNECT; revoked in system settings, starting
+            // would crash the app on every launch. The Device tab shows what is missing instead.
+            val granted =
+                ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) ==
+                    PackageManager.PERMISSION_GRANTED
+            if (!granted) return
             ContextCompat.startForegroundService(context, Intent(context, CaptureService::class.java))
         }
 
