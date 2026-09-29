@@ -4,6 +4,7 @@ import io.github.nytka_app.core.chunks.Chunk
 import io.github.nytka_app.core.chunks.ChunkFormat
 import io.github.nytka_app.core.chunks.ChunkFrame
 import io.github.nytka_app.core.chunks.ChunkWriter
+import io.github.nytka_app.core.upload.ChunkSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,13 +30,13 @@ class FrameQueue(
     database: QueueDatabase,
     private val capBytes: Long = CAP_BYTES,
     private val now: () -> Long = System::currentTimeMillis,
-) {
+) : ChunkSource {
     private val dao = database.queue()
     private val sealing = Mutex()
     private val state = MutableStateFlow(QueueUsage(capBytes = capBytes))
     private var droppedChunks = 0L
 
-    val usage: StateFlow<QueueUsage> = state.asStateFlow()
+    override val usage: StateFlow<QueueUsage> = state.asStateFlow()
 
     suspend fun add(
         session: UUID,
@@ -65,9 +66,9 @@ class FrameQueue(
             sealed
         }
 
-    suspend fun oldest(): SealedChunk? = dao.oldestChunk()
+    override suspend fun oldest(): SealedChunk? = dao.oldestChunk()
 
-    suspend fun remove(chunkId: Long) {
+    override suspend fun remove(chunkId: Long) {
         dao.deleteChunk(chunkId)
         refreshUsage()
     }

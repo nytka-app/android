@@ -30,7 +30,7 @@ detekt {
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.coroutines.android)
-    implementation(libs.room.runtime)
+    api(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
     implementation(libs.datastore.preferences)
