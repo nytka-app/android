@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.0](https://github.com/nytka-app/android/compare/v0.3.1...v0.4.0) (2026-09-29)
+
+
+### Features
+
+* log what can explain an audio stall, and stop reconnecting on quiet audio ([#15](https://github.com/nytka-app/android/issues/15)) ([c5dda57](https://github.com/nytka-app/android/commit/c5dda5738c9d9dcaae40b367987eda3f3a7e2acd))
+
+
+### Bug Fixes
+
+* first-run problems from the README audit ([#16](https://github.com/nytka-app/android/issues/16)) ([20b6180](https://github.com/nytka-app/android/commit/20b6180e985b46bcc9c8bfa0bef0294af2c02c74))
+
 ## [0.3.1](https://github.com/nytka-app/android/compare/v0.3.0...v0.3.1) (2026-09-29)
 
 
