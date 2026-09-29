@@ -29,7 +29,8 @@ class NytkaApi(
                 is Target.Ready -> t
             }
         return try {
-            execute(target, "POST", "api/v1/chunks", body.toRequestBody(ChunkFormat.MEDIA_TYPE.toMediaType())).use { response ->
+            val requestBody = body.toRequestBody(ChunkFormat.MEDIA_TYPE.toMediaType())
+            execute(target, "POST", "api/v1/chunks", requestBody).use { response ->
                 when (response.code) {
                     200, 202 ->
                         UploadResult.Accepted(
