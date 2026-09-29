@@ -16,7 +16,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
@@ -54,6 +56,14 @@ data class CaptureStatus(
     val recording: Boolean get() = running && !muted && connection is PendantConnection.Connected
 }
 
+/** A frame as it entered the queue, for developer-mode fixtures. */
+class CapturedFrame(
+    val session: UUID,
+    val seq: Long,
+    val capturedAtMs: Long,
+    val payload: ByteArray,
+)
+
 /**
  * One capture session: pendant frames into the queue, mute from the button or the app, sealing
  * every 30 s. The only place that turns the pendant's audio on or off.
@@ -68,6 +78,11 @@ class CaptureController(
 ) {
     private val mutableStatus = MutableStateFlow(CaptureStatus())
     val status: StateFlow<CaptureStatus> = mutableStatus.asStateFlow()
+
+    private val mutableCaptured = MutableSharedFlow<CapturedFrame>(extraBufferCapacity = 256)
+
+    /** Every frame that entered the queue; nobody listens except a fixture recording. */
+    val captured: SharedFlow<CapturedFrame> = mutableCaptured
 
     private var jobs: CompletableJob? = null
     private var session = UUID.randomUUID()
@@ -108,6 +123,7 @@ class CaptureController(
                 // A full disk must not crash the service; the sequence advances only for stored frames.
                 if (!muted && stored { sink.add(session, nextSeq, frame.capturedAtMs, frame.payload) }) {
                     nextSeq++
+                    mutableCaptured.tryEmit(CapturedFrame(session, nextSeq - 1, frame.capturedAtMs, frame.payload))
                     mutableStatus.update { it.copy(framesQueued = it.framesQueued + 1) }
                 }
             }

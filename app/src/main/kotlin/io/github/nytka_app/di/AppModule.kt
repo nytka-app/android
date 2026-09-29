@@ -7,14 +7,18 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.nytka_app.capture.AndroidDeviceActions
+import io.github.nytka_app.capture.AndroidFixtureRecorder
 import io.github.nytka_app.capture.DeviceActions
+import io.github.nytka_app.capture.FixtureRecorder
 import io.github.nytka_app.core.api.ConversationsClient
 import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.NytkaApi
+import io.github.nytka_app.core.api.StatusClient
 import io.github.nytka_app.core.queue.FrameQueue
 import io.github.nytka_app.core.queue.QueueDatabase
 import io.github.nytka_app.core.settings.SettingsSource
 import io.github.nytka_app.core.settings.SettingsStore
+import io.github.nytka_app.core.upload.ChunkSource
 import io.github.nytka_app.core.upload.Uploader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -74,6 +78,15 @@ object AppModule {
 
     @Provides
     fun infoClient(api: NytkaApi): InfoClient = api
+
+    @Provides
+    fun statusClient(api: NytkaApi): StatusClient = api
+
+    @Provides
+    fun chunkSource(queue: FrameQueue): ChunkSource = queue
+
+    @Provides
+    fun fixtureRecorder(recorder: AndroidFixtureRecorder): FixtureRecorder = recorder
 
     @Provides
     fun settingsSource(store: SettingsStore): SettingsSource = store

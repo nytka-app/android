@@ -16,7 +16,7 @@ import io.github.nytka_app.ui.NytkaNavHost
 import io.github.nytka_app.ui.StatusChip
 import io.github.nytka_app.ui.StatusViewModel
 import io.github.nytka_app.ui.conversations.ConversationsTab
-import io.github.nytka_app.ui.device.DeviceScreen
+import io.github.nytka_app.ui.device.DeviceTab
 import io.github.nytka_app.ui.firstrun.FirstRunScreen
 import io.github.nytka_app.ui.theme.NytkaTheme
 
@@ -44,7 +44,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             },
                             conversations = { ConversationsTab(status, statusViewModel::setMuted) },
-                            device = { DeviceScreen(status, statusViewModel::setMuted, onOpenDeveloper = {}) },
+                            device = { DeviceTab(status, statusViewModel::setMuted) },
                         )
                     }
                 }
