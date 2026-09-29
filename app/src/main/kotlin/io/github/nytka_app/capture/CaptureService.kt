@@ -8,6 +8,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import dagger.hilt.android.AndroidEntryPoint
+import io.github.nytka_app.alerts.Alert
 import io.github.nytka_app.alerts.AlertInputs
 import io.github.nytka_app.alerts.AlertMonitor
 import io.github.nytka_app.alerts.AlertNotifications
@@ -125,6 +126,8 @@ class CaptureService : LifecycleService() {
         applicationScope.launch {
             capture?.stop()
             scope.cancel()
+            // Alerts belong to a running capture: once it stops, none of them can clear on its own.
+            Alert.entries.forEach { AlertNotifications.cancel(applicationContext, it) }
             UploadDrainWorker.drainNow(applicationContext)
         }
         super.onDestroy()
