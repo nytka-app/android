@@ -4,6 +4,7 @@ import io.github.nytka_app.core.queue.FrameSink
 import io.github.nytka_app.pendant.ButtonEvent
 import io.github.nytka_app.pendant.FakePendant
 import io.github.nytka_app.pendant.Haptic
+import io.github.nytka_app.pendant.Pendant
 import io.github.nytka_app.pendant.PendantConnection
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
@@ -43,6 +44,17 @@ class CaptureControllerTest {
 
         override suspend fun setMuted(muted: Boolean) {
             state.value = muted
+        }
+    }
+
+    private class CountingPendant(
+        private val inner: FakePendant,
+    ) : Pendant by inner {
+        var setAudioCalls = 0
+
+        override suspend fun setAudio(enabled: Boolean) {
+            setAudioCalls++
+            inner.setAudio(enabled)
         }
     }
 
@@ -144,6 +156,27 @@ class CaptureControllerTest {
             assertFalse(rig.pendant.audioEnabled)
             assertTrue(rig.sink.frames.isEmpty())
             assertTrue(rig.pendant.haptics.isEmpty())
+        }
+
+    @Test
+    fun `reconnect while unmuted resumes audio without the controller asking again`() =
+        runTest {
+            val rig = rig()
+            val calls = CountingPendant(rig.pendant)
+            val controller =
+                CaptureController(calls, rig.sink, rig.settings, backgroundScope, { testScheduler.currentTime })
+            controller.start("fake")
+            runCurrent()
+            assertEquals(1, calls.setAudioCalls)
+
+            rig.pendant.dropLink()
+            runCurrent()
+            assertFalse(rig.pendant.audioEnabled)
+            rig.pendant.connect("fake") // Connecting is never observed: the collector sees Connected again
+            advanceTimeBy(100)
+
+            assertTrue(rig.pendant.audioEnabled)
+            assertTrue(rig.sink.frames.isNotEmpty())
         }
 
     @Test

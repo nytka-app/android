@@ -38,7 +38,7 @@ class FakePendantTest {
         }
 
     @Test
-    fun `a dropped link turns audio off until it is asked for again`() =
+    fun `a dropped link stops audio and a reconnect resumes it`() =
         runTest {
             val pendant = pendant()
             pendant.connect("fake")
@@ -46,10 +46,24 @@ class FakePendantTest {
 
             pendant.dropLink()
             assertEquals(PendantConnection.Disconnected, pendant.connection.value)
+            assertFalse(pendant.audioEnabled)
+            pendant.connect("fake")
+
+            assertTrue(pendant.audioEnabled)
+            assertTrue(pendant.connection.value is PendantConnection.Connected)
+        }
+
+    @Test
+    fun `disconnect clears the audio intent`() =
+        runTest {
+            val pendant = pendant()
+            pendant.connect("fake")
+            pendant.setAudio(true)
+
+            pendant.disconnect()
             pendant.connect("fake")
 
             assertFalse(pendant.audioEnabled)
-            assertTrue(pendant.connection.value is PendantConnection.Connected)
         }
 
     @Test
