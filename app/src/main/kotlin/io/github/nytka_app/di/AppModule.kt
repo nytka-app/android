@@ -6,6 +6,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import io.github.nytka_app.core.api.ConversationsClient
 import io.github.nytka_app.core.api.NytkaApi
 import io.github.nytka_app.core.queue.FrameQueue
 import io.github.nytka_app.core.queue.QueueDatabase
@@ -15,6 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import okhttp3.OkHttpClient
+import java.time.Clock
 import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
@@ -61,6 +63,13 @@ object AppModule {
         client: OkHttpClient,
         settings: SettingsStore,
     ): NytkaApi = NytkaApi(client) { settings.current() }
+
+    @Provides
+    fun conversationsClient(api: NytkaApi): ConversationsClient = api
+
+    @Provides
+    @Singleton
+    fun clock(): Clock = Clock.systemDefaultZone()
 
     @Provides
     @Singleton
