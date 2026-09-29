@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/nytka-app/android/compare/v0.5.0...v0.5.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* merge stored frames into full chunks regardless of commit batching ([#26](https://github.com/nytka-app/android/issues/26)) ([f591aed](https://github.com/nytka-app/android/commit/f591aed087a38557866e4bb29202da14b0fdddad))
+
 ## [0.5.0](https://github.com/nytka-app/android/compare/v0.4.0...v0.5.0) (2026-09-29)
 
 
