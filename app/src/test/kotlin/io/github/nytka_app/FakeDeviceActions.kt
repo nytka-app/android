@@ -26,6 +26,14 @@ class FakeDeviceActions : DeviceActions {
         calls += "stop"
     }
 
+    override fun syncNow() {
+        calls += "sync now"
+    }
+
+    override fun stopSync() {
+        calls += "stop sync"
+    }
+
     override fun localNetworkGranted() = localNetwork
 
     override fun openAppSettings() {

@@ -178,7 +178,7 @@ class CaptureControllerTest {
                 )
             controller.start("fake")
             runCurrent()
-            assertEquals(1, calls.setAudioCalls)
+            assertEquals(1, calls.setAudioCalls) // before the link exists; Connected changes nothing
 
             // The collector never runs in between, so StateFlow conflates Connected to Connected
             // and the controller is not told: the pendant must resume audio by itself.
@@ -190,6 +190,80 @@ class CaptureControllerTest {
             assertTrue(rig.pendant.audioEnabled)
             assertTrue(rig.sink.frames.isNotEmpty())
             assertEquals(1, calls.setAudioCalls) // the pendant resumed on its own
+        }
+
+    @Test
+    fun `the audio intent comes from the persisted mute setting before the pendant connects`() =
+        runTest {
+            val rig = rig(muted = true)
+            val order = mutableListOf<String>()
+            val ordered =
+                object : Pendant by rig.pendant {
+                    override suspend fun setAudio(enabled: Boolean) {
+                        order += "audio $enabled"
+                        rig.pendant.setAudio(enabled)
+                    }
+
+                    override fun connect(address: String) {
+                        order += "connect"
+                        rig.pendant.connect(address)
+                    }
+                }
+            val controller =
+                CaptureController(
+                    ordered,
+                    rig.sink,
+                    rig.settings,
+                    backgroundScope,
+                    { testScheduler.currentTime },
+                    log = rig.log,
+                )
+
+            controller.start("fake")
+            runCurrent()
+
+            assertEquals(listOf("audio false", "connect"), order)
+            assertFalse(rig.pendant.audioEnabled)
+        }
+
+    @Test
+    fun `an unmuted start subscribes as the link comes up`() =
+        runTest {
+            val rig = rig(muted = false)
+            rig.controller.start("fake")
+            runCurrent()
+
+            assertTrue(rig.pendant.audioEnabled)
+        }
+
+    @Test
+    fun `mute changes reach the mute log once each, whoever made them`() =
+        runTest {
+            val rig = rig()
+            val muteSink = MuteLogRecorderTest.FakeMuteSink()
+            val recorder = MuteLogRecorder(muteSink, { testScheduler.currentTime })
+            val controller =
+                CaptureController(
+                    rig.pendant,
+                    rig.sink,
+                    rig.settings,
+                    backgroundScope,
+                    { testScheduler.currentTime },
+                    log = rig.log,
+                    muteLog = recorder,
+                )
+            controller.start("fake")
+            runCurrent()
+            assertTrue(muteSink.changes.isEmpty()) // unmuted at start, nothing to log
+
+            advanceTimeBy(1_000)
+            rig.pendant.press(ButtonEvent.DoubleTap)
+            runCurrent()
+            advanceTimeBy(4_000)
+            controller.setMuted(false, MuteSource.App)
+            runCurrent()
+
+            assertEquals(listOf(1_000L to true, 5_000L to false), muteSink.changes.map { it.atMs to it.muted })
         }
 
     @Test

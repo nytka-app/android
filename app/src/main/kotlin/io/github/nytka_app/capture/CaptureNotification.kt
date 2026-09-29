@@ -14,11 +14,13 @@ import io.github.nytka_app.pendant.PendantConnection
 object CaptureNotification {
     const val ID = 1
     const val CHANNEL = Notifier.RECORDING_CHANNEL
+    private const val PERCENT = 100L
 
     /** "Recording · 82% · 0 queued", as the spec words it. */
     fun text(
         status: CaptureStatus,
         usage: QueueUsage,
+        sync: StorageSyncStatus? = null,
     ): String {
         val state =
             when {
@@ -28,13 +30,30 @@ object CaptureNotification {
                 else -> "Waiting for the pendant"
             }
         val battery = status.battery?.let { " · $it%" } ?: ""
-        return "$state$battery · ${usage.chunks} queued"
+        return "$state$battery · ${usage.chunks} queued${syncSuffix(sync)}"
+    }
+
+    /** " · syncing 42%" while a sync runs and knows its size, " · syncing" before that. */
+    private fun syncSuffix(sync: StorageSyncStatus?): String {
+        if (sync == null) return ""
+        return when (sync.state) {
+            SyncState.Syncing, is SyncState.WaitingForUploads ->
+                if (sync.runTotal >
+                    0
+                ) {
+                    " · syncing ${(sync.runDone * PERCENT / sync.runTotal).coerceIn(0, PERCENT)}%"
+                } else {
+                    " · syncing"
+                }
+            else -> ""
+        }
     }
 
     fun build(
         context: Context,
         status: CaptureStatus,
         usage: QueueUsage,
+        sync: StorageSyncStatus? = null,
     ): Notification {
         val open =
             PendingIntent.getActivity(
@@ -55,7 +74,7 @@ object CaptureNotification {
             .Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("Nytka")
-            .setContentText(text(status, usage))
+            .setContentText(text(status, usage, sync))
             .setContentIntent(open)
             .setOngoing(true)
             .setOnlyAlertOnce(true)

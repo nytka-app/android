@@ -51,6 +51,8 @@ data class DeviceUiState(
     val storage: StorageCard? = null,
     /** Packets the first sync found, while it waits for "import or discard"; null when nothing is asked. */
     val backlogPackets: Long? = null,
+    /** Whether /info lists `offline-sync`; null until the server has answered. False hides the card. */
+    val serverSync: Boolean? = null,
 )
 
 @HiltViewModel
@@ -67,7 +69,9 @@ class DeviceViewModel
         val state: StateFlow<DeviceUiState> =
             combine(settings.settings, local, sync.status, sync.connected) { current, screen, storage, connected ->
                 screen.copy(
-                    storage = storageCard(storage, current.pendantAddress != null || current.fakePendant, connected),
+                    storage =
+                        storageCard(storage, current.pendantAddress != null || current.fakePendant, connected)
+                            ?.takeIf { screen.serverSync != false },
                     backlogPackets = storage.backlogPackets(),
                     pendantName = current.pendantName,
                     pendantAddress = current.pendantAddress,
@@ -130,6 +134,7 @@ class DeviceViewModel
                             apiVersion = result.value.apiVersion,
                             apiMismatch = result.value.apiVersion != NytkaApi.API_VERSION,
                             serverUnreachable = false,
+                            serverSync = result.value.has(ServerInfo.FEATURE_OFFLINE_SYNC),
                         )
                     }
                 is ApiResult.Failure ->

@@ -245,7 +245,7 @@ class DeveloperViewModelTest {
 
         sync.sync.value = StorageSyncStatus(SyncState.Unsupported("firmware"))
         assertNull(viewModel.state.value.storage)
-        sync.sync.value = StorageSyncStatus(SyncState.ServerOutdated("0.3.0", 1_000))
+        sync.sync.value = StorageSyncStatus(SyncState.ServerOutdated(1_000))
         assertNull(viewModel.state.value.storage)
     }
 }

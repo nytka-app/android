@@ -1,8 +1,11 @@
 package io.github.nytka_app.capture
 
-import kotlinx.coroutines.flow.MutableStateFlow
+import io.github.nytka_app.pendant.PendantConnection
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 /** What the Device tab and developer mode see of the offline sync, and the four things they ask of it. */
 interface SyncControls {
@@ -22,16 +25,22 @@ interface SyncControls {
     fun discardBacklog()
 }
 
-/** A sync that never starts: what the screens get where no sync runs (previews, tests). */
-class IdleSyncControls : SyncControls {
-    override val status: StateFlow<StorageSyncStatus> = MutableStateFlow(StorageSyncStatus()).asStateFlow()
-    override val connected: StateFlow<Boolean> = MutableStateFlow(false).asStateFlow()
+/** [SyncControls] over the capture hub, which routes to the running service's sync. */
+class HubSyncControls(
+    private val hub: CaptureHub,
+    scope: CoroutineScope,
+) : SyncControls {
+    override val status: StateFlow<StorageSyncStatus> = hub.syncStatus
+    override val connected: StateFlow<Boolean> =
+        hub.status
+            .map { it.connection is PendantConnection.Connected }
+            .stateIn(scope, SharingStarted.Eagerly, false)
 
-    override fun syncNow() = Unit
+    override fun syncNow() = hub.syncNow()
 
-    override fun stopSync() = Unit
+    override fun stopSync() = hub.stopSync()
 
-    override fun importBacklog() = Unit
+    override fun importBacklog() = hub.importBacklog()
 
-    override fun discardBacklog() = Unit
+    override fun discardBacklog() = hub.discardBacklog()
 }

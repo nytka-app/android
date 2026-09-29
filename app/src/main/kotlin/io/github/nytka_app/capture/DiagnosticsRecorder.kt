@@ -33,6 +33,7 @@ class DiagnosticsRecorder(
     private val newId: (Long) -> UUID = { Uuid7.next(it) },
     private val everyMs: Long = SAMPLE_EVERY_MS,
     private val log: EventLog = EventLog.Logcat,
+    private val sync: StateFlow<StorageSyncStatus>? = null,
 ) {
     private var job: Job? = null
 
@@ -79,6 +80,7 @@ class DiagnosticsRecorder(
         val queue = usage.value
         val uploader = upload.value
         val at = now()
+        val storage = sync?.value
         return DiagnosticSample(
             id = newId(at).toString(),
             at = Instant.ofEpochMilli(at).toString(),
@@ -99,6 +101,21 @@ class DiagnosticsRecorder(
             lastResult = uploader.lastResult?.let(::resultWord),
             appVersion = appVersion,
             device = device,
+            syncState = storage?.let { syncWord(it.state) },
+            ringReadSeq = storage?.ring?.readSeq,
+            ringWriteSeq = storage?.ring?.writeSeq,
+            ringCapacity = storage?.ring?.capacityPackets,
+            ringDropped = storage?.ring?.droppedPackets,
+            lastDoneStatus = storage?.lastDoneStatus,
+            syncedPackets = storage?.syncedPackets ?: 0,
+            lostPackets = storage?.lostPackets ?: 0,
+            syncKbPerSecond = storage?.kbPerSecond,
+            syncLiveLoss = storage?.liveLoss,
+            mutedFrames = storage?.mutedFrames ?: 0,
+            badStampRecords = storage?.badStampRecords ?: 0,
+            clockSkewS = storage?.skewS,
+            segments = storage?.segments ?: 0,
+            parkedChunks = queue.parkedChunks,
         )
     }
 
@@ -107,6 +124,21 @@ class DiagnosticsRecorder(
         private const val PRUNE_EVERY_TICKS = 360
         private const val TAG = "DiagnosticsRecorder"
         private val statusCode = Regex("""^(\d{3})\b|^The server answered (\d{3})\.""")
+
+        /** The sync state as a short word: no reasons, versions or addresses leave the phone. */
+        fun syncWord(state: SyncState): String =
+            when (state) {
+                SyncState.Idle -> "Idle"
+                SyncState.Checking -> "Checking"
+                SyncState.Syncing -> "Syncing"
+                is SyncState.WaitingForUploads -> "WaitingForUploads"
+                is SyncState.AwaitingBacklog -> "AwaitingBacklog"
+                is SyncState.Paused -> "Paused${state.reason.name}"
+                is SyncState.Retrying -> "Retrying"
+                is SyncState.ServerUnavailable -> "ServerUnavailable"
+                is SyncState.ServerOutdated -> "ServerOutdated"
+                is SyncState.Unsupported -> "Unsupported"
+            }
 
         fun connectionWord(capture: CaptureStatus): String =
             when (capture.connection) {

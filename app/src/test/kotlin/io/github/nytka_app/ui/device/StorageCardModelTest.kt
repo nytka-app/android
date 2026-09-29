@@ -105,7 +105,7 @@ class StorageCardModelTest {
     fun `no card without a pendant or on an outdated server`() {
         assertNull(storageCard(StorageSyncStatus(), paired = false, connected = true))
         assertNull(
-            storageCard(StorageSyncStatus(SyncState.ServerOutdated("0.3.0", 1_000)), paired = true, connected = true),
+            storageCard(StorageSyncStatus(SyncState.ServerOutdated(1_000)), paired = true, connected = true),
         )
     }
 }

@@ -8,8 +8,14 @@ data class ServerInfo(
     val serverVersion: String,
     val apiVersion: Int,
     val scope: String = SCOPE_ADMIN,
+    /** What the server can do beyond v0.1; a server without the field lists nothing. */
+    val features: List<String> = emptyList(),
 ) {
+    fun has(feature: String) = feature in features
+
     companion object {
+        const val FEATURE_OFFLINE_SYNC = "offline-sync"
+
         const val SCOPE_ADMIN = "admin"
         const val SCOPE_READ = "read"
     }

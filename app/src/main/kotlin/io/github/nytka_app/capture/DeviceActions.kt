@@ -47,6 +47,12 @@ interface DeviceActions {
 
     fun stopCapture()
 
+    /** "Sync now": reads what the pendant stored, once the capture service runs and the pendant is connected. */
+    fun syncNow()
+
+    /** "Stop" on a running sync; it holds until the next connection or [syncNow]. */
+    fun stopSync()
+
     /** See [localNetworkAllowed]. */
     fun localNetworkGranted(): Boolean
 
@@ -73,6 +79,10 @@ class AndroidDeviceActions
         override fun restartCapture() = CaptureService.restart(context)
 
         override fun stopCapture() = CaptureService.stop(context)
+
+        override fun syncNow() = CaptureService.syncNow(context)
+
+        override fun stopSync() = CaptureService.stopSync(context)
 
         override fun localNetworkGranted() = context.localNetworkAllowed()
 

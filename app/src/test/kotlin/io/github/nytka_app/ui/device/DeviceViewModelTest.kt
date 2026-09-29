@@ -34,7 +34,10 @@ class DeviceViewModelTest {
     private val actions = FakeDeviceActions()
     private val sync = FakeSyncControls()
     private var infoCalls = 0
-    private var info: ApiResult<ServerInfo> = ApiResult.Ok(ServerInfo("0.1.0", 1))
+    private var info: ApiResult<ServerInfo> =
+        ApiResult.Ok(
+            ServerInfo("0.1.0", 1, features = listOf(ServerInfo.FEATURE_OFFLINE_SYNC)),
+        )
 
     private fun viewModel() =
         DeviceViewModel(settings, {
@@ -240,7 +243,7 @@ class DeviceViewModelTest {
         val viewModel = viewModel()
         assertTrue(viewModel.state.value.serverUnreachable)
 
-        info = ApiResult.Ok(ServerInfo("0.1.0", 1))
+        info = ApiResult.Ok(ServerInfo("0.1.0", 1, features = listOf(ServerInfo.FEATURE_OFFLINE_SYNC)))
         viewModel.checkServer()
 
         assertFalse(viewModel.state.value.serverUnreachable)
@@ -289,7 +292,7 @@ class DeviceViewModelTest {
     @Test
     fun `the card is hidden without a pendant and on a server without offline sync`() {
         val viewModel = viewModel()
-        sync.sync.value = StorageSyncStatus(SyncState.ServerOutdated("0.3.0", 60_000))
+        sync.sync.value = StorageSyncStatus(SyncState.ServerOutdated(60_000))
         assertNull(viewModel.state.value.storage)
 
         sync.sync.value = StorageSyncStatus()
@@ -332,5 +335,12 @@ class DeviceViewModelTest {
         viewModel().discardBacklog()
 
         assertEquals(listOf("discard"), sync.calls)
+    }
+
+    @Test
+    fun `the card is hidden when the server does not list offline sync`() {
+        info = ApiResult.Ok(ServerInfo("0.2.0", 1))
+
+        assertNull(viewModel().state.value.storage)
     }
 }
