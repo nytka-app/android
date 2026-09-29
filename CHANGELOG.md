@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/nytka-app/android/compare/v0.1.0...v0.1.1) (2026-09-29)
+
+
+### Bug Fixes
+
+* **pendant:** recover audio after a Bluetooth disconnect ([#6](https://github.com/nytka-app/android/issues/6)) ([929f1c7](https://github.com/nytka-app/android/commit/929f1c785df9d5dcb729bbc6b192e06d4753115f))
+
 ## 0.1.0 (2026-09-29)
 
 
