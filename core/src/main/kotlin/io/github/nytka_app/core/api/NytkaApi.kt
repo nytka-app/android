@@ -69,6 +69,8 @@ class NytkaApi(
                         )
                     401 -> DiagnosticsResult.Unauthorized
                     404 -> DiagnosticsResult.NotSupported
+                    400 -> DiagnosticsResult.BadRequest
+                    413 -> DiagnosticsResult.TooLarge
                     else -> DiagnosticsResult.Retry("The server answered ${response.code}.")
                 }
             }

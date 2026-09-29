@@ -133,28 +133,39 @@ class DeveloperViewModelTest {
         }
 
     @Test
-    fun `export hands the last seven days to the share sheet`() {
-        diagnostics.add(sample(1), sample(2))
+    fun `export opens the share sheet and says how many samples it holds`() {
+        actions.sharedCount = 2
         val viewModel = viewModel()
 
         viewModel.exportDiagnostics()
 
         assertEquals(listOf("share diagnostics"), actions.calls)
-        assertEquals(listOf(listOf(sample(1), sample(2))), actions.shared)
         assertEquals("Exported 2 samples from the last 7 days.", viewModel.state.value.diagnosticsExport)
     }
 
     @Test
-    fun `export with nothing recorded says so and shares nothing`() {
+    fun `export with nothing recorded says so`() {
         val viewModel = viewModel()
 
         viewModel.exportDiagnostics()
 
-        assertTrue(actions.calls.isEmpty())
         assertEquals(
             "Nothing to export yet: samples are taken while capture runs.",
             viewModel.state.value.diagnosticsExport,
         )
+    }
+
+    @Test
+    fun `a failing export lands in the state instead of crashing`() {
+        actions.shareFailure = java.io.IOException("No space left on device")
+        val viewModel = viewModel()
+
+        viewModel.exportDiagnostics()
+
+        assertEquals("No space left on device", viewModel.state.value.diagnosticsExport)
+        actions.shareFailure = IllegalStateException()
+        viewModel.exportDiagnostics()
+        assertEquals("Exporting failed.", viewModel.state.value.diagnosticsExport)
     }
 
     @Test

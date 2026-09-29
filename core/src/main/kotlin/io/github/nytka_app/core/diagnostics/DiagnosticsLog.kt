@@ -20,8 +20,11 @@ interface DiagnosticsSource {
 
     suspend fun markUploaded(ids: List<String>)
 
-    /** The last seven days, oldest first. */
-    suspend fun recent(): List<DiagnosticSample>
+    /** A page of the last seven days, oldest first, so an export never holds them all in memory. */
+    suspend fun recent(
+        limit: Int,
+        offset: Int,
+    ): List<DiagnosticSample>
 }
 
 /** The samples of the last seven days, in Room next to the queue. */
@@ -50,8 +53,13 @@ class DiagnosticsLog(
 
     override suspend fun markUploaded(ids: List<String>) = dao.markUploaded(ids)
 
-    override suspend fun recent(): List<DiagnosticSample> =
-        dao.since(now() - RETENTION_MS).map { json.decodeFromString(DiagnosticSample.serializer(), it.json) }
+    override suspend fun recent(
+        limit: Int,
+        offset: Int,
+    ): List<DiagnosticSample> =
+        dao.since(now() - RETENTION_MS, limit, offset).map {
+            json.decodeFromString(DiagnosticSample.serializer(), it.json)
+        }
 
     companion object {
         const val RETENTION_MS = 7 * 24 * 60 * 60 * 1000L

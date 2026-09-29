@@ -48,5 +48,8 @@ class FakeDiagnostics(
         uploaded += ids
     }
 
-    override suspend fun recent(): List<DiagnosticSample> = stored
+    override suspend fun recent(
+        limit: Int,
+        offset: Int,
+    ): List<DiagnosticSample> = stored.drop(offset).take(limit)
 }

@@ -1,11 +1,11 @@
 package io.github.nytka_app
 
 import io.github.nytka_app.capture.DeviceActions
-import io.github.nytka_app.core.diagnostics.DiagnosticSample
 
 class FakeDeviceActions : DeviceActions {
     val calls = mutableListOf<String>()
-    val shared = mutableListOf<List<DiagnosticSample>>()
+    var sharedCount = 0
+    var shareFailure: Exception? = null
 
     override fun forgetPendant(address: String) {
         calls += "forget $address"
@@ -23,8 +23,9 @@ class FakeDeviceActions : DeviceActions {
         calls += "stop"
     }
 
-    override suspend fun shareDiagnostics(samples: List<DiagnosticSample>) {
+    override suspend fun shareDiagnostics(): Int {
         calls += "share diagnostics"
-        shared += samples
+        shareFailure?.let { throw it }
+        return sharedCount
     }
 }

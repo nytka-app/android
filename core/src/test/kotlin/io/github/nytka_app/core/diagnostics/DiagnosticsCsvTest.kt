@@ -43,4 +43,14 @@ class DiagnosticsCsvTest {
         assertEquals(19, columns.size)
         assertFalse(columns.any { it.contains("token", ignoreCase = true) || it.contains("url", ignoreCase = true) })
     }
+
+    @Test
+    fun `header and rows written one at a time make the same file`() {
+        val samples = listOf(sample(1), sample(2))
+
+        assertEquals(
+            DiagnosticsCsv.write(samples),
+            DiagnosticsCsv.header() + samples.joinToString("") { DiagnosticsCsv.row(it) },
+        )
+    }
 }

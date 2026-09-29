@@ -27,12 +27,15 @@ object DiagnosticsCsv {
 
     private const val NEEDS_QUOTES = ",\"\r\n"
 
+    fun header(): String = columns.joinToString(",") { it.first } + "\r\n"
+
+    fun row(sample: DiagnosticSample): String =
+        columns.joinToString(",") { escape(it.second(sample)?.toString().orEmpty()) } + "\r\n"
+
     fun write(samples: List<DiagnosticSample>): String =
         buildString {
-            append(columns.joinToString(",") { it.first }).append("\r\n")
-            samples.forEach { sample ->
-                append(columns.joinToString(",") { escape(it.second(sample)?.toString().orEmpty()) }).append("\r\n")
-            }
+            append(header())
+            samples.forEach { append(row(it)) }
         }
 
     private fun escape(field: String): String =

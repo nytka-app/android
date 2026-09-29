@@ -147,16 +147,17 @@ class DeveloperViewModel
 
         fun exportDiagnostics() {
             viewModelScope.launch {
-                val samples = diagnostics.recent()
                 val text =
-                    if (samples.isEmpty()) {
-                        "Nothing to export yet: samples are taken while capture runs."
-                    } else {
-                        runCatching { actions.shareDiagnostics(samples) }.fold(
-                            { "Exported ${samples.size} samples from the last 7 days." },
-                            { it.message ?: "Exporting failed." },
-                        )
-                    }
+                    runCatching { actions.shareDiagnostics() }.fold(
+                        {
+                            if (it == 0) {
+                                "Nothing to export yet: samples are taken while capture runs."
+                            } else {
+                                "Exported $it samples from the last 7 days."
+                            }
+                        },
+                        { it.message ?: "Exporting failed." },
+                    )
                 local.update { it.copy(diagnosticsExport = text) }
             }
         }

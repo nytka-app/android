@@ -60,7 +60,7 @@ class DiagnosticsLogTest {
 
             log.prune()
 
-            assertEquals(listOf(sample(2).id, sample(3).id).sorted(), log.recent().map { it.id }.sorted())
+            assertEquals(listOf(sample(2).id, sample(3).id).sorted(), log.recent(100, 0).map { it.id }.sorted())
             assertEquals(2, log.count.first())
         }
 
@@ -72,6 +72,17 @@ class DiagnosticsLogTest {
             log.add(sample(1, atMs = nowMs - 2 * day))
             log.add(sample(3, atMs = nowMs - 9 * day))
 
-            assertEquals(listOf(sample(1, atMs = nowMs - 2 * day), sample(2, atMs = nowMs - day)), log.recent())
+            assertEquals(listOf(sample(1, atMs = nowMs - 2 * day), sample(2, atMs = nowMs - day)), log.recent(100, 0))
+        }
+
+    @Test
+    fun `recent reads in pages that add up to the whole week`() =
+        runTest {
+            repeat(5) { log.add(sample(it)) }
+
+            val pages = listOf(0, 2, 4).map { log.recent(limit = 2, offset = it).map(DiagnosticSample::id) }
+
+            assertEquals(List(5) { sample(it).id }, pages.flatten())
+            assertEquals(listOf(2, 2, 1), pages.map { it.size })
         }
 }

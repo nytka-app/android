@@ -104,6 +104,12 @@ sealed interface DiagnosticsResult {
         val count: Int,
     ) : DiagnosticsResult
 
+    /** 400: the server cannot read the body; some sample in it is the problem. */
+    data object BadRequest : DiagnosticsResult
+
+    /** 413: the body is over the server's limit; a smaller page may fit. */
+    data object TooLarge : DiagnosticsResult
+
     /** 404: an older server without the endpoint. */
     data object NotSupported : DiagnosticsResult
 

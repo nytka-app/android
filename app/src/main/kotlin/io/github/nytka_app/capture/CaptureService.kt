@@ -148,7 +148,8 @@ class CaptureService : LifecycleService() {
         hub.detach()
         applicationScope.launch {
             // The last sample is of the running capture, before stopping resets its status.
-            diagnosticsRecorder?.stop()
+            // Whatever happens to it, the capture below still stops.
+            runCatching { diagnosticsRecorder?.stop() }
             capture?.stop()
             scope.cancel()
             // Alerts belong to a running capture: once it stops, none of them can clear on its own.

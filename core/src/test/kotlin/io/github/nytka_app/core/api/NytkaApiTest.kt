@@ -156,8 +156,8 @@ class NytkaApiTest {
 
             assertEquals(DiagnosticsResult.NotSupported, api.uploadDiagnostics("[]"))
             assertEquals(DiagnosticsResult.Unauthorized, api.uploadDiagnostics("[]"))
-            assertEquals(DiagnosticsResult.Retry("The server answered 400."), api.uploadDiagnostics("[]"))
-            assertEquals(DiagnosticsResult.Retry("The server answered 413."), api.uploadDiagnostics("[]"))
+            assertEquals(DiagnosticsResult.BadRequest, api.uploadDiagnostics("[]"))
+            assertEquals(DiagnosticsResult.TooLarge, api.uploadDiagnostics("[]"))
             assertEquals(DiagnosticsResult.Retry("The server answered 503."), api.uploadDiagnostics("[]"))
             assertTrue(api.uploadDiagnostics("[]") is DiagnosticsResult.Retry)
         }

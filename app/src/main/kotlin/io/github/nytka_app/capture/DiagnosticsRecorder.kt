@@ -1,6 +1,5 @@
 package io.github.nytka_app.capture
 
-import android.database.SQLException
 import android.util.Log
 import io.github.nytka_app.core.diagnostics.DiagnosticSample
 import io.github.nytka_app.core.diagnostics.DiagnosticsSink
@@ -8,6 +7,7 @@ import io.github.nytka_app.core.diagnostics.Uuid7
 import io.github.nytka_app.core.queue.QueueUsage
 import io.github.nytka_app.core.upload.UploadState
 import io.github.nytka_app.pendant.PendantConnection
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -61,11 +61,14 @@ class DiagnosticsRecorder(
 
     private suspend fun prune() = stored { sink.prune() }
 
-    // A full disk must not crash the service: a missed sample is only a gap in a chart.
+    // Nothing here may crash the process or the service's shutdown: a missed sample is only a gap in a chart.
+    @Suppress("TooGenericExceptionCaught")
     private inline fun stored(write: () -> Unit) {
         try {
             write()
-        } catch (e: SQLException) {
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
             Log.w(TAG, "The diagnostics log refused a write: ${e.javaClass.simpleName}")
         }
     }

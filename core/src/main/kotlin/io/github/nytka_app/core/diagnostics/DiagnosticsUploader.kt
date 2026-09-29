@@ -31,33 +31,71 @@ class DiagnosticsUploader(
         mutableNote.value = null
     }
 
-    /** Uploads pages of 500, oldest first, until none are left or one does not go through; returns how many went. */
+    /**
+     * Uploads pages of 500, oldest first, until none are left or one does not go through; returns how many went.
+     * A page the server rejects as too large is halved; one it cannot read is halved down to the sample at fault,
+     * which is dropped. Only network errors and 5xx keep the same samples for the next round.
+     */
     suspend fun flush(): Int =
         lock.withLock {
             var sent = 0
+            var limit = PAGE_SIZE
             while (settings.current().diagnosticsUpload) {
-                val page = fit(source.pending(PAGE_SIZE))
-                if (page.isEmpty() || !send(page)) break
-                sent += page.size
+                when (val step = step(limit)) {
+                    is Step.Sent -> {
+                        sent += step.count
+                        limit = PAGE_SIZE
+                    }
+                    is Step.Shrink -> limit = step.limit
+                    Step.Dropped -> Unit
+                    Step.Stop -> break
+                }
             }
             sent
         }
 
-    /** True when the server took the page; a page that did not go through stays for the next round. */
-    private suspend fun send(page: List<DiagnosticRow>): Boolean =
-        when (client.uploadDiagnostics(page.joinToString(",", "[", "]") { it.json })) {
+    private sealed interface Step {
+        data class Sent(
+            val count: Int,
+        ) : Step
+
+        data class Shrink(
+            val limit: Int,
+        ) : Step
+
+        data object Dropped : Step
+
+        data object Stop : Step
+    }
+
+    private suspend fun step(limit: Int): Step {
+        val rows = source.pending(limit)
+        if (rows.isEmpty()) return Step.Stop
+        val page = fit(rows)
+        // Even alone it does not fit the server's limit: nothing can ever send it.
+        if (page.isEmpty()) return drop(rows.first())
+        return when (client.uploadDiagnostics(page.joinToString(",", "[", "]") { it.json })) {
             is DiagnosticsResult.Accepted -> {
                 source.markUploaded(page.map { it.id })
-                true
+                Step.Sent(page.size)
             }
+            DiagnosticsResult.BadRequest, DiagnosticsResult.TooLarge ->
+                if (page.size == 1) drop(page.single()) else Step.Shrink(page.size / 2)
             DiagnosticsResult.NotSupported -> {
                 settings.update { it.copy(diagnosticsUpload = false) }
                 mutableNote.value = NOT_SUPPORTED_NOTE
-                false
+                Step.Stop
             }
             // Unauthorized, not configured or a failure: the same samples go again next round.
-            else -> false
+            else -> Step.Stop
         }
+    }
+
+    /** Marks a sample nobody can send as uploaded, so it stops blocking the ones behind it. */
+    private suspend fun drop(row: DiagnosticRow): Step {
+        source.markUploaded(listOf(row.id))
+        return Step.Dropped
+    }
 
     /** Every [intervalMs] for as long as the caller's scope lives. */
     suspend fun run() {

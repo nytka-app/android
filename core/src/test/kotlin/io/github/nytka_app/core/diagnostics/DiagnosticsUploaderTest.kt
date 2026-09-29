@@ -30,7 +30,10 @@ class DiagnosticsUploaderTest {
             rows.replaceAll { if (it.id in ids) it.copy(uploaded = true) else it }
         }
 
-        override suspend fun recent(): List<DiagnosticSample> = emptyList()
+        override suspend fun recent(
+            limit: Int,
+            offset: Int,
+        ): List<DiagnosticSample> = emptyList()
 
         val notUploaded get() = rows.count { !it.uploaded }
     }
@@ -166,5 +169,99 @@ class DiagnosticsUploaderTest {
             assertTrue(bodies.all { it.toByteArray().size <= 256 * 1024 })
             assertEquals(0, source.notUploaded)
             assertTrue(bodies.size > 1)
+        }
+
+    @Test
+    fun `a poison sample among good ones is dropped and the good ones go`() =
+        runTest {
+            val source = FakeSource(samples(10))
+            val poison = sample(3).id
+            val accepted = mutableListOf<String>()
+            answer = { body ->
+                if (body.contains(poison)) {
+                    DiagnosticsResult.BadRequest
+                } else {
+                    accepted += body
+                    DiagnosticsResult.Accepted(1)
+                }
+            }
+
+            assertEquals(9, uploader(source).flush())
+
+            assertEquals(0, source.notUploaded)
+            assertEquals(9, accepted.sumOf { Json.parseToJsonElement(it).jsonArray.size })
+            assertTrue(accepted.none { it.contains(poison) })
+            assertEquals(true, settings.state.value.diagnosticsUpload)
+        }
+
+    @Test
+    fun `a poison sample does not hold back the samples behind it in later rounds`() =
+        runTest {
+            val source = FakeSource(samples(4))
+            answer =
+                { body ->
+                    if (body.contains(sample(0).id)) DiagnosticsResult.BadRequest else DiagnosticsResult.Accepted(1)
+                }
+
+            uploader(source).flush()
+
+            assertEquals(0, source.notUploaded)
+        }
+
+    @Test
+    fun `a page that is too large is halved until it fits`() =
+        runTest {
+            val source = FakeSource(samples(1_000))
+            answer = { body ->
+                if (Json.parseToJsonElement(body).jsonArray.size >
+                    100
+                ) {
+                    DiagnosticsResult.TooLarge
+                } else {
+                    DiagnosticsResult.Accepted(1)
+                }
+            }
+
+            assertEquals(1_000, uploader(source).flush())
+
+            assertEquals(0, source.notUploaded)
+            assertTrue(sizes().all { it <= 500 })
+            assertEquals(1_000, sizes().filter { it <= 100 }.sum())
+        }
+
+    @Test
+    fun `a single sample the server calls too large is dropped`() =
+        runTest {
+            val source = FakeSource(samples(3))
+            answer = { body ->
+                if (body.contains(sample(1).id)) DiagnosticsResult.TooLarge else DiagnosticsResult.Accepted(1)
+            }
+
+            assertEquals(2, uploader(source).flush())
+
+            assertEquals(0, source.notUploaded)
+        }
+
+    @Test
+    fun `a sample over the limit on its own is dropped without a request and the rest go`() =
+        runTest {
+            val source = FakeSource(listOf(sample(0, device = "d".repeat(300 * 1024)), sample(1), sample(2)))
+
+            assertEquals(2, uploader(source).flush())
+
+            assertEquals(0, source.notUploaded)
+            assertEquals(listOf(2), sizes())
+        }
+
+    @Test
+    fun `a 503 keeps every sample for the next round`() =
+        runTest {
+            val source = FakeSource(samples(3))
+            answer = { DiagnosticsResult.Retry("The server answered 503.") }
+
+            assertEquals(0, uploader(source).flush())
+
+            assertEquals(3, source.notUploaded)
+            assertEquals(1, bodies.size)
         }
 }
