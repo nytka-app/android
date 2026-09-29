@@ -8,6 +8,9 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
 import dagger.hilt.android.AndroidEntryPoint
+import io.github.nytka_app.alerts.AlertInputs
+import io.github.nytka_app.alerts.AlertMonitor
+import io.github.nytka_app.alerts.AlertNotifications
 import io.github.nytka_app.alerts.Notifier
 import io.github.nytka_app.core.queue.FrameQueue
 import io.github.nytka_app.core.settings.SettingsStore
@@ -18,6 +21,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -85,6 +89,22 @@ class CaptureService : LifecycleService() {
         hub.attach(capture)
         capture.start(address)
         scope.launch { uploader.run() }
+        scope.launch {
+            val monitor = AlertMonitor()
+            while (true) {
+                val inputs =
+                    AlertInputs.of(
+                        capture.status.value,
+                        uploader.state.value,
+                        queue.usage.value,
+                        settings.current(),
+                    )
+                val change = monitor.evaluate(inputs, System.currentTimeMillis())
+                change.started.forEach { AlertNotifications.post(this@CaptureService, it, inputs) }
+                change.cleared.forEach { AlertNotifications.cancel(this@CaptureService, it) }
+                delay(ALERT_CHECK_MS)
+            }
+        }
         scope.launch { capture.status.sample(STATUS_SAMPLE_MS).collect(hub::publish) }
         combine(capture.status, queue.usage) { status, usage ->
             CaptureNotification.text(status, usage) to
@@ -114,6 +134,7 @@ class CaptureService : LifecycleService() {
         const val ACTION_MUTE = "io.github.nytka_app.action.MUTE"
         const val ACTION_UNMUTE = "io.github.nytka_app.action.UNMUTE"
         private const val STATUS_SAMPLE_MS = 250L
+        private const val ALERT_CHECK_MS = 30_000L
 
         fun start(context: Context) {
             ContextCompat.startForegroundService(context, Intent(context, CaptureService::class.java))
