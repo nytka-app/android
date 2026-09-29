@@ -1,11 +1,14 @@
 package io.github.nytka_app.pendant
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import java.util.UUID
 
@@ -89,5 +92,47 @@ class ReconnectTest {
     @Test
     fun `addresses are logged by their tail only`() {
         assertEquals("…EE:FF", redactAddress("AA:BB:CC:DD:EE:FF"))
+    }
+
+    @Test
+    fun `a dead Bluetooth stack fails the call instead of throwing`() {
+        val dead = RuntimeException(IllegalStateException("android.os.DeadObjectException"))
+        var reported: RuntimeException? = null
+
+        val started = gattCall(false, onError = { reported = it }) { throw dead }
+
+        assertFalse(started) // the same outcome as writeDescriptor returning false
+        assertSame(dead, reported)
+    }
+
+    @Test
+    fun `a revoked permission fails the call instead of throwing`() {
+        assertFalse(gattCall(false) { throw SecurityException("BLUETOOTH_CONNECT") })
+    }
+
+    @Test
+    fun `a call that works keeps its result`() {
+        assertTrue(gattCall(false) { true })
+    }
+
+    @Test
+    fun `cancellation passes through the guard`() {
+        try {
+            gattCall(false) { throw CancellationException("scope cancelled") }
+            fail("cancellation must not be swallowed")
+        } catch (_: CancellationException) {
+            // expected
+        }
+    }
+
+    @Test
+    fun `three failures in a row escalate and a success starts the count over`() {
+        val streak = FailureStreak(3)
+        assertFalse(streak.failed())
+        assertFalse(streak.failed())
+        streak.succeeded()
+        assertFalse(streak.failed())
+        assertFalse(streak.failed())
+        assertTrue(streak.failed())
     }
 }
