@@ -62,6 +62,18 @@ class ReconnectTest {
         }
 
     @Test
+    fun `cancelling after a connect at 25 seconds stops the 30 second retry`() =
+        runTest {
+            var retries = 0
+            val timeout = ConnectTimeout(backgroundScope, 30_000, isConnecting = { true }) { retries++ }
+            timeout.arm()
+            advanceTimeBy(25_000)
+            timeout.cancel() // STATE_CONNECTED or disconnect()
+            advanceTimeBy(60_000)
+            assertEquals(0, retries)
+        }
+
+    @Test
     fun `a late callback does not complete a different operation`() {
         val uuid = UUID.randomUUID()
         val op = PendingOperation(OperationKind.DescriptorWrite, uuid)

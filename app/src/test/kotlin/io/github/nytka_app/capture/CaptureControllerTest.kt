@@ -169,14 +169,16 @@ class CaptureControllerTest {
             runCurrent()
             assertEquals(1, calls.setAudioCalls)
 
+            // The collector never runs in between, so StateFlow conflates Connected to Connected
+            // and the controller is not told: the pendant must resume audio by itself.
             rig.pendant.dropLink()
-            runCurrent()
             assertFalse(rig.pendant.audioEnabled)
-            rig.pendant.connect("fake") // Connecting is never observed: the collector sees Connected again
+            rig.pendant.connect("fake")
             advanceTimeBy(100)
 
             assertTrue(rig.pendant.audioEnabled)
             assertTrue(rig.sink.frames.isNotEmpty())
+            assertEquals(1, calls.setAudioCalls) // the pendant resumed on its own
         }
 
     @Test

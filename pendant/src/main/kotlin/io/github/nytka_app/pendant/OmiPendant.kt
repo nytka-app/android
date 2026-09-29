@@ -53,6 +53,9 @@ class OmiPendant(
 
     private val assembler = FrameAssembler(now)
     private val operations = Mutex()
+
+    /** Serialises open, close, connect and disconnect: the retry runs on the scope, disconnect on the caller. */
+    private val link = Any()
     private val connectTimeout =
         ConnectTimeout(
             scope,
@@ -60,8 +63,10 @@ class OmiPendant(
             isConnecting = { address != null && mutableConnection.value == PendantConnection.Connecting },
             retry = {
                 Log.w(TAG, "connect timeout after ${CONNECT_TIMEOUT_MS}ms, opening a new client")
-                close()
-                open()
+                synchronized(link) {
+                    close()
+                    open()
+                }
             },
         )
 
@@ -82,23 +87,25 @@ class OmiPendant(
     private var overflowFrames = 0L
     private var session: Job? = null
 
-    override fun connect(address: String) {
-        close() // a second connect must not leave the first GATT client feeding the same callback
-        this.address = address
-        mutableConnection.value = PendantConnection.Connecting
-        watchAdapter(true)
-        open()
-    }
+    override fun connect(address: String) =
+        synchronized(link) {
+            close() // a second connect must not leave the first GATT client feeding the same callback
+            this.address = address
+            mutableConnection.value = PendantConnection.Connecting
+            watchAdapter(true)
+            open()
+        }
 
-    override fun disconnect() {
-        Log.i(TAG, "disconnect requested")
-        address = null
-        audioIntent.clear()
-        connectTimeout.cancel()
-        watchAdapter(false)
-        close()
-        mutableConnection.value = PendantConnection.Disconnected
-    }
+    override fun disconnect() =
+        synchronized(link) {
+            Log.i(TAG, "disconnect requested")
+            address = null
+            audioIntent.clear()
+            connectTimeout.cancel()
+            watchAdapter(false)
+            close()
+            mutableConnection.value = PendantConnection.Disconnected
+        }
 
     override suspend fun setAudio(enabled: Boolean) =
         audioLock.withLock {
@@ -116,8 +123,13 @@ class OmiPendant(
         operation(OperationKind.Write, OmiUuids.HAPTIC) { write(current, characteristic, byteArrayOf(haptic.code)) }
     }
 
-    private fun open() {
-        val target = address ?: return
+    private fun open() =
+        synchronized(link) {
+            openLocked()
+        }
+
+    private fun openLocked() {
+        val target = address ?: return // re-checked under the lock: disconnect() may have won
         val adapter = context.getSystemService(BluetoothManager::class.java).adapter
         if (!adapter.isEnabled) {
             Log.i(TAG, "open: Bluetooth is off, waiting for STATE_ON")
@@ -132,7 +144,7 @@ class OmiPendant(
     private fun reopenLater() {
         scope.launch {
             delay(RECONNECT_DELAY_MS)
-            if (address != null && gatt == null) open()
+            synchronized(link) { if (address != null && gatt == null) open() }
         }
     }
 
@@ -384,6 +396,7 @@ class OmiPendant(
                 }
                 when (newState) {
                     BluetoothProfile.STATE_CONNECTED -> {
+                        connectTimeout.cancel() // connected: setUp's own operation timeouts take over
                         session?.cancel()
                         session = scope.launch { setUp(current) }
                     }
