@@ -4,9 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.nytka_app.core.api.ApiResult
+import io.github.nytka_app.core.api.ConversationPage
 import io.github.nytka_app.core.api.ConversationSummary
 import io.github.nytka_app.core.api.ConversationsClient
+import io.github.nytka_app.core.api.StatusClient
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,23 +45,82 @@ class ConversationsViewModel
     @Inject
     constructor(
         private val api: ConversationsClient,
+        private val status: StatusClient,
         private val clock: Clock,
     ) : ViewModel() {
         private val items = mutableListOf<ConversationSummary>()
         private var nextBefore: String? = null
         private var loadJob: Job? = null
+
+        /** Counts loads started, so a quiet refresh can tell that a newer answer has come in while it waited. */
+        private var loadsStarted = 0
         private val mutableState = MutableStateFlow(ConversationsUiState())
         val state: StateFlow<ConversationsUiState> = mutableState.asStateFlow()
+        private val mutableNotice = MutableStateFlow<String?>(null)
+
+        /** What the status card says about transcription on the server; null while nothing is wrong or known. */
+        val notice: StateFlow<String?> = mutableNotice.asStateFlow()
 
         init {
             refresh()
         }
 
-        fun refresh() = load(reset = true)
+        fun refresh() {
+            load(reset = true)
+            viewModelScope.launch { refreshNotice() }
+        }
 
         fun loadMore() {
             val current = mutableState.value
             if (!current.endReached && !current.loading && loadJob?.isActive != true) load(reset = false)
+        }
+
+        /**
+         * Keeps the list and the transcription notice fresh for as long as the caller lives: at once, then every
+         * [REFRESH_MS]. The screen runs it while it is resumed, so it stops in the background and starts again, with a
+         * refresh, on return.
+         */
+        suspend fun keepFresh() {
+            while (true) {
+                refreshQuietly()
+                refreshNotice()
+                delay(REFRESH_MS)
+            }
+        }
+
+        /**
+         * Brings in what is new without the pull-to-refresh spinner and without dropping the pages the user has
+         * loaded. A failure changes nothing: the status card already says when the server is out of reach.
+         */
+        private suspend fun refreshQuietly() {
+            // A load under way brings the same news.
+            if (loadJob?.isActive == true) return
+            val started = loadsStarted
+            val page = (api.conversations(null, PAGE_SIZE) as? ApiResult.Ok)?.value ?: return
+            // A load that started meanwhile has a newer answer than this one.
+            if (loadsStarted != started) return
+            val beyond = loadedBeyond(page)
+            items.clear()
+            items += page.items
+            items += beyond
+            // The page's cursor leads to the pages after it. With more loaded than it covers, the old one stays.
+            if (beyond.isEmpty()) nextBefore = page.nextBefore
+            mutableState.update { it.copy(days = group(items), error = null, endReached = nextBefore == null) }
+        }
+
+        /** A failed call says nothing about transcription, so the card keeps what it showed. */
+        private suspend fun refreshNotice() {
+            (status.status() as? ApiResult.Ok)?.let {
+                mutableNotice.value = transcriptionNotice(it.value, clock.instant(), clock.zone)
+            }
+        }
+
+        /** What the user has loaded past the fresh first [page]: the conversations older than its last one. */
+        private fun loadedBeyond(page: ConversationPage): List<ConversationSummary> {
+            val last = page.items.lastOrNull()
+            // A page that is the whole list has nothing after it; anything else loaded was deleted elsewhere.
+            if (last == null || page.nextBefore == null) return emptyList()
+            return items.filter { it.isOlderThan(last) }
         }
 
         /** Drops a conversation deleted on its own screen, without reloading the list. */
@@ -68,6 +130,7 @@ class ConversationsViewModel
         }
 
         private fun load(reset: Boolean) {
+            loadsStarted++
             // A refresh supersedes a page load in flight: its cursor belongs to the old list.
             if (reset) loadJob?.cancel()
             mutableState.update { it.copy(loading = true, refreshing = reset, error = null) }
@@ -117,7 +180,16 @@ class ConversationsViewModel
                 }
         }
 
-        private companion object {
-            const val PAGE_SIZE = 30
+        /** Newest first, as the server lists them: is this one later in that order than [other]? */
+        private fun ConversationSummary.isOlderThan(other: ConversationSummary): Boolean {
+            val order = Instant.parse(startedAt).compareTo(Instant.parse(other.startedAt))
+            return order < 0 || (order == 0 && id < other.id)
+        }
+
+        companion object {
+            /** How often the list refreshes itself while the screen is shown. */
+            const val REFRESH_MS = 30_000L
+
+            private const val PAGE_SIZE = 30
         }
     }

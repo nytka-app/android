@@ -5,6 +5,7 @@ import io.github.nytka_app.core.api.ConversationDetail
 import io.github.nytka_app.core.api.ConversationPage
 import io.github.nytka_app.core.api.ConversationSummary
 import io.github.nytka_app.core.api.ConversationsClient
+import kotlinx.coroutines.CompletableDeferred
 
 class FakeConversations : ConversationsClient {
     val pages = mutableMapOf<String?, ApiResult<ConversationPage>>()
@@ -13,12 +14,17 @@ class FakeConversations : ConversationsClient {
     val requestedBefore = mutableListOf<String?>()
     val deleted = mutableListOf<String>()
 
+    /** Each gate holds back the next request's answer, which is fixed when the request comes in, until it completes. */
+    val gates = ArrayDeque<CompletableDeferred<Unit>>()
+
     override suspend fun conversations(
         before: String?,
         limit: Int,
     ): ApiResult<ConversationPage> {
         requestedBefore += before
-        return pages.getValue(before)
+        val answer = pages.getValue(before)
+        gates.removeFirstOrNull()?.await()
+        return answer
     }
 
     override suspend fun conversation(id: String) = detail!!

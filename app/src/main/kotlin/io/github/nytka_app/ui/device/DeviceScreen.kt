@@ -34,6 +34,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.pendant.PendantConnection
+import io.github.nytka_app.ui.LocalNetworkHint
+import io.github.nytka_app.ui.LocalNetworkPrompt
 import io.github.nytka_app.ui.PairButton
 import io.github.nytka_app.ui.StatusUiState
 
@@ -48,6 +50,7 @@ fun DeviceScreen(
     var pairError by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmForget by rememberSaveable { mutableStateOf(false) }
 
+    LocalNetworkPrompt(state.askLocalNetwork, viewModel::localNetworkAnswered)
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -160,6 +163,7 @@ private fun ServerSection(
         }
         Text("Queued chunks: ${status.queuedChunks}")
         Text(status.serverLine)
+        LocalNetworkHint(state.serverUnreachable || status.serverUnreachable, onAllowed = onCheck)
         OutlinedButton(onClick = onCheck) { Text("Check again") }
     }
 }

@@ -1,7 +1,6 @@
 package io.github.nytka_app.ui
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -83,7 +82,7 @@ fun NytkaNavHost(
 
 /**
  * Five items leave about 64 dp per label on a 360 dp phone, and "Conversations" wraps in the default label
- * style. Smaller, unspaced type and a floor for the shrinking keep every label on one line.
+ * style. Smaller, unspaced type on one line keeps every label whole.
  */
 @Composable
 private fun TabLabel(text: String) {
@@ -92,6 +91,5 @@ private fun TabLabel(text: String) {
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.sp),
-        autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 11.sp),
     )
 }

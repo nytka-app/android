@@ -1,6 +1,11 @@
 package io.github.nytka_app.core.settings
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -50,6 +55,7 @@ class SettingsStoreTest {
                     pendantName = "Omi",
                     consentGiven = true,
                     onboarded = true,
+                    firstRunStep = FirstRunStep.Consent,
                     developerMode = true,
                     fakePendant = true,
                     alertDisconnectedMinutes = 1,
@@ -96,5 +102,39 @@ class SettingsStoreTest {
             store.update { it.copy(diagnosticsUpload = true) }
             assertEquals(true, store.current().diagnosticsUpload)
             assertEquals(true, store.current().toString().contains("diagnosticsUpload=true"))
+        }
+
+    @Test
+    fun `first run starts at the server step and keeps the step it reached`() =
+        runTest {
+            val store = store()
+
+            assertEquals(FirstRunStep.Server, store.current().firstRunStep)
+            store.update { it.copy(firstRunStep = FirstRunStep.Permissions) }
+            assertEquals(FirstRunStep.Permissions, store.current().firstRunStep)
+        }
+
+    @Test
+    fun `the step reached is read back after the app restarts`() =
+        runTest {
+            val firstProcess = Job()
+            val before =
+                SettingsStore(
+                    PreferenceDataStoreFactory.create(scope = CoroutineScope(firstProcess), produceFile = { file }),
+                    cipher,
+                )
+            before.update { it.copy(firstRunStep = FirstRunStep.Pairing) }
+            firstProcess.cancelAndJoin()
+
+            assertEquals(FirstRunStep.Pairing, store().current().firstRunStep)
+        }
+
+    @Test
+    fun `a stored step this version does not know starts first run over`() =
+        runTest {
+            val dataStore = PreferenceDataStoreFactory.create(scope = backgroundScope, produceFile = { file })
+            dataStore.edit { it[stringPreferencesKey("first_run_step")] = "Retired" }
+
+            assertEquals(FirstRunStep.Server, SettingsStore(dataStore, cipher).current().firstRunStep)
         }
 }

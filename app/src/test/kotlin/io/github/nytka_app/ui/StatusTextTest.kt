@@ -2,6 +2,8 @@ package io.github.nytka_app.ui
 
 import io.github.nytka_app.core.upload.UploadState
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.Instant
 import java.time.ZoneOffset
@@ -24,5 +26,15 @@ class StatusTextTest {
                 ZoneOffset.UTC,
             ),
         )
+    }
+
+    @Test
+    fun `uploads are unreachable while they fail on the network, not while the server refuses them`() {
+        val refused = UploadState(paused = "The server refused the token.", unreachableSinceMs = noon)
+
+        assertFalse(uploadsUnreachable(UploadState()))
+        assertFalse(uploadsUnreachable(UploadState(lastUploadAtMs = noon)))
+        assertTrue(uploadsUnreachable(UploadState(lastUploadAtMs = noon - 60_000, unreachableSinceMs = noon)))
+        assertFalse(uploadsUnreachable(refused))
     }
 }

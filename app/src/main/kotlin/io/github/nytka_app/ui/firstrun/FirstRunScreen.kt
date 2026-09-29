@@ -1,10 +1,7 @@
 package io.github.nytka_app.ui.firstrun
 
 import android.Manifest
-import android.content.pm.PackageManager
 import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,29 +14,31 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nytka_app.core.settings.FirstRunStep
+import io.github.nytka_app.ui.LocalNetworkHint
+import io.github.nytka_app.ui.LocalNetworkPrompt
 import io.github.nytka_app.ui.PairButton
+import io.github.nytka_app.ui.PermissionAnswer
+import io.github.nytka_app.ui.rememberPermissionRequest
 
 @Composable
 fun FirstRunScreen(viewModel: FirstRunViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    if (!state.loaded) return
     Column(
         Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -51,7 +50,7 @@ fun FirstRunScreen(viewModel: FirstRunViewModel = hiltViewModel()) {
         )
         when (state.step) {
             FirstRunStep.Server -> ServerStep(state, viewModel)
-            FirstRunStep.Permissions -> PermissionsStep(viewModel::permissionsDone)
+            FirstRunStep.Permissions -> PermissionsStep(state, viewModel)
             FirstRunStep.Consent -> ConsentStep(state, viewModel)
             FirstRunStep.Pairing -> PairingStep(state, viewModel)
         }
@@ -90,41 +89,55 @@ private fun ServerStep(
             color = MaterialTheme.colorScheme.error,
         )
     }
+    LocalNetworkPrompt(state.askLocalNetwork, viewModel::localNetworkAnswered)
     state.serverError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+    LocalNetworkHint(state.serverUnreachable, onAllowed = viewModel::testConnection)
     Button(onClick = viewModel::testConnection, enabled = !state.testing) {
         Text(if (state.testing) "Testing…" else "Test connection")
     }
 }
 
 @Composable
-private fun PermissionsStep(onDone: () -> Unit) {
-    val context = LocalContext.current
+private fun PermissionsStep(
+    state: FirstRunUiState,
+    viewModel: FirstRunViewModel,
+) {
     val wanted =
         buildList {
             add(Manifest.permission.BLUETOOTH_SCAN)
             add(Manifest.permission.BLUETOOTH_CONNECT)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) add(Manifest.permission.POST_NOTIFICATIONS)
         }
-    var denied by rememberSaveable { mutableStateOf(false) }
-    val launcher =
-        rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            val bluetooth =
-                listOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT).all { permission ->
-                    ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
-                }
-            if (bluetooth) onDone() else denied = true
-        }
+    val request =
+        rememberPermissionRequest(
+            wanted,
+            required = listOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT),
+            onAnswer = viewModel::permissionsAnswered,
+        )
     Text(
         "Nytka needs the nearby-devices permission to reach the pendant, and notifications to show that it is " +
             "recording. It never uses the phone's microphone.",
     )
-    if (denied) {
-        Text(
-            "Without nearby devices Nytka cannot reach the pendant. Allow it in the system settings for Nytka.",
-            color = MaterialTheme.colorScheme.error,
-        )
+    when (state.permissions) {
+        PermissionAnswer.Denied ->
+            Text(
+                "Without nearby devices Nytka cannot reach the pendant. Tap Allow to be asked again.",
+                color = MaterialTheme.colorScheme.error,
+            )
+        PermissionAnswer.Blocked ->
+            Text(
+                "Without nearby devices Nytka cannot reach the pendant. If Android does not ask again, allow it in " +
+                    "the system settings for Nytka, then come back and tap Allow.",
+                color = MaterialTheme.colorScheme.error,
+            )
+        else -> Unit
     }
-    Button(onClick = { launcher.launch(wanted.toTypedArray()) }) { Text("Allow") }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Button(onClick = request) { Text("Allow") }
+        if (state.permissions == PermissionAnswer.Blocked) {
+            OutlinedButton(onClick = viewModel::openSettings) { Text("Open settings") }
+        }
+    }
 }
 
 @Composable

@@ -7,11 +7,13 @@ import io.github.nytka_app.BuildConfig
 import io.github.nytka_app.capture.DeviceActions
 import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.core.api.ApiResult
+import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.NytkaApi
 import io.github.nytka_app.core.api.ServerUrl
 import io.github.nytka_app.core.api.UrlCheck
 import io.github.nytka_app.core.settings.SettingsSource
+import io.github.nytka_app.ui.mustAskForLocalNetwork
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +33,13 @@ data class DeviceUiState(
     val apiVersion: Int? = null,
     val apiMismatch: Boolean = false,
     val saveError: String? = null,
+    /** True while the screen should show Android's prompt for the local network. */
+    val askLocalNetwork: Boolean = false,
+    /**
+     * True when the last check failed on the network. On Android 17 that can be the local network permission,
+     * whatever the address looks like, so the screen offers to allow it.
+     */
+    val serverUnreachable: Boolean = false,
     val developerMode: Boolean = false,
     val tapsToDeveloper: Int = DeviceViewModel.TAPS_TO_DEVELOPER,
     val version: String = BuildConfig.VERSION_NAME,
@@ -65,24 +74,44 @@ class DeviceViewModel
         fun checkServer() {
             local.update { it.copy(serverState = "Checking…") }
             viewModelScope.launch {
-                when (val result = info.info()) {
-                    is ApiResult.Ok ->
-                        local.update {
-                            it.copy(
-                                serverState = "Connected to Nytka server ${result.value.serverVersion}",
-                                apiVersion = result.value.apiVersion,
-                                apiMismatch = result.value.apiVersion != NytkaApi.API_VERSION,
-                            )
-                        }
-                    is ApiResult.Failure ->
-                        local.update {
-                            it.copy(
-                                serverState = result.message,
-                                apiVersion = null,
-                                apiMismatch = false,
-                            )
-                        }
+                val saved = settings.current()
+                val base = (ServerUrl.check(saved.serverUrl, saved.privateNetwork) as? UrlCheck.Ok)?.base
+                if (base != null && mustAskForLocalNetwork(base, saved.privateNetwork, actions)) {
+                    // Android 17 blocks a server on the local network until Nytka may use it. The screen asks, and
+                    // localNetworkAnswered() checks the server once the user has answered.
+                    local.update { it.copy(askLocalNetwork = true) }
+                } else {
+                    query()
                 }
+            }
+        }
+
+        /** The check goes on whatever the answer: over a VPN the server is reachable without the permission. */
+        fun localNetworkAnswered() {
+            local.update { it.copy(askLocalNetwork = false) }
+            viewModelScope.launch { query() }
+        }
+
+        private suspend fun query() {
+            when (val result = info.info()) {
+                is ApiResult.Ok ->
+                    local.update {
+                        it.copy(
+                            serverState = "Connected to Nytka server ${result.value.serverVersion}",
+                            apiVersion = result.value.apiVersion,
+                            apiMismatch = result.value.apiVersion != NytkaApi.API_VERSION,
+                            serverUnreachable = false,
+                        )
+                    }
+                is ApiResult.Failure ->
+                    local.update {
+                        it.copy(
+                            serverState = result.message,
+                            apiVersion = null,
+                            apiMismatch = false,
+                            serverUnreachable = result.kind == FailureKind.Network,
+                        )
+                    }
             }
         }
 
