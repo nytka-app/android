@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -150,7 +151,7 @@ class CaptureController(
                 }
             }
         }
-        muteLog?.let { recorder -> inner.launch { settings.muted.collect { recorder.record(it) } } }
+        muteLog?.let { recorder -> inner.launch { settings.muted.collectLatest { recorder.record(it) } } }
         inner.launch {
             pendant.buttons
                 .filter { it == ButtonEvent.DoubleTap }

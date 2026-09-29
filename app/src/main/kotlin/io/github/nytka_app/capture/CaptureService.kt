@@ -78,6 +78,7 @@ class CaptureService : LifecycleService() {
     /** Lazy: [appLog] is injected after construction, and onDestroy may stop it before begin started it. */
     private val power by lazy { PowerBroadcasts(this, appLog) }
     private var started = false
+    private var pendingSyncAction: String? = null
     private var logRun = 0L
 
     override fun onStartCommand(
@@ -95,14 +96,22 @@ class CaptureService : LifecycleService() {
         when (intent?.action) {
             ACTION_MUTE -> scope.launch { hub.setMuted(true, MuteSource.Notification) }
             ACTION_UNMUTE -> scope.launch { hub.setMuted(false, MuteSource.Notification) }
-            ACTION_SYNC_NOW -> hub.syncNow()
-            ACTION_STOP_SYNC -> hub.stopSync()
+            ACTION_SYNC_NOW, ACTION_STOP_SYNC -> syncAction(intent.action)
         }
         if (!started) {
             started = true
             scope.launch { begin() }
         }
         return START_STICKY
+    }
+
+    /** Before `begin` has attached the sync there is nothing to tell: the last such action waits for it. */
+    private fun syncAction(action: String?) {
+        if (sync == null) {
+            pendingSyncAction = action
+            return
+        }
+        if (action == ACTION_SYNC_NOW) hub.syncNow() else hub.stopSync()
     }
 
     @OptIn(FlowPreview::class)
@@ -133,6 +142,8 @@ class CaptureService : LifecycleService() {
         sync = storageSync
         hub.attach(capture)
         hub.attachSync(storageSync)
+        pendingSyncAction?.let(::syncAction)
+        pendingSyncAction = null
         capture.start(address)
         storageSync.start()
         scope.launch { uploader.run() }

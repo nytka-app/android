@@ -29,7 +29,11 @@ class NytkaApi(
     StatusClient,
     DiagnosticsClient {
     /** What the clients in this module decode and encode with; unknown keys are ignored, so a newer server works. */
-    internal val json = Json { ignoreUnknownKeys = true }
+    internal val json =
+        Json {
+            ignoreUnknownKeys = true
+            coerceInputValues = true
+        }
 
     override suspend fun upload(body: ByteArray): UploadResult {
         val target =

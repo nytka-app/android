@@ -44,6 +44,7 @@ class StorageSyncControllerTest {
         var commits = 0
         var seals = 0
         var mutes = listOf<MuteChange>()
+        var failCommitOnce: Exception? = null
         val advanced = mutableListOf<Long>()
         private val acked = MutableStateFlow<Long?>(null)
 
@@ -64,6 +65,10 @@ class StorageSyncControllerTest {
             frames: List<TimedFrame>,
             position: RingPosition,
         ) {
+            failCommitOnce?.let {
+                failCommitOnce = null
+                throw it
+            }
             commits++
             queued += frames
             committedFrames += frames
@@ -91,13 +96,14 @@ class StorageSyncControllerTest {
     }
 
     private class FakeInfo(
-        var version: String? = "0.4.0",
+        var features: List<String>? = listOf("offline-sync"),
     ) : InfoClient {
         var calls = 0
 
         override suspend fun info(): ApiResult<ServerInfo> {
             calls++
-            return version?.let { ApiResult.Ok(ServerInfo(it, 1)) } ?: ApiResult.Failure(FailureKind.Network, "down")
+            return features?.let { ApiResult.Ok(ServerInfo("0.4.0", 1, features = it)) }
+                ?: ApiResult.Failure(FailureKind.Network, "down")
         }
     }
 
@@ -151,7 +157,7 @@ class StorageSyncControllerTest {
     private fun TestScope.rig(
         firmware: String = "3.0.20",
         tuning: SyncTuning = SyncTuning(windowPackets = 50, commitRecords = 20),
-        server: String? = "0.4.0",
+        server: List<String>? = listOf("offline-sync"),
         start: Boolean = true,
     ): Rig {
         val now = { BASE_MS + testScheduler.currentTime }
@@ -209,18 +215,18 @@ class StorageSyncControllerTest {
         }
 
     @Test
-    fun `an older server is not synced against and the sync begins once it is upgraded`() =
+    fun `a server without the offline-sync feature is not synced against and the sync begins once it is upgraded`() =
         runTest {
-            val rig = rig(server = "0.3.0")
+            val rig = rig(server = emptyList())
             rig.ring.fill(30)
 
             rig.connect()
             advanceTimeBy(10_000)
 
             assertTrue(rig.ring.commands.isEmpty())
-            assertEquals(SyncState.ServerOutdated("0.3.0", 30_000), rig.status.state)
+            assertEquals(SyncState.ServerOutdated(30_000), rig.status.state)
 
-            rig.info.version = "0.4.1"
+            rig.info.features = listOf("other", "offline-sync")
             advanceTimeBy(30_001)
             settle()
 
@@ -384,6 +390,7 @@ class StorageSyncControllerTest {
             assertTrue(rig.sink.committedFrames.isEmpty())
             assertEquals(60L, rig.sink.stored?.committedNext)
             // ackedThrough is committedNext with an empty queue, so it is freed without any upload.
+            advanceTimeBy(10_001)
             assertEquals(60L, rig.advances.last())
             assertEquals(0L, rig.ring.unread)
         }
@@ -578,6 +585,47 @@ class StorageSyncControllerTest {
         }
 
     @Test
+    fun `a new epoch is freed from its own numbers, not from the last epoch's`() =
+        runTest {
+            val rig = rig()
+            rig.ring.fill(60)
+            rig.connect()
+            settle()
+            rig.sink.accept(60)
+            settle()
+            assertEquals(listOf(60L), rig.advances)
+
+            // The ring is cleared and refilled: sequence numbers restart below the last ADVANCE.
+            rig.pendant.dropLink()
+            settle()
+            rig.ring.clear()
+            rig.ring.fill(30, firstStampS = STAMP_S + 100)
+            rig.connect()
+            settle()
+            rig.sink.accept(30)
+            advanceTimeBy(10_001)
+
+            assertEquals(30L, rig.advances.last())
+            assertEquals(30L, rig.ring.readSeq)
+        }
+
+    @Test
+    fun `a failure that is not a database error costs a retry, not the process`() =
+        runTest {
+            val rig = rig()
+            rig.ring.fill(30)
+            rig.sink.failCommitOnce = IllegalStateException("boom")
+
+            rig.connect()
+            settle()
+
+            assertTrue(rig.status.state is SyncState.Retrying)
+            advanceTimeBy(30_001)
+            settle()
+            assertEquals(30L, rig.sink.stored?.committedNext)
+        }
+
+    @Test
     fun `the persisted skew pair is kept while records below its writeSeq are unread`() =
         runTest {
             val rig = rig()
@@ -687,18 +735,6 @@ class StorageSyncControllerTest {
             assertNull(rig.sink.stored?.takeIf { it.committedNext != 0L })
             assertEquals(0L, rig.status.storedPackets)
         }
-
-    @Test
-    fun `server versions compare by number, not by text`() {
-        val min = "0.4.0"
-        assertTrue(StorageSyncController.serverAtLeast("0.4.0", min))
-        assertTrue(StorageSyncController.serverAtLeast("0.10.2", min))
-        assertTrue(StorageSyncController.serverAtLeast("v1.0.0", min))
-        assertTrue(StorageSyncController.serverAtLeast("0.4.0-rc.1", min))
-        assertFalse(StorageSyncController.serverAtLeast("0.3.9", min))
-        assertFalse(StorageSyncController.serverAtLeast("latest", min))
-        assertFalse(StorageSyncController.serverAtLeast("", min))
-    }
 
     private companion object {
         const val BASE_MS = 1_800_000_000_000L

@@ -1,5 +1,6 @@
 package io.github.nytka_app.capture
 
+import android.database.SQLException
 import io.github.nytka_app.core.queue.FrameSink
 import io.github.nytka_app.core.ring.MuteChange
 import kotlinx.coroutines.test.runTest
@@ -11,6 +12,8 @@ import java.util.UUID
 class MuteLogRecorderTest {
     class FakeMuteSink(
         val changes: MutableList<MuteChange> = mutableListOf(),
+        /** The database refuses this many writes first. */
+        private var failures: Int = 0,
     ) : FrameSink {
         override suspend fun add(
             session: UUID,
@@ -25,6 +28,7 @@ class MuteLogRecorderTest {
             atMs: Long,
             muted: Boolean,
         ) {
+            if (failures-- > 0) throw SQLException("disk full")
             changes += MuteChange(atMs, muted)
         }
 

@@ -3,6 +3,7 @@ package io.github.nytka_app.capture
 import android.database.SQLException
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.InfoClient
+import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.diagnostics.EventLog
 import io.github.nytka_app.core.queue.FrameSink
 import io.github.nytka_app.core.queue.QueueUsage
@@ -22,7 +23,9 @@ import io.github.nytka_app.pendant.RingProtocol
 import io.github.nytka_app.pendant.RingRecord
 import io.github.nytka_app.pendant.RingStatus
 import io.github.nytka_app.pendant.StorageSupport
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -37,6 +40,8 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.yield
 
 /** Why a sync is not running although the pendant is connected. */
@@ -77,9 +82,8 @@ sealed interface SyncState {
         val retryInMs: Long,
     ) : SyncState
 
-    /** The server is older than the one that keeps live speech ahead of a backlog. */
+    /** The server does not list the `offline-sync` feature: it would run a backlog ahead of live speech. */
     data class ServerOutdated(
-        val version: String,
         val retryInMs: Long,
     ) : SyncState
 
@@ -153,14 +157,16 @@ class StorageSyncController(
     private val times: CaptureTimes = RingCaptureTimes(),
     private val now: () -> Long = System::currentTimeMillis,
     private val tuning: SyncTuning = SyncTuning(),
-    private val minServerVersion: String = MIN_SERVER_VERSION,
     private val log: EventLog = EventLog.Logcat,
 ) {
     private val storage = pendant.storage
     private val mutableStatus = MutableStateFlow(StorageSyncStatus())
     val status: StateFlow<StorageSyncStatus> = mutableStatus.asStateFlow()
 
-    private val transferring = MutableStateFlow(false)
+    /** One ring operation at a time: a read window or an ADVANCE, never both. */
+    private val ringLock = Mutex()
+    private val backstop =
+        CoroutineExceptionHandler { _, e -> log.e(TAG, "the sync stopped on ${e.javaClass.simpleName}") }
     private var watcher: Job? = null
     private var syncJob: Job? = null
     private var advanceJob: Job? = null
@@ -222,7 +228,6 @@ class StorageSyncController(
         held = true
         syncJob?.cancel()
         backlogAnswer = null
-        transferring.value = false
         setState(SyncState.Paused(PauseReason.Stopped))
     }
 
@@ -248,7 +253,7 @@ class StorageSyncController(
             StorageSupport.Unknown -> Unit
             is StorageSupport.Unsupported -> setState(SyncState.Unsupported(support.reason))
             StorageSupport.Supported -> {
-                if (advanceJob?.isActive != true) advanceJob = scope.launch { advanceLoop() }
+                if (advanceJob?.isActive != true) advanceJob = scope.launch(backstop) { advanceLoop() }
                 if (!held && syncJob?.isActive != true) startSync()
             }
         }
@@ -259,7 +264,6 @@ class StorageSyncController(
         syncJob?.cancel()
         advanceJob?.cancel()
         backlogAnswer = null
-        transferring.value = false
         held = false
         timeState = null
         lossPauses = 0
@@ -271,7 +275,7 @@ class StorageSyncController(
 
     private fun startSync() {
         syncJob?.cancel()
-        syncJob = scope.launch { syncLoop() }
+        syncJob = scope.launch(backstop) { syncLoop() }
     }
 
     private fun setState(state: SyncState) = mutableStatus.update { it.copy(state = state) }
@@ -301,8 +305,13 @@ class StorageSyncController(
             val outcome =
                 try {
                     attempt()
-                } catch (e: SQLException) {
-                    Outcome.Retry("the queue refused a write: ${e.javaClass.simpleName}") {
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (
+                    // Whatever goes wrong here must cost the sync a retry, never the process and its live audio.
+                    @Suppress("TooGenericExceptionCaught") e: Exception,
+                ) {
+                    Outcome.Retry("the sync failed: ${e.javaClass.simpleName}") {
                         SyncState.Retrying(RingStatus.TIMEOUT, it)
                     }
                 }
@@ -381,7 +390,8 @@ class StorageSyncController(
         current = current.copy(clock = clock, lastDropped = ring.droppedPackets)
         if (current != loaded) sink.commit(emptyList(), current)
         position = current
-        lastAdvanced = maxOf(lastAdvanced, current.advanced, ring.readSeq)
+        // Sequence numbers restart with a new epoch or pendant, so nothing carries over from the last one.
+        lastAdvanced = maxOf(current.advanced, ring.readSeq)
         if (timeState == null) timeState = current.newRun()
         mutableStatus.update {
             it.copy(
@@ -399,11 +409,8 @@ class StorageSyncController(
         if (answer == null) {
             return Outcome.Retry("the server did not answer /info") { SyncState.ServerUnavailable(it) }
         }
-        val version = answer.value.serverVersion
-        if (serverAtLeast(version, minServerVersion)) return null
-        return Outcome.Retry("the server runs $version, sync needs $minServerVersion") {
-            SyncState.ServerOutdated(version, it)
-        }
+        if (answer.value.has(ServerInfo.FEATURE_OFFLINE_SYNC)) return null
+        return Outcome.Retry("the server does not list offline-sync") { SyncState.ServerOutdated(it) }
     }
 
     /** INFO, retried every 2 s for 20 s while the pendant says its storage is not ready (status 9). */
@@ -513,8 +520,7 @@ class StorageSyncController(
             }
         }
 
-        transferring.value = true
-        try {
+        ringLock.withLock {
             storage
                 .read(from, tuning.windowPackets)
                 .takeWhile { event ->
@@ -541,8 +547,6 @@ class StorageSyncController(
                     true
                 }.collect()
             flush()
-        } finally {
-            transferring.value = false
         }
         // The frames become chunks now, so the uploader can take them while the next window reads.
         sink.seal()
@@ -617,10 +621,12 @@ class StorageSyncController(
     /** One ADVANCE when there is something to free; false when the loop should end (no link, or nothing will come). */
     private suspend fun advanceOnce(): Boolean {
         if (sink.ackedThrough.firstOrNull { it > lastAdvanced } == null) return false
-        transferring.first { !it }
         val wait = lastAdvanceAtMs + tuning.advanceEveryMs - now()
         if (wait > 0) delay(wait)
-        transferring.first { !it }
+        return ringLock.withLock { advanceLocked() }
+    }
+
+    private suspend fun advanceLocked(): Boolean {
         val committed = sink.position()?.committedNext ?: return true
         val acked = sink.ackedThrough.firstOrNull() ?: return false
         val target = minOf(acked, committed)
@@ -645,32 +651,10 @@ class StorageSyncController(
     }
 
     companion object {
-        /** The server that ships migration 0005 (job priority); release-please bumps a 0.x minor for `feat:`. */
-        const val MIN_SERVER_VERSION = "0.4.0"
         private const val TAG = "StorageSync"
         private const val MS = 1_000L
         private const val PACKET_MS = 80L
         private const val KIB = 1024.0
         private const val PERCENT = 100
-
-        private val versionPattern = Regex("""^v?(\d+)\.(\d+)\.(\d+)""")
-
-        /** True when [version] is [minimum] or later; an unparsable version is not. A pre-release suffix is ignored. */
-        fun serverAtLeast(
-            version: String,
-            minimum: String,
-        ): Boolean {
-            val have = parts(version) ?: return false
-            val need = parts(minimum) ?: return false
-            for (i in have.indices) if (have[i] != need[i]) return have[i] > need[i]
-            return true
-        }
-
-        private fun parts(version: String): List<Int>? =
-            versionPattern
-                .find(version.trim())
-                ?.groupValues
-                ?.drop(1)
-                ?.map { it.toIntOrNull() ?: return null }
     }
 }

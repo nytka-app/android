@@ -81,8 +81,8 @@ class CaptureHub
         ) {
             controller.value?.setMuted(muted, source) ?: run {
                 // No service: nobody else sees this change, and the sync needs its time for the mute log.
-                muteLog?.record(muted)
                 settings.update { it.copy(muted = muted) }
+                muteLog?.record(muted)
             }
         }
     }
