@@ -6,6 +6,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -42,7 +46,8 @@ class NytkaApi(
                             json.decodeFromString<UploadAnswer>(response.body.string()).acceptedThroughSeq,
                             duplicate = response.code == 200,
                         )
-                    401 -> UploadResult.Unauthorized
+                    // 403: the token cannot upload (a read token); pause and say so instead of retrying forever.
+                    401, 403 -> UploadResult.Unauthorized
                     400, 409, 413 -> UploadResult.Dropped(response.code, "The server answered ${response.code}.")
                     else -> UploadResult.Retry("The server answered ${response.code}.")
                 }
@@ -98,6 +103,19 @@ class NytkaApi(
     override suspend fun conversation(id: String): ApiResult<ConversationDetail> =
         request("GET", "api/v1/conversations/$id") { json.decodeFromString(it) }
 
+    override suspend fun renameConversation(
+        id: String,
+        title: String?,
+    ): ApiResult<ConversationDetail> =
+        request(
+            "PATCH",
+            "api/v1/conversations/$id",
+            body = buildJsonObject { put("title", title?.let(::JsonPrimitive) ?: JsonNull) }.toString(),
+        ) { json.decodeFromString(it) }
+
+    override suspend fun enrichConversation(id: String): ApiResult<Unit> =
+        request("POST", "api/v1/conversations/$id/enrich") { }
+
     override suspend fun deleteConversation(id: String): ApiResult<Unit> =
         request("DELETE", "api/v1/conversations/$id") { }
 
@@ -138,7 +156,9 @@ class NytkaApi(
             400 -> invalid(response.body.string()) ?: ApiResult.Failure(FailureKind.Server, "The server answered 400.")
             401 -> ApiResult.Failure(FailureKind.Unauthorized, "The server refused the token.")
             403 -> ApiResult.Failure(FailureKind.Forbidden, "The token is not allowed to do this.")
+            // A v0.1 server answers 405 on a method it lacks, such as PATCH /conversations/{id}.
             404 -> ApiResult.Failure(FailureKind.NotFound, "Not found.")
+            405 -> ApiResult.Failure(FailureKind.Unsupported, "The server does not know this call.")
             409 -> ApiResult.Failure(FailureKind.Conflict, "This conflicts with what the server holds.")
             else -> ApiResult.Failure(FailureKind.Server, "The server answered ${response.code}.")
         }

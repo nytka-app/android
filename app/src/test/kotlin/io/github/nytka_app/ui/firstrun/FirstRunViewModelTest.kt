@@ -59,6 +59,28 @@ class FirstRunViewModelTest {
     }
 
     @Test
+    fun `a read token is refused and not kept`() {
+        info = ApiResult.Ok(ServerInfo("0.2.0", 1, scope = "read"))
+        viewModel.edit("https://nytka.example", token, privateNetwork = false)
+
+        viewModel.testConnection()
+
+        assertEquals(FirstRunStep.Server, viewModel.state.value.step)
+        assertEquals("The app needs an admin token.", viewModel.state.value.serverError)
+        assertEquals("", settings.state.value.token)
+    }
+
+    @Test
+    fun `a server without scope counts as admin`() {
+        info = ApiResult.Ok(ServerInfo("0.1.0", 1))
+        viewModel.edit("https://nytka.example", token, privateNetwork = false)
+
+        viewModel.testConnection()
+
+        assertEquals(FirstRunStep.Permissions, viewModel.state.value.step)
+    }
+
+    @Test
     fun `a refused token stays on the server step with the reason`() {
         info = ApiResult.Failure(FailureKind.Unauthorized, "The server refused the token.")
         viewModel.edit("https://nytka.example", token, privateNetwork = false)

@@ -62,6 +62,57 @@ class ConversationsViewModelTest {
     }
 
     @Test
+    fun `a row shows the title, the summary and a chip while summarizing`() {
+        api.pages[null] =
+            ApiResult.Ok(
+                ConversationPage(
+                    listOf(
+                        summary("b", "2026-09-29T09:00:00Z", "2026-09-29T09:20:00Z").copy(
+                            title = "Planning the launch",
+                            summary = "They agreed on Friday.",
+                            aiStatus = "done",
+                        ),
+                        summary("a", "2026-09-29T08:00:00Z", "2026-09-29T08:05:00Z").copy(aiStatus = "pending"),
+                        summary("f", "2026-09-29T07:00:00Z", "2026-09-29T07:05:00Z").copy(aiStatus = "failed"),
+                    ),
+                ),
+            )
+
+        val rows =
+            newViewModel()
+                .state.value.days
+                .single()
+                .rows
+
+        assertEquals(
+            ConversationRow("b", "09:00–09:20", "20 min", "They agreed on Friday.", "Planning the launch", null),
+            rows[0],
+        )
+        assertEquals("text a", rows[1].preview)
+        assertNull(rows[1].title)
+        assertEquals("Summarizing", rows[1].chip)
+        assertEquals("Summary failed", rows[2].chip)
+    }
+
+    @Test
+    fun `a time with an offset instead of Z is read`() {
+        api.pages[null] =
+            ApiResult.Ok(
+                ConversationPage(listOf(summary("b", "2026-09-29T09:00:00+00:00", "2026-09-29T09:20:00+00:00"))),
+            )
+
+        assertEquals(
+            "09:00–09:20",
+            newViewModel()
+                .state.value.days
+                .single()
+                .rows
+                .single()
+                .timeRange,
+        )
+    }
+
+    @Test
     fun `loads more with nextBefore until the last page`() {
         api.pages[null] = ApiResult.Ok(firstPage)
         api.pages["2026-09-28T18:00:00Z"] =
