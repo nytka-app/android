@@ -61,7 +61,7 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   recording again. **Mute** in the notification and on the status card does the same. Nothing is
   recorded while muted, and Nytka stays muted when the pendant reconnects.
 - **Offline**, audio waits on the phone and uploads once the server answers again, with the times
-  it was said. The queue holds up to 1 GiB, about 70 hours. Past 80% Nytka warns you; when it is
+  it was said. The queue holds up to 1 GiB, about 60 hours. Past 80% Nytka warns you; when it is
   full, the oldest audio goes first.
 - **Alerts** come when the pendant has been away for 5 minutes, the server has been unreachable
   for 15 minutes, or the pendant battery reaches 20%.
