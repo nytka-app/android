@@ -7,6 +7,8 @@ import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.ServerInfo
+import io.github.nytka_app.core.settings.FirstRunStep
+import io.github.nytka_app.core.settings.Settings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -20,13 +22,27 @@ class FirstRunViewModelTest {
     private val actions = FakeDeviceActions()
     private var infoCalls = 0
     private var info: ApiResult<ServerInfo> = ApiResult.Ok(ServerInfo("0.1.0", 1))
-    private val viewModel =
+
+    private fun newViewModel() =
         FirstRunViewModel(settings, {
             infoCalls++
             info
         }, actions)
 
+    // Built inside the test: the view model launches in its constructor, and Main is only set once the rule runs.
+    private val viewModel by lazy { newViewModel() }
+
     private val token = "t".repeat(48)
+
+    @Test
+    fun `a fresh install starts at the server step`() {
+        val state = viewModel.state.value
+
+        assertTrue(state.loaded)
+        assertEquals(FirstRunStep.Server, state.step)
+        assertEquals("", state.url)
+        assertEquals("", state.token)
+    }
 
     @Test
     fun `a good connection test saves the server and moves on`() {
@@ -76,6 +92,63 @@ class FirstRunViewModelTest {
         viewModel.acceptConsent()
         assertEquals(FirstRunStep.Pairing, viewModel.state.value.step)
         assertTrue(settings.state.value.consentGiven)
+    }
+
+    @Test
+    fun `each step is saved as the user moves on`() {
+        viewModel.edit("https://nytka.example", token, privateNetwork = false)
+        viewModel.testConnection()
+        assertEquals(FirstRunStep.Permissions, settings.state.value.firstRunStep)
+
+        viewModel.permissionsDone()
+        assertEquals(FirstRunStep.Consent, settings.state.value.firstRunStep)
+
+        viewModel.setConsent(true)
+        viewModel.acceptConsent()
+        assertEquals(FirstRunStep.Pairing, settings.state.value.firstRunStep)
+    }
+
+    @Test
+    fun `a failed connection test leaves the saved step at the server`() {
+        info = ApiResult.Failure(FailureKind.Network, "timeout")
+        viewModel.edit("https://nytka.example", token, privateNetwork = false)
+
+        viewModel.testConnection()
+
+        assertEquals(FirstRunStep.Server, settings.state.value.firstRunStep)
+    }
+
+    @Test
+    fun `a restart resumes at the step the user reached`() {
+        viewModel.edit("https://nytka.example", token, privateNetwork = false)
+        viewModel.testConnection()
+        viewModel.permissionsDone()
+
+        val restarted = newViewModel()
+
+        assertEquals(FirstRunStep.Consent, restarted.state.value.step)
+        assertTrue(restarted.state.value.loaded)
+    }
+
+    @Test
+    fun `a restart on the server step brings back the address and token a test saved`() {
+        info = ApiResult.Failure(FailureKind.Network, "timeout")
+        viewModel.edit("http://10.0.0.5:8080", token, privateNetwork = true)
+        viewModel.testConnection()
+
+        val state = newViewModel().state.value
+
+        assertEquals(FirstRunStep.Server, state.step)
+        assertEquals("http://10.0.0.5:8080/", state.url)
+        assertEquals(token, state.token)
+        assertTrue(state.privateNetwork)
+    }
+
+    @Test
+    fun `first run resumes at pairing once consent was given`() {
+        settings.state.value = Settings(consentGiven = true, firstRunStep = FirstRunStep.Pairing)
+
+        assertEquals(FirstRunStep.Pairing, newViewModel().state.value.step)
     }
 
     @Test

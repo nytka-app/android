@@ -9,6 +9,7 @@ import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.ServerUrl
 import io.github.nytka_app.core.api.UrlCheck
+import io.github.nytka_app.core.settings.FirstRunStep
 import io.github.nytka_app.core.settings.SettingsSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,9 +23,9 @@ const val CONSENT_TEXT =
     "Recording people without their consent is illegal in some places. " +
         "You are responsible for following the law where you use Nytka."
 
-enum class FirstRunStep { Server, Permissions, Consent, Pairing }
-
 data class FirstRunUiState(
+    /** False until the saved step and server details are read; the screen shows nothing before, not step 1. */
+    val loaded: Boolean = false,
     val step: FirstRunStep = FirstRunStep.Server,
     val url: String = "",
     val token: String = "",
@@ -47,6 +48,23 @@ class FirstRunViewModel
     ) : ViewModel() {
         private val mutableState = MutableStateFlow(FirstRunUiState())
         val state: StateFlow<FirstRunUiState> = mutableState.asStateFlow()
+
+        init {
+            // Android can end the app while the user is away, in the system settings to allow a permission, say.
+            // Pick up at the step reached, with the server details a connection test saved.
+            viewModelScope.launch {
+                val saved = settings.current()
+                mutableState.update {
+                    it.copy(
+                        loaded = true,
+                        step = saved.firstRunStep,
+                        url = saved.serverUrl,
+                        token = saved.token,
+                        privateNetwork = saved.privateNetwork,
+                    )
+                }
+            }
+        }
 
         fun edit(
             url: String,
@@ -89,7 +107,8 @@ class FirstRunViewModel
                     )
                 }
                 when (val result = info.info()) {
-                    is ApiResult.Ok ->
+                    is ApiResult.Ok -> {
+                        settings.update { it.copy(firstRunStep = FirstRunStep.Permissions) }
                         mutableState.update {
                             it.copy(
                                 testing = false,
@@ -97,6 +116,7 @@ class FirstRunViewModel
                                 step = FirstRunStep.Permissions,
                             )
                         }
+                    }
                     is ApiResult.Failure ->
                         mutableState.update {
                             it.copy(
@@ -109,7 +129,10 @@ class FirstRunViewModel
         }
 
         fun permissionsDone() {
-            mutableState.update { it.copy(step = FirstRunStep.Consent) }
+            viewModelScope.launch {
+                settings.update { it.copy(firstRunStep = FirstRunStep.Consent) }
+                mutableState.update { it.copy(step = FirstRunStep.Consent) }
+            }
         }
 
         fun setConsent(checked: Boolean) {
@@ -119,7 +142,7 @@ class FirstRunViewModel
         fun acceptConsent() {
             if (!mutableState.value.consentChecked) return
             viewModelScope.launch {
-                settings.update { it.copy(consentGiven = true) }
+                settings.update { it.copy(consentGiven = true, firstRunStep = FirstRunStep.Pairing) }
                 mutableState.update { it.copy(step = FirstRunStep.Pairing) }
             }
         }

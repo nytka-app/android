@@ -35,11 +35,13 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nytka_app.core.settings.FirstRunStep
 import io.github.nytka_app.ui.PairButton
 
 @Composable
 fun FirstRunScreen(viewModel: FirstRunViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    if (!state.loaded) return
     Column(
         Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
