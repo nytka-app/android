@@ -1,6 +1,8 @@
 package io.github.nytka_app.ui.developer
 
 import android.content.ClipData
+import android.content.ClipDescription.EXTRA_IS_SENSITIVE
+import android.os.PersistableBundle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -106,7 +108,13 @@ fun DeveloperScreen(
                     FilledTonalButton(onClick = {
                         scope.launch {
                             clipboard.setClipEntry(
-                                ClipEntry(ClipData.newPlainText("Nytka debug report", viewModel.report())),
+                                ClipEntry(
+                                    ClipData.newPlainText("Nytka debug report", viewModel.report()).apply {
+                                        // Holds the server URL: keep it out of clipboard previews.
+                                        description.extras =
+                                            PersistableBundle().apply { putBoolean(EXTRA_IS_SENSITIVE, true) }
+                                    },
+                                ),
                             )
                         }
                     }) { Text("Copy debug report") }
