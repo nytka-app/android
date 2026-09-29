@@ -477,18 +477,18 @@ class StorageSyncControllerTest {
         }
 
     @Test
-    fun `a stalled transfer is retried after 30 seconds from what was committed`() =
+    fun `a transfer that stays quiet is read again at once, then retried after 30 seconds`() =
         runTest {
             val rig = rig()
             rig.ring.fill(120)
-            rig.ring.stallAfterBytes = 30L * 444
+            rig.ring.stallAfterBytes = 100L // less than one record: nothing to commit
 
             rig.connect()
-            advanceTimeBy(12_000) // no data for 10 s ends the window
+            advanceTimeBy(45_000) // four quiet windows of 10 s
 
             assertEquals(SyncState.Retrying(-1, 30_000), rig.status.state)
-            val committed = rig.sink.stored?.committedNext ?: 0L
-            assertTrue("committed $committed", committed in 1..30)
+            assertEquals(4, rig.reads.size)
+            assertEquals(0L, rig.sink.stored?.committedNext)
 
             rig.ring.stallAfterBytes = null
             advanceTimeBy(30_001)
@@ -503,6 +503,30 @@ class StorageSyncControllerTest {
                     .distinct(),
             )
             assertEquals(480, rig.sink.committedFrames.size)
+        }
+
+    @Test
+    fun `a read timeout frees nothing the phone has not read`() =
+        runTest {
+            val rig = rig(firmware = "3.0.21", tuning = SyncTuning(windowPackets = 100, commitRecords = 20))
+            rig.ring.fill(100)
+            rig.ring.stallAfterBytes = 10L * 444
+            rig.ring.unseenBytesAtStall = 90L * 444 // the firmware counts these as sent
+
+            rig.connect()
+            advanceTimeBy(12_000) // no data for 10 s ends the window
+            rig.ring.stallAfterBytes = null
+            advanceTimeBy(40_000)
+            settle()
+
+            assertEquals(100L, rig.sink.stored?.committedNext)
+            assertEquals(0L, rig.status.lostPackets)
+            assertEquals(
+                (0L until 100L).toList(),
+                rig.sink.committedFrames
+                    .map { it.ringSeq }
+                    .distinct(),
+            )
         }
 
     @Test

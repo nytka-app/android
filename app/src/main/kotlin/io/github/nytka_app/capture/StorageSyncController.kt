@@ -135,6 +135,8 @@ data class SyncTuning(
     val liveLossPauseMs: Long = 30_000,
     val liveLossPauses: Int = 3,
     val advanceEveryMs: Long = 10_000,
+    /** READs repeated at once after a window that went quiet without delivering anything, before the retry wait. */
+    val timeoutRereads: Int = 3,
 )
 
 /**
@@ -182,6 +184,7 @@ class StorageSyncController(
     private var connectionClock: ClockPair? = null
     private var lossPauses = 0
     private var progressed = false
+    private var quietWindows = 0
 
     /** The last `ADVANCE` the pendant took (or was already past); starts at what the position says. */
     private var lastAdvanced = 0L
@@ -338,6 +341,7 @@ class StorageSyncController(
 
     @Suppress("ReturnCount")
     private suspend fun attempt(): Outcome {
+        quietWindows = 0
         setState(SyncState.Checking)
         serverGate()?.let { return it }
         val ring = readInfo() ?: return infoFailed()
@@ -569,9 +573,27 @@ class StorageSyncController(
         return when (status) {
             RingStatus.OK -> if (packets == 0L) noProgress() else liveLoss(statsBefore)
             RingStatus.LINK_LOST -> Outcome.Stop(SyncState.Paused(PauseReason.LinkDropped))
+            RingStatus.TIMEOUT -> quiet(packets)
             else ->
                 Outcome.Retry("READ ended with status $status") { SyncState.Retrying(status ?: RingStatus.TIMEOUT, it) }
         }
+    }
+
+    /**
+     * A window that went quiet got no STOP: firmware 3.0.21 frees what it sent at a stop, though the phone read only
+     * part of it (NYTKA-14). The next READ from `committedNext` replaces the transfer without freeing, so read again
+     * at once; INFO would send a STOP, so only after [SyncTuning.timeoutRereads] windows with nothing does the
+     * ordinary retry wait begin.
+     */
+    private fun quiet(packets: Long): Outcome? {
+        quietWindows = if (packets > 0) 0 else quietWindows + 1
+        if (quietWindows > tuning.timeoutRereads) {
+            return Outcome.Retry("READ ended with status ${RingStatus.TIMEOUT}") {
+                SyncState.Retrying(RingStatus.TIMEOUT, it)
+            }
+        }
+        log.w(TAG, "READ went quiet after $packets packets: reading again from the committed position")
+        return null
     }
 
     private fun noProgress(): Outcome =

@@ -352,7 +352,7 @@ class OmiStorageTest {
         }
 
     @Test
-    fun `no READ_BEGIN in ten seconds ends the window and sends stop`() =
+    fun `no READ_BEGIN in ten seconds ends the window without a stop`() =
         runTest {
             supported()
             answerStop()
@@ -365,7 +365,7 @@ class OmiStorageTest {
             val end = events.single() as RingEvent.Done
             assertEquals(RingStatus.TIMEOUT, end.status)
             assertEquals(100L, end.nextSeq)
-            assertEquals(listOf(0x11, 0x03), opcodes())
+            assertEquals(listOf(0x11), opcodes()) // a stop would free what the firmware sent, not what was read
         }
 
     @Test
@@ -398,7 +398,7 @@ class OmiStorageTest {
             val end = events.last() as RingEvent.Done
             assertEquals(RingStatus.TIMEOUT, end.status)
             assertEquals(101L, end.nextSeq) // one whole record arrived
-            assertEquals(listOf(0x11, 0x03), opcodes())
+            assertEquals(listOf(0x11), opcodes())
         }
 
     @Test
