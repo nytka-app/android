@@ -3,6 +3,7 @@ package io.github.nytka_app.ui.conversations
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -11,6 +12,11 @@ import java.util.Locale
 object Formatting {
     private val dayFormat = DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.ENGLISH)
     private val clockFormat = DateTimeFormatter.ofPattern("HH:mm", Locale.ENGLISH)
+
+    /** Reads an ISO 8601 time with `Z` or an offset such as `+00:00`; an unreadable one counts as the epoch. */
+    fun instant(text: String): Instant = parse(text) ?: Instant.EPOCH
+
+    fun parse(text: String): Instant? = runCatching { OffsetDateTime.parse(text).toInstant() }.getOrNull()
 
     fun dayTitle(
         date: LocalDate,

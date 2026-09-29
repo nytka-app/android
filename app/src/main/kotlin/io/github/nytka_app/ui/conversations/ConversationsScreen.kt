@@ -2,6 +2,7 @@ package io.github.nytka_app.ui.conversations
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,7 +17,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -116,7 +119,14 @@ fun ConversationsScreen(
         ) {
             if (SEARCH_ENABLED) item { SearchButton(onSearch) }
             item { StatusCard(status, onMute, notice) }
-            state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
+            state.error?.let { error ->
+                item {
+                    Column {
+                        Text(error, color = MaterialTheme.colorScheme.error)
+                        TextButton(onClick = viewModel::refresh) { Text("Retry") }
+                    }
+                }
+            }
             state.days.forEach { day ->
                 item(key = "day-${day.title}") {
                     Text(
@@ -127,8 +137,22 @@ fun ConversationsScreen(
                 }
                 items(day.rows, key = { it.id }) { row ->
                     ListItem(
-                        headlineContent = { Text("${row.timeRange} · ${row.length}") },
-                        supportingContent = { Text(row.preview, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+                        headlineContent = {
+                            Text(row.title ?: row.timeRange, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        },
+                        supportingContent = {
+                            Column {
+                                Text(row.preview, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                Text(
+                                    "${row.timeRange} · ${row.length}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    modifier = Modifier.padding(top = 4.dp),
+                                )
+                                row.chip?.let { chip ->
+                                    AiChip(chip, Modifier.padding(top = 4.dp))
+                                }
+                            }
+                        },
                         modifier = Modifier.clickable { onOpen(row.id) },
                     )
                 }
@@ -147,5 +171,25 @@ fun ConversationsScreen(
 private fun SearchButton(onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
         IconButton(onClick = onClick) { Icon(Icons.Filled.Search, contentDescription = "Search") }
+    }
+}
+
+/** A small label for where the summary stands; red when the model gave up. */
+@Composable
+internal fun AiChip(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    val failed = text == "Summary failed"
+    Surface(
+        modifier,
+        shape = MaterialTheme.shapes.small,
+        color = if (failed) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
+    ) {
+        Text(
+            text,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        )
     }
 }

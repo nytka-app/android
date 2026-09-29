@@ -51,6 +51,8 @@ class DeveloperViewModelTest {
     private var diagnosticsAnswer: DiagnosticsResult = DiagnosticsResult.Accepted(1)
     private val diagnosticsUploader = DiagnosticsUploader(diagnostics, { diagnosticsAnswer }, settings)
 
+    private var serverStatus = ServerStatus(pendingChunks = 3)
+
     private fun viewModel() =
         DeveloperViewModel(
             settings = settings,
@@ -58,11 +60,29 @@ class DeveloperViewModelTest {
             hub = CaptureHub(settings),
             queue = NoChunks,
             uploader = Uploader(NoChunks, { UploadResult.Retry("unused") }, settings.settings),
-            status = { ApiResult.Ok(ServerStatus(pendingChunks = 3)) },
+            status = { ApiResult.Ok(serverStatus) },
             fixtures = fixtures,
             diagnostics = diagnostics,
             diagnosticsUploader = diagnosticsUploader,
         )
+
+    @Test
+    fun `the status line shows the error with its time only while the error is set`() {
+        serverStatus =
+            ServerStatus(
+                3,
+                lastError = "The transcription endpoint answered 503.",
+                lastErrorAt = "2026-09-29T11:00:00Z",
+            )
+        assertEquals(
+            "3 pending, last error: The transcription endpoint answered 503. (at 2026-09-29T11:00:00Z)",
+            viewModel().state.value.serverStatus,
+        )
+
+        // A later batch went through: lastError is null, and the timestamps are only history.
+        serverStatus = ServerStatus(0, lastErrorAt = "2026-09-29T11:00:00Z", lastSuccessAt = "2026-09-29T11:05:00Z")
+        assertEquals("0 pending, last error: none", viewModel().state.value.serverStatus)
+    }
 
     @Test
     fun `the fake pendant switch restarts capture`() {

@@ -3,6 +3,7 @@ package io.github.nytka_app.ui.conversations
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.nytka_app.core.api.AiState
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.ConversationPage
 import io.github.nytka_app.core.api.ConversationSummary
@@ -16,7 +17,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
-import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -24,7 +24,12 @@ data class ConversationRow(
     val id: String,
     val timeRange: String,
     val length: String,
+    /** The summary when there is one, else the transcript's first words. */
     val preview: String,
+    /** The title, generated or set; null until the first run, when the row shows the time range instead. */
+    val title: String? = null,
+    /** "Summarizing" or "Summary failed"; null otherwise, and always on a server before v0.2. */
+    val chip: String? = null,
 )
 
 data class DaySection(
@@ -162,27 +167,36 @@ class ConversationsViewModel
             val zone = clock.zone
             val today = LocalDate.now(clock)
             return items
-                .groupBy { Instant.parse(it.startedAt).atZone(zone).toLocalDate() }
+                .groupBy { Formatting.instant(it.startedAt).atZone(zone).toLocalDate() }
                 .map { (date, rows) ->
                     DaySection(
                         Formatting.dayTitle(date, today),
                         rows.map {
-                            val start = Instant.parse(it.startedAt)
-                            val end = Instant.parse(it.endedAt)
+                            val start = Formatting.instant(it.startedAt)
+                            val end = Formatting.instant(it.endedAt)
                             ConversationRow(
                                 it.id,
                                 Formatting.timeRange(start, end, zone),
                                 Formatting.length(start, end),
-                                it.preview,
+                                it.summary?.takeIf(String::isNotBlank) ?: it.preview,
+                                it.title?.takeIf(String::isNotBlank),
+                                aiChip(it.aiStatus),
                             )
                         },
                     )
                 }
         }
 
+        private fun aiChip(aiStatus: String): String? =
+            when (aiStatus) {
+                AiState.PENDING -> "Summarizing"
+                AiState.FAILED -> "Summary failed"
+                else -> null
+            }
+
         /** Newest first, as the server lists them: is this one later in that order than [other]? */
         private fun ConversationSummary.isOlderThan(other: ConversationSummary): Boolean {
-            val order = Instant.parse(startedAt).compareTo(Instant.parse(other.startedAt))
+            val order = Formatting.instant(startedAt).compareTo(Formatting.instant(other.startedAt))
             return order < 0 || (order == 0 && id < other.id)
         }
 

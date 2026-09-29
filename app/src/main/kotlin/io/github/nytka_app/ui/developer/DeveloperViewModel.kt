@@ -113,8 +113,13 @@ class DeveloperViewModel
                     when (val result = status.status()) {
                         is ApiResult.Ok ->
                             with(result.value) {
+                                // lastError is current trouble only while it is set; lastErrorAt is history.
                                 "$pendingChunks pending" + (oldestPendingAt?.let { ", oldest from $it" } ?: "") +
-                                    ", last error: ${lastError ?: "none"}"
+                                    ", last error: " +
+                                    (
+                                        lastError?.let { error -> error + (lastErrorAt?.let { " (at $it)" } ?: "") }
+                                            ?: "none"
+                                    )
                             }
                         is ApiResult.Failure -> result.message
                     }
