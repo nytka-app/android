@@ -126,6 +126,52 @@ class ReconnectTest {
     }
 
     @Test
+    fun `a failed attempt is tried once more and each failure is reported`() {
+        val failures = mutableListOf<Int>()
+        var attempts = 0
+
+        val done =
+            retrying(2, onFailed = { failures += it }) {
+                attempts++
+                attempts == 2 // the second try works
+            }
+
+        assertTrue(done)
+        assertEquals(2, attempts)
+        assertEquals(listOf(1), failures)
+    }
+
+    @Test
+    fun `an attempt that fails every time gives up after the last one`() {
+        val failures = mutableListOf<Int>()
+        var attempts = 0
+
+        val done =
+            retrying(2, onFailed = { failures += it }) {
+                attempts++
+                false
+            }
+
+        assertFalse(done)
+        assertEquals(2, attempts)
+        assertEquals(listOf(1, 2), failures)
+    }
+
+    @Test
+    fun `an attempt that works is not repeated`() {
+        var attempts = 0
+
+        val done =
+            retrying(2) {
+                attempts++
+                true
+            }
+
+        assertTrue(done)
+        assertEquals(1, attempts)
+    }
+
+    @Test
     fun `three failures in a row escalate and a success starts the count over`() {
         val streak = FailureStreak(3)
         assertFalse(streak.failed())
@@ -136,6 +182,9 @@ class ReconnectTest {
         assertTrue(streak.failed())
     }
 
+    /** A link that has already delivered a battery notification, so its silence can be judged. */
+    private fun judged() = LinkWatchdog().also { it.pulseArrived() }
+
     /**
      * The watch loop over a live link: a tick every second and the pendant's battery notification every 5 s, so the
      * liveness clock is never more than 5 s old. Returns what the watchdog wanted, with the time it wanted it.
@@ -145,7 +194,7 @@ class ReconnectTest {
         untilMs: Long,
     ): List<Pair<Long, WatchdogAction>> =
         (lastAudioAtMs..untilMs step 1_000).mapNotNull { t ->
-            if (t % 5_000 == 0L) notificationArrived()
+            if (t % 5_000 == 0L) pulseArrived()
             val action = check(t, lastAudioAtMs, t - t % 5_000)
             (t to action).takeIf { action != WatchdogAction.None }
         }
@@ -190,7 +239,7 @@ class ReconnectTest {
 
     @Test
     fun `reconnect only after 20 seconds without a notification of any kind`() {
-        val watchdog = LinkWatchdog()
+        val watchdog = judged()
         val escalations = (0L..19_000L step 1_000).filter { watchdog.check(it, 0, 0) is WatchdogAction.Escalate }
 
         assertTrue(escalations.isEmpty())
@@ -199,7 +248,7 @@ class ReconnectTest {
 
     @Test
     fun `reconnect at most once per 60 seconds`() {
-        val watchdog = LinkWatchdog()
+        val watchdog = judged()
         assertEquals(WatchdogAction.Escalate(20_000), watchdog.check(20_000, 0, 0))
 
         // The reconnect brought nothing back: still quiet, so inside the cooldown, and a dead link is not resubscribed.
@@ -209,14 +258,38 @@ class ReconnectTest {
     }
 
     @Test
-    fun `notifications resuming lift the cooldown`() {
-        val watchdog = LinkWatchdog()
+    fun `the cooldown counts time only, a notification after the reconnect does not lift it`() {
+        val watchdog = judged()
         assertEquals(WatchdogAction.Escalate(20_000), watchdog.check(20_000, 0, 0))
 
-        watchdog.notificationArrived() // the reconnect brought the battery notifications back
-        assertEquals(WatchdogAction.None, watchdog.check(25_000, 25_000, 25_000)) // audio switched on again
-        // Quiet again for 20 s, well inside 60 s of the first reconnect.
-        assertEquals(WatchdogAction.Escalate(20_000), watchdog.check(45_000, 25_000, 25_000))
+        // The reconnect delivers one notification, during setUp, and the link goes quiet again.
+        watchdog.linkUp()
+        watchdog.pulseArrived()
+        assertEquals(WatchdogAction.None, watchdog.check(45_000, 25_000, 25_000)) // quiet for 20 s, but 25 s since
+        assertEquals(WatchdogAction.None, watchdog.check(79_999, 25_000, 25_000))
+        assertEquals(WatchdogAction.Escalate(55_000), watchdog.check(80_000, 25_000, 25_000))
+    }
+
+    @Test
+    fun `a link that never delivered a battery or button notification is never judged dead`() {
+        val watchdog = LinkWatchdog() // the battery subscription may never have taken
+
+        val escalations = (0L..600_000L step 1_000).filter { watchdog.check(it, 0, 0) is WatchdogAction.Escalate }
+        assertTrue(escalations.isEmpty())
+
+        watchdog.pulseArrived()
+        assertEquals(WatchdogAction.Escalate(601_000), watchdog.check(601_000, 0, 0))
+    }
+
+    @Test
+    fun `a new connection has to deliver its own pulse before its silence is read as death`() {
+        val watchdog = judged()
+
+        watchdog.linkUp()
+        assertEquals(WatchdogAction.None, watchdog.check(100_000, 0, 0))
+
+        watchdog.pulseArrived()
+        assertEquals(WatchdogAction.Escalate(100_000), watchdog.check(100_000, 0, 0))
     }
 
     @Test

@@ -68,6 +68,19 @@ internal inline fun <T> gattCall(
         fallback
     }
 
+/** Runs [attempt] up to [times] times until one succeeds; [onFailed] hears each failure, counting from 1. */
+internal inline fun retrying(
+    times: Int,
+    onFailed: (attempt: Int) -> Unit = {},
+    attempt: () -> Boolean,
+): Boolean {
+    for (n in 1..times) {
+        if (attempt()) return true
+        onFailed(n)
+    }
+    return false
+}
+
 /** Counts consecutive failures; [failed] is true once [limit] of them happened in a row. */
 internal class FailureStreak(
     private val limit: Int,
@@ -114,13 +127,15 @@ internal sealed interface WatchdogAction {
  *
  * - Audio absent for [audioIdleMs]: [WatchdogAction.AudioIdle], once per silence. Nothing else happens.
  * - Audio absent for [firstResubscribeMs] with the link alive: a resubscribe, then another after twice as long, up
- *   to [maxResubscribeMs]; audio arriving starts over. It is the only cure for an audio subscription that never
- *   took (`setUp` and `setAudio` do not check), and the firmware only logs a CCC change, so it costs nothing.
- * - No notification of any kind for [deadAfterMs]: [WatchdogAction.Escalate], at most once per
- *   [escalateCooldownMs]; notifications resuming clear the cooldown.
+ *   to [maxResubscribeMs]; audio arriving starts over. It recovers an audio subscription that failed even on its
+ *   second try, and the firmware only logs a CCC change, so a needless one costs nothing.
+ * - No notification of any kind for [deadAfterMs]: [WatchdogAction.Escalate], but only on a link that has delivered
+ *   one that is not audio (the battery's or the button's) since it came up. Before that its silence proves nothing:
+ *   the battery pulse may never have been subscribed. At most once per [escalateCooldownMs], counted in time alone:
+ *   whatever arrives in between does not shorten it.
  *
  * Call [check] only while audio is wanted: a muted pendant is silent by intent and must never reach it. The watch
- * loop owns it; only [notificationArrived] may be called from another thread.
+ * loop owns it; only [pulseArrived] and [linkUp] may be called from another thread.
  */
 internal class LinkWatchdog(
     private val audioIdleMs: Long = AUDIO_GAP_MS,
@@ -135,11 +150,16 @@ internal class LinkWatchdog(
     private var idleAnnounced = false
     private var escalatedAtMs = NEVER
 
-    @Volatile private var notificationSinceCheck = false
+    @Volatile private var pulseSeen = false
 
-    /** Called from the notification thread for every notification of any kind: real traffic lifts the cooldown. */
-    fun notificationArrived() {
-        notificationSinceCheck = true
+    /** Called from the notification thread for a notification that is not audio: the battery's or the button's. */
+    fun pulseArrived() {
+        pulseSeen = true
+    }
+
+    /** A new connection has to deliver its own pulse before its silence is read as death. */
+    fun linkUp() {
+        pulseSeen = false
     }
 
     /**
@@ -151,10 +171,6 @@ internal class LinkWatchdog(
         lastAudioAtMs: Long,
         lastAnyAtMs: Long,
     ): WatchdogAction {
-        if (notificationSinceCheck) {
-            notificationSinceCheck = false
-            escalatedAtMs = NEVER // the reconnect worked; the cap is for escalations that brought nothing back
-        }
         if (lastAudioAtMs != seenAudioAtMs) {
             seenAudioAtMs = lastAudioAtMs
             anchorMs = lastAudioAtMs
@@ -181,6 +197,7 @@ internal class LinkWatchdog(
         nowMs: Long,
         quietMs: Long,
     ): WatchdogAction {
+        if (!pulseSeen) return WatchdogAction.None // no battery or button notification yet: silence proves nothing
         if (escalatedAtMs != NEVER && nowMs - escalatedAtMs < escalateCooldownMs) return WatchdogAction.None
         escalatedAtMs = nowMs
         return WatchdogAction.Escalate(quietMs)

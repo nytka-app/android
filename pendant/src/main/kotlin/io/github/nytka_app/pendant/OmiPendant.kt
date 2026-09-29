@@ -99,7 +99,8 @@ class OmiPendant(
 
     /**
      * [elapsed] time of the last notification of any kind, or of the link coming up; the watchdog's liveness clock.
-     * The pendant notifies its battery every 5 s while connected, so a link that says nothing is dead.
+     * The pendant notifies its battery every 5 s while connected, so a link that has shown that pulse and then says
+     * nothing is dead.
      */
     @Volatile private var lastAnyNotificationAtMs = 0L
     private var watchingAdapter = false
@@ -315,7 +316,7 @@ class OmiPendant(
 
     /**
      * Watches the link while audio is wanted. Quiet audio is only noted, once: the pendant's microphone sleeps in a
-     * quiet room. A resubscribe is rare and slow, and a reconnect needs a link that says nothing at all.
+     * quiet room. A resubscribe is rare and slow, and a reconnect needs a link that had a pulse and says nothing.
      */
     private suspend fun watch(current: BluetoothGatt) {
         while (true) {
@@ -353,8 +354,8 @@ class OmiPendant(
         value: ByteArray,
     ) {
         val nowMs = elapsed()
-        lastAnyNotificationAtMs = nowMs // whichever characteristic: this is the link's pulse
-        watchdog.notificationArrived()
+        lastAnyNotificationAtMs = nowMs // audio or not: any notification shows the link is alive
+        if (uuid != OmiUuids.AUDIO_DATA) watchdog.pulseArrived() // the battery's or the button's: silence can be judged
         when (uuid) {
             OmiUuids.AUDIO_DATA -> {
                 lastAudioAtMs = nowMs
@@ -402,19 +403,31 @@ class OmiPendant(
         uuid: UUID,
         enabled: Boolean,
     ): Boolean {
-        val characteristic = find(current, uuid) ?: return false
-        guarded(false) { current.setCharacteristicNotification(characteristic, enabled) }
-        val descriptor = characteristic.getDescriptor(OmiUuids.CCCD) ?: return false
+        val name = uuid.toString().take(UUID_HEAD)
+        val characteristic = find(current, uuid)
+        if (characteristic == null) {
+            warn("subscribe: no characteristic $name")
+            return false
+        }
+        val descriptor = characteristic.getDescriptor(OmiUuids.CCCD)
+        if (descriptor == null) {
+            warn("subscribe: characteristic $name has no notification descriptor")
+            return false
+        }
         val value =
             if (enabled) {
                 BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
             } else {
                 BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
             }
-        val written = operation(OperationKind.DescriptorWrite, uuid) { write(current, descriptor, value) } != null
-        // The watchdog needs the battery pulse and audio needs its subscription: say when a write did not take.
-        if (!written) warn("notification write for ${uuid.toString().take(UUID_HEAD)} failed (enabled=$enabled)")
-        return written
+        // Audio, the button and the battery pulse all depend on this write: a failed one is tried once more at once.
+        return retrying(
+            SUBSCRIBE_ATTEMPTS,
+            onFailed = { warn("notification write for $name failed (enabled=$enabled, attempt $it)") },
+        ) {
+            guarded(false) { current.setCharacteristicNotification(characteristic, enabled) }
+            operation(OperationKind.DescriptorWrite, uuid) { write(current, descriptor, value) } != null
+        }
     }
 
     /** One GATT operation at a time; returns the callback's value, or null on failure or timeout. */
@@ -504,6 +517,7 @@ class OmiPendant(
                             BluetoothProfile.STATE_CONNECTED -> {
                                 mtu = null
                                 mtuStatus = null
+                                watchdog.linkUp()
                                 connectTimeout.cancel() // connected: setUp's own operation timeouts take over
                                 session?.cancel()
                                 session = scope.launch { setUp(current) }
@@ -620,6 +634,7 @@ class OmiPendant(
         const val MTU = 247
         const val MAX_RESUBSCRIBE_FAILURES = 3
         const val UUID_HEAD = 8
+        const val SUBSCRIBE_ATTEMPTS = 2
         const val OPERATION_TIMEOUT_MS = 5_000L
         const val WATCHDOG_TICK_MS = 1_000L
         const val RECONNECT_DELAY_MS = 3_000L
