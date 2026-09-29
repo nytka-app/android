@@ -70,6 +70,7 @@ fun ConversationsScreen(
     viewModel: ConversationsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val notice by viewModel.notice.collectAsStateWithLifecycle()
     LaunchedEffect(deleted) { deleted?.let(viewModel::forget) }
     // Refreshes when the screen is shown again and every 30 seconds while it is, but never in the background.
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -82,7 +83,7 @@ fun ConversationsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            item { StatusCard(status, onMute) }
+            item { StatusCard(status, onMute, notice) }
             state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
             state.days.forEach { day ->
                 item(key = "day-${day.title}") {

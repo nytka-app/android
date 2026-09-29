@@ -7,6 +7,7 @@ import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.ConversationPage
 import io.github.nytka_app.core.api.ConversationSummary
 import io.github.nytka_app.core.api.ConversationsClient
+import io.github.nytka_app.core.api.StatusClient
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,6 +45,7 @@ class ConversationsViewModel
     @Inject
     constructor(
         private val api: ConversationsClient,
+        private val status: StatusClient,
         private val clock: Clock,
     ) : ViewModel() {
         private val items = mutableListOf<ConversationSummary>()
@@ -54,12 +56,19 @@ class ConversationsViewModel
         private var loadsStarted = 0
         private val mutableState = MutableStateFlow(ConversationsUiState())
         val state: StateFlow<ConversationsUiState> = mutableState.asStateFlow()
+        private val mutableNotice = MutableStateFlow<String?>(null)
+
+        /** What the status card says about transcription on the server; null while nothing is wrong or known. */
+        val notice: StateFlow<String?> = mutableNotice.asStateFlow()
 
         init {
             refresh()
         }
 
-        fun refresh() = load(reset = true)
+        fun refresh() {
+            load(reset = true)
+            viewModelScope.launch { refreshNotice() }
+        }
 
         fun loadMore() {
             val current = mutableState.value
@@ -67,12 +76,14 @@ class ConversationsViewModel
         }
 
         /**
-         * Keeps the list fresh for as long as the caller lives: at once, then every [REFRESH_MS]. The screen runs it
-         * while it is resumed, so it stops in the background and starts again, with a refresh, on return.
+         * Keeps the list and the transcription notice fresh for as long as the caller lives: at once, then every
+         * [REFRESH_MS]. The screen runs it while it is resumed, so it stops in the background and starts again, with a
+         * refresh, on return.
          */
         suspend fun keepFresh() {
             while (true) {
                 refreshQuietly()
+                refreshNotice()
                 delay(REFRESH_MS)
             }
         }
@@ -95,6 +106,13 @@ class ConversationsViewModel
             // The page's cursor leads to the pages after it. With more loaded than it covers, the old one stays.
             if (beyond.isEmpty()) nextBefore = page.nextBefore
             mutableState.update { it.copy(days = group(items), error = null, endReached = nextBefore == null) }
+        }
+
+        /** A failed call says nothing about transcription, so the card keeps what it showed. */
+        private suspend fun refreshNotice() {
+            (status.status() as? ApiResult.Ok)?.let {
+                mutableNotice.value = transcriptionNotice(it.value, clock.instant(), clock.zone)
+            }
         }
 
         /** What the user has loaded past the fresh first [page]: the conversations older than its last one. */

@@ -17,6 +17,7 @@ import io.github.nytka_app.pendant.PendantConnection
 fun StatusCard(
     state: StatusUiState,
     onMute: (Boolean) -> Unit,
+    transcriptionNotice: String? = null,
 ) {
     ElevatedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -32,6 +33,7 @@ fun StatusCard(
             }
             Text("Pendant battery: ${state.capture.battery?.let { "$it%" } ?: "unknown"}")
             Text("Server: ${state.serverLine}")
+            transcriptionNotice?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             Text("Queued chunks: ${state.queuedChunks}")
             FilledTonalButton(onClick = { onMute(!state.muted) }) { Text(if (state.muted) "Unmute" else "Mute") }
         }

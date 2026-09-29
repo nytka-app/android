@@ -4,6 +4,8 @@ import io.github.nytka_app.MainDispatcherRule
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.ConversationPage
 import io.github.nytka_app.core.api.FailureKind
+import io.github.nytka_app.core.api.ServerStatus
+import io.github.nytka_app.core.api.StatusClient
 import io.github.nytka_app.ui.conversations.FakeConversations.Companion.summary
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
@@ -26,6 +28,18 @@ class ConversationsViewModelTest {
 
     private val clock = Clock.fixed(Instant.parse("2026-09-29T12:00:00Z"), ZoneOffset.UTC)
     private val api = FakeConversations()
+    private var serverStatus: ApiResult<ServerStatus> = ApiResult.Ok(ServerStatus(pendingChunks = 0))
+    private var statusCalls = 0
+
+    private fun newViewModel() =
+        ConversationsViewModel(
+            api,
+            StatusClient {
+                statusCalls++
+                serverStatus
+            },
+            clock,
+        )
 
     private val firstPage =
         ConversationPage(
@@ -41,7 +55,7 @@ class ConversationsViewModelTest {
     fun `groups the first page by day`() {
         api.pages[null] = ApiResult.Ok(firstPage)
 
-        val state = ConversationsViewModel(api, clock).state.value
+        val state = newViewModel().state.value
 
         assertEquals(listOf("Today", "Yesterday"), state.days.map { it.title })
         assertEquals(ConversationRow("b", "09:00–09:20", "20 min", "hello there"), state.days[0].rows.single())
@@ -57,7 +71,7 @@ class ConversationsViewModelTest {
                     nextBefore = null,
                 ),
             )
-        val viewModel = ConversationsViewModel(api, clock)
+        val viewModel = newViewModel()
 
         viewModel.loadMore()
         viewModel.loadMore()
@@ -74,7 +88,7 @@ class ConversationsViewModelTest {
     @Test
     fun `refresh starts over`() {
         api.pages[null] = ApiResult.Ok(firstPage)
-        val viewModel = ConversationsViewModel(api, clock)
+        val viewModel = newViewModel()
 
         viewModel.refresh()
 
@@ -89,7 +103,7 @@ class ConversationsViewModelTest {
     @Test
     fun `a deleted conversation leaves the list`() {
         api.pages[null] = ApiResult.Ok(firstPage)
-        val viewModel = ConversationsViewModel(api, clock)
+        val viewModel = newViewModel()
 
         viewModel.forget("b")
 
@@ -105,7 +119,7 @@ class ConversationsViewModelTest {
     fun `an error keeps what was loaded`() {
         api.pages[null] = ApiResult.Ok(firstPage)
         api.pages["2026-09-28T18:00:00Z"] = ApiResult.Failure(FailureKind.Network, "timeout")
-        val viewModel = ConversationsViewModel(api, clock)
+        val viewModel = newViewModel()
 
         viewModel.loadMore()
 
@@ -126,7 +140,7 @@ class ConversationsViewModelTest {
     fun `refreshes when the screen is shown and every 30 seconds after, until it is left`() =
         runTest {
             api.pages[null] = ApiResult.Ok(firstPage)
-            val viewModel = ConversationsViewModel(api, clock)
+            val viewModel = newViewModel()
             val shown = backgroundScope.launch { viewModel.keepFresh() }
 
             runCurrent()
@@ -152,7 +166,7 @@ class ConversationsViewModelTest {
     fun `showing the screen again refreshes at once`() =
         runTest {
             api.pages[null] = ApiResult.Ok(firstPage)
-            val viewModel = ConversationsViewModel(api, clock)
+            val viewModel = newViewModel()
             val first = backgroundScope.launch { viewModel.keepFresh() }
             runCurrent()
             first.cancel()
@@ -168,7 +182,7 @@ class ConversationsViewModelTest {
     fun `a refresh in the background leaves the pull-to-refresh spinner alone`() =
         runTest {
             api.pages[null] = ApiResult.Ok(firstPage)
-            val viewModel = ConversationsViewModel(api, clock)
+            val viewModel = newViewModel()
             val gate = CompletableDeferred<Unit>()
             api.gates += gate
 
@@ -196,7 +210,7 @@ class ConversationsViewModelTest {
                 ApiResult.Ok(
                     ConversationPage(listOf(summary("a", "2026-09-28T18:00:00Z", "2026-09-28T18:05:00Z")), null),
                 )
-            val viewModel = ConversationsViewModel(api, clock)
+            val viewModel = newViewModel()
             viewModel.loadMore()
             assertEquals(listOf("b", "a"), viewModel.ids())
             api.pages[null] =
@@ -229,7 +243,7 @@ class ConversationsViewModelTest {
                 ApiResult.Ok(
                     ConversationPage(listOf(summary("y", "2026-09-10T08:00:00Z", "2026-09-10T08:01:00Z")), null),
                 )
-            val viewModel = ConversationsViewModel(api, clock)
+            val viewModel = newViewModel()
             viewModel.loadMore()
 
             backgroundScope.launch { viewModel.keepFresh() }
@@ -244,7 +258,7 @@ class ConversationsViewModelTest {
     fun `a conversation deleted elsewhere drops out of the list`() =
         runTest {
             api.pages[null] = ApiResult.Ok(firstPage)
-            val viewModel = ConversationsViewModel(api, clock)
+            val viewModel = newViewModel()
             api.pages[null] =
                 ApiResult.Ok(
                     ConversationPage(listOf(summary("a", "2026-09-28T18:00:00Z", "2026-09-28T18:05:00Z")), null),
@@ -260,7 +274,7 @@ class ConversationsViewModelTest {
     fun `a failed refresh in the background changes nothing`() =
         runTest {
             api.pages[null] = ApiResult.Ok(firstPage)
-            val viewModel = ConversationsViewModel(api, clock)
+            val viewModel = newViewModel()
             api.pages[null] = ApiResult.Failure(FailureKind.Network, "timeout")
 
             backgroundScope.launch { viewModel.keepFresh() }
@@ -274,7 +288,7 @@ class ConversationsViewModelTest {
     fun `a refresh in the background recovers a list that failed to load`() =
         runTest {
             api.pages[null] = ApiResult.Failure(FailureKind.Network, "timeout")
-            val viewModel = ConversationsViewModel(api, clock)
+            val viewModel = newViewModel()
             assertEquals("timeout", viewModel.state.value.error)
             api.pages[null] = ApiResult.Ok(firstPage)
 
@@ -291,7 +305,7 @@ class ConversationsViewModelTest {
             api.pages[null] = ApiResult.Ok(firstPage)
             val gate = CompletableDeferred<Unit>()
             api.gates += gate
-            val viewModel = ConversationsViewModel(api, clock)
+            val viewModel = newViewModel()
 
             backgroundScope.launch { viewModel.keepFresh() }
             runCurrent()
@@ -306,7 +320,7 @@ class ConversationsViewModelTest {
     fun `an answer that lost the race to a newer load is dropped`() =
         runTest {
             api.pages[null] = ApiResult.Ok(firstPage)
-            val viewModel = ConversationsViewModel(api, clock)
+            val viewModel = newViewModel()
             val gate = CompletableDeferred<Unit>()
             api.gates += gate
             backgroundScope.launch { viewModel.keepFresh() }
@@ -323,5 +337,96 @@ class ConversationsViewModelTest {
             runCurrent()
 
             assertEquals(listOf("c"), viewModel.ids())
+        }
+
+    @Test
+    fun `a failed batch on the server shows on the status card`() {
+        api.pages[null] = ApiResult.Ok(firstPage)
+        serverStatus = ApiResult.Ok(ServerStatus(0, null, "The transcription endpoint answered 401."))
+
+        val viewModel = newViewModel()
+
+        assertEquals(
+            "Some speech could not be transcribed. The transcription endpoint answered 401.",
+            viewModel.notice.value,
+        )
+    }
+
+    @Test
+    fun `audio the server has held for over a quarter of an hour shows on the status card`() {
+        api.pages[null] = ApiResult.Ok(firstPage)
+        serverStatus = ApiResult.Ok(ServerStatus(12, "2026-09-29T11:30:00Z"))
+
+        val viewModel = newViewModel()
+
+        assertEquals("The server is behind: 12 chunks have waited since 11:30.", viewModel.notice.value)
+    }
+
+    @Test
+    fun `a server with nothing wrong shows nothing`() {
+        api.pages[null] = ApiResult.Ok(firstPage)
+        serverStatus = ApiResult.Ok(ServerStatus(2, "2026-09-29T11:58:00Z"))
+
+        assertNull(newViewModel().notice.value)
+    }
+
+    @Test
+    fun `a status call that fails keeps what the card showed`() {
+        api.pages[null] = ApiResult.Ok(firstPage)
+        serverStatus = ApiResult.Ok(ServerStatus(0, null, "The transcription endpoint answered 401."))
+        val viewModel = newViewModel()
+        serverStatus = ApiResult.Failure(FailureKind.Network, "timeout")
+
+        viewModel.refresh()
+
+        assertEquals(
+            "Some speech could not be transcribed. The transcription endpoint answered 401.",
+            viewModel.notice.value,
+        )
+    }
+
+    @Test
+    fun `pulling down asks the server again`() {
+        api.pages[null] = ApiResult.Ok(firstPage)
+        val viewModel = newViewModel()
+        assertNull(viewModel.notice.value)
+        serverStatus = ApiResult.Ok(ServerStatus(0, null, "The transcription endpoint answered 404."))
+
+        viewModel.refresh()
+
+        assertEquals(
+            "Some speech could not be transcribed. The transcription endpoint answered 404.",
+            viewModel.notice.value,
+        )
+    }
+
+    @Test
+    fun `the notice follows the server every 30 seconds while the screen is shown`() =
+        runTest {
+            api.pages[null] = ApiResult.Ok(firstPage)
+            val viewModel = newViewModel()
+            val shown = backgroundScope.launch { viewModel.keepFresh() }
+            runCurrent()
+            assertNull(viewModel.notice.value)
+
+            serverStatus = ApiResult.Ok(ServerStatus(0, null, "The transcription endpoint answered 401."))
+            advanceTimeBy(ConversationsViewModel.REFRESH_MS)
+            runCurrent()
+            assertEquals(
+                "Some speech could not be transcribed. The transcription endpoint answered 401.",
+                viewModel.notice.value,
+            )
+
+            // Deleting the conversation with the failed batch clears the server's error.
+            serverStatus = ApiResult.Ok(ServerStatus(0))
+            advanceTimeBy(ConversationsViewModel.REFRESH_MS)
+            runCurrent()
+            assertNull(viewModel.notice.value)
+
+            shown.cancel()
+            val calls = statusCalls
+            advanceTimeBy(10 * ConversationsViewModel.REFRESH_MS)
+            runCurrent()
+            assertEquals(calls, statusCalls)
         }
 }
