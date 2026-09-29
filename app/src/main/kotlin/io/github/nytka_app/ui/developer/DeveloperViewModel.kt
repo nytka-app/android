@@ -8,6 +8,7 @@ import io.github.nytka_app.BuildConfig
 import io.github.nytka_app.capture.CaptureHub
 import io.github.nytka_app.capture.DeviceActions
 import io.github.nytka_app.capture.FixtureRecorder
+import io.github.nytka_app.capture.SyncControls
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.StatusClient
 import io.github.nytka_app.core.diagnostics.DiagnosticsSource
@@ -46,6 +47,8 @@ data class DeveloperUiState(
     val diagnosticsUpload: Boolean = false,
     val diagnosticsNote: String? = null,
     val diagnosticsExport: String? = null,
+    /** The offline sync's counters; null hides the section (the pendant or the server cannot sync). */
+    val storage: StorageSection? = null,
 )
 
 @HiltViewModel
@@ -61,6 +64,7 @@ class DeveloperViewModel
         private val fixtures: FixtureRecorder,
         private val diagnostics: DiagnosticsSource,
         private val diagnosticsUploader: DiagnosticsUploader,
+        private val sync: SyncControls,
     ) : ViewModel() {
         private data class Local(
             val serverStatus: String = "Not checked",
@@ -101,7 +105,8 @@ class DeveloperViewModel
                     diagnosticsNote = note,
                     diagnosticsExport = screen.diagnosticsExport,
                 )
-            }.stateIn(viewModelScope, SharingStarted.Eagerly, DeveloperUiState())
+            }.combine(sync.status) { screen, storage -> screen.copy(storage = storageDetails(storage)) }
+                .stateIn(viewModelScope, SharingStarted.Eagerly, DeveloperUiState())
 
         init {
             refreshServerStatus()

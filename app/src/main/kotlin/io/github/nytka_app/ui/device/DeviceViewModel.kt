@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.nytka_app.BuildConfig
 import io.github.nytka_app.capture.DeviceActions
 import io.github.nytka_app.capture.PairedPendant
+import io.github.nytka_app.capture.SyncControls
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.InfoClient
@@ -46,6 +47,10 @@ data class DeviceUiState(
     val developerMode: Boolean = false,
     val tapsToDeveloper: Int = DeviceViewModel.TAPS_TO_DEVELOPER,
     val version: String = BuildConfig.VERSION_NAME,
+    /** The Pendant storage card; null hides it (no pendant, or a server without offline sync). */
+    val storage: StorageCard? = null,
+    /** Packets the first sync found, while it waits for "import or discard"; null when nothing is asked. */
+    val backlogPackets: Long? = null,
 )
 
 @HiltViewModel
@@ -55,12 +60,15 @@ class DeviceViewModel
         private val settings: SettingsSource,
         private val info: InfoClient,
         private val actions: DeviceActions,
+        private val sync: SyncControls,
     ) : ViewModel() {
         private val local = MutableStateFlow(DeviceUiState())
 
         val state: StateFlow<DeviceUiState> =
-            combine(settings.settings, local) { current, screen ->
+            combine(settings.settings, local, sync.status, sync.connected) { current, screen, storage, connected ->
                 screen.copy(
+                    storage = storageCard(storage, current.pendantAddress != null || current.fakePendant, connected),
+                    backlogPackets = storage.backlogPackets(),
                     pendantName = current.pendantName,
                     pendantAddress = current.pendantAddress,
                     serverUrl = current.serverUrl,
@@ -159,6 +167,16 @@ class DeviceViewModel
                     }
             }
         }
+
+        fun syncNow() = sync.syncNow()
+
+        fun stopSync() = sync.stopSync()
+
+        /** The answer to the first-sync question; the default, and what a dismissed question means. */
+        fun importBacklog() = sync.importBacklog()
+
+        /** Only after the screen's confirm: the pendant's ring is freed without being read. */
+        fun discardBacklog() = sync.discardBacklog()
 
         fun tapVersion() {
             val left = (local.value.tapsToDeveloper - 1).coerceAtLeast(0)

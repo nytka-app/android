@@ -20,6 +20,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,6 +50,9 @@ fun DeviceScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var pairError by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmForget by rememberSaveable { mutableStateOf(false) }
+    var backlogDismissed by rememberSaveable { mutableStateOf(false) }
+    // A later question is a new one: show it again.
+    LaunchedEffect(state.backlogPackets == null) { if (state.backlogPackets == null) backlogDismissed = false }
 
     LocalNetworkPrompt(state.askLocalNetwork, viewModel::localNetworkAnswered)
     LazyColumn(
@@ -66,6 +70,16 @@ fun DeviceScreen(
                 onMute = onMute,
                 onForget = { confirmForget = true },
             )
+        }
+        state.storage?.let { card ->
+            item {
+                PendantStorageCard(
+                    card,
+                    onSyncNow = viewModel::syncNow,
+                    onStop = viewModel::stopSync,
+                    onAnswerBacklog = { backlogDismissed = false },
+                )
+            }
         }
         item { ServerSection(state, status, viewModel::checkServer) }
         item { SettingsSection(state, viewModel::save) }
@@ -88,6 +102,16 @@ fun DeviceScreen(
                 )
             }
         }
+    }
+
+    state.backlogPackets?.let { packets ->
+        BacklogDialog(
+            packets,
+            dismissed = backlogDismissed,
+            onDismiss = { backlogDismissed = true },
+            onImport = viewModel::importBacklog,
+            onDiscard = viewModel::discardBacklog,
+        )
     }
 
     if (confirmForget) {

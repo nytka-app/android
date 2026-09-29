@@ -3,10 +3,13 @@ package io.github.nytka_app.ui.developer
 import io.github.nytka_app.FakeDeviceActions
 import io.github.nytka_app.FakeDiagnostics
 import io.github.nytka_app.FakeSettings
+import io.github.nytka_app.FakeSyncControls
 import io.github.nytka_app.MainDispatcherRule
 import io.github.nytka_app.capture.CaptureHub
 import io.github.nytka_app.capture.CapturedFrame
 import io.github.nytka_app.capture.FixtureRecorder
+import io.github.nytka_app.capture.StorageSyncStatus
+import io.github.nytka_app.capture.SyncState
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.DiagnosticsResult
 import io.github.nytka_app.core.api.ServerStatus
@@ -17,6 +20,7 @@ import io.github.nytka_app.core.queue.SealedChunk
 import io.github.nytka_app.core.settings.Settings
 import io.github.nytka_app.core.upload.ChunkSource
 import io.github.nytka_app.core.upload.Uploader
+import io.github.nytka_app.pendant.RingInfo
 import io.github.nytka_app.sample
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,6 +46,7 @@ class DeveloperViewModelTest {
 
     private val settings = FakeSettings(Settings(developerMode = true))
     private val actions = FakeDeviceActions()
+    private val sync = FakeSyncControls()
     private val fixtures =
         object : FixtureRecorder {
             override suspend fun record(frames: Flow<CapturedFrame>) = "/sdcard/fixtures/frames-1.nytk"
@@ -64,6 +69,7 @@ class DeveloperViewModelTest {
             fixtures = fixtures,
             diagnostics = diagnostics,
             diagnosticsUploader = diagnosticsUploader,
+            sync = sync,
         )
 
     @Test
@@ -197,4 +203,49 @@ class DeveloperViewModelTest {
             assertEquals(3, viewModel.state.value.diagnosticsSamples)
             assertTrue(viewModel.report().lines().contains("diagnostics=3 samples, upload=off"))
         }
+
+    @Test
+    fun `the storage section lists the ring and the sync counters`() {
+        sync.sync.value =
+            StorageSyncStatus(
+                SyncState.Syncing,
+                kbPerSecond = 38.0,
+                ring =
+                    RingInfo(
+                        readSeq = 10,
+                        writeSeq = 900,
+                        capacityPackets = 1_000_000,
+                        droppedPackets = 3,
+                        packetBytes = 444,
+                    ),
+                lastDoneStatus = 0,
+                liveLoss = 0.02,
+                mutedFrames = 7,
+                badStampRecords = 1,
+                skewS = 360,
+                segments = 2,
+            )
+
+        val lines =
+            viewModel()
+                .state.value.storage!!
+                .lines
+
+        assertEquals("Ring: read 10, write 900, capacity 1000000, dropped 3", lines[0])
+        assertTrue("Rate: 38.0 KB/s" in lines)
+        assertTrue("Live-stream loss during the last window: 2.0%" in lines)
+        assertTrue("Frames dropped for a mute: 7" in lines)
+        assertTrue("Clock skew: 360 s" in lines)
+        assertTrue("Clock segments: 2" in lines)
+    }
+
+    @Test
+    fun `the storage section is hidden when the pendant or the server cannot sync`() {
+        val viewModel = viewModel()
+
+        sync.sync.value = StorageSyncStatus(SyncState.Unsupported("firmware"))
+        assertNull(viewModel.state.value.storage)
+        sync.sync.value = StorageSyncStatus(SyncState.ServerOutdated("0.3.0", 1_000))
+        assertNull(viewModel.state.value.storage)
+    }
 }
