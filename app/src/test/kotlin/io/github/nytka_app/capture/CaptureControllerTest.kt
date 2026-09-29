@@ -34,7 +34,7 @@ class CaptureControllerTest {
             frames += session to seq
         }
 
-        override suspend fun seal(): Int = 1.also { seals++ }
+        override suspend fun seal(includePartialStored: Boolean): Int = 1.also { seals++ }
     }
 
     private class FakeSettings(

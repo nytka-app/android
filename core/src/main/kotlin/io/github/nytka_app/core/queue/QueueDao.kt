@@ -12,14 +12,19 @@ abstract class QueueDao {
     @Query("select max(id) from frames")
     abstract suspend fun lastFrameId(): Long?
 
-    @Query("select * from frames where id <= :throughId order by id limit :limit")
+    /** One source at a time: live frames arriving between stored commits must not split a stored run. */
+    @Query("select * from frames where id <= :throughId and stored = :stored order by id limit :limit")
     abstract suspend fun oldestFrames(
         throughId: Long,
+        stored: Boolean,
         limit: Int,
     ): List<QueuedFrame>
 
-    @Query("delete from frames where id <= :lastId")
-    abstract suspend fun deleteFramesThrough(lastId: Long)
+    @Query("delete from frames where id <= :lastId and stored = :stored")
+    abstract suspend fun deleteFramesThrough(
+        lastId: Long,
+        stored: Boolean,
+    )
 
     @Insert
     abstract suspend fun insertChunk(chunk: SealedChunk): Long
@@ -31,7 +36,7 @@ abstract class QueueDao {
         chunk: SealedChunk,
     ) {
         insertChunk(chunk)
-        deleteFramesThrough(lastFrameId)
+        deleteFramesThrough(lastFrameId, chunk.stored)
     }
 
     /** Live chunks before stored ones, each oldest first, so a backlog never delays new speech. */

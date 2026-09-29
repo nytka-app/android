@@ -20,7 +20,11 @@ interface FrameSink : StoredSink {
         payload: ByteArray,
     )
 
-    suspend fun seal(): Int
+    /**
+     * Turns queued frames into chunks. With [includePartialStored] false, a stored run that could still grow
+     * (the queue's newest, under the chunk limits) stays as frames; the end of a sync window seals it.
+     */
+    suspend fun seal(includePartialStored: Boolean = true): Int
 
     override val ackedThrough: Flow<Long> get() = emptyFlow()
 

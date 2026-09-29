@@ -22,7 +22,7 @@ class MuteLogRecorderTest {
             payload: ByteArray,
         ) = Unit
 
-        override suspend fun seal(): Int = 0
+        override suspend fun seal(includePartialStored: Boolean): Int = 0
 
         override suspend fun recordMute(
             atMs: Long,

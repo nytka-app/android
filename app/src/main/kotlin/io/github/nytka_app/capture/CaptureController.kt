@@ -167,7 +167,7 @@ class CaptureController(
         inner.launch {
             while (true) {
                 delay(sealEveryMs)
-                stored { sink.seal() }
+                stored { sink.seal(includePartialStored = false) }
             }
         }
         inner.launch { connectWithIntent(address) }

@@ -57,7 +57,7 @@ class StorageSyncControllerTest {
             payload: ByteArray,
         ) = Unit
 
-        override suspend fun seal(): Int = 1.also { seals++ }
+        override suspend fun seal(includePartialStored: Boolean): Int = 1.also { seals++ }
 
         override suspend fun position(): RingPosition? = stored
 

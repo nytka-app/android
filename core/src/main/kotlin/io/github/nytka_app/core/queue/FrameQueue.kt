@@ -95,22 +95,37 @@ class FrameQueue(
 
     override suspend fun muteChanges(): List<MuteChange> = dao.muteChanges().map { MuteChange(it.atMs, it.muted) }
 
-    /** Seals every frame queued before the call; returns how many chunks it made. */
-    override suspend fun seal(): Int =
+    /**
+     * Seals the frames queued before the call; returns how many chunks it made. Live and stored frames are read
+     * separately (live first), so commit batches and live frames arriving in between never cut a chunk.
+     */
+    override suspend fun seal(includePartialStored: Boolean): Int =
         sealing.withLock {
             val throughId = dao.lastFrameId() ?: return@withLock 0.also { refreshUsage() }
-            var sealed = 0
-            while (true) {
-                val frames = dao.oldestFrames(throughId, ChunkFormat.MAX_FRAMES)
-                if (frames.isEmpty()) break
-                val run = takeRun(frames)
-                dao.replaceFramesWithChunk(run.last().id, toChunk(run))
-                sealed++
-            }
+            val sealed =
+                sealSource(throughId, stored = false, includePartial = true) +
+                    sealSource(throughId, stored = true, includePartial = includePartialStored)
             enforceCap()
             refreshUsage()
             sealed
         }
+
+    private suspend fun sealSource(
+        throughId: Long,
+        stored: Boolean,
+        includePartial: Boolean,
+    ): Int {
+        var sealed = 0
+        while (true) {
+            val frames = dao.oldestFrames(throughId, stored, ChunkFormat.MAX_FRAMES)
+            val run = if (frames.isEmpty()) emptyList() else takeRun(frames)
+            // A run that reaches the end of what is queued and fits a chunk may still grow: hold it.
+            val holds = !includePartial && run.size == frames.size && run.size < ChunkFormat.MAX_FRAMES
+            if (run.isEmpty() || holds) return sealed
+            dao.replaceFramesWithChunk(run.last().id, toChunk(run))
+            sealed++
+        }
+    }
 
     override suspend fun oldest(): SealedChunk? = dao.oldestChunk()
 
