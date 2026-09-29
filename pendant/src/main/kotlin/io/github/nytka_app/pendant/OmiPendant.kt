@@ -40,12 +40,13 @@ class OmiPendant(
     private val context: Context,
     scope: CoroutineScope,
     private val now: () -> Long = System::currentTimeMillis,
+    private val logger: PendantLogger = PendantLogger.Android,
 ) : Pendant {
     /** Last resort: nothing launched here may take the process down or strand the link, so it reconnects. */
     private val scope =
         scope +
             CoroutineExceptionHandler { _, e ->
-                Log.e(TAG, "uncaught ${e.javaClass.simpleName}, reconnecting")
+                logger.log(Log.ERROR, TAG, "uncaught ${e.javaClass.simpleName}, reconnecting")
                 recoverLink()
             }
     private val mutableConnection = MutableStateFlow<PendantConnection>(PendantConnection.Disconnected)
@@ -71,7 +72,7 @@ class OmiPendant(
             CONNECT_TIMEOUT_MS,
             isConnecting = { address != null && mutableConnection.value == PendantConnection.Connecting },
             retry = {
-                Log.w(TAG, "connect timeout after ${CONNECT_TIMEOUT_MS}ms, opening a new client")
+                warn("connect timeout after ${CONNECT_TIMEOUT_MS}ms, opening a new client")
                 synchronized(link) {
                     close()
                     open()
@@ -108,7 +109,7 @@ class OmiPendant(
 
     override fun disconnect() =
         synchronized(link) {
-            Log.i(TAG, "disconnect requested")
+            info("disconnect requested")
             address = null
             audioIntent.clear()
             connectTimeout.cancel()
@@ -133,6 +134,10 @@ class OmiPendant(
         operation(OperationKind.Write, OmiUuids.HAPTIC) { write(current, characteristic, byteArrayOf(haptic.code)) }
     }
 
+    private fun info(message: String) = logger.log(Log.INFO, TAG, message)
+
+    private fun warn(message: String) = logger.log(Log.WARN, TAG, message)
+
     private fun open() =
         synchronized(link) {
             openLocked()
@@ -143,15 +148,15 @@ class OmiPendant(
         val adapter = guarded(null) { context.getSystemService(BluetoothManager::class.java)?.adapter }
         val enabled = guarded(null) { adapter?.isEnabled }
         if (adapter == null || enabled == null) {
-            Log.w(TAG, "open: Bluetooth stack unreachable, retrying")
+            warn("open: Bluetooth stack unreachable, retrying")
             return reopenLater() // no STATE_ON is coming for a stack that only failed to answer
         }
         if (!enabled) {
-            Log.i(TAG, "open: Bluetooth is off, waiting for STATE_ON")
+            info("open: Bluetooth is off, waiting for STATE_ON")
             return // adapterState opens a client once Bluetooth is back on
         }
         releaseGatt() // two callers can reach open(); never leave the first client alive
-        Log.i(TAG, "open: connectGatt ${redactAddress(target)}")
+        info("open: connectGatt ${redactAddress(target)}")
         gatt =
             guarded(
                 null,
@@ -190,7 +195,7 @@ class OmiPendant(
                     return
                 }
                 if (address == null) return
-                Log.i(TAG, "adapter STATE_ON, opening a fresh client")
+                info("adapter STATE_ON, opening a fresh client")
                 close()
                 mutableConnection.value = PendantConnection.Connecting
                 open()
@@ -233,21 +238,21 @@ class OmiPendant(
     /** Runs after every connection: MTU, services, codec check, device info, subscriptions. */
     private suspend fun setUp(current: BluetoothGatt) {
         operation(OperationKind.Mtu) { current.requestMtu(MTU) }
-        Log.i(TAG, "setUp: mtu requested")
+        info("setUp: mtu requested")
         // A failed discovery or codec read is transient: disconnecting makes the reconnect path try again.
         if (operation(OperationKind.Services) { current.discoverServices() } == null) {
-            Log.w(TAG, "setUp: service discovery failed")
+            warn("setUp: service discovery failed")
             return recoverLink()
         }
-        Log.i(TAG, "setUp: services discovered")
+        info("setUp: services discovered")
         val rawCodec =
             read(current, OmiUuids.AUDIO_CODEC) ?: run {
-                Log.w(TAG, "setUp: codec read failed")
+                warn("setUp: codec read failed")
                 return recoverLink()
             }
 
         val codec = OmiParsing.codec(rawCodec)
-        Log.i(TAG, "setUp: codec $codec")
+        info("setUp: codec $codec")
         if (codec != OPUS_FS320) {
             mutableConnection.value =
                 PendantConnection.Refused(
@@ -274,12 +279,12 @@ class OmiPendant(
                 subscribe(current, OmiUuids.AUDIO_DATA, true)
                 synchronized(assembler) { assembler.reset() }
                 lastAudioAtMs = now()
-                Log.i(TAG, "setUp: subscribed audio")
+                info("setUp: subscribed audio")
             }
             mutableConnection.value = PendantConnection.Connected(info)
         }
         connectTimeout.cancel()
-        Log.i(TAG, "setUp: connected")
+        info("setUp: connected")
         watch(current)
     }
 
@@ -291,13 +296,13 @@ class OmiPendant(
             if (!adapterOn()) continue
             audioLock.withLock {
                 if (audioIntent.wanted && now() - lastAudioAtMs >= RESUBSCRIBE_AFTER_MS) {
-                    Log.w(TAG, "watchdog: no audio for ${now() - lastAudioAtMs}ms, resubscribing")
+                    warn("watchdog: no audio for ${now() - lastAudioAtMs}ms, resubscribing")
                     subscribe(current, OmiUuids.AUDIO_DATA, false)
                     if (subscribe(current, OmiUuids.AUDIO_DATA, true)) {
                         resubscribeFailures.succeeded()
                     } else if (resubscribeFailures.failed()) {
                         // The client is dead though the adapter says on: only a new one can recover.
-                        Log.w(TAG, "watchdog: resubscribe keeps failing, reconnecting")
+                        warn("watchdog: resubscribe keeps failing, reconnecting")
                         return recoverLink()
                     }
                     synchronized(assembler) { assembler.reset() }
@@ -399,7 +404,7 @@ class OmiPendant(
     private inline fun <T> guarded(
         fallback: T,
         call: () -> T,
-    ): T = gattCall(fallback, { Log.w(TAG, "GATT call failed: ${it.javaClass.simpleName}") }, call)
+    ): T = gattCall(fallback, { warn("GATT call failed: ${it.javaClass.simpleName}") }, call)
 
     private fun finish(
         kind: OperationKind,
@@ -407,7 +412,7 @@ class OmiPendant(
         value: ByteArray?,
     ) {
         if (pending?.complete(kind, characteristic, value) == false) {
-            Log.w(TAG, "ignored a late $kind callback")
+            warn("ignored a late $kind callback")
         }
     }
 
@@ -445,7 +450,7 @@ class OmiPendant(
                 status: Int,
                 newState: Int,
             ) {
-                Log.i(TAG, "onConnectionStateChange status=$status newState=$newState")
+                info("onConnectionStateChange status=$status newState=$newState")
                 // A late event from a client already replaced (Bluetooth came back on) must not touch the live one.
                 if (current !== gatt) {
                     guarded(Unit) { current.close() }

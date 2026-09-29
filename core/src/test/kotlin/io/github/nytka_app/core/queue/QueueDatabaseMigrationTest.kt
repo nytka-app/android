@@ -53,6 +53,20 @@ class QueueDatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun `version 2 to 3 marks the samples already stored as samples`() {
+        helper.createDatabase(NAME, 2).use { db ->
+            db.execSQL("insert into diagnostic_samples (id, at_ms, json, uploaded) values ('a', 1, '{}', 0)")
+        }
+
+        helper.runMigrationsAndValidate(NAME, 3, true).use { db ->
+            db.query("select kind from diagnostic_samples where id = 'a'").use {
+                it.moveToFirst()
+                assertEquals("sample", it.getString(0))
+            }
+        }
+    }
+
     private companion object {
         const val NAME = "migration-test"
     }

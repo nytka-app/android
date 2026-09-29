@@ -12,7 +12,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * Sends samples to the user's own server, and only while the "Send diagnostics to my server" switch is
+ * Sends samples and log events to the user's own server, and only while the "Send diagnostics to my server" switch is
  * on: the switch is read again before every page, so turning it off stops the next request.
  */
 class DiagnosticsUploader(
@@ -128,7 +128,7 @@ class DiagnosticsUploader(
 
     companion object {
         const val PAGE_SIZE = 500
-        const val INTERVAL_MS = 5 * 60 * 1000L
+        const val INTERVAL_MS = 60 * 1000L
         const val MAX_BODY_BYTES = 256 * 1024
         const val NOT_SUPPORTED_NOTE = "Your server does not accept diagnostics (needs server 0.2.0)"
     }
