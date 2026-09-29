@@ -17,7 +17,10 @@ interface DiagnosticsDao {
     @Query("update diagnostic_samples set uploaded = 1 where id in (:ids)")
     suspend fun markUploaded(ids: List<String>)
 
-    @Query("select * from diagnostic_samples where at_ms >= :sinceMs order by at_ms, id limit :limit offset :offset")
+    @Query(
+        "select * from diagnostic_samples where kind = 'sample' and at_ms >= :sinceMs " +
+            "order by at_ms, id limit :limit offset :offset",
+    )
     suspend fun since(
         sinceMs: Long,
         limit: Int,
@@ -27,6 +30,12 @@ interface DiagnosticsDao {
     @Query("delete from diagnostic_samples where at_ms < :beforeMs")
     suspend fun deleteOlderThan(beforeMs: Long)
 
-    @Query("select count(*) from diagnostic_samples")
+    @Query(
+        "delete from diagnostic_samples where kind = 'log' and id in (" +
+            "select id from diagnostic_samples where kind = 'log' order by at_ms desc, id desc limit -1 offset :keep)",
+    )
+    suspend fun trimLogs(keep: Int)
+
+    @Query("select count(*) from diagnostic_samples where kind = 'sample'")
     fun count(): Flow<Int>
 }

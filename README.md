@@ -64,7 +64,11 @@ only on a network you trust.
 - **Diagnostics** (Device → Developer mode) record link quality, queue and upload health every
   10 seconds while Nytka records, and keep the last 7 days. **Export diagnostics** shares them as a
   CSV file through Android's share sheet. **Send diagnostics to my server** is off by default; on, it
-  uploads the samples to your server every 5 minutes (needs server 0.2.0 or later).
+  uploads the samples to your server every minute (needs server 0.2.0 or later).
+  The app's own log events (tags such as `OmiPendant`, `CaptureController`) are kept and uploaded with
+  them while Nytka records; they hold no audio, transcripts, server address or token. Read them on the
+  server with `select at, payload->>'level', payload->>'tag', payload->>'message' from diagnostics
+  where payload->>'kind' = 'log' order by at`. The export and the sample count leave them out.
 
 ## When something is off
 

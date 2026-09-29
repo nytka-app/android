@@ -1,8 +1,8 @@
 package io.github.nytka_app.capture
 
-import android.util.Log
 import io.github.nytka_app.core.diagnostics.DiagnosticSample
 import io.github.nytka_app.core.diagnostics.DiagnosticsSink
+import io.github.nytka_app.core.diagnostics.EventLog
 import io.github.nytka_app.core.diagnostics.Uuid7
 import io.github.nytka_app.core.queue.QueueUsage
 import io.github.nytka_app.core.upload.UploadState
@@ -32,6 +32,7 @@ class DiagnosticsRecorder(
     private val now: () -> Long = System::currentTimeMillis,
     private val newId: (Long) -> UUID = { Uuid7.next(it) },
     private val everyMs: Long = SAMPLE_EVERY_MS,
+    private val log: EventLog = EventLog.Logcat,
 ) {
     private var job: Job? = null
 
@@ -69,7 +70,7 @@ class DiagnosticsRecorder(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.w(TAG, "The diagnostics log refused a write: ${e.javaClass.simpleName}")
+            log.w(TAG, "The diagnostics log refused a write: ${e.javaClass.simpleName}")
         }
     }
 

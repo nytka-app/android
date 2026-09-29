@@ -85,4 +85,60 @@ class DiagnosticsLogTest {
             assertEquals(List(5) { sample(it).id }, pages.flatten())
             assertEquals(listOf(2, 2, 1), pages.map { it.size })
         }
+
+    @Test
+    fun `log events upload with the samples but stay out of the count and the export`() =
+        runTest {
+            log.add(sample(1))
+            log.addLog(logEvent(2))
+
+            assertEquals(listOf(sample(1).id, logEvent(2).id), log.pending(500).map { it.id })
+            assertEquals(listOf("sample", "log"), log.pending(500).map { it.kind })
+            assertEquals(1, log.count.first())
+            assertEquals(listOf(sample(1)), log.recent(100, 0))
+        }
+
+    @Test
+    fun `prune forgets old log events too`() =
+        runTest {
+            val day = 24 * 60 * 60 * 1000L
+            log.addLog(logEvent(1, atMs = nowMs - 8 * day))
+            log.addLog(logEvent(2))
+
+            log.prune()
+
+            assertEquals(listOf(logEvent(2).id), log.pending(500).map { it.id })
+        }
+
+    @Test
+    fun `prune keeps only the newest log rows beyond the cap and leaves the samples`() =
+        runTest {
+            val capped = DiagnosticsLog(database.diagnostics(), now = { nowMs }, maxLogRows = 3)
+            repeat(5) { capped.addLog(logEvent(it)) }
+            capped.add(sample(1))
+
+            capped.prune()
+
+            assertEquals(
+                listOf(sample(1).id) + listOf(2, 3, 4).map { logEvent(it).id },
+                capped.pending(500).map { it.id },
+            )
+        }
+
+    private fun logEvent(
+        n: Int,
+        atMs: Long = nowMs + n * 10_000L,
+    ) = DiagnosticLogEvent(
+        id = "00000000-0000-7000-8000-%012d".format(100 + n),
+        at =
+            java.time.Instant
+                .ofEpochMilli(atMs)
+                .toString(),
+        kind = DiagnosticLogEvent.KIND,
+        level = "I",
+        tag = "OmiPendant",
+        message = "hello",
+        appVersion = "0.2.0",
+        device = "Pixel 8 / Android 16",
+    )
 }

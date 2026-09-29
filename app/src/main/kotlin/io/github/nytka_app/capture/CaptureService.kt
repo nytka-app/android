@@ -17,6 +17,7 @@ import io.github.nytka_app.alerts.AlertInputs
 import io.github.nytka_app.alerts.AlertMonitor
 import io.github.nytka_app.alerts.AlertNotifications
 import io.github.nytka_app.alerts.Notifier
+import io.github.nytka_app.core.diagnostics.AppLog
 import io.github.nytka_app.core.diagnostics.DiagnosticsSink
 import io.github.nytka_app.core.diagnostics.DiagnosticsUploader
 import io.github.nytka_app.core.queue.FrameQueue
@@ -50,6 +51,8 @@ class CaptureService : LifecycleService() {
 
     @Inject lateinit var diagnostics: DiagnosticsSink
 
+    @Inject lateinit var appLog: AppLog
+
     @Inject lateinit var diagnosticsUploader: DiagnosticsUploader
 
     @Inject lateinit var hub: CaptureHub
@@ -63,6 +66,7 @@ class CaptureService : LifecycleService() {
     private var controller: CaptureController? = null
     private var recorder: DiagnosticsRecorder? = null
     private var started = false
+    private var logRun = 0L
 
     override fun onStartCommand(
         intent: Intent?,
@@ -95,22 +99,20 @@ class CaptureService : LifecycleService() {
             stopSelf()
             return
         }
+        logRun = appLog.start()
         val capture =
-            CaptureController(pendants.create(scope, current.fakePendant), queue, StoreCaptureSettings(settings), scope)
+            CaptureController(
+                pendants.create(scope, current.fakePendant),
+                queue,
+                StoreCaptureSettings(settings),
+                scope,
+                log = appLog,
+            )
         controller = capture
         hub.attach(capture)
         capture.start(address)
         scope.launch { uploader.run() }
-        recorder =
-            DiagnosticsRecorder(
-                capture.status,
-                queue.usage,
-                uploader.state,
-                diagnostics,
-                scope,
-                appVersion = BuildConfig.VERSION_NAME,
-                device = "${Build.MODEL} / Android ${Build.VERSION.RELEASE}",
-            ).also { it.start() }
+        recorder = startRecorder(capture)
         scope.launch { diagnosticsUploader.run() }
         scope.launch {
             val monitor = AlertMonitor()
@@ -142,15 +144,29 @@ class CaptureService : LifecycleService() {
             }
     }
 
+    private fun startRecorder(capture: CaptureController) =
+        DiagnosticsRecorder(
+            capture.status,
+            queue.usage,
+            uploader.state,
+            diagnostics,
+            scope,
+            appVersion = BuildConfig.VERSION_NAME,
+            device = "${Build.MODEL} / Android ${Build.VERSION.RELEASE}",
+            log = appLog,
+        ).also { it.start() }
+
     override fun onDestroy() {
         val capture = controller
         val diagnosticsRecorder = recorder
+        val logGeneration = logRun
         hub.detach()
         applicationScope.launch {
             // The last sample is of the running capture, before stopping resets its status.
             // Whatever happens to it, the capture below still stops.
             runCatching { diagnosticsRecorder?.stop() }
             capture?.stop()
+            appLog.stop(logGeneration)
             scope.cancel()
             // Alerts belong to a running capture: once it stops, none of them can clear on its own.
             Alert.entries.forEach { AlertNotifications.cancel(applicationContext, it) }

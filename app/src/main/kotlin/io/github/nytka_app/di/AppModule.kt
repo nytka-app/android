@@ -1,11 +1,13 @@
 package io.github.nytka_app.di
 
 import android.content.Context
+import android.os.Build
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import io.github.nytka_app.BuildConfig
 import io.github.nytka_app.capture.AndroidDeviceActions
 import io.github.nytka_app.capture.AndroidFixtureRecorder
 import io.github.nytka_app.capture.DeviceActions
@@ -15,10 +17,12 @@ import io.github.nytka_app.core.api.DiagnosticsClient
 import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.NytkaApi
 import io.github.nytka_app.core.api.StatusClient
+import io.github.nytka_app.core.diagnostics.AppLog
 import io.github.nytka_app.core.diagnostics.DiagnosticsLog
 import io.github.nytka_app.core.diagnostics.DiagnosticsSink
 import io.github.nytka_app.core.diagnostics.DiagnosticsSource
 import io.github.nytka_app.core.diagnostics.DiagnosticsUploader
+import io.github.nytka_app.core.diagnostics.EventLog
 import io.github.nytka_app.core.queue.FrameQueue
 import io.github.nytka_app.core.queue.QueueDatabase
 import io.github.nytka_app.core.settings.SettingsSource
@@ -96,6 +100,22 @@ object AppModule {
 
     @Provides
     fun diagnosticsSink(log: DiagnosticsLog): DiagnosticsSink = log
+
+    @Provides
+    @Singleton
+    fun appLog(
+        log: DiagnosticsLog,
+        @ApplicationScope scope: CoroutineScope,
+    ): AppLog =
+        AppLog(
+            log,
+            scope,
+            appVersion = BuildConfig.VERSION_NAME,
+            device = "${Build.MODEL} / Android ${Build.VERSION.RELEASE}",
+        )
+
+    @Provides
+    fun eventLog(log: AppLog): EventLog = log
 
     @Provides
     fun diagnosticsSource(log: DiagnosticsLog): DiagnosticsSource = log

@@ -1,7 +1,7 @@
 package io.github.nytka_app.capture
 
 import android.database.SQLException
-import android.util.Log
+import io.github.nytka_app.core.diagnostics.EventLog
 import io.github.nytka_app.core.queue.FrameSink
 import io.github.nytka_app.core.settings.SettingsStore
 import io.github.nytka_app.pendant.ButtonEvent
@@ -75,6 +75,7 @@ class CaptureController(
     private val scope: CoroutineScope,
     private val now: () -> Long = System::currentTimeMillis,
     private val sealEveryMs: Long = 30_000,
+    private val log: EventLog = EventLog.Logcat,
 ) {
     private val mutableStatus = MutableStateFlow(CaptureStatus())
     val status: StateFlow<CaptureStatus> = mutableStatus.asStateFlow()
@@ -145,7 +146,7 @@ class CaptureController(
             write()
             true
         } catch (e: SQLException) {
-            Log.w(TAG, "The frame queue refused a write: ${e.javaClass.simpleName}")
+            log.w(TAG, "The frame queue refused a write: ${e.javaClass.simpleName}")
             false
         }
 

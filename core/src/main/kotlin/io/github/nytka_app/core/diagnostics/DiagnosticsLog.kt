@@ -8,12 +8,13 @@ import java.time.Instant
 interface DiagnosticsSink {
     suspend fun add(sample: DiagnosticSample)
 
-    /** Forgets samples older than seven days. */
+    /** Forgets rows older than seven days, and the oldest log rows beyond a fixed count. */
     suspend fun prune()
 }
 
 /** What the uploader, the export and the developer screen read. [DiagnosticsLog] in the app. */
 interface DiagnosticsSource {
+    /** Samples only: log events do not count. */
     val count: Flow<Int>
 
     suspend fun pending(limit: Int): List<DiagnosticRow>
@@ -27,12 +28,14 @@ interface DiagnosticsSource {
     ): List<DiagnosticSample>
 }
 
-/** The samples of the last seven days, in Room next to the queue. */
+/** The samples and log events of the last seven days, in Room next to the queue. */
 class DiagnosticsLog(
     private val dao: DiagnosticsDao,
     private val now: () -> Long = System::currentTimeMillis,
+    private val maxLogRows: Int = MAX_LOG_ROWS,
 ) : DiagnosticsSink,
-    DiagnosticsSource {
+    DiagnosticsSource,
+    LogEventSink {
     private val json = Json { ignoreUnknownKeys = true }
 
     override val count: Flow<Int> = dao.count()
@@ -47,7 +50,21 @@ class DiagnosticsLog(
         )
     }
 
-    override suspend fun prune() = dao.deleteOlderThan(now() - RETENTION_MS)
+    override suspend fun addLog(event: DiagnosticLogEvent) {
+        dao.insert(
+            DiagnosticRow(
+                id = event.id,
+                atMs = Instant.parse(event.at).toEpochMilli(),
+                json = json.encodeToString(DiagnosticLogEvent.serializer(), event),
+                kind = DiagnosticLogEvent.KIND,
+            ),
+        )
+    }
+
+    override suspend fun prune() {
+        dao.deleteOlderThan(now() - RETENTION_MS)
+        dao.trimLogs(maxLogRows)
+    }
 
     override suspend fun pending(limit: Int): List<DiagnosticRow> = dao.oldestNotUploaded(limit)
 
@@ -62,6 +79,8 @@ class DiagnosticsLog(
         }
 
     companion object {
+        /** Log rows are written whether or not the upload is on, so they are capped by count too. */
+        const val MAX_LOG_ROWS = 20_000
         const val RETENTION_MS = 7 * 24 * 60 * 60 * 1000L
     }
 }
