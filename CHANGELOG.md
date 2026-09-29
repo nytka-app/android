@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/nytka-app/android/compare/v0.1.1...v0.2.0) (2026-09-29)
+
+
+### Features
+
+* record link and upload diagnostics; export them or send them to your server ([#5](https://github.com/nytka-app/android/issues/5)) ([58a9ed4](https://github.com/nytka-app/android/commit/58a9ed4a22437803c9c09f2c4aab1491a7b46f7a))
+
 ## [0.1.1](https://github.com/nytka-app/android/compare/v0.1.0...v0.1.1) (2026-09-29)
 
 
