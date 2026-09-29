@@ -11,11 +11,14 @@ Status: v0.1, capture and transcription. What v0.1 does and does not do:
 
 ## What you need
 
-- A phone on Android 12 or later.
+- A phone on Android 12 or later, with Bluetooth on.
 - An Omi pendant on consumer firmware 3.0.x. Nytka checks the pendant's audio codec when it
   connects and tells you if the firmware needs an update.
-- A Nytka server the phone can reach, and its token (`Nytka__AdminToken` in the server's `.env`).
-  The [server README](https://github.com/nytka-app/server#run-it) sets one up with Docker Compose.
+- A Nytka server the phone can reach, with its address and its token (`Nytka__AdminToken` in the
+  server's `.env`). The
+  [server README](https://github.com/nytka-app/server#first-run-about-5-minutes) sets one up with
+  Docker Compose. Keep the address and the token where you can paste them on the phone: the token
+  is a long random string.
 
 ## Install
 
@@ -23,28 +26,35 @@ Status: v0.1, capture and transcription. What v0.1 does and does not do:
    once. To update the pendant's firmware later, install it again, update, and uninstall it.
 2. On the phone, download `nytka-<version>.apk` from
    [Releases](https://github.com/nytka-app/android/releases/latest) and open it. Android asks once
-   whether your browser may install apps; allow it. From a computer: `adb install nytka-<version>.apk`.
+   whether your browser may install apps; allow it, then tap **Install**. From a computer:
+   `adb install nytka-<version>.apk`.
 
 A newer APK installs over the old one the same way and keeps the queue and the settings.
 
-## First run
+## First run (about 5 minutes)
 
-Charge the pendant and keep it next to the phone.
+Charge the pendant and keep it next to the phone. Open Nytka: its *Set up Nytka* screen has four
+steps.
 
 1. **Server.** Enter the server's address (`https://…`) and the token, and tap **Test connection**.
-   The next step opens once the server answers.
-2. **Permissions.** Tap **Allow** and grant *Nearby devices* (and *Notifications*, which Android 13 and
-   later ask for). Nytka never uses
-   the phone's microphone.
+   The next step opens once the server answers and accepts the token.
+2. **Permissions.** Tap **Allow**. Android shows a prompt for *Nearby devices*, so Nytka can reach
+   the pendant, and on Android 13 and later a second one for *Notifications*, for the recording
+   notification and the alerts. There are no others, and Nytka never uses the phone's microphone or
+   location.
 3. **Consent.** Read the note, tick **I understand** and tap **Continue**.
 4. **Pairing.** Turn the pendant on, tap **Pair pendant** and pick it in the list that opens.
+   **Set up later** skips this; the **Device** tab has the same **Pair pendant** button.
 
-The chip at the top now reads **Recording**, with a red dot and the pendant's battery. Speech shows
-up under **Conversations** a few minutes after it is said.
+Nytka now opens on **Conversations**. The chip at the top reads **Waiting** while the phone connects
+to the pendant, then **Recording**, with a red dot and the pendant's battery: the first run is done.
+Say something: within a minute the status card shows "Server: Last upload …", and the speech shows
+up under **Conversations** a few minutes after it is said. Pull the list down to refresh if a new
+conversation hasn't appeared.
 
-A server on a VPN such as Tailscale or WireGuard, without HTTPS, needs the **Private network**
-switch on the server step. It allows plain `http://`, which carries your audio unencrypted: use it
-only on a network you trust.
+A server on a VPN such as Tailscale or WireGuard, without HTTPS, needs the **Private network (allow
+plain HTTP)** switch on the server step and an address like `http://<address on the VPN>:8080`. It
+allows plain `http://`, which carries your audio unencrypted: use it only on a network you trust.
 
 ## Everyday use
 
@@ -52,7 +62,7 @@ only on a network you trust.
   recording again. **Mute** in the notification and on the status card does the same. Nothing is
   recorded while muted, and Nytka stays muted when the pendant reconnects.
 - **Offline**, audio waits on the phone and uploads once the server answers again, with the times
-  it was said. The queue holds up to 1 GiB, about 70 hours. Past 80% Nytka warns you; when it is
+  it was said. The queue holds up to 1 GiB, about 60 hours. Past 80% Nytka warns you; when it is
   full, the oldest audio goes first.
 - **Alerts** come when the pendant has been away for 5 minutes, the server has been unreachable
   for 15 minutes, or the pendant battery reaches 20%.
@@ -74,10 +84,14 @@ only on a network you trust.
 
 | What you see | What to do |
 |---|---|
+| "The server refused the token." on **Test connection** | The token differs from `Nytka__AdminToken` in the server's `.env`. Paste it again, whole. |
+| Another error on **Test connection**, such as "Failed to connect" or "Unable to resolve host" | The phone cannot reach that address; an unreachable one takes 15 seconds to fail. Open the address plus `/healthz` in the phone's browser: `{"status":"healthy"}` means the server is up, so recheck the address and the private-network switch in Nytka. Anything else is the network: the VPN is off, a firewall is in the way, or `NYTKA_BIND` on the server points elsewhere. |
+| "Without nearby devices Nytka cannot reach the pendant." | Android stops asking after two refusals. Open Nytka's app info (long-press its icon), allow *Nearby devices* under Permissions, come back and tap **Allow** again. If Nytka starts over at step 1, enter the address and the token once more. |
 | "Pendant not supported", or a message about the audio codec | Update the pendant's firmware with the official Omi app, then uninstall that app again. |
-| The chip stays on "Waiting" | The official Omi app still holds the pendant, Bluetooth is off, or the pendant is out of range or flat. |
+| The chip stays on "Waiting", or the pairing list is empty | The official Omi app (or another phone) still holds the pendant, Bluetooth is off, or the pendant is out of range or flat. |
 | "Paused: The server refused the token." | The server's token changed. Enter the new one under Device → Settings; nothing queued is lost. |
 | "Unreachable since …" | The phone cannot reach the server. Audio waits in the queue and uploads by itself. |
+| Conversations appear but stay empty after you pull down to refresh | The server could not transcribe the speech. Turn on developer mode (below) and tap **Check status**: it shows the server's last error, usually the transcription URL, key or model in the server's `.env`. |
 | The recording notification disappears on its own | Some phones stop background apps. Set Nytka's battery use to *Unrestricted* in its system settings; [dontkillmyapp.com](https://dontkillmyapp.com) has the steps for each maker. |
 
 ## What stays on the phone
