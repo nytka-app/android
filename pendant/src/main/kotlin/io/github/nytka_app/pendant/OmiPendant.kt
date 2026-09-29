@@ -37,6 +37,7 @@ import java.util.UUID
  * it before pairing, and the capture service only starts for a paired pendant.
  */
 @SuppressLint("MissingPermission")
+@Suppress("TooManyFunctions") // one Bluetooth link, one setUp: cohesive but wide
 class OmiPendant(
     private val context: Context,
     scope: CoroutineScope,
@@ -63,6 +64,9 @@ class OmiPendant(
     override val stats: StateFlow<LinkStats> = mutableStats
     override val frames: Flow<AudioFrame> = mutableFrames
     override val buttons: Flow<ButtonEvent> = mutableButtons
+
+    private val omiStorage = OmiStorage(GattStorageLink(), ::warn)
+    override val storage: PendantStorage = omiStorage
 
     private val assembler = FrameAssembler(now)
     private val operations = Mutex()
@@ -242,6 +246,7 @@ class OmiPendant(
     private fun close() {
         session?.cancel()
         pending?.done?.complete(null)
+        omiStorage.linkLost()
         releaseGatt()
         synchronized(assembler) { assembler.reset() }
     }
@@ -254,7 +259,7 @@ class OmiPendant(
         gatt = null
     }
 
-    /** Runs after every connection: MTU, services, codec check, device info, subscriptions. */
+    /** Runs after every connection: MTU, services, codec check, audio, pendant clock, device info, subscriptions. */
     private suspend fun setUp(current: BluetoothGatt) {
         operation(OperationKind.Mtu) {
             val known = mtu
@@ -286,26 +291,20 @@ class OmiPendant(
             return
         }
 
-        val info =
-            PendantInfo(
-                name = guarded("Omi") { current.device.name ?: "Omi" },
-                model = OmiParsing.text(read(current, OmiUuids.MODEL_NUMBER)),
-                firmware = OmiParsing.text(read(current, OmiUuids.FIRMWARE_REVISION)),
-                hardware = OmiParsing.text(read(current, OmiUuids.HARDWARE_REVISION)),
-            )
+        // Audio first, so a pendant that reconnects to a running service drops no frame while the rest of setUp runs.
+        val audioOn = audioLock.withLock { subscribeAudioIfWanted(current) }
+        val info = readInfo(current)
+        omiStorage.evaluate(info.firmware)
+        info("setUp: storage ${omiStorage.support.value}")
+        // The time write also tells the SD worker the clock is set: only a pendant with the ring gets it.
+        if (omiStorage.support.value == StorageSupport.Supported) syncPendantClock()
         subscribe(current, OmiUuids.BUTTON, true)
         subscribe(current, OmiUuids.BATTERY_LEVEL, true)
         mutableBattery.value = OmiParsing.battery(read(current, OmiUuids.BATTERY_LEVEL)) ?: mutableBattery.value
-        // Audio is the caller's intent and survives the link: resubscribe here, before Connected is
-        // published, instead of relying on the caller to notice the reconnect.
+        // Audio is the caller's intent and survives the link. A setAudio during setUp only recorded the intent,
+        // so subscribe here too if it arrived after the early subscription, before Connected is published.
         audioLock.withLock {
-            if (audioIntent.wanted) {
-                resume.switchedOn(elapsed())
-                subscribe(current, OmiUuids.AUDIO_DATA, true)
-                synchronized(assembler) { assembler.reset() }
-                lastAudioAtMs = elapsed()
-                info("setUp: subscribed audio")
-            }
+            reconcileAudio(current, audioOn)
             mutableConnection.value = PendantConnection.Connected(info)
         }
         connectTimeout.cancel()
@@ -313,6 +312,43 @@ class OmiPendant(
         lastAnyNotificationAtMs = elapsed() // the link just answered our reads: the liveness clock starts here
         watch(current)
     }
+
+    /** Subscribes to audio when the caller wants it; the caller holds [audioLock]. */
+    private suspend fun subscribeAudioIfWanted(current: BluetoothGatt): Boolean {
+        if (!audioIntent.wanted) return false
+        resume.switchedOn(elapsed())
+        val subscribed = subscribe(current, OmiUuids.AUDIO_DATA, true)
+        synchronized(assembler) { assembler.reset() }
+        lastAudioAtMs = elapsed()
+        info("setUp: subscribed audio")
+        return subscribed
+    }
+
+    /** Makes the audio subscription match the intent as it stands now; the caller holds [audioLock]. */
+    private suspend fun reconcileAudio(
+        current: BluetoothGatt,
+        subscribed: Boolean,
+    ) {
+        when {
+            audioIntent.wanted && !subscribed -> subscribeAudioIfWanted(current)
+            !audioIntent.wanted && subscribed -> subscribe(current, OmiUuids.AUDIO_DATA, false) // muted during setUp
+        }
+    }
+
+    /** The stamps of stored audio count from the pendant clock: read it before writing the phone's time. */
+    private suspend fun syncPendantClock() {
+        val written = omiStorage.syncClock { now() / MS_PER_S }
+        val skew = omiStorage.clockSkew.value?.let { "$it s" } ?: "unknown"
+        info("setUp: pendant clock skew $skew, write ${if (written) "ok" else "failed"}")
+    }
+
+    private suspend fun readInfo(current: BluetoothGatt) =
+        PendantInfo(
+            name = guarded("Omi") { current.device.name ?: "Omi" },
+            model = OmiParsing.text(read(current, OmiUuids.MODEL_NUMBER)),
+            firmware = OmiParsing.text(read(current, OmiUuids.FIRMWARE_REVISION)),
+            hardware = OmiParsing.text(read(current, OmiUuids.HARDWARE_REVISION)),
+        )
 
     /**
      * Watches the link while audio is wanted. Quiet audio is only noted, once: the pendant's microphone sleeps in a
@@ -355,7 +391,8 @@ class OmiPendant(
     ) {
         val nowMs = elapsed()
         lastAnyNotificationAtMs = nowMs // audio or not: any notification shows the link is alive
-        if (uuid != OmiUuids.AUDIO_DATA) watchdog.pulseArrived() // the battery's or the button's: silence can be judged
+        // The battery's or the button's notification lets silence be judged; audio and storage traffic do not.
+        if (uuid != OmiUuids.AUDIO_DATA && uuid != OmiUuids.STORAGE_CONTROL) watchdog.pulseArrived()
         when (uuid) {
             OmiUuids.AUDIO_DATA -> {
                 lastAudioAtMs = nowMs
@@ -376,6 +413,7 @@ class OmiPendant(
             }
             OmiUuids.BUTTON -> OmiParsing.button(value)?.let { mutableButtons.tryEmit(it) }
             OmiUuids.BATTERY_LEVEL -> mutableBattery.value = OmiParsing.battery(value)
+            OmiUuids.STORAGE_CONTROL -> omiStorage.onNotification(value)
         }
     }
 
@@ -498,6 +536,32 @@ class OmiPendant(
             descriptor.value = value
             current.writeDescriptor(descriptor)
         }
+
+    /** The storage service on the current GATT client: every call fails or returns null once the link is gone. */
+    private inner class GattStorageLink : StorageLink {
+        override suspend fun subscribeControl(): Boolean =
+            gatt?.let { subscribe(it, OmiUuids.STORAGE_CONTROL, true) } ?: false
+
+        override suspend fun writeControl(value: ByteArray): Boolean = writeTo(OmiUuids.STORAGE_CONTROL, value)
+
+        override suspend fun readClock(): Long? = RingProtocol.u32le(readFrom(OmiUuids.TIME_SYNC_READ))
+
+        override suspend fun writeClock(epochS: Long): Boolean =
+            writeTo(OmiUuids.TIME_SYNC_WRITE, RingProtocol.clock(epochS))
+
+        override suspend fun readFeatures(): Long? = RingProtocol.u32le(readFrom(OmiUuids.FEATURES))
+
+        private suspend fun readFrom(uuid: UUID): ByteArray? = gatt?.let { read(it, uuid) }
+
+        private suspend fun writeTo(
+            uuid: UUID,
+            value: ByteArray,
+        ): Boolean {
+            val current = gatt ?: return false
+            val characteristic = find(current, uuid) ?: return false
+            return operation(OperationKind.Write, uuid) { write(current, characteristic, value) } != null
+        }
+    }
 
     private val callback =
         object : BluetoothGattCallback() {
@@ -632,6 +696,7 @@ class OmiPendant(
 
     private companion object {
         const val MTU = 247
+        const val MS_PER_S = 1_000L
         const val MAX_RESUBSCRIBE_FAILURES = 3
         const val UUID_HEAD = 8
         const val SUBSCRIBE_ATTEMPTS = 2

@@ -71,6 +71,53 @@ data class LinkStats(
             }
 }
 
+/** Whether the pendant's offline storage can be used; only [Supported] lets [PendantStorage] write anything. */
+sealed interface StorageSupport {
+    /** Not known yet: before the firmware and the features are read, and after the link is lost. */
+    data object Unknown : StorageSupport
+
+    data object Supported : StorageSupport
+
+    /** [reason] is shown to the user as is. */
+    data class Unsupported(
+        val reason: String,
+    ) : StorageSupport
+}
+
+/**
+ * The pendant's ring of stored audio (firmware 3.0.20 and later). Nothing here writes to the storage service
+ * unless [support] is [StorageSupport.Supported]. One operation at a time; do not call another from inside a
+ * collector of [read].
+ */
+interface PendantStorage {
+    val support: StateFlow<StorageSupport>
+
+    /** Pendant clock minus phone clock in seconds, read by `setUp` before it writes the phone's; null if unread. */
+    val clockSkew: StateFlow<Long?>
+
+    /** The status of the last [info] that returned null (a [RingStatus] value), null after one that worked. */
+    val lastStatus: StateFlow<Int?>
+
+    /** Writes the phone's time to the pendant clock. */
+    suspend fun setTime(epochS: Long): Boolean
+
+    /** Sends stop, then INFO; null when it failed, with [lastStatus] telling why (the caller retries status 9). */
+    suspend fun info(): RingInfo?
+
+    /**
+     * Reads up to [count] packets from [fromSeq]. Every window ends with one [RingEvent.Done]: the firmware's, or
+     * one built here for a refused READ (its ACK status), a silence ([RingStatus.TIMEOUT]) or a lost link
+     * ([RingStatus.LINK_LOST]). Cancelling the collector sends stop.
+     */
+    fun read(
+        fromSeq: Long,
+        count: Int,
+    ): Flow<RingEvent>
+
+    /** Frees the ring below [seq]; returns the ACK status, or a negative [RingStatus] value if nothing answered. */
+    suspend fun advance(seq: Long): Int
+}
+
 /**
  * An Omi pendant, or something that behaves like one. A lost link loses every subscription, but
  * not the caller's intent: after a reconnect the pendant subscribes to audio again by itself if the
@@ -88,6 +135,8 @@ interface Pendant {
     val frames: Flow<AudioFrame>
 
     val buttons: Flow<ButtonEvent>
+
+    val storage: PendantStorage
 
     /** Connects and keeps reconnecting until [disconnect]. */
     fun connect(address: String)

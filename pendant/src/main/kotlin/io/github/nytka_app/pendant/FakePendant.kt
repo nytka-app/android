@@ -35,6 +35,11 @@ class FakePendant(
     override val frames: Flow<AudioFrame> = mutableFrames
     override val buttons: Flow<ButtonEvent> = mutableButtons
 
+    /** The pendant's stored audio; fill it with [FakeRing.store], and pick the firmware it behaves as. */
+    val ring = FakeRing(scope)
+    private val omiStorage = OmiStorage(ring).also { ring.listener = it::onNotification }
+    override val storage: PendantStorage = omiStorage
+
     val haptics: List<Haptic> get() = recordedHaptics.toList()
 
     var audioEnabled = false
@@ -44,6 +49,12 @@ class FakePendant(
         mutableConnection.value = refusal?.let { PendantConnection.Refused(it) }
             ?: PendantConnection.Connected(PendantInfo(name = "Fake pendant", model = "Fake", firmware = "fake"))
         if (mutableBattery.value == null) mutableBattery.value = 82
+        if (mutableConnection.value is PendantConnection.Connected) {
+            scope.launch {
+                omiStorage.syncClock { now() / 1000 }
+                omiStorage.evaluate(ring.firmware)
+            }
+        }
         applyAudio() // like OmiPendant: the caller's audio intent survives a lost link
     }
 
@@ -76,6 +87,8 @@ class FakePendant(
         streaming?.cancel()
         streaming = null
         audioEnabled = false
+        ring.disconnect()
+        omiStorage.linkLost()
         mutableConnection.value = PendantConnection.Disconnected
     }
 
