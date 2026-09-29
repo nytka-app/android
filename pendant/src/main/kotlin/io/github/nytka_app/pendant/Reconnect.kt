@@ -1,5 +1,6 @@
 package io.github.nytka_app.pendant
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -42,6 +43,41 @@ internal class PendingOperation(
         characteristic: UUID?,
         value: ByteArray?,
     ): Boolean = (kind == this.kind && characteristic == this.characteristic) && done.complete(value)
+}
+
+/**
+ * Runs one Bluetooth call and returns [fallback] if it throws. When the Bluetooth stack goes away
+ * (Bluetooth switched off, its process killed) `BluetoothGatt` calls throw a `RuntimeException`
+ * wrapping `DeadObjectException`, and `SecurityException` when a permission is revoked; both mean
+ * the same as the call returning false, and the adapter-state path recovers the link.
+ * Cancellation passes through: it is an `IllegalStateException`, so it must be rethrown.
+ */
+@Suppress("TooGenericExceptionCaught") // the framework wraps RemoteException in a bare RuntimeException
+internal inline fun <T> gattCall(
+    fallback: T,
+    onError: (RuntimeException) -> Unit = {},
+    call: () -> T,
+): T =
+    try {
+        call()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: RuntimeException) {
+        onError(e)
+        fallback
+    }
+
+/** Counts consecutive failures; [failed] is true once [limit] of them happened in a row. */
+internal class FailureStreak(
+    private val limit: Int,
+) {
+    private var count = 0
+
+    fun failed(): Boolean = ++count >= limit
+
+    fun succeeded() {
+        count = 0
+    }
 }
 
 /**

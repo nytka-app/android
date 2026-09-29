@@ -16,6 +16,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.util.Log
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -24,6 +25,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
@@ -36,9 +38,16 @@ import java.util.UUID
 @SuppressLint("MissingPermission")
 class OmiPendant(
     private val context: Context,
-    private val scope: CoroutineScope,
+    scope: CoroutineScope,
     private val now: () -> Long = System::currentTimeMillis,
 ) : Pendant {
+    /** Last resort: nothing launched here may take the process down or strand the link, so it reconnects. */
+    private val scope =
+        scope +
+            CoroutineExceptionHandler { _, e ->
+                Log.e(TAG, "uncaught ${e.javaClass.simpleName}, reconnecting")
+                recoverLink()
+            }
     private val mutableConnection = MutableStateFlow<PendantConnection>(PendantConnection.Disconnected)
     private val mutableBattery = MutableStateFlow<Int?>(null)
     private val mutableStats = MutableStateFlow(LinkStats())
@@ -86,6 +95,7 @@ class OmiPendant(
     private var emittedFrames = 0L
     private var overflowFrames = 0L
     private var session: Job? = null
+    private val resubscribeFailures = FailureStreak(MAX_RESUBSCRIBE_FAILURES)
 
     override fun connect(address: String) =
         synchronized(link) {
@@ -130,15 +140,34 @@ class OmiPendant(
 
     private fun openLocked() {
         val target = address ?: return // re-checked under the lock: disconnect() may have won
-        val adapter = context.getSystemService(BluetoothManager::class.java).adapter
-        if (!adapter.isEnabled) {
+        val adapter = guarded(null) { context.getSystemService(BluetoothManager::class.java)?.adapter }
+        val enabled = guarded(null) { adapter?.isEnabled }
+        if (adapter == null || enabled == null) {
+            Log.w(TAG, "open: Bluetooth stack unreachable, retrying")
+            return reopenLater() // no STATE_ON is coming for a stack that only failed to answer
+        }
+        if (!enabled) {
             Log.i(TAG, "open: Bluetooth is off, waiting for STATE_ON")
             return // adapterState opens a client once Bluetooth is back on
         }
         releaseGatt() // two callers can reach open(); never leave the first client alive
         Log.i(TAG, "open: connectGatt ${redactAddress(target)}")
-        gatt = adapter.getRemoteDevice(target).connectGatt(context, true, callback, BluetoothDevice.TRANSPORT_LE)
+        gatt =
+            guarded(
+                null,
+            ) { adapter.getRemoteDevice(target).connectGatt(context, true, callback, BluetoothDevice.TRANSPORT_LE) }
         if (gatt == null) reopenLater() else connectTimeout.arm()
+    }
+
+    /** Drops the client and starts over: for a link that failed in a way no callback will report. */
+    private fun recoverLink() {
+        synchronized(link) {
+            if (address == null) return
+            close()
+            resubscribeFailures.succeeded()
+            mutableConnection.value = PendantConnection.Connecting
+        }
+        reopenLater()
     }
 
     private fun reopenLater() {
@@ -195,8 +224,8 @@ class OmiPendant(
 
     private fun releaseGatt() {
         gatt?.let {
-            it.disconnect()
-            it.close()
+            guarded(Unit) { it.disconnect() }
+            guarded(Unit) { it.close() }
         }
         gatt = null
     }
@@ -208,13 +237,13 @@ class OmiPendant(
         // A failed discovery or codec read is transient: disconnecting makes the reconnect path try again.
         if (operation(OperationKind.Services) { current.discoverServices() } == null) {
             Log.w(TAG, "setUp: service discovery failed")
-            return current.disconnect()
+            return recoverLink()
         }
         Log.i(TAG, "setUp: services discovered")
         val rawCodec =
             read(current, OmiUuids.AUDIO_CODEC) ?: run {
                 Log.w(TAG, "setUp: codec read failed")
-                return current.disconnect()
+                return recoverLink()
             }
 
         val codec = OmiParsing.codec(rawCodec)
@@ -230,7 +259,7 @@ class OmiPendant(
 
         val info =
             PendantInfo(
-                name = current.device.name ?: "Omi",
+                name = guarded("Omi") { current.device.name ?: "Omi" },
                 model = OmiParsing.text(read(current, OmiUuids.MODEL_NUMBER)),
                 firmware = OmiParsing.text(read(current, OmiUuids.FIRMWARE_REVISION)),
                 hardware = OmiParsing.text(read(current, OmiUuids.HARDWARE_REVISION)),
@@ -258,11 +287,19 @@ class OmiPendant(
     private suspend fun watch(current: BluetoothGatt) {
         while (true) {
             delay(WATCHDOG_TICK_MS)
+            // Bluetooth is turning off or off: the adapter-state path reopens the link, a resubscribe would only fail.
+            if (!adapterOn()) continue
             audioLock.withLock {
                 if (audioIntent.wanted && now() - lastAudioAtMs >= RESUBSCRIBE_AFTER_MS) {
                     Log.w(TAG, "watchdog: no audio for ${now() - lastAudioAtMs}ms, resubscribing")
                     subscribe(current, OmiUuids.AUDIO_DATA, false)
-                    subscribe(current, OmiUuids.AUDIO_DATA, true)
+                    if (subscribe(current, OmiUuids.AUDIO_DATA, true)) {
+                        resubscribeFailures.succeeded()
+                    } else if (resubscribeFailures.failed()) {
+                        // The client is dead though the adapter says on: only a new one can recover.
+                        Log.w(TAG, "watchdog: resubscribe keeps failing, reconnecting")
+                        return recoverLink()
+                    }
                     synchronized(assembler) { assembler.reset() }
                     lastAudioAtMs = now()
                 }
@@ -300,10 +337,12 @@ class OmiPendant(
         current: BluetoothGatt,
         uuid: UUID,
     ): BluetoothGattCharacteristic? =
-        current.services
-            .asSequence()
-            .flatMap { it.characteristics.asSequence() }
-            .firstOrNull { it.uuid == uuid }
+        guarded(null) {
+            current.services
+                .asSequence()
+                .flatMap { it.characteristics.asSequence() }
+                .firstOrNull { it.uuid == uuid }
+        }
 
     private suspend fun read(
         current: BluetoothGatt,
@@ -317,17 +356,17 @@ class OmiPendant(
         current: BluetoothGatt,
         uuid: UUID,
         enabled: Boolean,
-    ) {
-        val characteristic = find(current, uuid) ?: return
-        current.setCharacteristicNotification(characteristic, enabled)
-        val descriptor = characteristic.getDescriptor(OmiUuids.CCCD) ?: return
+    ): Boolean {
+        val characteristic = find(current, uuid) ?: return false
+        guarded(false) { current.setCharacteristicNotification(characteristic, enabled) }
+        val descriptor = characteristic.getDescriptor(OmiUuids.CCCD) ?: return false
         val value =
             if (enabled) {
                 BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
             } else {
                 BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE
             }
-        operation(OperationKind.DescriptorWrite, uuid) { write(current, descriptor, value) }
+        return operation(OperationKind.DescriptorWrite, uuid) { write(current, descriptor, value) } != null
     }
 
     /** One GATT operation at a time; returns the callback's value, or null on failure or timeout. */
@@ -339,10 +378,28 @@ class OmiPendant(
         operations.withLock {
             val op = PendingOperation(kind, characteristic)
             pending = op
-            val result = if (start()) withTimeoutOrNull(OPERATION_TIMEOUT_MS) { op.done.await() } else null
+            val result =
+                if (guarded(
+                        false,
+                        start,
+                    )
+                ) {
+                    withTimeoutOrNull(OPERATION_TIMEOUT_MS) { op.done.await() }
+                } else {
+                    null
+                }
             pending = null
             result
         }
+
+    private fun adapterOn(): Boolean =
+        guarded(false) { context.getSystemService(BluetoothManager::class.java).adapter.isEnabled }
+
+    /** A GATT call that returns [fallback] instead of throwing when the Bluetooth stack is gone. */
+    private inline fun <T> guarded(
+        fallback: T,
+        call: () -> T,
+    ): T = gattCall(fallback, { Log.w(TAG, "GATT call failed: ${it.javaClass.simpleName}") }, call)
 
     private fun finish(
         kind: OperationKind,
@@ -391,7 +448,7 @@ class OmiPendant(
                 Log.i(TAG, "onConnectionStateChange status=$status newState=$newState")
                 // A late event from a client already replaced (Bluetooth came back on) must not touch the live one.
                 if (current !== gatt) {
-                    current.close()
+                    guarded(Unit) { current.close() }
                     return
                 }
                 when (newState) {
@@ -500,6 +557,7 @@ class OmiPendant(
 
     private companion object {
         const val MTU = 247
+        const val MAX_RESUBSCRIBE_FAILURES = 3
         const val OPERATION_TIMEOUT_MS = 5_000L
         const val WATCHDOG_TICK_MS = 1_000L
         const val RESUBSCRIBE_AFTER_MS = 4_000L
