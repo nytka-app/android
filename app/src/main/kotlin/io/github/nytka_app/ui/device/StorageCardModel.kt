@@ -53,7 +53,7 @@ private fun action(
 ): StorageAction =
     when {
         state is SyncState.Unsupported -> StorageAction.None
-        state is SyncState.AwaitingBacklog -> StorageAction.AnswerBacklog
+        state is SyncState.AwaitingBacklog -> if (connected) StorageAction.AnswerBacklog else StorageAction.None
         running || state == SyncState.Checking -> StorageAction.Stop
         connected -> StorageAction.SyncNow
         else -> StorageAction.None

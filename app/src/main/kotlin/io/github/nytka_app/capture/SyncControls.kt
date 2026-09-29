@@ -18,10 +18,13 @@ interface SyncControls {
 
     fun stopSync()
 
-    /** The answer to the first-sync backlog question: read it all (the default). */
+    /**
+     * The answer to the first-sync backlog question: read it all. Dismissing the question is no answer: it is asked
+     * again later.
+     */
     fun importBacklog()
 
-    /** The answer to the first-sync backlog question: free the pendant's ring without reading it. */
+    /** The answer to the first-sync backlog question, after a confirm: free the pendant's ring without reading it. */
     fun discardBacklog()
 }
 

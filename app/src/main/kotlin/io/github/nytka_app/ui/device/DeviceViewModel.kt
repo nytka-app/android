@@ -51,7 +51,7 @@ data class DeviceUiState(
     val storage: StorageCard? = null,
     /** Packets the first sync found, while it waits for "import or discard"; null when nothing is asked. */
     val backlogPackets: Long? = null,
-    /** Whether /info lists `offline-sync`; null until the server has answered. False hides the card. */
+    /** Whether /info lists `offline-sync`; null until it answers and after a failed check. Only true shows the card. */
     val serverSync: Boolean? = null,
 )
 
@@ -71,8 +71,9 @@ class DeviceViewModel
                 screen.copy(
                     storage =
                         storageCard(storage, current.pendantAddress != null || current.fakePendant, connected)
-                            ?.takeIf { screen.serverSync != false },
-                    backlogPackets = storage.backlogPackets(),
+                            ?.takeIf { screen.serverSync == true },
+                    // Nobody can answer while the pendant is away: the sync (and its service) is what takes the answer.
+                    backlogPackets = storage.backlogPackets()?.takeIf { connected },
                     pendantName = current.pendantName,
                     pendantAddress = current.pendantAddress,
                     serverUrl = current.serverUrl,
@@ -143,6 +144,7 @@ class DeviceViewModel
                             serverState = result.message,
                             apiVersion = null,
                             apiMismatch = false,
+                            serverSync = null,
                             serverUnreachable = result.kind == FailureKind.Network,
                         )
                     }

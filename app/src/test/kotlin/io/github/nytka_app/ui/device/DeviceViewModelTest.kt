@@ -343,4 +343,30 @@ class DeviceViewModelTest {
 
         assertNull(viewModel().state.value.storage)
     }
+
+    @Test
+    fun `a failed check hides the card again`() {
+        val viewModel = viewModel()
+        assertTrue(viewModel.state.value.storage != null)
+
+        info = ApiResult.Failure(FailureKind.Network, "failed to connect")
+        viewModel.checkServer()
+
+        assertNull(viewModel.state.value.storage)
+    }
+
+    @Test
+    fun `the backlog question waits while the pendant is away`() {
+        sync.sync.value = StorageSyncStatus(SyncState.AwaitingBacklog(100_000))
+        sync.link.value = false
+
+        val viewModel = viewModel()
+
+        assertNull(viewModel.state.value.backlogPackets)
+        assertEquals(
+            StorageAction.None,
+            viewModel.state.value.storage!!
+                .action,
+        )
+    }
 }
