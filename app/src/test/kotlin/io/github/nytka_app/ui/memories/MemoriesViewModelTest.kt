@@ -186,6 +186,41 @@ class MemoriesViewModelTest {
     }
 
     @Test
+    fun `a timestamp with an offset parses and a bad one leaves no date`() {
+        api.pages[null] =
+            ApiResult.Ok(
+                MemoryPage(
+                    listOf(
+                        memory("a", "one", "Lunch", "2026-09-29T09:00:00+00:00", "c1"),
+                        memory("b", "two", "Walk", "not a date", "c2"),
+                    ),
+                ),
+            )
+
+        val rows = newViewModel().state.value.rows
+
+        assertEquals("Lunch · Today", rows[0].source)
+        assertEquals("Walk", rows[1].source)
+    }
+
+    @Test
+    fun `editing a memory that is gone says so and reads the list again`() {
+        api.pages[null] = ApiResult.Ok(MemoryPage(listOf(memory("a", "one"))))
+        api.write = ApiResult.Failure(FailureKind.NotFound, "Not found.")
+        val viewModel = newViewModel()
+
+        viewModel.startEdit("a")
+        viewModel.save("two")
+
+        assertEquals(
+            "This item no longer exists",
+            viewModel.state.value.editor
+                ?.error,
+        )
+        assertEquals(listOf(null, null), api.requested)
+    }
+
+    @Test
     fun `a read token cannot delete`() {
         api.pages[null] = ApiResult.Ok(MemoryPage(listOf(memory("a", "one"))))
         api.deleteResult = ApiResult.Failure(FailureKind.Forbidden, "no")

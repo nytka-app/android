@@ -8,6 +8,7 @@ import io.github.nytka_app.core.api.Delivery
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.Webhook
 import io.github.nytka_app.core.api.WebhooksClient
+import io.github.nytka_app.ui.itemNotice
 import io.github.nytka_app.ui.notice
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,7 +21,9 @@ import javax.inject.Inject
 data class NewSecret(
     val url: String,
     val secret: String,
-)
+) {
+    override fun toString() = "NewSecret(url=$url, secret=***)"
+}
 
 /** The add dialog. [error] is what the server or the URL check refused. */
 data class WebhookCreator(
@@ -116,7 +119,7 @@ class WebhooksViewModel
             viewModelScope.launch {
                 when (val result = api.setWebhookActive(id, active)) {
                     is ApiResult.Ok -> replace(result.value)
-                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.notice()) }
+                    is ApiResult.Failure -> itemFailed(result) { copy(error = it) }
                 }
             }
         }
@@ -144,7 +147,7 @@ class WebhooksViewModel
                             }
                         }
                     is ApiResult.Failure ->
-                        mutableState.update { it.copy(deliveriesLoading = false, note = result.notice()) }
+                        itemFailed(result) { copy(deliveriesLoading = false, note = it) }
                 }
             }
         }
@@ -157,7 +160,7 @@ class WebhooksViewModel
                         mutableState.update { it.copy(note = "Test sent. It shows below once delivered.") }
                         loadDeliveries(id)
                     }
-                    is ApiResult.Failure -> mutableState.update { it.copy(note = result.notice()) }
+                    is ApiResult.Failure -> itemFailed(result) { copy(note = it) }
                 }
             }
         }
@@ -181,6 +184,15 @@ class WebhooksViewModel
                     mutableState.update { it.copy(note = result.notice()) }
                 }
             }
+        }
+
+        /** A call on one webhook failed: a 404 means it is gone, so the list is read again. */
+        private fun itemFailed(
+            failure: ApiResult.Failure,
+            show: WebhooksUiState.(String) -> WebhooksUiState,
+        ) {
+            mutableState.update { it.show(failure.itemNotice()) }
+            if (failure.kind == FailureKind.NotFound) refresh()
         }
 
         private fun replace(webhook: Webhook) =

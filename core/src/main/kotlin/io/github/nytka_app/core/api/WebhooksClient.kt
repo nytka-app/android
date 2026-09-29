@@ -33,6 +33,8 @@ data class CreatedWebhook(
     val secret: String,
 ) {
     fun toWebhook() = Webhook(id, url, events, description, active, createdAt, lastDelivery)
+
+    override fun toString() = "CreatedWebhook(id=$id, url=$url, secret=***)"
 }
 
 @Serializable

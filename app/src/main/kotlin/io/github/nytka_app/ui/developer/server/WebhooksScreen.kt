@@ -293,11 +293,15 @@ private fun SecretDialog(
         dismissButton = {
             TextButton(onClick = {
                 scope.launch {
-                    clipboard.setClipEntry(
-                        ClipEntry(android.content.ClipData.newPlainText("Webhook secret", secret.secret)),
-                    )
+                    val clip = android.content.ClipData.newPlainText("Webhook secret", secret.secret)
+                    // Keeps the secret out of the clipboard preview (ClipDescription.EXTRA_IS_SENSITIVE, API 33).
+                    clip.description.extras =
+                        android.os.PersistableBundle().apply { putBoolean(EXTRA_IS_SENSITIVE, true) }
+                    clipboard.setClipEntry(ClipEntry(clip))
                 }
             }) { Text("Copy") }
         },
     )
 }
+
+private const val EXTRA_IS_SENSITIVE = "android.content.extra.IS_SENSITIVE"

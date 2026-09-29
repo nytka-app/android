@@ -13,3 +13,8 @@ fun ApiResult.Failure.notice(): String =
         FailureKind.Forbidden -> "The app needs an admin token."
         else -> message
     }
+
+/** The sentence for a call on one item: a 404 there means the item is gone, not that the server is old. */
+const val ITEM_GONE = "This item no longer exists"
+
+fun ApiResult.Failure.itemNotice(): String = if (kind == FailureKind.NotFound) ITEM_GONE else notice()

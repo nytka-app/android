@@ -22,12 +22,14 @@ class WebhooksViewModelTest {
         var list: ApiResult<List<Webhook>> = ApiResult.Ok(emptyList())
         var create: ApiResult<CreatedWebhook>? = null
         var deliveries: List<Delivery> = emptyList()
+        var testResult: ApiResult<String>? = null
+        var listCalls = 0
         val created = mutableListOf<Triple<String, List<String>, String?>>()
         val tested = mutableListOf<String>()
         val deleted = mutableListOf<String>()
         val activeCalls = mutableListOf<Pair<String, Boolean>>()
 
-        override suspend fun webhooks() = list
+        override suspend fun webhooks() = list.also { listCalls++ }
 
         override suspend fun createWebhook(
             url: String,
@@ -49,7 +51,11 @@ class WebhooksViewModelTest {
 
         override suspend fun deleteWebhook(id: String): ApiResult<Unit> = ApiResult.Ok(Unit).also { deleted += id }
 
-        override suspend fun testWebhook(id: String): ApiResult<String> = ApiResult.Ok("d1").also { tested += id }
+        override suspend fun testWebhook(id: String): ApiResult<String> =
+            (testResult ?: ApiResult.Ok("d1")).also {
+                tested +=
+                    id
+            }
 
         override suspend fun deliveries(
             id: String,
@@ -176,6 +182,27 @@ class WebhooksViewModelTest {
                 .isEmpty(),
         )
         assertNull(viewModel.state.value.selected)
+    }
+
+    @Test
+    fun `a 404 on one webhook means it is gone and the list is read again`() {
+        api.list = ApiResult.Ok(listOf(hook("w1")))
+        api.testResult = ApiResult.Failure(FailureKind.NotFound, "Not found.")
+        val viewModel = newViewModel()
+        viewModel.open("w1")
+
+        viewModel.sendTest()
+
+        assertEquals("This item no longer exists", viewModel.state.value.note)
+        assertEquals(2, api.listCalls)
+    }
+
+    @Test
+    fun `the secret does not show in toString`() {
+        assertEquals("NewSecret(url=u, secret=***)", NewSecret("u", "whsec_abc").toString())
+        assertTrue(
+            !CreatedWebhook("w", "u", listOf("*"), null, true, "t", null, "whsec_abc").toString().contains("whsec"),
+        )
     }
 
     @Test

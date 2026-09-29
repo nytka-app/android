@@ -7,6 +7,7 @@ import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.MemoriesClient
 import io.github.nytka_app.core.api.Memory
+import io.github.nytka_app.ui.itemNotice
 import io.github.nytka_app.ui.notice
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +16,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
-import java.time.Instant
 import javax.inject.Inject
 
 /** A memory as the row shows it: [source] is the conversation's title and day, when there is one. */
@@ -91,10 +91,23 @@ class MemoriesViewModel
                         if (at >= 0) items[at] = saved else items.add(0, saved)
                         mutableState.update { it.copy(rows = rows(), editor = null) }
                     }
-                    is ApiResult.Failure ->
+                    is ApiResult.Failure -> {
+                        val gone = editor.target != null && result.kind == FailureKind.NotFound
                         mutableState.update {
-                            it.copy(editor = editor.copy(saving = false, error = editorError(result)))
+                            it.copy(
+                                editor =
+                                    editor.copy(
+                                        saving = false,
+                                        error =
+                                            editorError(
+                                                result,
+                                                editor.target != null,
+                                            ),
+                                    ),
+                            )
                         }
+                        if (gone) refresh()
+                    }
                 }
             }
         }
@@ -117,14 +130,17 @@ class MemoriesViewModel
 
         private fun fail(message: String) = mutableState.update { it.copy(error = message) }
 
-        private fun editorError(failure: ApiResult.Failure): String =
+        private fun editorError(
+            failure: ApiResult.Failure,
+            editing: Boolean,
+        ): String =
             when (failure.kind) {
                 FailureKind.Conflict -> "This memory already exists."
                 FailureKind.Invalid ->
                     failure.errors.values
                         .flatten()
                         .firstOrNull() ?: failure.message
-                else -> failure.notice()
+                else -> if (editing) failure.itemNotice() else failure.notice()
             }
 
         private fun load(reset: Boolean) {
@@ -162,8 +178,7 @@ class MemoriesViewModel
 
         private fun sourceLine(memory: Memory): String? {
             val title = memory.conversationTitle
-            val started = memory.conversationStartedAt?.let { Instant.parse(it) }
-            val day = started?.let { MemoryFormatting.day(it, clock) }
+            val day = MemoryFormatting.day(memory.conversationStartedAt, clock)
             return when {
                 title != null && day != null -> "$title · $day"
                 title != null -> title

@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
-import java.time.Instant
 import javax.inject.Inject
 
 enum class SearchFilter(
@@ -140,7 +139,7 @@ class SearchViewModel
                 key = "${hit.kind}-${hit.id}",
                 title = hit.title,
                 snippet = markSpans(hit.snippet),
-                date = MemoryFormatting.day(Instant.parse(hit.at), clock),
+                date = MemoryFormatting.day(hit.at, clock).orEmpty(),
                 openId = if (isMemory) hit.conversationId else hit.conversationId ?: hit.id,
             )
         }
