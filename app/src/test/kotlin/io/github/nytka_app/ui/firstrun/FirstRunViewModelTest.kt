@@ -11,6 +11,7 @@ import io.github.nytka_app.core.settings.FirstRunStep
 import io.github.nytka_app.core.settings.Settings
 import io.github.nytka_app.ui.PermissionAnswer
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -79,6 +80,125 @@ class FirstRunViewModelTest {
                 .contains("private network"),
         )
         assertEquals(0, infoCalls)
+    }
+
+    @Test
+    fun `a server on the local network asks for the permission before the test`() {
+        actions.localNetwork = false
+        viewModel.edit("http://192.168.1.10:8080", token, privateNetwork = true)
+
+        viewModel.testConnection()
+
+        assertTrue(viewModel.state.value.askLocalNetwork)
+        assertEquals(0, infoCalls)
+        assertEquals(FirstRunStep.Server, viewModel.state.value.step)
+    }
+
+    @Test
+    fun `a public server never asks`() {
+        actions.localNetwork = false
+        viewModel.edit("https://nytka.example", token, privateNetwork = false)
+
+        viewModel.testConnection()
+
+        assertFalse(viewModel.state.value.askLocalNetwork)
+        assertEquals(1, infoCalls)
+    }
+
+    @Test
+    fun `nothing is asked once Nytka may use the local network`() {
+        viewModel.edit("http://192.168.1.10:8080", token, privateNetwork = true)
+
+        viewModel.testConnection()
+
+        assertFalse(viewModel.state.value.askLocalNetwork)
+        assertEquals(FirstRunStep.Permissions, viewModel.state.value.step)
+    }
+
+    @Test
+    fun `allowing it runs the test`() {
+        actions.localNetwork = false
+        viewModel.edit("http://192.168.1.10:8080", token, privateNetwork = true)
+        viewModel.testConnection()
+
+        viewModel.localNetworkAnswered(PermissionAnswer.Granted)
+
+        assertFalse(viewModel.state.value.askLocalNetwork)
+        assertNull(viewModel.state.value.localNetwork)
+        assertEquals(1, infoCalls)
+        assertEquals(FirstRunStep.Permissions, viewModel.state.value.step)
+    }
+
+    @Test
+    fun `a refusal still runs the test and keeps the note when the server is out of reach`() {
+        actions.localNetwork = false
+        info = ApiResult.Failure(FailureKind.Network, "failed to connect")
+        viewModel.edit("http://192.168.1.10:8080", token, privateNetwork = true)
+        viewModel.testConnection()
+
+        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
+
+        assertEquals(PermissionAnswer.Denied, viewModel.state.value.localNetwork)
+        assertEquals("failed to connect", viewModel.state.value.serverError)
+        assertEquals(FirstRunStep.Server, viewModel.state.value.step)
+    }
+
+    @Test
+    fun `a refusal does not hold back a server that answers, over a VPN say`() {
+        actions.localNetwork = false
+        viewModel.edit("http://100.66.77.88:8080", token, privateNetwork = true)
+        viewModel.testConnection()
+
+        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
+
+        assertEquals(FirstRunStep.Permissions, viewModel.state.value.step)
+    }
+
+    @Test
+    fun `a refusal Android may repeat is asked about again on the next test`() {
+        actions.localNetwork = false
+        info = ApiResult.Failure(FailureKind.Network, "failed to connect")
+        viewModel.edit("http://192.168.1.10:8080", token, privateNetwork = true)
+        viewModel.testConnection()
+        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
+
+        viewModel.testConnection()
+
+        assertTrue(viewModel.state.value.askLocalNetwork)
+        assertEquals(1, infoCalls)
+    }
+
+    @Test
+    fun `a refusal Android will not repeat is not asked about again and leads to the settings`() {
+        actions.localNetwork = false
+        info = ApiResult.Failure(FailureKind.Network, "failed to connect")
+        viewModel.edit("http://192.168.1.10:8080", token, privateNetwork = true)
+        viewModel.testConnection()
+        viewModel.localNetworkAnswered(PermissionAnswer.Blocked)
+
+        viewModel.testConnection()
+
+        assertFalse(viewModel.state.value.askLocalNetwork)
+        assertEquals(2, infoCalls)
+        assertEquals(PermissionAnswer.Blocked, viewModel.state.value.localNetwork)
+        viewModel.openSettings()
+        assertEquals(listOf("open settings"), actions.calls)
+    }
+
+    @Test
+    fun `allowing it in the system settings clears the note`() {
+        actions.localNetwork = false
+        info = ApiResult.Failure(FailureKind.Network, "failed to connect")
+        viewModel.edit("http://192.168.1.10:8080", token, privateNetwork = true)
+        viewModel.testConnection()
+        viewModel.localNetworkAnswered(PermissionAnswer.Blocked)
+
+        actions.localNetwork = true
+        info = ApiResult.Ok(ServerInfo("0.1.0", 1))
+        viewModel.testConnection()
+
+        assertNull(viewModel.state.value.localNetwork)
+        assertEquals(FirstRunStep.Permissions, viewModel.state.value.step)
     }
 
     @Test

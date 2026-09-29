@@ -1,10 +1,14 @@
 package io.github.nytka_app.capture
 
+import android.Manifest
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.nytka_app.core.diagnostics.DiagnosticsCsv
@@ -24,6 +28,12 @@ interface DeviceActions {
     fun restartCapture()
 
     fun stopCapture()
+
+    /**
+     * True when Android lets Nytka use the local network: always before Android 17, and there once the user has
+     * allowed Nearby devices.
+     */
+    fun localNetworkGranted(): Boolean
 
     /**
      * Opens Nytka's app info in the system settings. A permission Android has stopped asking for can only be allowed
@@ -51,6 +61,11 @@ class AndroidDeviceActions
         override fun restartCapture() = CaptureService.restart(context)
 
         override fun stopCapture() = CaptureService.stop(context)
+
+        override fun localNetworkGranted() =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.CINNAMON_BUN ||
+                ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_LOCAL_NETWORK) ==
+                PackageManager.PERMISSION_GRANTED
 
         override fun openAppSettings() =
             context.startActivity(

@@ -34,6 +34,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.pendant.PendantConnection
+import io.github.nytka_app.ui.LocalNetworkNote
+import io.github.nytka_app.ui.LocalNetworkPrompt
 import io.github.nytka_app.ui.PairButton
 import io.github.nytka_app.ui.StatusUiState
 
@@ -48,6 +50,7 @@ fun DeviceScreen(
     var pairError by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmForget by rememberSaveable { mutableStateOf(false) }
 
+    LocalNetworkPrompt(state.askLocalNetwork, viewModel::localNetworkAnswered)
     LazyColumn(
         Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -64,7 +67,7 @@ fun DeviceScreen(
                 onForget = { confirmForget = true },
             )
         }
-        item { ServerSection(state, status, viewModel::checkServer) }
+        item { ServerSection(state, status, viewModel::checkServer, viewModel::openSettings) }
         item { SettingsSection(state, viewModel::save) }
         item {
             Section("About") {
@@ -146,10 +149,12 @@ private fun ServerSection(
     state: DeviceUiState,
     status: StatusUiState,
     onCheck: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     Section("Server") {
         Text(state.serverUrl.ifEmpty { "No server set" })
         Text(state.serverState)
+        LocalNetworkNote(state.localNetwork, retry = "Check again", onOpenSettings = onOpenSettings)
         state.apiVersion?.let { Text("API version $it") }
         if (state.apiMismatch) {
             Text(

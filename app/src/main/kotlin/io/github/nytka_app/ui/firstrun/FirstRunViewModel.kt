@@ -12,6 +12,7 @@ import io.github.nytka_app.core.api.UrlCheck
 import io.github.nytka_app.core.settings.FirstRunStep
 import io.github.nytka_app.core.settings.SettingsSource
 import io.github.nytka_app.ui.PermissionAnswer
+import io.github.nytka_app.ui.mustAskForLocalNetwork
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,7 +35,11 @@ data class FirstRunUiState(
     val testing: Boolean = false,
     val serverError: String? = null,
     val serverVersion: String? = null,
-    /** How the user last answered the nearby-devices prompt, unless it was allowed. */
+    /** True while the screen should show Android's prompt for the local network. */
+    val askLocalNetwork: Boolean = false,
+    /** How the user last answered that prompt, unless they allowed it. */
+    val localNetwork: PermissionAnswer? = null,
+    /** How the user last answered the nearby-devices prompt, unless they allowed it. */
     val permissions: PermissionAnswer? = null,
     val consentChecked: Boolean = false,
     val pairError: String? = null,
@@ -89,7 +94,7 @@ class FirstRunViewModel
             val base =
                 when (val check = ServerUrl.check(current.url, current.privateNetwork)) {
                     is UrlCheck.Invalid -> return mutableState.update { it.copy(serverError = check.reason) }
-                    is UrlCheck.Ok -> check.base.toString()
+                    is UrlCheck.Ok -> check.base
                 }
             if (current.token.isBlank()) {
                 return mutableState.update {
@@ -99,6 +104,30 @@ class FirstRunViewModel
                 }
             }
 
+            // Android 17 blocks a server on the local network until Nytka may use it, so ask before the test.
+            if (mustAskForLocalNetwork(base, current.privateNetwork, current.localNetwork, actions)) {
+                return mutableState.update { it.copy(askLocalNetwork = true, serverError = null) }
+            }
+            if (actions.localNetworkGranted()) mutableState.update { it.copy(localNetwork = null) }
+            connect(base.toString(), current)
+        }
+
+        /**
+         * The test goes on whatever the answer: over a VPN the server is reachable without the permission, and if it
+         * is not, the note under the address says why.
+         */
+        fun localNetworkAnswered(answer: PermissionAnswer) {
+            val refused = answer.takeUnless { it == PermissionAnswer.Granted }
+            mutableState.update { it.copy(askLocalNetwork = false, localNetwork = refused) }
+            val current = mutableState.value
+            (ServerUrl.check(current.url, current.privateNetwork) as? UrlCheck.Ok)
+                ?.let { connect(it.base.toString(), current) }
+        }
+
+        private fun connect(
+            base: String,
+            current: FirstRunUiState,
+        ) {
             mutableState.update { it.copy(testing = true, serverError = null) }
             viewModelScope.launch {
                 // Saved first: the API client reads the settings on every request.

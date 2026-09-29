@@ -80,4 +80,9 @@ class AndroidDeviceActionsTest {
         assertEquals("package:io.github.nytka_app", intent.dataString)
         assertTrue(intent.flags and Intent.FLAG_ACTIVITY_NEW_TASK != 0)
     }
+
+    @Test
+    fun `before Android 17 the local network needs no permission`() {
+        assertTrue(AndroidDeviceActions(app, FakeDiagnostics()).localNetworkGranted())
+    }
 }

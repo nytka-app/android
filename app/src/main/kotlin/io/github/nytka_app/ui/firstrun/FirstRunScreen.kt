@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.core.settings.FirstRunStep
+import io.github.nytka_app.ui.LocalNetworkNote
+import io.github.nytka_app.ui.LocalNetworkPrompt
 import io.github.nytka_app.ui.PairButton
 import io.github.nytka_app.ui.PermissionAnswer
 import io.github.nytka_app.ui.rememberPermissionRequest
@@ -87,7 +89,9 @@ private fun ServerStep(
             color = MaterialTheme.colorScheme.error,
         )
     }
+    LocalNetworkPrompt(state.askLocalNetwork, viewModel::localNetworkAnswered)
     state.serverError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+    LocalNetworkNote(state.localNetwork, retry = "Test connection", onOpenSettings = viewModel::openSettings)
     Button(onClick = viewModel::testConnection, enabled = !state.testing) {
         Text(if (state.testing) "Testing…" else "Test connection")
     }

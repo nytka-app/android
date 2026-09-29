@@ -54,14 +54,15 @@ fun rememberPermissionRequest(
     val latest by rememberUpdatedState(onAnswer)
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { results ->
-            // No results: the request was cancelled, by a configuration change for one. Nothing was answered.
-            if (results.isEmpty()) return@rememberLauncherForActivityResult
+            // Android answers an interrupted request with nothing at all. That is no refusal for good: ask again.
+            val interrupted = results.isEmpty()
             latest(
                 permissionAnswer(
                     required,
                     granted = { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED },
                     canAskAgain = {
-                        activity == null ||
+                        interrupted ||
+                            activity == null ||
                             ActivityCompat.shouldShowRequestPermissionRationale(activity, it)
                     },
                 ),
