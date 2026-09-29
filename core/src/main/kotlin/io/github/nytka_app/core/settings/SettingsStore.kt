@@ -9,23 +9,31 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 
 class SettingsStore(
     private val dataStore: DataStore<Preferences>,
     private val cipher: TokenCipher,
 ) {
-    val settings: Flow<Settings> = dataStore.data.map(::read)
+    // Decrypting the token calls the Keystore: keep it off the collector's (often main) thread.
+    val settings: Flow<Settings> = dataStore.data.map(::read).flowOn(Dispatchers.IO)
 
     suspend fun current(): Settings = settings.first()
 
     suspend fun update(transform: (Settings) -> Settings) {
         dataStore.edit { preferences ->
-            val next = transform(read(preferences))
+            val current = read(preferences)
+            val next = transform(current)
             preferences[SERVER_URL] = next.serverUrl
-            if (next.token.isEmpty()) preferences.remove(TOKEN) else preferences[TOKEN] = cipher.encrypt(next.token)
+            // Touch the stored token only when it changes: a token the Keystore cannot read right now
+            // reads as "", and an unrelated update (mute, say) must not erase it.
+            if (next.token != current.token) {
+                if (next.token.isEmpty()) preferences.remove(TOKEN) else preferences[TOKEN] = cipher.encrypt(next.token)
+            }
             preferences[PRIVATE_NETWORK] = next.privateNetwork
             preferences[MUTED] = next.muted
             next.pendantAddress?.let { preferences[PENDANT_ADDRESS] = it } ?: preferences.remove(PENDANT_ADDRESS)

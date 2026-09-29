@@ -36,8 +36,11 @@ class KeystoreTokenCipher : TokenCipher {
             null
         } catch (e: IllegalArgumentException) {
             null
+        } catch (e: java.security.ProviderException) {
+            null
         }
 
+    @Synchronized
     private fun key(): SecretKey {
         val keyStore = KeyStore.getInstance(KEYSTORE).apply { load(null) }
         (keyStore.getKey(ALIAS, null) as SecretKey?)?.let { return it }
