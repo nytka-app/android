@@ -126,8 +126,8 @@ private fun PermissionsStep(
             )
         PermissionAnswer.Blocked ->
             Text(
-                "Without nearby devices Nytka cannot reach the pendant, and Android no longer asks. Allow it in the " +
-                    "system settings for Nytka, then come back and tap Allow.",
+                "Without nearby devices Nytka cannot reach the pendant. If Android does not ask again, allow it in " +
+                    "the system settings for Nytka, then come back and tap Allow.",
                 color = MaterialTheme.colorScheme.error,
             )
         else -> Unit

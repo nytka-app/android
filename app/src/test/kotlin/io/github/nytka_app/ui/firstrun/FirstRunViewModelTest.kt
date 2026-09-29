@@ -169,7 +169,7 @@ class FirstRunViewModelTest {
     }
 
     @Test
-    fun `a refusal Android will not repeat is not asked about again and leads to the settings`() {
+    fun `a refusal for good is still asked about, since Android decides whether to show the prompt`() {
         actions.localNetwork = false
         info = ApiResult.Failure(FailureKind.Network, "failed to connect")
         viewModel.edit("http://192.168.1.10:8080", token, privateNetwork = true)
@@ -178,11 +178,28 @@ class FirstRunViewModelTest {
 
         viewModel.testConnection()
 
-        assertFalse(viewModel.state.value.askLocalNetwork)
-        assertEquals(2, infoCalls)
+        assertTrue(viewModel.state.value.askLocalNetwork)
+        assertEquals(1, infoCalls)
+        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
         assertEquals(PermissionAnswer.Blocked, viewModel.state.value.localNetwork)
+        assertEquals(2, infoCalls)
         viewModel.openSettings()
         assertEquals(listOf("open settings"), actions.calls)
+    }
+
+    @Test
+    fun `a refusal that repeats leads to the system settings`() {
+        actions.localNetwork = false
+        info = ApiResult.Failure(FailureKind.Network, "failed to connect")
+        viewModel.edit("http://192.168.1.10:8080", token, privateNetwork = true)
+        viewModel.testConnection()
+        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
+        assertEquals(PermissionAnswer.Denied, viewModel.state.value.localNetwork)
+
+        viewModel.testConnection()
+        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
+
+        assertEquals(PermissionAnswer.Blocked, viewModel.state.value.localNetwork)
     }
 
     @Test
@@ -300,6 +317,16 @@ class FirstRunViewModelTest {
         assertEquals(PermissionAnswer.Blocked, viewModel.state.value.permissions)
         viewModel.openSettings()
         assertEquals(listOf("open settings"), actions.calls)
+    }
+
+    @Test
+    fun `a refusal that repeats leads to the system settings on the permissions step too`() {
+        viewModel.permissionsAnswered(PermissionAnswer.Denied)
+        assertEquals(PermissionAnswer.Denied, viewModel.state.value.permissions)
+
+        viewModel.permissionsAnswered(PermissionAnswer.Denied)
+
+        assertEquals(PermissionAnswer.Blocked, viewModel.state.value.permissions)
     }
 
     @Test

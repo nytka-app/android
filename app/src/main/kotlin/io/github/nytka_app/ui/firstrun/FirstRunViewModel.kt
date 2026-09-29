@@ -12,6 +12,7 @@ import io.github.nytka_app.core.api.UrlCheck
 import io.github.nytka_app.core.settings.FirstRunStep
 import io.github.nytka_app.core.settings.SettingsSource
 import io.github.nytka_app.ui.PermissionAnswer
+import io.github.nytka_app.ui.after
 import io.github.nytka_app.ui.mustAskForLocalNetwork
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -105,7 +106,7 @@ class FirstRunViewModel
             }
 
             // Android 17 blocks a server on the local network until Nytka may use it, so ask before the test.
-            if (mustAskForLocalNetwork(base, current.privateNetwork, current.localNetwork, actions)) {
+            if (mustAskForLocalNetwork(base, current.privateNetwork, actions)) {
                 return mutableState.update { it.copy(askLocalNetwork = true, serverError = null) }
             }
             if (actions.localNetworkGranted()) mutableState.update { it.copy(localNetwork = null) }
@@ -118,7 +119,7 @@ class FirstRunViewModel
          */
         fun localNetworkAnswered(answer: PermissionAnswer) {
             val refused = answer.takeUnless { it == PermissionAnswer.Granted }
-            mutableState.update { it.copy(askLocalNetwork = false, localNetwork = refused) }
+            mutableState.update { it.copy(askLocalNetwork = false, localNetwork = refused?.after(it.localNetwork)) }
             val current = mutableState.value
             (ServerUrl.check(current.url, current.privateNetwork) as? UrlCheck.Ok)
                 ?.let { connect(it.base.toString(), current) }
@@ -165,7 +166,7 @@ class FirstRunViewModel
             if (answer == PermissionAnswer.Granted) {
                 permissionsDone()
             } else {
-                mutableState.update { it.copy(permissions = answer) }
+                mutableState.update { it.copy(permissions = answer.after(it.permissions)) }
             }
         }
 

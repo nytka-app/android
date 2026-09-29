@@ -13,6 +13,7 @@ import io.github.nytka_app.core.api.ServerUrl
 import io.github.nytka_app.core.api.UrlCheck
 import io.github.nytka_app.core.settings.SettingsSource
 import io.github.nytka_app.ui.PermissionAnswer
+import io.github.nytka_app.ui.after
 import io.github.nytka_app.ui.mustAskForLocalNetwork
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -73,10 +74,7 @@ class DeviceViewModel
             viewModelScope.launch {
                 val saved = settings.current()
                 val base = (ServerUrl.check(saved.serverUrl, saved.privateNetwork) as? UrlCheck.Ok)?.base
-                val ask =
-                    base != null &&
-                        mustAskForLocalNetwork(base, saved.privateNetwork, local.value.localNetwork, actions)
-                if (ask) {
+                if (base != null && mustAskForLocalNetwork(base, saved.privateNetwork, actions)) {
                     // Android 17 blocks a server on the local network until Nytka may use it. The screen asks, and
                     // localNetworkAnswered() checks the server once the user has answered.
                     local.update { it.copy(askLocalNetwork = true) }
@@ -90,7 +88,7 @@ class DeviceViewModel
         /** The check goes on whatever the answer: over a VPN the server is reachable without the permission. */
         fun localNetworkAnswered(answer: PermissionAnswer) {
             val refused = answer.takeUnless { it == PermissionAnswer.Granted }
-            local.update { it.copy(askLocalNetwork = false, localNetwork = refused) }
+            local.update { it.copy(askLocalNetwork = false, localNetwork = refused?.after(it.localNetwork)) }
             viewModelScope.launch { query() }
         }
 

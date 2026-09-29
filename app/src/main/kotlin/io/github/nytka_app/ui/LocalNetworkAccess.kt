@@ -12,18 +12,14 @@ import io.github.nytka_app.core.api.LocalNetwork
 import okhttp3.HttpUrl
 
 /**
- * True when the screen should show Android's prompt before Nytka contacts the server at [base]: the server may need
- * the permission, Nytka does not have it, and Android has not stopped asking ([lastAnswer]).
+ * True when the screen should show Android's prompt before Nytka contacts the server at [base]: the server may need the
+ * permission and Nytka does not have it. Asked again each time: Android shows the prompt only while it is willing to.
  */
 fun mustAskForLocalNetwork(
     base: HttpUrl,
     privateNetwork: Boolean,
-    lastAnswer: PermissionAnswer?,
     actions: DeviceActions,
-): Boolean =
-    lastAnswer != PermissionAnswer.Blocked &&
-        !actions.localNetworkGranted() &&
-        LocalNetwork.mayNeedPermission(base, privateNetwork)
+): Boolean = !actions.localNetworkGranted() && LocalNetwork.mayNeedPermission(base, privateNetwork)
 
 /** Shows Android's prompt for the local network whenever [ask] turns true. Before Android 17 there is none. */
 @Composable
@@ -55,8 +51,8 @@ fun LocalNetworkNote(
             )
         PermissionAnswer.Blocked -> {
             Text(
-                "Android blocks servers on your local network until you allow Nearby devices for Nytka, and it no " +
-                    "longer asks. Allow it in the system settings for Nytka, then tap $retry.",
+                "Android blocks servers on your local network until you allow Nearby devices for Nytka. If it does " +
+                    "not ask again, allow it in the system settings for Nytka, then tap $retry.",
                 color = MaterialTheme.colorScheme.error,
             )
             OutlinedButton(onClick = onOpenSettings) { Text("Open settings") }

@@ -185,7 +185,7 @@ class DeviceViewModelTest {
     }
 
     @Test
-    fun `a refusal Android will not repeat is not asked about again and leads to the settings`() {
+    fun `a refusal for good is still asked about, since Android decides whether to show the prompt`() {
         saveServerOnTheLocalNetwork()
         actions.localNetwork = false
         info = ApiResult.Failure(FailureKind.Network, "failed to connect")
@@ -195,11 +195,27 @@ class DeviceViewModelTest {
 
         viewModel.checkServer()
 
-        assertFalse(viewModel.state.value.askLocalNetwork)
-        assertEquals(checksBefore + 1, infoCalls)
+        assertTrue(viewModel.state.value.askLocalNetwork)
+        assertEquals(checksBefore, infoCalls)
+        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
         assertEquals(PermissionAnswer.Blocked, viewModel.state.value.localNetwork)
         viewModel.openSettings()
         assertEquals(listOf("open settings"), actions.calls)
+    }
+
+    @Test
+    fun `a refusal that repeats leads to the system settings`() {
+        saveServerOnTheLocalNetwork()
+        actions.localNetwork = false
+        info = ApiResult.Failure(FailureKind.Network, "failed to connect")
+        val viewModel = viewModel()
+        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
+        assertEquals(PermissionAnswer.Denied, viewModel.state.value.localNetwork)
+
+        viewModel.checkServer()
+        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
+
+        assertEquals(PermissionAnswer.Blocked, viewModel.state.value.localNetwork)
     }
 
     @Test
