@@ -26,7 +26,10 @@ class BootReceiver : BroadcastReceiver() {
         val pending = goAsync()
         applicationScope.launch {
             try {
-                settings.current().pendantAddress?.let { CompanionPairing(context).observe(it) }
+                settings.current().pendantAddress?.let { address ->
+                    // An association removed in system settings throws here; the app must still boot.
+                    runCatching { CompanionPairing(context).observe(address) }
+                }
             } finally {
                 pending.finish()
             }

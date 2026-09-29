@@ -1,5 +1,7 @@
 package io.github.nytka_app.capture
 
+import android.database.SQLException
+import android.util.Log
 import io.github.nytka_app.core.queue.FrameSink
 import io.github.nytka_app.core.settings.SettingsStore
 import io.github.nytka_app.pendant.ButtonEvent
@@ -103,8 +105,9 @@ class CaptureController(
         }
         inner.launch {
             pendant.frames.collect { frame ->
-                if (!muted) {
-                    sink.add(session, nextSeq++, frame.capturedAtMs, frame.payload)
+                // A full disk must not crash the service; the sequence advances only for stored frames.
+                if (!muted && stored { sink.add(session, nextSeq, frame.capturedAtMs, frame.payload) }) {
+                    nextSeq++
                     mutableStatus.update { it.copy(framesQueued = it.framesQueued + 1) }
                 }
             }
@@ -115,11 +118,20 @@ class CaptureController(
         inner.launch {
             while (true) {
                 delay(sealEveryMs)
-                sink.seal()
+                stored { sink.seal() }
             }
         }
         pendant.connect(address)
     }
+
+    private inline fun stored(write: () -> Unit): Boolean =
+        try {
+            write()
+            true
+        } catch (e: SQLException) {
+            Log.w(TAG, "The frame queue refused a write: ${e.javaClass.simpleName}")
+            false
+        }
 
     suspend fun setMuted(muted: Boolean) {
         this.muted = muted
@@ -143,6 +155,7 @@ class CaptureController(
     }
 
     private companion object {
+        const val TAG = "CaptureController"
         const val LIVE_BUZZ_GAP_MS = 150L
     }
 }
