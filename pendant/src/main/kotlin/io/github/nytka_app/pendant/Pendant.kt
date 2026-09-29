@@ -72,8 +72,9 @@ data class LinkStats(
 }
 
 /**
- * An Omi pendant, or something that behaves like one. A lost link loses every subscription:
- * after any reconnect, audio stays off until [setAudio] turns it on again.
+ * An Omi pendant, or something that behaves like one. A lost link loses every subscription, but
+ * not the caller's intent: after a reconnect the pendant subscribes to audio again by itself if the
+ * last [setAudio] said true. [disconnect] clears the intent.
  */
 interface Pendant {
     val connection: StateFlow<PendantConnection>

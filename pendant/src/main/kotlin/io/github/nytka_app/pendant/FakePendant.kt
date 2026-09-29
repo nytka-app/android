@@ -27,6 +27,7 @@ class FakePendant(
     private var refusal: String? = null
     private var streaming: Job? = null
     private var next = 0
+    private var audioWanted = false
 
     override val connection: StateFlow<PendantConnection> = mutableConnection
     override val battery: StateFlow<Int?> = mutableBattery
@@ -43,13 +44,21 @@ class FakePendant(
         mutableConnection.value = refusal?.let { PendantConnection.Refused(it) }
             ?: PendantConnection.Connected(PendantInfo(name = "Fake pendant", model = "Fake", firmware = "fake"))
         if (mutableBattery.value == null) mutableBattery.value = 82
+        applyAudio() // like OmiPendant: the caller's audio intent survives a lost link
     }
 
-    override fun disconnect() = dropLink()
+    override fun disconnect() {
+        audioWanted = false
+        dropLink()
+    }
 
     override suspend fun setAudio(enabled: Boolean) {
-        val connected = mutableConnection.value is PendantConnection.Connected
-        audioEnabled = enabled && connected
+        audioWanted = enabled
+        applyAudio()
+    }
+
+    private fun applyAudio() {
+        audioEnabled = audioWanted && mutableConnection.value is PendantConnection.Connected
         streaming?.cancel()
         streaming = if (audioEnabled) scope.launch { stream() } else null
     }
@@ -62,7 +71,7 @@ class FakePendant(
         mutableButtons.tryEmit(event)
     }
 
-    /** The pendant walked out of range: the link and every subscription are gone. */
+    /** The pendant walked out of range: the link and its subscriptions are gone, the audio intent is not. */
     fun dropLink() {
         streaming?.cancel()
         streaming = null
