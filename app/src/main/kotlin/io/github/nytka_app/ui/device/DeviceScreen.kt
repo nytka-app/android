@@ -22,6 +22,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -169,7 +170,8 @@ private fun SettingsSection(
     onSave: (String, String, Boolean) -> Unit,
 ) {
     var url by rememberSaveable(state.serverUrl) { mutableStateOf(state.serverUrl) }
-    var token by rememberSaveable { mutableStateOf("") }
+    // Not saveable: the saved-instance Bundle is plain text, and the token is stored only encrypted.
+    var token by remember { mutableStateOf("") }
     var privateNetwork by rememberSaveable(state.privateNetwork) { mutableStateOf(state.privateNetwork) }
     var confirmPrivate by rememberSaveable { mutableStateOf(false) }
 
@@ -188,6 +190,7 @@ private fun SettingsSection(
             label = { Text(if (state.tokenSet) "Token (leave empty to keep)" else "Token") },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
             modifier = Modifier.fillMaxWidth(),
         )
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
