@@ -26,7 +26,8 @@ import javax.inject.Inject
 /** docs/specs/v0.1.md, first run, step 3. Keep it word for word. */
 const val CONSENT_TEXT =
     "Recording people without their consent is illegal in some places. " +
-        "You are responsible for following the law where you use Nytka."
+        "You are responsible for following the law where you use Nytka. " +
+        "The pendant also records while the phone is away."
 
 /** The app edits settings and tokens, so a `read` token is no use to it (docs/specs/v0.2.md, tokens and scopes). */
 const val READ_TOKEN_REFUSED = "The app needs an admin token."

@@ -93,6 +93,7 @@ fun DeveloperScreen(
                     Text("Last upload: ${state.lastUpload ?: "none"}")
                 }
             }
+            state.storage?.let { details -> item { StorageSectionCard(details) } }
             item {
                 Section("Server") {
                     Text(state.serverStatus)

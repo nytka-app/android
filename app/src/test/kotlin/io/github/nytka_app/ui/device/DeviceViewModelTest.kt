@@ -2,8 +2,11 @@ package io.github.nytka_app.ui.device
 
 import io.github.nytka_app.FakeDeviceActions
 import io.github.nytka_app.FakeSettings
+import io.github.nytka_app.FakeSyncControls
 import io.github.nytka_app.MainDispatcherRule
 import io.github.nytka_app.capture.PairedPendant
+import io.github.nytka_app.capture.StorageSyncStatus
+import io.github.nytka_app.capture.SyncState
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.ServerInfo
@@ -29,14 +32,18 @@ class DeviceViewModelTest {
             ),
         )
     private val actions = FakeDeviceActions()
+    private val sync = FakeSyncControls()
     private var infoCalls = 0
-    private var info: ApiResult<ServerInfo> = ApiResult.Ok(ServerInfo("0.1.0", 1))
+    private var info: ApiResult<ServerInfo> =
+        ApiResult.Ok(
+            ServerInfo("0.1.0", 1, features = listOf(ServerInfo.FEATURE_OFFLINE_SYNC)),
+        )
 
     private fun viewModel() =
         DeviceViewModel(settings, {
             infoCalls++
             info
-        }, actions)
+        }, actions, sync)
 
     private fun saveServerOnTheLocalNetwork() {
         settings.state.value = settings.state.value.copy(serverUrl = "http://192.168.1.10:8080/", privateNetwork = true)
@@ -236,10 +243,130 @@ class DeviceViewModelTest {
         val viewModel = viewModel()
         assertTrue(viewModel.state.value.serverUnreachable)
 
-        info = ApiResult.Ok(ServerInfo("0.1.0", 1))
+        info = ApiResult.Ok(ServerInfo("0.1.0", 1, features = listOf(ServerInfo.FEATURE_OFFLINE_SYNC)))
         viewModel.checkServer()
 
         assertFalse(viewModel.state.value.serverUnreachable)
         assertEquals("Connected to Nytka server 0.1.0", viewModel.state.value.serverState)
+    }
+
+    @Test
+    fun `the storage card follows the sync and drives it`() {
+        val viewModel = viewModel()
+        assertEquals(
+            "Nothing stored",
+            viewModel.state.value.storage!!
+                .state,
+        )
+        assertEquals(
+            StorageAction.SyncNow,
+            viewModel.state.value.storage!!
+                .action,
+        )
+
+        sync.sync.value = StorageSyncStatus(SyncState.Syncing, storedPackets = 2_000, runDone = 500, runTotal = 2_000)
+        assertEquals(
+            StorageAction.Stop,
+            viewModel.state.value.storage!!
+                .action,
+        )
+        viewModel.stopSync()
+        sync.sync.value = StorageSyncStatus(SyncState.Idle, storedPackets = 100)
+        viewModel.syncNow()
+
+        assertEquals(listOf("stop", "sync now"), sync.calls)
+    }
+
+    @Test
+    fun `sync now is not offered while the pendant is away`() {
+        sync.link.value = false
+
+        assertEquals(
+            StorageAction.None,
+            viewModel()
+                .state.value.storage!!
+                .action,
+        )
+    }
+
+    @Test
+    fun `the card is hidden without a pendant and on a server without offline sync`() {
+        val viewModel = viewModel()
+        sync.sync.value = StorageSyncStatus(SyncState.ServerOutdated(60_000))
+        assertNull(viewModel.state.value.storage)
+
+        sync.sync.value = StorageSyncStatus()
+        assertTrue(viewModel.state.value.storage != null)
+        settings.state.value = settings.state.value.copy(pendantAddress = null, pendantName = null)
+        assertNull(viewModel.state.value.storage)
+    }
+
+    @Test
+    fun `an unsupported pendant keeps the card with its reason and no actions`() {
+        sync.sync.value = StorageSyncStatus(SyncState.Unsupported("Offline sync needs firmware 3.0.20 or later."))
+
+        val card = viewModel().state.value.storage!!
+
+        assertEquals("Offline sync needs firmware 3.0.20 or later.", card.state)
+        assertEquals(StorageAction.None, card.action)
+    }
+
+    @Test
+    fun `the backlog question is asked once and the answer goes to the sync`() {
+        val viewModel = viewModel()
+        assertNull(viewModel.state.value.backlogPackets)
+
+        sync.sync.value = StorageSyncStatus(SyncState.AwaitingBacklog(100_000))
+        assertEquals(100_000L, viewModel.state.value.backlogPackets)
+        assertEquals(
+            StorageAction.AnswerBacklog,
+            viewModel.state.value.storage!!
+                .action,
+        )
+
+        viewModel.importBacklog()
+        sync.sync.value = StorageSyncStatus(SyncState.Syncing)
+        assertNull(viewModel.state.value.backlogPackets)
+        assertEquals(listOf("import"), sync.calls)
+    }
+
+    @Test
+    fun `discarding the backlog is passed on`() {
+        viewModel().discardBacklog()
+
+        assertEquals(listOf("discard"), sync.calls)
+    }
+
+    @Test
+    fun `the card is hidden when the server does not list offline sync`() {
+        info = ApiResult.Ok(ServerInfo("0.2.0", 1))
+
+        assertNull(viewModel().state.value.storage)
+    }
+
+    @Test
+    fun `a failed check hides the card again`() {
+        val viewModel = viewModel()
+        assertTrue(viewModel.state.value.storage != null)
+
+        info = ApiResult.Failure(FailureKind.Network, "failed to connect")
+        viewModel.checkServer()
+
+        assertNull(viewModel.state.value.storage)
+    }
+
+    @Test
+    fun `the backlog question waits while the pendant is away`() {
+        sync.sync.value = StorageSyncStatus(SyncState.AwaitingBacklog(100_000))
+        sync.link.value = false
+
+        val viewModel = viewModel()
+
+        assertNull(viewModel.state.value.backlogPackets)
+        assertEquals(
+            StorageAction.None,
+            viewModel.state.value.storage!!
+                .action,
+        )
     }
 }

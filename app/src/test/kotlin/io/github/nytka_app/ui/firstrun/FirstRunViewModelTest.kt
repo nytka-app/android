@@ -381,7 +381,8 @@ class FirstRunViewModelTest {
     fun `the consent text is the spec's`() {
         assertEquals(
             "Recording people without their consent is illegal in some places. " +
-                "You are responsible for following the law where you use Nytka.",
+                "You are responsible for following the law where you use Nytka. " +
+                "The pendant also records while the phone is away.",
             CONSENT_TEXT,
         )
     }

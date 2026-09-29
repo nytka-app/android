@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.nytka_app.BuildConfig
 import io.github.nytka_app.capture.DeviceActions
 import io.github.nytka_app.capture.PairedPendant
+import io.github.nytka_app.capture.SyncControls
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.InfoClient
@@ -46,6 +47,12 @@ data class DeviceUiState(
     val developerMode: Boolean = false,
     val tapsToDeveloper: Int = DeviceViewModel.TAPS_TO_DEVELOPER,
     val version: String = BuildConfig.VERSION_NAME,
+    /** The Pendant storage card; null hides it (no pendant, or a server without offline sync). */
+    val storage: StorageCard? = null,
+    /** Packets the first sync found, while it waits for "import or discard"; null when nothing is asked. */
+    val backlogPackets: Long? = null,
+    /** Whether /info lists `offline-sync`; null until it answers and after a failed check. Only true shows the card. */
+    val serverSync: Boolean? = null,
 )
 
 @HiltViewModel
@@ -55,12 +62,18 @@ class DeviceViewModel
         private val settings: SettingsSource,
         private val info: InfoClient,
         private val actions: DeviceActions,
+        private val sync: SyncControls,
     ) : ViewModel() {
         private val local = MutableStateFlow(DeviceUiState())
 
         val state: StateFlow<DeviceUiState> =
-            combine(settings.settings, local) { current, screen ->
+            combine(settings.settings, local, sync.status, sync.connected) { current, screen, storage, connected ->
                 screen.copy(
+                    storage =
+                        storageCard(storage, current.pendantAddress != null || current.fakePendant, connected)
+                            ?.takeIf { screen.serverSync == true },
+                    // Nobody can answer while the pendant is away: the sync (and its service) is what takes the answer.
+                    backlogPackets = storage.backlogPackets()?.takeIf { connected },
                     pendantName = current.pendantName,
                     pendantAddress = current.pendantAddress,
                     serverUrl = current.serverUrl,
@@ -122,6 +135,7 @@ class DeviceViewModel
                             apiVersion = result.value.apiVersion,
                             apiMismatch = result.value.apiVersion != NytkaApi.API_VERSION,
                             serverUnreachable = false,
+                            serverSync = result.value.has(ServerInfo.FEATURE_OFFLINE_SYNC),
                         )
                     }
                 is ApiResult.Failure ->
@@ -130,6 +144,7 @@ class DeviceViewModel
                             serverState = result.message,
                             apiVersion = null,
                             apiMismatch = false,
+                            serverSync = null,
                             serverUnreachable = result.kind == FailureKind.Network,
                         )
                     }
@@ -159,6 +174,16 @@ class DeviceViewModel
                     }
             }
         }
+
+        fun syncNow() = sync.syncNow()
+
+        fun stopSync() = sync.stopSync()
+
+        /** The answer to the first-sync question; the default, and what a dismissed question means. */
+        fun importBacklog() = sync.importBacklog()
+
+        /** Only after the screen's confirm: the pendant's ring is freed without being read. */
+        fun discardBacklog() = sync.discardBacklog()
 
         fun tapVersion() {
             val left = (local.value.tapsToDeveloper - 1).coerceAtLeast(0)
