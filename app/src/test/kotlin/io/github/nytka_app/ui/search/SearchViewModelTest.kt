@@ -6,8 +6,10 @@ import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.Hit
 import io.github.nytka_app.core.api.SearchClient
 import io.github.nytka_app.core.api.SearchPage
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -18,6 +20,7 @@ import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class SearchViewModelTest {
     @get:Rule
     val main = MainDispatcherRule()
@@ -57,22 +60,25 @@ class SearchViewModelTest {
 
     @Test
     fun `searches after 300 ms, once, with the last text`() =
-        runTest(main.dispatcher) {
+        runTest {
             val viewModel = newViewModel()
 
             viewModel.setQuery("k")
             advanceTimeBy(200)
+            runCurrent()
             viewModel.setQuery("ky")
             advanceTimeBy(299)
+            runCurrent()
             assertTrue(api.calls.isEmpty())
             advanceTimeBy(2)
+            runCurrent()
 
             assertEquals(listOf("ky"), api.calls.map { it.query })
         }
 
     @Test
     fun `a query without a letter or digit does not search`() =
-        runTest(main.dispatcher) {
+        runTest {
             val viewModel = newViewModel()
 
             viewModel.setQuery(" -- ")
@@ -83,7 +89,7 @@ class SearchViewModelTest {
 
     @Test
     fun `hits map to rows and a memory without a source does not open`() =
-        runTest(main.dispatcher) {
+        runTest {
             api.pages +=
                 ApiResult.Ok(
                     SearchPage(
@@ -108,7 +114,7 @@ class SearchViewModelTest {
 
     @Test
     fun `a filter searches again at once with its kinds`() =
-        runTest(main.dispatcher) {
+        runTest {
             val viewModel = newViewModel()
             viewModel.setQuery("kyiv")
             advanceUntilIdle()
@@ -122,7 +128,7 @@ class SearchViewModelTest {
 
     @Test
     fun `pages by nextOffset`() =
-        runTest(main.dispatcher) {
+        runTest {
             api.pages += ApiResult.Ok(SearchPage(listOf(hit("conversation", "c1")), nextOffset = 20))
             api.pages += ApiResult.Ok(SearchPage(listOf(hit("conversation", "c2"))))
             val viewModel = newViewModel()
@@ -139,7 +145,7 @@ class SearchViewModelTest {
 
     @Test
     fun `an older server says it needs an update`() =
-        runTest(main.dispatcher) {
+        runTest {
             api.pages += ApiResult.Failure(FailureKind.NotFound, "Not found.")
             val viewModel = newViewModel()
 
