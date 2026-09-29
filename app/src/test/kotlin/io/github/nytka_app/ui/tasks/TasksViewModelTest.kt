@@ -197,12 +197,22 @@ class TasksViewModelTest {
     }
 
     @Test
+    fun `a task that is gone says so instead of asking for an update`() {
+        val viewModel = viewModel()
+        api.failure = ApiResult.Failure(FailureKind.NotFound, "Not found.")
+
+        viewModel.delete("3")
+
+        assertEquals("This item no longer exists", viewModel.state.value.error)
+    }
+
+    @Test
     fun `a server without the endpoint says it needs an update`() {
         api.failure = ApiResult.Failure(FailureKind.NotFound, "Not found.")
 
         val state = viewModel().state.value
 
-        assertEquals("This server needs an update.", state.error)
+        assertEquals("This server needs an update", state.error)
         assertTrue(state.open.isEmpty())
         assertFalse(state.loading)
     }

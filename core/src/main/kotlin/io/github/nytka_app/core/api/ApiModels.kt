@@ -151,6 +151,9 @@ data class CreatedToken(
     val hint: String = "",
     val createdAt: String? = null,
 ) {
+    /** Never prints the secret. */
+    override fun toString() = "CreatedToken(id=$id, name=$name, scope=$scope, token=<redacted>)"
+
     /** The listing's view of it, without the secret. */
     fun listed() = AccessToken(id, name, scope, hint, createdAt)
 }

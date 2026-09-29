@@ -161,13 +161,13 @@ class ConversationViewModelTest {
     }
 
     @Test
-    fun `renaming on a v0_1 server says it needs an update`() {
+    fun `renaming a conversation that is gone says so`() {
         api.renameAnswer = ApiResult.Failure(FailureKind.NotFound, "Not found.")
         val viewModel = viewModel()
 
         viewModel.rename("x")
 
-        assertEquals("This server needs an update.", viewModel.state.value.error)
+        assertEquals("This item no longer exists", viewModel.state.value.error)
         assertEquals("Today", viewModel.state.value.title)
     }
 
@@ -274,6 +274,6 @@ class ConversationViewModelTest {
     fun `a missing conversation says so`() {
         api.detail = ApiResult.Failure(FailureKind.NotFound, "Not found.")
 
-        assertEquals("This conversation no longer exists.", viewModel().state.value.error)
+        assertEquals("This item no longer exists", viewModel().state.value.error)
     }
 }

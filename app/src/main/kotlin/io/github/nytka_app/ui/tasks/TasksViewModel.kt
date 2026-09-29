@@ -6,15 +6,15 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.NytkaTask
 import io.github.nytka_app.core.api.TasksClient
-import io.github.nytka_app.core.api.forScreen
 import io.github.nytka_app.ui.conversations.Formatting
+import io.github.nytka_app.ui.itemNotice
+import io.github.nytka_app.ui.notice
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
-import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -73,7 +73,7 @@ class TasksViewModel
                         if (mutableState.value.completedShown) loadCompleted(reset = true)
                     }
                     is ApiResult.Failure ->
-                        mutableState.update { it.copy(loading = false, refreshing = false, error = result.forScreen()) }
+                        mutableState.update { it.copy(loading = false, refreshing = false, error = result.notice()) }
                 }
             }
         }
@@ -100,7 +100,7 @@ class TasksViewModel
                             )
                         }
                     }
-                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.forScreen()) }
+                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.notice()) }
                 }
                 loadingMore = false
             }
@@ -143,7 +143,7 @@ class TasksViewModel
                             )
                         }
                     }
-                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.forScreen()) }
+                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.notice()) }
                 }
             }
         }
@@ -206,7 +206,7 @@ class TasksViewModel
                                 error = null,
                             )
                         }
-                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.forScreen()) }
+                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.itemNotice()) }
                 }
             }
         }
@@ -222,7 +222,7 @@ class TasksViewModel
                                 error = null,
                             )
                         }
-                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.forScreen()) }
+                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.itemNotice()) }
                 }
             }
         }
@@ -230,7 +230,7 @@ class TasksViewModel
         private fun row(task: NytkaTask): TaskRow {
             val day =
                 task.conversationStartedAt
-                    ?.let { runCatching { Instant.parse(it) }.getOrNull() }
+                    ?.let(Formatting::parse)
                     ?.let { Formatting.dayTitle(it.atZone(clock.zone).toLocalDate(), LocalDate.now(clock)) }
             val source = listOfNotNull(task.conversationTitle?.takeIf(String::isNotBlank), day).joinToString(" · ")
             return TaskRow(task.id, task.text, task.done, task.conversationId, source)

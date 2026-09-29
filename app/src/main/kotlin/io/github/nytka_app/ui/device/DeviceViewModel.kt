@@ -10,9 +10,12 @@ import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.NytkaApi
+import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.ServerUrl
 import io.github.nytka_app.core.api.UrlCheck
+import io.github.nytka_app.core.settings.Settings
 import io.github.nytka_app.core.settings.SettingsSource
+import io.github.nytka_app.ui.firstrun.READ_TOKEN_REFUSED
 import io.github.nytka_app.ui.mustAskForLocalNetwork
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -92,8 +95,26 @@ class DeviceViewModel
             viewModelScope.launch { query() }
         }
 
+        /** What the settings were before the last Save, until that Save's check has answered. */
+        private var beforeSave: Settings? = null
+
         private suspend fun query() {
+            val before = beforeSave
+            beforeSave = null
             when (val result = info.info()) {
+                is ApiResult.Ok if result.value.scope == ServerInfo.SCOPE_READ -> {
+                    // The app edits settings and tokens: a read token is refused, and the old settings come back.
+                    before?.let { old -> settings.update { old } }
+                    local.update {
+                        it.copy(
+                            serverState = READ_TOKEN_REFUSED,
+                            saveError = if (before != null) READ_TOKEN_REFUSED else it.saveError,
+                            apiVersion = null,
+                            apiMismatch = false,
+                            serverUnreachable = false,
+                        )
+                    }
+                }
                 is ApiResult.Ok ->
                     local.update {
                         it.copy(
@@ -125,6 +146,7 @@ class DeviceViewModel
                 is UrlCheck.Invalid -> local.update { it.copy(saveError = check.reason) }
                 is UrlCheck.Ok ->
                     viewModelScope.launch {
+                        beforeSave = settings.current()
                         settings.update {
                             it.copy(
                                 serverUrl = check.base.toString(),

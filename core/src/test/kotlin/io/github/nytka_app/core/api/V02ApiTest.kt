@@ -256,9 +256,26 @@ class V02ApiTest {
         }
 
     @Test
-    fun `failures read for a screen`() {
-        assertEquals("This server needs an update.", ApiResult.Failure(FailureKind.NotFound, "x").forScreen())
-        assertEquals("The app needs an admin token.", ApiResult.Failure(FailureKind.Forbidden, "x").forScreen())
-        assertEquals("boom", ApiResult.Failure(FailureKind.Server, "boom").forScreen())
+    fun `a 405 from a v0_1 server reads as not found`() =
+        runTest {
+            answer(405)
+
+            assertEquals(FailureKind.NotFound, (api.renameConversation("a", "x") as ApiResult.Failure).kind)
+        }
+
+    @Test
+    fun `an upload refused with 403 pauses like a refused token`() =
+        runTest {
+            answer(403)
+
+            assertEquals(UploadResult.Unauthorized, api.upload(byteArrayOf(1)))
+        }
+
+    @Test
+    fun `a created token never prints its secret`() {
+        val created = CreatedToken("t", "laptop", "admin", "nyt_secret")
+
+        assertFalse(created.toString().contains("nyt_secret"))
+        assertFalse("$created".contains("nyt_secret"))
     }
 }

@@ -109,6 +109,19 @@ class DeviceViewModelTest {
     }
 
     @Test
+    fun `saving a read token is refused and the old settings stay`() {
+        val viewModel = viewModel()
+        val before = settings.state.value
+        info = ApiResult.Ok(ServerInfo("0.2.0", 1, scope = "read"))
+
+        viewModel.save("https://other.example", "r".repeat(48), privateNetwork = false)
+
+        assertEquals("The app needs an admin token.", viewModel.state.value.saveError)
+        assertEquals(before.serverUrl, settings.state.value.serverUrl)
+        assertEquals(before.token, settings.state.value.token)
+    }
+
+    @Test
     fun `saving a server on the local network asks for the permission, then checks it`() {
         actions.localNetwork = false
         val viewModel = viewModel()

@@ -123,6 +123,6 @@ class TokensViewModelTest {
     fun `a v0_1 server says it needs an update`() {
         api.listAnswer = ApiResult.Failure(FailureKind.NotFound, "Not found.")
 
-        assertEquals("This server needs an update.", viewModel().state.value.error)
+        assertEquals("This server needs an update", viewModel().state.value.error)
     }
 }

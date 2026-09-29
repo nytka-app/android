@@ -95,6 +95,24 @@ class ConversationsViewModelTest {
     }
 
     @Test
+    fun `a time with an offset instead of Z is read`() {
+        api.pages[null] =
+            ApiResult.Ok(
+                ConversationPage(listOf(summary("b", "2026-09-29T09:00:00+00:00", "2026-09-29T09:20:00+00:00"))),
+            )
+
+        assertEquals(
+            "09:00–09:20",
+            newViewModel()
+                .state.value.days
+                .single()
+                .rows
+                .single()
+                .timeRange,
+        )
+    }
+
+    @Test
     fun `loads more with nextBefore until the last page`() {
         api.pages[null] = ApiResult.Ok(firstPage)
         api.pages["2026-09-28T18:00:00Z"] =

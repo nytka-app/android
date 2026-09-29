@@ -151,7 +151,7 @@ class ServerSettingsViewModelTest {
 
         val state = viewModel().state.value
 
-        assertEquals("This server needs an update.", state.error)
+        assertEquals("This server needs an update", state.error)
         assertTrue(state.fields.isEmpty())
         assertFalse(state.loading)
     }

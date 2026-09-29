@@ -10,7 +10,8 @@ import io.github.nytka_app.core.api.ConversationDetail
 import io.github.nytka_app.core.api.ConversationsClient
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.TasksClient
-import io.github.nytka_app.core.api.forScreen
+import io.github.nytka_app.ui.ITEM_GONE
+import io.github.nytka_app.ui.itemNotice
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +19,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
-import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -81,13 +81,7 @@ class ConversationViewModel
                             it.copy(
                                 loading = false,
                                 error =
-                                    if (result.kind ==
-                                        FailureKind.NotFound
-                                    ) {
-                                        "This conversation no longer exists."
-                                    } else {
-                                        result.message
-                                    },
+                                    if (result.kind == FailureKind.NotFound) ITEM_GONE else result.message,
                             )
                         }
                 }
@@ -111,7 +105,7 @@ class ConversationViewModel
             viewModelScope.launch {
                 when (val result = api.renameConversation(id, wanted)) {
                     is ApiResult.Ok -> mutableState.value = show(result.value)
-                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.forScreen()) }
+                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.itemNotice()) }
                 }
             }
         }
@@ -129,7 +123,7 @@ class ConversationViewModel
                                         "No summary can be made now: the conversation is still open, or the server " +
                                             "has no language model set up."
                                     } else {
-                                        result.forScreen()
+                                        result.itemNotice()
                                     },
                             )
                         }
@@ -177,8 +171,8 @@ class ConversationViewModel
 
         private fun show(detail: ConversationDetail): ConversationUiState {
             val zone = clock.zone
-            val start = Instant.parse(detail.startedAt)
-            val end = Instant.parse(detail.endedAt)
+            val start = Formatting.instant(detail.startedAt)
+            val end = Formatting.instant(detail.endedAt)
             val title = detail.title?.takeIf(String::isNotBlank)
             val colors = LinkedHashMap<String, Int>()
             var previous: String? = null
@@ -187,7 +181,7 @@ class ConversationViewModel
                     val speaker = it.speaker?.takeIf(String::isNotBlank)
                     val color = speaker?.let { name -> colors.getOrPut(name) { colors.size % SPEAKER_COLORS } } ?: 0
                     Paragraph(
-                        Formatting.clock(Instant.parse(it.startedAt), zone),
+                        Formatting.clock(Formatting.instant(it.startedAt), zone),
                         it.text,
                         speaker,
                         showSpeaker = speaker != null && speaker != previous,

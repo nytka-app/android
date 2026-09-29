@@ -46,8 +46,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.core.api.AccessToken
+import io.github.nytka_app.ui.conversations.Formatting
 import kotlinx.coroutines.launch
-import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -235,5 +235,5 @@ private val whenFormat = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale
 
 private fun whenText(instant: String?): String =
     instant
-        ?.let { runCatching { whenFormat.format(Instant.parse(it).atZone(ZoneId.systemDefault())) }.getOrNull() }
+        ?.let { Formatting.parse(it)?.let { at -> whenFormat.format(at.atZone(ZoneId.systemDefault())) } }
         ?: "unknown"

@@ -46,7 +46,8 @@ class NytkaApi(
                             json.decodeFromString<UploadAnswer>(response.body.string()).acceptedThroughSeq,
                             duplicate = response.code == 200,
                         )
-                    401 -> UploadResult.Unauthorized
+                    // 403: the token cannot upload (a read token); pause and say so instead of retrying forever.
+                    401, 403 -> UploadResult.Unauthorized
                     400, 409, 413 -> UploadResult.Dropped(response.code, "The server answered ${response.code}.")
                     else -> UploadResult.Retry("The server answered ${response.code}.")
                 }
@@ -155,7 +156,8 @@ class NytkaApi(
             400 -> invalid(response.body.string()) ?: ApiResult.Failure(FailureKind.Server, "The server answered 400.")
             401 -> ApiResult.Failure(FailureKind.Unauthorized, "The server refused the token.")
             403 -> ApiResult.Failure(FailureKind.Forbidden, "The token is not allowed to do this.")
-            404 -> ApiResult.Failure(FailureKind.NotFound, "Not found.")
+            // A v0.1 server answers 405 on a method it lacks, such as PATCH /conversations/{id}.
+            404, 405 -> ApiResult.Failure(FailureKind.NotFound, "Not found.")
             409 -> ApiResult.Failure(FailureKind.Conflict, "This conflicts with what the server holds.")
             else -> ApiResult.Failure(FailureKind.Server, "The server answered ${response.code}.")
         }

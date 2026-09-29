@@ -7,7 +7,7 @@ import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.ServerSetting
 import io.github.nytka_app.core.api.ServerSettingsClient
-import io.github.nytka_app.core.api.forScreen
+import io.github.nytka_app.ui.notice
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -59,7 +59,7 @@ class ServerSettingsViewModel
                 when (val result = api.settings()) {
                     is ApiResult.Ok ->
                         mutableState.value = ServerSettingsUiState(fields = result.value.map(::field), loading = false)
-                    is ApiResult.Failure -> mutableState.update { it.copy(loading = false, error = result.forScreen()) }
+                    is ApiResult.Failure -> mutableState.update { it.copy(loading = false, error = result.notice()) }
                 }
             }
         }
@@ -120,7 +120,7 @@ class ServerSettingsViewModel
                             "The server refused a change: a setting is locked by its environment."
                         result.kind == FailureKind.Invalid && leftover.isEmpty() -> "Some values are not valid."
                         result.kind == FailureKind.Invalid -> leftover.joinToString(" ")
-                        else -> result.forScreen()
+                        else -> result.notice()
                     },
             )
         }

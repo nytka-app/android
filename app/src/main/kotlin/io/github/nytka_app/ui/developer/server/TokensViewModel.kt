@@ -8,7 +8,8 @@ import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.CreatedToken
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.TokensClient
-import io.github.nytka_app.core.api.forScreen
+import io.github.nytka_app.ui.itemNotice
+import io.github.nytka_app.ui.notice
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,7 +45,7 @@ class TokensViewModel
             viewModelScope.launch {
                 when (val result = api.tokens()) {
                     is ApiResult.Ok -> mutableState.update { it.copy(tokens = result.value, loading = false) }
-                    is ApiResult.Failure -> mutableState.update { it.copy(loading = false, error = result.forScreen()) }
+                    is ApiResult.Failure -> mutableState.update { it.copy(loading = false, error = result.notice()) }
                 }
             }
         }
@@ -76,7 +77,7 @@ class TokensViewModel
                                                 .joinToString(
                                                     " ",
                                                 ).ifEmpty { result.message }
-                                        else -> result.forScreen()
+                                        else -> result.notice()
                                     },
                             )
                         }
@@ -93,7 +94,7 @@ class TokensViewModel
             viewModelScope.launch {
                 when (val result = api.revokeToken(id)) {
                     is ApiResult.Ok -> load()
-                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.forScreen()) }
+                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.itemNotice()) }
                 }
             }
         }
