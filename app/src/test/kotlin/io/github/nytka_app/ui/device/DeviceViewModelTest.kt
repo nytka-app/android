@@ -8,7 +8,6 @@ import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.settings.Settings
-import io.github.nytka_app.ui.PermissionAnswer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -121,7 +120,7 @@ class DeviceViewModelTest {
         assertEquals(checksBefore, infoCalls)
         assertEquals("http://192.168.1.10:8080/", settings.state.value.serverUrl)
 
-        viewModel.localNetworkAnswered(PermissionAnswer.Granted)
+        viewModel.localNetworkAnswered()
 
         assertFalse(viewModel.state.value.askLocalNetwork)
         assertEquals(checksBefore + 1, infoCalls)
@@ -160,77 +159,74 @@ class DeviceViewModelTest {
     }
 
     @Test
-    fun `a refusal leaves a note beside a server that is out of reach`() {
+    fun `a refusal still checks the server, and one out of reach shows the hint`() {
         saveServerOnTheLocalNetwork()
         actions.localNetwork = false
         info = ApiResult.Failure(FailureKind.Network, "failed to connect")
         val viewModel = viewModel()
 
-        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
+        viewModel.localNetworkAnswered()
 
-        assertEquals(PermissionAnswer.Denied, viewModel.state.value.localNetwork)
         assertEquals("failed to connect", viewModel.state.value.serverState)
+        assertTrue(viewModel.state.value.serverUnreachable)
     }
 
     @Test
-    fun `a server that answers needs no note, over a VPN say`() {
+    fun `a server that answers needs no hint, over a VPN say`() {
         saveServerOnTheLocalNetwork()
         actions.localNetwork = false
         val viewModel = viewModel()
 
-        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
+        viewModel.localNetworkAnswered()
 
-        assertNull(viewModel.state.value.localNetwork)
+        assertFalse(viewModel.state.value.serverUnreachable)
         assertEquals("Connected to Nytka server 0.1.0", viewModel.state.value.serverState)
     }
 
     @Test
-    fun `a refusal for good is still asked about, since Android decides whether to show the prompt`() {
+    fun `the prompt is asked for again on each check until the permission is granted`() {
         saveServerOnTheLocalNetwork()
         actions.localNetwork = false
         info = ApiResult.Failure(FailureKind.Network, "failed to connect")
         val viewModel = viewModel()
-        viewModel.localNetworkAnswered(PermissionAnswer.Blocked)
+        viewModel.localNetworkAnswered()
         val checksBefore = infoCalls
 
         viewModel.checkServer()
 
         assertTrue(viewModel.state.value.askLocalNetwork)
         assertEquals(checksBefore, infoCalls)
-        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
-        assertEquals(PermissionAnswer.Blocked, viewModel.state.value.localNetwork)
-        viewModel.openSettings()
-        assertEquals(listOf("open settings"), actions.calls)
     }
 
     @Test
-    fun `a refusal that repeats leads to the system settings`() {
-        saveServerOnTheLocalNetwork()
+    fun `a check that fails on the network marks the server unreachable, whatever its address`() {
         actions.localNetwork = false
         info = ApiResult.Failure(FailureKind.Network, "failed to connect")
+
         val viewModel = viewModel()
-        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
-        assertEquals(PermissionAnswer.Denied, viewModel.state.value.localNetwork)
 
-        viewModel.checkServer()
-        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
-
-        assertEquals(PermissionAnswer.Blocked, viewModel.state.value.localNetwork)
+        assertFalse(viewModel.state.value.askLocalNetwork)
+        assertTrue(viewModel.state.value.serverUnreachable)
+        assertEquals("failed to connect", viewModel.state.value.serverState)
     }
 
     @Test
-    fun `allowing it in the system settings clears the note on the next check`() {
-        saveServerOnTheLocalNetwork()
-        actions.localNetwork = false
+    fun `a server that answers with a refusal is reachable`() {
+        info = ApiResult.Failure(FailureKind.Unauthorized, "The server refused the token.")
+
+        assertFalse(viewModel().state.value.serverUnreachable)
+    }
+
+    @Test
+    fun `the next check clears the mark`() {
         info = ApiResult.Failure(FailureKind.Network, "failed to connect")
         val viewModel = viewModel()
-        viewModel.localNetworkAnswered(PermissionAnswer.Blocked)
+        assertTrue(viewModel.state.value.serverUnreachable)
 
-        actions.localNetwork = true
         info = ApiResult.Ok(ServerInfo("0.1.0", 1))
         viewModel.checkServer()
 
-        assertNull(viewModel.state.value.localNetwork)
+        assertFalse(viewModel.state.value.serverUnreachable)
         assertEquals("Connected to Nytka server 0.1.0", viewModel.state.value.serverState)
     }
 }

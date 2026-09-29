@@ -19,6 +19,24 @@ import java.io.File
 import java.time.Instant
 import javax.inject.Inject
 
+/**
+ * True when Android lets the app use the local network: always before Android 17, and there once the user has allowed
+ * Nearby devices.
+ */
+fun Context.localNetworkAllowed(): Boolean =
+    Build.VERSION.SDK_INT < Build.VERSION_CODES.CINNAMON_BUN ||
+        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_LOCAL_NETWORK) ==
+        PackageManager.PERMISSION_GRANTED
+
+/** Opens the app's info in the system settings, where a permission Android does not ask for can be allowed. */
+fun Context.startAppSettings() =
+    startActivity(
+        Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.fromParts("package", packageName, null),
+        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+    )
+
 /** What the screens ask of the system; a fake in tests. */
 interface DeviceActions {
     fun forgetPendant(address: String)
@@ -29,16 +47,10 @@ interface DeviceActions {
 
     fun stopCapture()
 
-    /**
-     * True when Android lets Nytka use the local network: always before Android 17, and there once the user has
-     * allowed Nearby devices.
-     */
+    /** See [localNetworkAllowed]. */
     fun localNetworkGranted(): Boolean
 
-    /**
-     * Opens Nytka's app info in the system settings. A permission Android has stopped asking for can only be allowed
-     * there.
-     */
+    /** See [startAppSettings]. */
     fun openAppSettings()
 
     /**
@@ -62,18 +74,9 @@ class AndroidDeviceActions
 
         override fun stopCapture() = CaptureService.stop(context)
 
-        override fun localNetworkGranted() =
-            Build.VERSION.SDK_INT < Build.VERSION_CODES.CINNAMON_BUN ||
-                ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_LOCAL_NETWORK) ==
-                PackageManager.PERMISSION_GRANTED
+        override fun localNetworkGranted() = context.localNetworkAllowed()
 
-        override fun openAppSettings() =
-            context.startActivity(
-                Intent(
-                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                    Uri.fromParts("package", context.packageName, null),
-                ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
-            )
+        override fun openAppSettings() = context.startAppSettings()
 
         override suspend fun shareDiagnostics(): Int {
             val (file, count) = withContext(Dispatchers.IO) { writeDiagnostics() }

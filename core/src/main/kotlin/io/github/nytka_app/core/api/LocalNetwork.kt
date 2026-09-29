@@ -11,8 +11,9 @@ import okhttp3.HttpUrl
 object LocalNetwork {
     /**
      * True when the server at [base] may need the permission: the user turned the private-network switch on, or the
-     * host is an address in a local range or a `.local` (mDNS) name. A name that only resolves to a local address is
-     * not caught; telling would take a DNS lookup.
+     * host is an address in a local range or a `.local` (mDNS) name. A name that only resolves to a local address, or
+     * an IPv6 address on the phone's own network, is not caught: telling would take a DNS lookup or the phone's routes.
+     * The app shows a hint under a server that does not answer instead, whatever its address looks like.
      */
     fun mayNeedPermission(
         base: HttpUrl,

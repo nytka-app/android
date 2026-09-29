@@ -34,7 +34,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.pendant.PendantConnection
-import io.github.nytka_app.ui.LocalNetworkNote
+import io.github.nytka_app.ui.LocalNetworkHint
 import io.github.nytka_app.ui.LocalNetworkPrompt
 import io.github.nytka_app.ui.PairButton
 import io.github.nytka_app.ui.StatusUiState
@@ -67,7 +67,7 @@ fun DeviceScreen(
                 onForget = { confirmForget = true },
             )
         }
-        item { ServerSection(state, status, viewModel::checkServer, viewModel::openSettings) }
+        item { ServerSection(state, status, viewModel::checkServer) }
         item { SettingsSection(state, viewModel::save) }
         item {
             Section("About") {
@@ -149,12 +149,10 @@ private fun ServerSection(
     state: DeviceUiState,
     status: StatusUiState,
     onCheck: () -> Unit,
-    onOpenSettings: () -> Unit,
 ) {
     Section("Server") {
         Text(state.serverUrl.ifEmpty { "No server set" })
         Text(state.serverState)
-        LocalNetworkNote(state.localNetwork, retry = "Check again", onOpenSettings = onOpenSettings)
         state.apiVersion?.let { Text("API version $it") }
         if (state.apiMismatch) {
             Text(
@@ -165,6 +163,7 @@ private fun ServerSection(
         }
         Text("Queued chunks: ${status.queuedChunks}")
         Text(status.serverLine)
+        LocalNetworkHint(state.serverUnreachable || status.serverUnreachable, onAllowed = onCheck)
         OutlinedButton(onClick = onCheck) { Text("Check again") }
     }
 }

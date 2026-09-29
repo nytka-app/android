@@ -34,6 +34,7 @@ fun StatusCard(
             Text("Pendant battery: ${state.capture.battery?.let { "$it%" } ?: "unknown"}")
             Text("Server: ${state.serverLine}")
             transcriptionNotice?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            LocalNetworkHint(state.serverUnreachable)
             Text("Queued chunks: ${state.queuedChunks}")
             FilledTonalButton(onClick = { onMute(!state.muted) }) { Text(if (state.muted) "Unmute" else "Mute") }
         }

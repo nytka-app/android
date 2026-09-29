@@ -7,13 +7,12 @@ import io.github.nytka_app.BuildConfig
 import io.github.nytka_app.capture.DeviceActions
 import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.core.api.ApiResult
+import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.NytkaApi
 import io.github.nytka_app.core.api.ServerUrl
 import io.github.nytka_app.core.api.UrlCheck
 import io.github.nytka_app.core.settings.SettingsSource
-import io.github.nytka_app.ui.PermissionAnswer
-import io.github.nytka_app.ui.after
 import io.github.nytka_app.ui.mustAskForLocalNetwork
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -36,8 +35,11 @@ data class DeviceUiState(
     val saveError: String? = null,
     /** True while the screen should show Android's prompt for the local network. */
     val askLocalNetwork: Boolean = false,
-    /** How the user last answered that prompt while the server was out of reach. */
-    val localNetwork: PermissionAnswer? = null,
+    /**
+     * True when the last check failed on the network. On Android 17 that can be the local network permission,
+     * whatever the address looks like, so the screen offers to allow it.
+     */
+    val serverUnreachable: Boolean = false,
     val developerMode: Boolean = false,
     val tapsToDeveloper: Int = DeviceViewModel.TAPS_TO_DEVELOPER,
     val version: String = BuildConfig.VERSION_NAME,
@@ -79,21 +81,16 @@ class DeviceViewModel
                     // localNetworkAnswered() checks the server once the user has answered.
                     local.update { it.copy(askLocalNetwork = true) }
                 } else {
-                    if (actions.localNetworkGranted()) local.update { it.copy(localNetwork = null) }
                     query()
                 }
             }
         }
 
         /** The check goes on whatever the answer: over a VPN the server is reachable without the permission. */
-        fun localNetworkAnswered(answer: PermissionAnswer) {
-            val refused = answer.takeUnless { it == PermissionAnswer.Granted }
-            local.update { it.copy(askLocalNetwork = false, localNetwork = refused?.after(it.localNetwork)) }
+        fun localNetworkAnswered() {
+            local.update { it.copy(askLocalNetwork = false) }
             viewModelScope.launch { query() }
         }
-
-        /** For a permission Android no longer asks for: the app info page is where it can be allowed. */
-        fun openSettings() = actions.openAppSettings()
 
         private suspend fun query() {
             when (val result = info.info()) {
@@ -103,8 +100,7 @@ class DeviceViewModel
                             serverState = "Connected to Nytka server ${result.value.serverVersion}",
                             apiVersion = result.value.apiVersion,
                             apiMismatch = result.value.apiVersion != NytkaApi.API_VERSION,
-                            // The note is for a server out of reach: this one answered.
-                            localNetwork = null,
+                            serverUnreachable = false,
                         )
                     }
                 is ApiResult.Failure ->
@@ -113,6 +109,7 @@ class DeviceViewModel
                             serverState = result.message,
                             apiVersion = null,
                             apiMismatch = false,
+                            serverUnreachable = result.kind == FailureKind.Network,
                         )
                     }
             }

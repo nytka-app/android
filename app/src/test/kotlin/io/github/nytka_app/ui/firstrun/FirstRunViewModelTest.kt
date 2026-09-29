@@ -120,26 +120,26 @@ class FirstRunViewModelTest {
         actions.localNetwork = false
         viewModel.edit("http://192.168.1.10:8080", token, privateNetwork = true)
         viewModel.testConnection()
+        actions.localNetwork = true
 
-        viewModel.localNetworkAnswered(PermissionAnswer.Granted)
+        viewModel.localNetworkAnswered()
 
         assertFalse(viewModel.state.value.askLocalNetwork)
-        assertNull(viewModel.state.value.localNetwork)
         assertEquals(1, infoCalls)
         assertEquals(FirstRunStep.Permissions, viewModel.state.value.step)
     }
 
     @Test
-    fun `a refusal still runs the test and keeps the note when the server is out of reach`() {
+    fun `a refusal still runs the test, and a server out of reach shows the hint`() {
         actions.localNetwork = false
         info = ApiResult.Failure(FailureKind.Network, "failed to connect")
         viewModel.edit("http://192.168.1.10:8080", token, privateNetwork = true)
         viewModel.testConnection()
 
-        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
+        viewModel.localNetworkAnswered()
 
-        assertEquals(PermissionAnswer.Denied, viewModel.state.value.localNetwork)
         assertEquals("failed to connect", viewModel.state.value.serverError)
+        assertTrue(viewModel.state.value.serverUnreachable)
         assertEquals(FirstRunStep.Server, viewModel.state.value.step)
     }
 
@@ -149,18 +149,19 @@ class FirstRunViewModelTest {
         viewModel.edit("http://100.66.77.88:8080", token, privateNetwork = true)
         viewModel.testConnection()
 
-        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
+        viewModel.localNetworkAnswered()
 
         assertEquals(FirstRunStep.Permissions, viewModel.state.value.step)
+        assertFalse(viewModel.state.value.serverUnreachable)
     }
 
     @Test
-    fun `a refusal Android may repeat is asked about again on the next test`() {
+    fun `the prompt is asked for again on each test until the permission is granted`() {
         actions.localNetwork = false
         info = ApiResult.Failure(FailureKind.Network, "failed to connect")
         viewModel.edit("http://192.168.1.10:8080", token, privateNetwork = true)
         viewModel.testConnection()
-        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
+        viewModel.localNetworkAnswered()
 
         viewModel.testConnection()
 
@@ -169,52 +170,49 @@ class FirstRunViewModelTest {
     }
 
     @Test
-    fun `a refusal for good is still asked about, since Android decides whether to show the prompt`() {
+    fun `a name that gives no sign of the local network is not asked about before the test`() {
         actions.localNetwork = false
         info = ApiResult.Failure(FailureKind.Network, "failed to connect")
-        viewModel.edit("http://192.168.1.10:8080", token, privateNetwork = true)
-        viewModel.testConnection()
-        viewModel.localNetworkAnswered(PermissionAnswer.Blocked)
+        viewModel.edit("https://nas.example.com", token, privateNetwork = false)
 
         viewModel.testConnection()
 
-        assertTrue(viewModel.state.value.askLocalNetwork)
+        assertFalse(viewModel.state.value.askLocalNetwork)
         assertEquals(1, infoCalls)
-        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
-        assertEquals(PermissionAnswer.Blocked, viewModel.state.value.localNetwork)
-        assertEquals(2, infoCalls)
-        viewModel.openSettings()
-        assertEquals(listOf("open settings"), actions.calls)
     }
 
     @Test
-    fun `a refusal that repeats leads to the system settings`() {
-        actions.localNetwork = false
+    fun `a test that fails on the network marks the server unreachable, whatever its address`() {
         info = ApiResult.Failure(FailureKind.Network, "failed to connect")
-        viewModel.edit("http://192.168.1.10:8080", token, privateNetwork = true)
-        viewModel.testConnection()
-        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
-        assertEquals(PermissionAnswer.Denied, viewModel.state.value.localNetwork)
+        viewModel.edit("https://nas.example.com", token, privateNetwork = false)
 
         viewModel.testConnection()
-        viewModel.localNetworkAnswered(PermissionAnswer.Denied)
 
-        assertEquals(PermissionAnswer.Blocked, viewModel.state.value.localNetwork)
+        assertTrue(viewModel.state.value.serverUnreachable)
+        assertEquals("failed to connect", viewModel.state.value.serverError)
     }
 
     @Test
-    fun `allowing it in the system settings clears the note`() {
-        actions.localNetwork = false
-        info = ApiResult.Failure(FailureKind.Network, "failed to connect")
-        viewModel.edit("http://192.168.1.10:8080", token, privateNetwork = true)
-        viewModel.testConnection()
-        viewModel.localNetworkAnswered(PermissionAnswer.Blocked)
+    fun `a server that answers with a refusal is reachable`() {
+        info = ApiResult.Failure(FailureKind.Unauthorized, "The server refused the token.")
+        viewModel.edit("https://nytka.example", token, privateNetwork = false)
 
-        actions.localNetwork = true
+        viewModel.testConnection()
+
+        assertFalse(viewModel.state.value.serverUnreachable)
+    }
+
+    @Test
+    fun `the next test clears the mark`() {
+        info = ApiResult.Failure(FailureKind.Network, "failed to connect")
+        viewModel.edit("https://nas.example.com", token, privateNetwork = false)
+        viewModel.testConnection()
+        assertTrue(viewModel.state.value.serverUnreachable)
+
         info = ApiResult.Ok(ServerInfo("0.1.0", 1))
         viewModel.testConnection()
 
-        assertNull(viewModel.state.value.localNetwork)
+        assertFalse(viewModel.state.value.serverUnreachable)
         assertEquals(FirstRunStep.Permissions, viewModel.state.value.step)
     }
 

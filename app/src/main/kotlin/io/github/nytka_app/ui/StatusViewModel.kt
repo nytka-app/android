@@ -26,6 +26,8 @@ data class StatusUiState(
     val serverLine: String = "",
     val queuedChunks: Int = 0,
     val developerMode: Boolean = false,
+    /** Uploads fail on the network: on Android 17 that can be the local network permission, so the card offers it. */
+    val serverUnreachable: Boolean = false,
 )
 
 /** The one line the status card shows about the server, most useful first. */
@@ -40,6 +42,9 @@ fun serverLine(
     upload.lastUploadAtMs?.let { return "Last upload ${at(it)}" }
     return "Waiting for the first upload"
 }
+
+/** Uploads fail on the network, as against a server that answers with a refusal. */
+fun uploadsUnreachable(upload: UploadState) = upload.paused == null && upload.unreachableSinceMs != null
 
 /** Capture, mute and server state for the top bar, the status card and the Device tab. */
 @HiltViewModel
@@ -60,6 +65,7 @@ class StatusViewModel
                     serverLine(upload, clock.zone),
                     usage.chunks,
                     current.developerMode,
+                    uploadsUnreachable(upload),
                 )
             }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_AFTER_MS), StatusUiState())
 

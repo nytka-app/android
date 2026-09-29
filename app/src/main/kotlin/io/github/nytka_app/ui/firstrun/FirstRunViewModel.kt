@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.nytka_app.capture.DeviceActions
 import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.core.api.ApiResult
+import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.ServerUrl
 import io.github.nytka_app.core.api.UrlCheck
@@ -38,8 +39,11 @@ data class FirstRunUiState(
     val serverVersion: String? = null,
     /** True while the screen should show Android's prompt for the local network. */
     val askLocalNetwork: Boolean = false,
-    /** How the user last answered that prompt, unless they allowed it. */
-    val localNetwork: PermissionAnswer? = null,
+    /**
+     * True when the last connection test failed on the network. On Android 17 that can be the local network
+     * permission, whatever the address looks like, so the screen offers to allow it.
+     */
+    val serverUnreachable: Boolean = false,
     /** How the user last answered the nearby-devices prompt, unless they allowed it. */
     val permissions: PermissionAnswer? = null,
     val consentChecked: Boolean = false,
@@ -105,21 +109,20 @@ class FirstRunViewModel
                 }
             }
 
-            // Android 17 blocks a server on the local network until Nytka may use it, so ask before the test.
+            // Android 17 blocks a server on the local network until Nytka may use it: ask before the test when the
+            // address looks like one. Any other server that fails to answer brings the hint instead.
             if (mustAskForLocalNetwork(base, current.privateNetwork, actions)) {
                 return mutableState.update { it.copy(askLocalNetwork = true, serverError = null) }
             }
-            if (actions.localNetworkGranted()) mutableState.update { it.copy(localNetwork = null) }
             connect(base.toString(), current)
         }
 
         /**
          * The test goes on whatever the answer: over a VPN the server is reachable without the permission, and if it
-         * is not, the note under the address says why.
+         * is not, the hint under the address says why.
          */
-        fun localNetworkAnswered(answer: PermissionAnswer) {
-            val refused = answer.takeUnless { it == PermissionAnswer.Granted }
-            mutableState.update { it.copy(askLocalNetwork = false, localNetwork = refused?.after(it.localNetwork)) }
+        fun localNetworkAnswered() {
+            mutableState.update { it.copy(askLocalNetwork = false) }
             val current = mutableState.value
             (ServerUrl.check(current.url, current.privateNetwork) as? UrlCheck.Ok)
                 ?.let { connect(it.base.toString(), current) }
@@ -129,7 +132,7 @@ class FirstRunViewModel
             base: String,
             current: FirstRunUiState,
         ) {
-            mutableState.update { it.copy(testing = true, serverError = null) }
+            mutableState.update { it.copy(testing = true, serverError = null, serverUnreachable = false) }
             viewModelScope.launch {
                 // Saved first: the API client reads the settings on every request.
                 settings.update {
@@ -155,6 +158,7 @@ class FirstRunViewModel
                             it.copy(
                                 testing = false,
                                 serverError = result.message,
+                                serverUnreachable = result.kind == FailureKind.Network,
                             )
                         }
                 }
