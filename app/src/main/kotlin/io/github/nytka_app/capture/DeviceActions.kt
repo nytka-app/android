@@ -1,8 +1,14 @@
 package io.github.nytka_app.capture
 
+import android.Manifest
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.nytka_app.core.diagnostics.DiagnosticsCsv
@@ -13,6 +19,24 @@ import java.io.File
 import java.time.Instant
 import javax.inject.Inject
 
+/**
+ * True when Android lets the app use the local network: always before Android 17, and there once the user has allowed
+ * Nearby devices.
+ */
+fun Context.localNetworkAllowed(): Boolean =
+    Build.VERSION.SDK_INT < Build.VERSION_CODES.CINNAMON_BUN ||
+        ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_LOCAL_NETWORK) ==
+        PackageManager.PERMISSION_GRANTED
+
+/** Opens the app's info in the system settings, where a permission Android does not ask for can be allowed. */
+fun Context.startAppSettings() =
+    startActivity(
+        Intent(
+            Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+            Uri.fromParts("package", packageName, null),
+        ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+    )
+
 /** What the screens ask of the system; a fake in tests. */
 interface DeviceActions {
     fun forgetPendant(address: String)
@@ -22,6 +46,12 @@ interface DeviceActions {
     fun restartCapture()
 
     fun stopCapture()
+
+    /** See [localNetworkAllowed]. */
+    fun localNetworkGranted(): Boolean
+
+    /** See [startAppSettings]. */
+    fun openAppSettings()
 
     /**
      * Writes the last 7 days of diagnostics as CSV to the app's cache, page by page off the main thread, and opens
@@ -43,6 +73,10 @@ class AndroidDeviceActions
         override fun restartCapture() = CaptureService.restart(context)
 
         override fun stopCapture() = CaptureService.stop(context)
+
+        override fun localNetworkGranted() = context.localNetworkAllowed()
+
+        override fun openAppSettings() = context.startAppSettings()
 
         override suspend fun shareDiagnostics(): Int {
             val (file, count) = withContext(Dispatchers.IO) { writeDiagnostics() }

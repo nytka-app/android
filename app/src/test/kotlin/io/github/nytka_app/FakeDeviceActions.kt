@@ -7,6 +7,9 @@ class FakeDeviceActions : DeviceActions {
     var sharedCount = 0
     var shareFailure: Exception? = null
 
+    /** What Android answers about the local network; allowed unless a test says otherwise. */
+    var localNetwork = true
+
     override fun forgetPendant(address: String) {
         calls += "forget $address"
     }
@@ -21,6 +24,12 @@ class FakeDeviceActions : DeviceActions {
 
     override fun stopCapture() {
         calls += "stop"
+    }
+
+    override fun localNetworkGranted() = localNetwork
+
+    override fun openAppSettings() {
+        calls += "open settings"
     }
 
     override suspend fun shareDiagnostics(): Int {

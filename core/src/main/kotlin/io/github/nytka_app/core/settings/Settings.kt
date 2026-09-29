@@ -1,5 +1,8 @@
 package io.github.nytka_app.core.settings
 
+/** The steps of first run in order; [Settings.firstRunStep] is the one the user has reached. */
+enum class FirstRunStep { Server, Permissions, Consent, Pairing }
+
 data class Settings(
     val serverUrl: String = "",
     val token: String = "",
@@ -9,6 +12,7 @@ data class Settings(
     val pendantName: String? = null,
     val consentGiven: Boolean = false,
     val onboarded: Boolean = false,
+    val firstRunStep: FirstRunStep = FirstRunStep.Server,
     val developerMode: Boolean = false,
     val fakePendant: Boolean = false,
     val alertDisconnectedMinutes: Int = 5,
@@ -22,8 +26,8 @@ data class Settings(
     override fun toString() =
         "Settings(serverUrl=$serverUrl, token=${if (token.isEmpty()) "unset" else "set"}, " +
             "privateNetwork=$privateNetwork, muted=$muted, pendant=${pendantName ?: "none"}, " +
-            "consentGiven=$consentGiven, onboarded=$onboarded, developerMode=$developerMode, " +
-            "fakePendant=$fakePendant, " +
+            "consentGiven=$consentGiven, onboarded=$onboarded, firstRunStep=$firstRunStep, " +
+            "developerMode=$developerMode, fakePendant=$fakePendant, " +
             "alerts=$alertDisconnectedMinutes/$alertUnreachableMinutes/$alertBatteryPercent, " +
             "diagnosticsUpload=$diagnosticsUpload)"
 }

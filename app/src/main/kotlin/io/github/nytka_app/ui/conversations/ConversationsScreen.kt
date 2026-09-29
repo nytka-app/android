@@ -19,7 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -67,14 +70,20 @@ fun ConversationsScreen(
     viewModel: ConversationsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val notice by viewModel.notice.collectAsStateWithLifecycle()
     LaunchedEffect(deleted) { deleted?.let(viewModel::forget) }
+    // Refreshes when the screen is shown again and every 30 seconds while it is, but never in the background.
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(viewModel, lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) { viewModel.keepFresh() }
+    }
     PullToRefreshBox(isRefreshing = state.refreshing, onRefresh = viewModel::refresh) {
         LazyColumn(
             Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            item { StatusCard(status, onMute) }
+            item { StatusCard(status, onMute, notice) }
             state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
             state.days.forEach { day ->
                 item(key = "day-${day.title}") {

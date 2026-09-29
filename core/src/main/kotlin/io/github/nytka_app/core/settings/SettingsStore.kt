@@ -40,6 +40,7 @@ class SettingsStore(
             next.pendantName?.let { preferences[PENDANT_NAME] = it } ?: preferences.remove(PENDANT_NAME)
             preferences[CONSENT_GIVEN] = next.consentGiven
             preferences[ONBOARDED] = next.onboarded
+            preferences[FIRST_RUN_STEP] = next.firstRunStep.name
             preferences[DEVELOPER_MODE] = next.developerMode
             preferences[FAKE_PENDANT] = next.fakePendant
             preferences[ALERT_DISCONNECTED] = next.alertDisconnectedMinutes
@@ -59,6 +60,7 @@ class SettingsStore(
             pendantName = preferences[PENDANT_NAME],
             consentGiven = preferences[CONSENT_GIVEN] ?: false,
             onboarded = preferences[ONBOARDED] ?: false,
+            firstRunStep = readStep(preferences),
             developerMode = preferences[DEVELOPER_MODE] ?: false,
             fakePendant = preferences[FAKE_PENDANT] ?: false,
             alertDisconnectedMinutes = preferences[ALERT_DISCONNECTED] ?: Settings().alertDisconnectedMinutes,
@@ -66,6 +68,10 @@ class SettingsStore(
             alertBatteryPercent = preferences[ALERT_BATTERY] ?: Settings().alertBatteryPercent,
             diagnosticsUpload = preferences[DIAGNOSTICS_UPLOAD] ?: false,
         )
+
+    /** Stored by name, so reordering the steps moves no one; a name no longer known starts over. */
+    private fun readStep(preferences: Preferences) =
+        FirstRunStep.entries.firstOrNull { it.name == preferences[FIRST_RUN_STEP] } ?: FirstRunStep.Server
 
     companion object {
         private val SERVER_URL = stringPreferencesKey("server_url")
@@ -76,6 +82,7 @@ class SettingsStore(
         private val PENDANT_NAME = stringPreferencesKey("pendant_name")
         private val CONSENT_GIVEN = booleanPreferencesKey("consent_given")
         private val ONBOARDED = booleanPreferencesKey("onboarded")
+        private val FIRST_RUN_STEP = stringPreferencesKey("first_run_step")
         private val DEVELOPER_MODE = booleanPreferencesKey("developer_mode")
         private val FAKE_PENDANT = booleanPreferencesKey("fake_pendant")
         private val ALERT_DISCONNECTED = intPreferencesKey("alert_disconnected_minutes")
