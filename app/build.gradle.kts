@@ -34,6 +34,27 @@ android {
         create("play") { dimension = "store" }
     }
 
+    // Release signing comes from the environment (CI decodes the keystore from a secret);
+    // without it, release builds stay unsigned and cannot be installed, which is the point.
+    val keystore = System.getenv("NYTKA_KEYSTORE_FILE")
+    signingConfigs {
+        if (keystore != null) {
+            create("release") {
+                storeFile = file(keystore)
+                storePassword = System.getenv("NYTKA_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("NYTKA_KEY_ALIAS")
+                keyPassword = System.getenv("NYTKA_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            if (keystore != null) signingConfig = signingConfigs.getByName("release")
+        }
+    }
+
     buildFeatures {
         compose = true
         buildConfig = true

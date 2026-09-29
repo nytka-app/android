@@ -1,0 +1,35 @@
+name: Bug report
+description: Something the app does wrong.
+labels: [bug]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Device tab → About.
+    validations:
+      required: true
+  - type: input
+    id: phone
+    attributes:
+      label: Phone and Android version
+      description: e.g. Pixel 8, Android 16.
+    validations:
+      required: true
+  - type: input
+    id: pendant
+    attributes:
+      label: Pendant firmware
+      description: Device tab → Pendant, while it is connected.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Debug report
+      description: Developer mode (seven taps on the version) → Copy debug report. It holds no token; read it before posting anyway.
+      render: text
