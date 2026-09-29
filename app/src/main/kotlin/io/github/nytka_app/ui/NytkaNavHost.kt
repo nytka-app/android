@@ -1,7 +1,9 @@
 package io.github.nytka_app.ui
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -10,6 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -61,7 +65,7 @@ fun NytkaNavHost(
                         selected = current == tab.route,
                         onClick = { select(tab) },
                         icon = { Icon(tab.icon, contentDescription = null) },
-                        label = { Text(tab.label) },
+                        label = { TabLabel(tab.label) },
                     )
                 }
             }
@@ -75,4 +79,19 @@ fun NytkaNavHost(
             composable(AppTab.Device.route) { device() }
         }
     }
+}
+
+/**
+ * Five items leave about 64 dp per label on a 360 dp phone, and "Conversations" wraps in the default label
+ * style. Smaller, unspaced type and a floor for the shrinking keep every label on one line.
+ */
+@Composable
+private fun TabLabel(text: String) {
+    Text(
+        text,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 0.sp),
+        autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = 11.sp),
+    )
 }
