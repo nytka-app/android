@@ -30,7 +30,8 @@ class FrameQueue(
     database: QueueDatabase,
     private val capBytes: Long = CAP_BYTES,
     private val now: () -> Long = System::currentTimeMillis,
-) : ChunkSource {
+) : ChunkSource,
+    FrameSink {
     private val dao = database.queue()
     private val sealing = Mutex()
     private val state = MutableStateFlow(QueueUsage(capBytes = capBytes))
@@ -38,7 +39,7 @@ class FrameQueue(
 
     override val usage: StateFlow<QueueUsage> = state.asStateFlow()
 
-    suspend fun add(
+    override suspend fun add(
         session: UUID,
         seq: Long,
         capturedAtMs: Long,
@@ -50,7 +51,7 @@ class FrameQueue(
     }
 
     /** Seals every frame queued before the call; returns how many chunks it made. */
-    suspend fun seal(): Int =
+    override suspend fun seal(): Int =
         sealing.withLock {
             val throughId = dao.lastFrameId() ?: return@withLock 0.also { refreshUsage() }
             var sealed = 0

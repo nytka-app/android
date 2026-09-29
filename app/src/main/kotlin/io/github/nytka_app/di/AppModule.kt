@@ -11,9 +11,17 @@ import io.github.nytka_app.core.queue.FrameQueue
 import io.github.nytka_app.core.queue.QueueDatabase
 import io.github.nytka_app.core.settings.SettingsStore
 import io.github.nytka_app.core.upload.Uploader
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
+import javax.inject.Qualifier
 import javax.inject.Singleton
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class ApplicationScope
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -61,4 +69,10 @@ object AppModule {
         api: NytkaApi,
         settings: SettingsStore,
     ): Uploader = Uploader(queue, api, settings.settings)
+
+    /** Outlives any one service instance: stopping capture finishes here after the service is gone. */
+    @Provides
+    @Singleton
+    @ApplicationScope
+    fun applicationScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 }

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
+import io.github.nytka_app.alerts.Notifier
 import io.github.nytka_app.capture.UploadDrainWorker
 import javax.inject.Inject
 
@@ -19,6 +20,7 @@ class NytkaApp :
 
     override fun onCreate() {
         super.onCreate()
+        Notifier.createChannels(this)
         UploadDrainWorker.schedule(this)
     }
 }
