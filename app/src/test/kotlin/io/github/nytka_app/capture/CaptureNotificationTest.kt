@@ -27,4 +27,31 @@ class CaptureNotificationTest {
             CaptureNotification.text(CaptureStatus(running = true), QueueUsage()),
         )
     }
+
+    @Test
+    fun `appends the sync progress while a sync runs`() {
+        val status = CaptureStatus(running = true, connection = connected, battery = 82)
+        val syncing = StorageSyncStatus(state = SyncState.Syncing, runDone = 42, runTotal = 100)
+
+        assertEquals(
+            "Recording · 82% · 0 queued · syncing 42%",
+            CaptureNotification.text(status, QueueUsage(), syncing),
+        )
+        assertEquals(
+            "Recording · 82% · 0 queued · syncing 42%",
+            CaptureNotification.text(
+                status,
+                QueueUsage(),
+                syncing.copy(state = SyncState.WaitingForUploads(0.6)),
+            ),
+        )
+        assertEquals(
+            "Recording · 82% · 0 queued",
+            CaptureNotification.text(status, QueueUsage(), StorageSyncStatus(state = SyncState.Idle)),
+        )
+        assertEquals(
+            "Recording · 82% · 0 queued",
+            CaptureNotification.text(status, QueueUsage(), syncing.copy(state = SyncState.Paused(PauseReason.Stopped))),
+        )
+    }
 }
