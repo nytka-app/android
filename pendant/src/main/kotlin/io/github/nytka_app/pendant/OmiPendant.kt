@@ -54,6 +54,9 @@ class OmiPendant(
     private val assembler = FrameAssembler(now)
     private val operations = Mutex()
 
+    /** Serialises mute and the watchdog's resubscribe, so a resubscribe cannot undo a mute. */
+    private val audioLock = Mutex()
+
     @Volatile private var pending: CompletableDeferred<ByteArray?>? = null
 
     @Volatile private var gatt: BluetoothGatt? = null
@@ -83,14 +86,15 @@ class OmiPendant(
         mutableConnection.value = PendantConnection.Disconnected
     }
 
-    override suspend fun setAudio(enabled: Boolean) {
-        audioWanted = enabled
-        val current = gatt ?: return
-        if (mutableConnection.value !is PendantConnection.Connected) return
-        subscribe(current, OmiUuids.AUDIO_DATA, enabled)
-        synchronized(assembler) { assembler.reset() }
-        lastAudioAtMs = now()
-    }
+    override suspend fun setAudio(enabled: Boolean) =
+        audioLock.withLock {
+            audioWanted = enabled
+            val current = gatt ?: return@withLock
+            if (mutableConnection.value !is PendantConnection.Connected) return@withLock
+            subscribe(current, OmiUuids.AUDIO_DATA, enabled)
+            synchronized(assembler) { assembler.reset() }
+            lastAudioAtMs = now()
+        }
 
     override suspend fun buzz(haptic: Haptic) {
         val current = gatt ?: return
@@ -164,9 +168,11 @@ class OmiPendant(
     /** Runs after every connection: MTU, services, codec check, device info, subscriptions. */
     private suspend fun setUp(current: BluetoothGatt) {
         operation { current.requestMtu(MTU) }
-        if (operation { current.discoverServices() } == null) return
+        // A failed discovery or codec read is transient: disconnecting makes the reconnect path try again.
+        if (operation { current.discoverServices() } == null) return current.disconnect()
+        val rawCodec = read(current, OmiUuids.AUDIO_CODEC) ?: return current.disconnect()
 
-        val codec = OmiParsing.codec(read(current, OmiUuids.AUDIO_CODEC))
+        val codec = OmiParsing.codec(rawCodec)
         if (codec != OPUS_FS320) {
             mutableConnection.value =
                 PendantConnection.Refused(
@@ -194,11 +200,13 @@ class OmiPendant(
     private suspend fun watch(current: BluetoothGatt) {
         while (true) {
             delay(WATCHDOG_TICK_MS)
-            if (audioWanted && now() - lastAudioAtMs >= RESUBSCRIBE_AFTER_MS) {
-                subscribe(current, OmiUuids.AUDIO_DATA, false)
-                subscribe(current, OmiUuids.AUDIO_DATA, true)
-                synchronized(assembler) { assembler.reset() }
-                lastAudioAtMs = now()
+            audioLock.withLock {
+                if (audioWanted && now() - lastAudioAtMs >= RESUBSCRIBE_AFTER_MS) {
+                    subscribe(current, OmiUuids.AUDIO_DATA, false)
+                    subscribe(current, OmiUuids.AUDIO_DATA, true)
+                    synchronized(assembler) { assembler.reset() }
+                    lastAudioAtMs = now()
+                }
             }
         }
     }
