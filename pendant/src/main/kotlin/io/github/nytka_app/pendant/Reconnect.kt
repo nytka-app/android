@@ -7,6 +7,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Whether the caller wants audio. It is the caller's intent, so a lost link does not clear it:
@@ -144,6 +145,31 @@ internal class SilenceWatchdog(
         anchorMs = nowMs
         waitMs = (waitMs * 2).coerceAtMost(maxMs)
         return WatchdogAction.Resubscribe(silentMs, waitMs)
+    }
+
+    private companion object {
+        const val NEVER = -1L
+    }
+}
+
+/**
+ * Says how long a silence was when audio comes back after at least [thresholdMs] of it, so a stall that ends by
+ * itself still leaves a line. The clock starts when audio is switched on ([switchedOn]) and restarts with every
+ * notification ([arrived]); a mute is no silence, because unmuting switches audio on again. It is armed before the
+ * subscription is written, where [SilenceWatchdog]'s baseline moves after it: a notification can beat the caller
+ * back from the write, and would be measured from before the mute. Callable from any thread.
+ */
+internal class ResumeDetector(
+    private val thresholdMs: Long = 2_000,
+) {
+    private val lastAtMs = AtomicLong(NEVER)
+
+    fun switchedOn(nowMs: Long) = lastAtMs.set(nowMs)
+
+    /** The silence this notification ended, or null when it was shorter than the threshold or nothing was armed. */
+    fun arrived(nowMs: Long): Long? {
+        val previousMs = lastAtMs.getAndSet(nowMs)
+        return (nowMs - previousMs).takeIf { previousMs != NEVER && it >= thresholdMs }
     }
 
     private companion object {

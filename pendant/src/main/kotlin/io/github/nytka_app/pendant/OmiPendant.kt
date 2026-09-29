@@ -102,6 +102,7 @@ class OmiPendant(
     private var session: Job? = null
     private val resubscribeFailures = FailureStreak(MAX_RESUBSCRIBE_FAILURES)
     private val silence = SilenceWatchdog()
+    private val resume = ResumeDetector()
 
     /** What the last `onMtuChanged` reported; observed only, nothing acts on it. Reset per connection. */
     @Volatile private var mtu: Int? = null
@@ -133,6 +134,7 @@ class OmiPendant(
             audioIntent.set(enabled)
             val current = gatt ?: return@withLock
             if (mutableConnection.value !is PendantConnection.Connected) return@withLock
+            if (enabled) resume.switchedOn(elapsed()) // before the write: audio can arrive before it returns
             subscribe(current, OmiUuids.AUDIO_DATA, enabled)
             synchronized(assembler) { assembler.reset() }
             lastAudioAtMs = elapsed()
@@ -291,6 +293,7 @@ class OmiPendant(
         // published, instead of relying on the caller to notice the reconnect.
         audioLock.withLock {
             if (audioIntent.wanted) {
+                resume.switchedOn(elapsed())
                 subscribe(current, OmiUuids.AUDIO_DATA, true)
                 synchronized(assembler) { assembler.reset() }
                 lastAudioAtMs = elapsed()
@@ -340,8 +343,10 @@ class OmiPendant(
     ) {
         when (uuid) {
             OmiUuids.AUDIO_DATA -> {
-                lastAudioAtMs = elapsed()
+                val nowMs = elapsed()
+                lastAudioAtMs = nowMs
                 silence.audioArrived()
+                resume.arrived(nowMs)?.let { info("audio resumed after ${it}ms") }
                 val frame = synchronized(assembler) { assembler.accept(value) }
                 if (frame != null) {
                     if (mutableFrames.tryEmit(frame)) emittedFrames++ else overflowFrames++

@@ -64,6 +64,15 @@ class CapturedFrame(
     val payload: ByteArray,
 )
 
+/** Who asked for a mute change. It goes to the log with the change, so a stretch without audio can be traced. */
+enum class MuteSource(
+    val label: String,
+) {
+    PendantDoubleTap("pendant double-tap"),
+    Notification("notification action"),
+    App("app UI"),
+}
+
 /**
  * One capture session: pendant frames into the queue, mute from the button or the app, sealing
  * every 30 s. The only place that turns the pendant's audio on or off.
@@ -129,8 +138,17 @@ class CaptureController(
                 }
             }
         }
-        inner.launch { pendant.buttons.filter { it == ButtonEvent.DoubleTap }.collect { setMuted(!muted) } }
-        inner.launch { pendant.battery.collect { battery -> mutableStatus.update { it.copy(battery = battery) } } }
+        inner.launch {
+            pendant.buttons
+                .filter { it == ButtonEvent.DoubleTap }
+                .collect { setMuted(!muted, MuteSource.PendantDoubleTap) }
+        }
+        inner.launch {
+            pendant.battery.collect { battery ->
+                mutableStatus.update { it.copy(battery = battery) }
+                battery?.let { log.i(TAG, "pendant battery $it%") } // a StateFlow: one line per change
+            }
+        }
         inner.launch { pendant.stats.collect { stats -> mutableStatus.update { it.copy(stats = stats) } } }
         inner.launch {
             while (true) {
@@ -150,7 +168,11 @@ class CaptureController(
             false
         }
 
-    suspend fun setMuted(muted: Boolean) {
+    suspend fun setMuted(
+        muted: Boolean,
+        source: MuteSource,
+    ) {
+        log.i(TAG, "${if (muted) "muted" else "unmuted"} by ${source.label}")
         this.muted = muted
         settings.setMuted(muted)
         if (pendant.connection.value !is PendantConnection.Connected) return

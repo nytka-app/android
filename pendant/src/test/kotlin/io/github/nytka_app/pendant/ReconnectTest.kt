@@ -210,4 +210,54 @@ class ReconnectTest {
             }
         assertTrue(actions.all { it == WatchdogAction.None })
     }
+
+    @Test
+    fun `audio back after two seconds of silence reports the silence, sooner reports nothing`() {
+        val resume = ResumeDetector()
+        resume.switchedOn(1_000)
+
+        assertNull(resume.arrived(1_040)) // the first notification of a healthy start
+        assertNull(resume.arrived(2_039)) // 999 ms
+        assertNull(resume.arrived(4_038)) // 1999 ms
+        assertEquals(2_000L, resume.arrived(6_038))
+    }
+
+    @Test
+    fun `a silence is reported once and the next notifications are quiet`() {
+        val resume = ResumeDetector()
+        resume.switchedOn(0)
+
+        assertEquals(30_012L, resume.arrived(30_012))
+        assertNull(resume.arrived(30_032))
+        assertNull(resume.arrived(30_052))
+    }
+
+    @Test
+    fun `a stall that began before the first notification is measured from switching audio on`() {
+        val resume = ResumeDetector()
+        resume.switchedOn(5_000)
+
+        assertEquals(34_000L, resume.arrived(39_000))
+    }
+
+    @Test
+    fun `a mute is no silence because unmuting switches audio on again`() {
+        val resume = ResumeDetector()
+        resume.switchedOn(0)
+        assertNull(resume.arrived(40))
+
+        // muted for ten minutes: no notifications, no call
+        resume.switchedOn(600_040)
+
+        assertNull(resume.arrived(600_080))
+    }
+
+    @Test
+    fun `notifications nobody switched on measure from the first one`() {
+        val resume = ResumeDetector()
+
+        assertNull(resume.arrived(5_000)) // a subscription that outlived the app: nothing to compare with yet
+        assertNull(resume.arrived(5_020))
+        assertEquals(4_000L, resume.arrived(9_020))
+    }
 }
