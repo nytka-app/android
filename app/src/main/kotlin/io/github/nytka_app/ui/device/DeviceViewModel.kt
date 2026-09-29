@@ -14,6 +14,7 @@ import io.github.nytka_app.core.api.NytkaApi
 import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.ServerUrl
 import io.github.nytka_app.core.api.UrlCheck
+import io.github.nytka_app.core.settings.MuteSchedule
 import io.github.nytka_app.core.settings.Settings
 import io.github.nytka_app.core.settings.SettingsSource
 import io.github.nytka_app.ui.firstrun.READ_TOKEN_REFUSED
@@ -53,6 +54,7 @@ data class DeviceUiState(
     val backlogPackets: Long? = null,
     /** Whether /info lists `offline-sync`; null until it answers and after a failed check. Only true shows the card. */
     val serverSync: Boolean? = null,
+    val muteSchedule: MuteSchedule = MuteSchedule(),
 )
 
 @HiltViewModel
@@ -80,6 +82,7 @@ class DeviceViewModel
                     tokenSet = current.token.isNotEmpty(),
                     privateNetwork = current.privateNetwork,
                     developerMode = current.developerMode,
+                    muteSchedule = current.muteSchedule,
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, DeviceUiState())
 
@@ -173,6 +176,11 @@ class DeviceViewModel
                         checkServer()
                     }
             }
+        }
+
+        /** The capture service watches the setting, so a change needs no restart. */
+        fun setMuteSchedule(schedule: MuteSchedule) {
+            viewModelScope.launch { settings.update { it.copy(muteSchedule = schedule) } }
         }
 
         fun syncNow() = sync.syncNow()

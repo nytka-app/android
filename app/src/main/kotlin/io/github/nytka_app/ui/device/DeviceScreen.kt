@@ -81,6 +81,7 @@ fun DeviceScreen(
                 )
             }
         }
+        item { MuteScheduleSection(state.muteSchedule, viewModel::setMuteSchedule) }
         item { ServerSection(state, status, viewModel::checkServer) }
         item { SettingsSection(state, viewModel::save) }
         item {
@@ -261,7 +262,7 @@ private fun SettingsSection(
 }
 
 @Composable
-private fun Section(
+internal fun Section(
     title: String,
     content: @Composable () -> Unit,
 ) {

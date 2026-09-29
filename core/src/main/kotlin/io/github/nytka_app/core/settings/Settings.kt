@@ -19,6 +19,7 @@ data class Settings(
     val alertUnreachableMinutes: Int = 15,
     val alertBatteryPercent: Int = 20,
     val diagnosticsUpload: Boolean = false,
+    val muteSchedule: MuteSchedule = MuteSchedule(),
 ) {
     /** What the uploader watches: a change here may end a pause. */
     val connectionKey: Triple<String, String, Boolean> get() = Triple(serverUrl, token, privateNetwork)
@@ -29,5 +30,5 @@ data class Settings(
             "consentGiven=$consentGiven, onboarded=$onboarded, firstRunStep=$firstRunStep, " +
             "developerMode=$developerMode, fakePendant=$fakePendant, " +
             "alerts=$alertDisconnectedMinutes/$alertUnreachableMinutes/$alertBatteryPercent, " +
-            "diagnosticsUpload=$diagnosticsUpload)"
+            "diagnosticsUpload=$diagnosticsUpload, muteWindows=${muteSchedule.windows.size})"
 }
