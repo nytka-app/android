@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.nytka_app.capture.CaptureHub
 import io.github.nytka_app.capture.CaptureStatus
+import io.github.nytka_app.capture.MuteSource
 import io.github.nytka_app.core.queue.FrameQueue
 import io.github.nytka_app.core.settings.SettingsStore
 import io.github.nytka_app.core.upload.UploadState
@@ -69,7 +70,7 @@ class StatusViewModel
         }
 
         fun setMuted(muted: Boolean) {
-            viewModelScope.launch { hub.setMuted(muted) }
+            viewModelScope.launch { hub.setMuted(muted, MuteSource.App) }
         }
 
         private companion object {
