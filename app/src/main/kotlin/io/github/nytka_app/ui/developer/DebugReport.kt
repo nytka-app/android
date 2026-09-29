@@ -18,6 +18,7 @@ object DebugReport {
         upload: UploadState,
         usage: QueueUsage,
         serverStatus: String,
+        diagnosticsSamples: Int,
     ): String =
         buildString {
             appendLine("Nytka $appVersion")
@@ -36,6 +37,9 @@ object DebugReport {
             appendLine(
                 "Upload: ${upload.uploadedChunks} uploaded, ${upload.droppedChunks} dropped, " +
                     "${upload.failures} failures in a row",
+            )
+            appendLine(
+                "diagnostics=$diagnosticsSamples samples, upload=${if (settings.diagnosticsUpload) "on" else "off"}",
             )
             appendLine("Last upload result: ${upload.lastResult ?: "none"}")
             appendLine("Server status: $serverStatus")

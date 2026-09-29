@@ -55,6 +55,7 @@ class SettingsStoreTest {
                     alertDisconnectedMinutes = 1,
                     alertUnreachableMinutes = 2,
                     alertBatteryPercent = 30,
+                    diagnosticsUpload = true,
                 )
             val store = store()
 
@@ -85,4 +86,15 @@ class SettingsStoreTest {
     fun `toString never shows the token`() {
         assertFalse(Settings(token = "secret-token-value").toString().contains("secret"))
     }
+
+    @Test
+    fun `diagnostics upload is off until switched on`() =
+        runTest {
+            val store = store()
+
+            assertFalse(store.current().diagnosticsUpload)
+            store.update { it.copy(diagnosticsUpload = true) }
+            assertEquals(true, store.current().diagnosticsUpload)
+            assertEquals(true, store.current().toString().contains("diagnosticsUpload=true"))
+        }
 }

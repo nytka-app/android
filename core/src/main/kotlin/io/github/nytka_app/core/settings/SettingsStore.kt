@@ -45,6 +45,7 @@ class SettingsStore(
             preferences[ALERT_DISCONNECTED] = next.alertDisconnectedMinutes
             preferences[ALERT_UNREACHABLE] = next.alertUnreachableMinutes
             preferences[ALERT_BATTERY] = next.alertBatteryPercent
+            preferences[DIAGNOSTICS_UPLOAD] = next.diagnosticsUpload
         }
     }
 
@@ -63,6 +64,7 @@ class SettingsStore(
             alertDisconnectedMinutes = preferences[ALERT_DISCONNECTED] ?: Settings().alertDisconnectedMinutes,
             alertUnreachableMinutes = preferences[ALERT_UNREACHABLE] ?: Settings().alertUnreachableMinutes,
             alertBatteryPercent = preferences[ALERT_BATTERY] ?: Settings().alertBatteryPercent,
+            diagnosticsUpload = preferences[DIAGNOSTICS_UPLOAD] ?: false,
         )
 
     companion object {
@@ -79,6 +81,7 @@ class SettingsStore(
         private val ALERT_DISCONNECTED = intPreferencesKey("alert_disconnected_minutes")
         private val ALERT_UNREACHABLE = intPreferencesKey("alert_unreachable_minutes")
         private val ALERT_BATTERY = intPreferencesKey("alert_battery_percent")
+        private val DIAGNOSTICS_UPLOAD = booleanPreferencesKey("diagnostics_upload")
 
         fun create(
             context: Context,

@@ -18,6 +18,17 @@ android {
     testOptions { unitTests.isIncludeAndroidResources = true }
 }
 
+// MigrationTestHelper reads the exported schemas as assets.
+androidComponents {
+    onVariants { variant ->
+        (variant as? com.android.build.api.variant.HasUnitTest)
+            ?.unitTest
+            ?.sources
+            ?.assets
+            ?.addStaticSourceDirectory("$projectDir/schemas")
+    }
+}
+
 room {
     schemaDirectory("$projectDir/schemas")
 }
@@ -43,4 +54,5 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.room.testing)
 }

@@ -52,6 +52,11 @@ internal data class UploadAnswer(
     val acceptedThroughSeq: Long,
 )
 
+@Serializable
+internal data class DiagnosticsAnswer(
+    val accepted: Int,
+)
+
 enum class FailureKind { NotConfigured, Unauthorized, NotFound, Server, Network }
 
 sealed interface ApiResult<out T> {
@@ -91,4 +96,29 @@ sealed interface UploadResult {
 
 fun interface UploadClient {
     suspend fun upload(body: ByteArray): UploadResult
+}
+
+sealed interface DiagnosticsResult {
+    /** 200: the server has these samples (a retry of the same ids is harmless). */
+    data class Accepted(
+        val count: Int,
+    ) : DiagnosticsResult
+
+    /** 404: an older server without the endpoint. */
+    data object NotSupported : DiagnosticsResult
+
+    data object Unauthorized : DiagnosticsResult
+
+    data class NotConfigured(
+        val reason: String,
+    ) : DiagnosticsResult
+
+    data class Retry(
+        val reason: String,
+    ) : DiagnosticsResult
+}
+
+fun interface DiagnosticsClient {
+    /** [samplesJson] is a JSON array of 1 to 500 samples. */
+    suspend fun uploadDiagnostics(samplesJson: String): DiagnosticsResult
 }

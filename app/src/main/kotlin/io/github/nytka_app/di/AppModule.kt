@@ -11,9 +11,14 @@ import io.github.nytka_app.capture.AndroidFixtureRecorder
 import io.github.nytka_app.capture.DeviceActions
 import io.github.nytka_app.capture.FixtureRecorder
 import io.github.nytka_app.core.api.ConversationsClient
+import io.github.nytka_app.core.api.DiagnosticsClient
 import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.NytkaApi
 import io.github.nytka_app.core.api.StatusClient
+import io.github.nytka_app.core.diagnostics.DiagnosticsLog
+import io.github.nytka_app.core.diagnostics.DiagnosticsSink
+import io.github.nytka_app.core.diagnostics.DiagnosticsSource
+import io.github.nytka_app.core.diagnostics.DiagnosticsUploader
 import io.github.nytka_app.core.queue.FrameQueue
 import io.github.nytka_app.core.queue.QueueDatabase
 import io.github.nytka_app.core.settings.SettingsSource
@@ -83,6 +88,19 @@ object AppModule {
     fun statusClient(api: NytkaApi): StatusClient = api
 
     @Provides
+    fun diagnosticsClient(api: NytkaApi): DiagnosticsClient = api
+
+    @Provides
+    @Singleton
+    fun diagnosticsLog(database: QueueDatabase): DiagnosticsLog = DiagnosticsLog(database.diagnostics())
+
+    @Provides
+    fun diagnosticsSink(log: DiagnosticsLog): DiagnosticsSink = log
+
+    @Provides
+    fun diagnosticsSource(log: DiagnosticsLog): DiagnosticsSource = log
+
+    @Provides
     fun chunkSource(queue: FrameQueue): ChunkSource = queue
 
     @Provides
@@ -105,6 +123,14 @@ object AppModule {
         api: NytkaApi,
         settings: SettingsStore,
     ): Uploader = Uploader(queue, api, settings.settings)
+
+    @Provides
+    @Singleton
+    fun diagnosticsUploader(
+        source: DiagnosticsSource,
+        client: DiagnosticsClient,
+        settings: SettingsStore,
+    ): DiagnosticsUploader = DiagnosticsUploader(source, client, settings)
 
     /** Outlives any one service instance: stopping capture finishes here after the service is gone. */
     @Provides

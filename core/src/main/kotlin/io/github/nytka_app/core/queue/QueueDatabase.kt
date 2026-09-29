@@ -1,13 +1,24 @@
 package io.github.nytka_app.core.queue
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import io.github.nytka_app.core.diagnostics.DiagnosticRow
+import io.github.nytka_app.core.diagnostics.DiagnosticsDao
 
-@Database(entities = [QueuedFrame::class, SealedChunk::class], version = 1)
+// Version 2 adds the diagnostic samples; version 1 held the queue only. Never a destructive fallback:
+// the queue holds audio nobody can record again.
+@Database(
+    entities = [QueuedFrame::class, SealedChunk::class, DiagnosticRow::class],
+    version = 2,
+    autoMigrations = [AutoMigration(from = 1, to = 2)],
+)
 abstract class QueueDatabase : RoomDatabase() {
     abstract fun queue(): QueueDao
+
+    abstract fun diagnostics(): DiagnosticsDao
 
     companion object {
         fun open(
