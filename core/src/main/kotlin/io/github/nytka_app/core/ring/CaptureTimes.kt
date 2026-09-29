@@ -47,6 +47,9 @@ fun interface CaptureTimes {
  * from [newSession]. After a restart the pendant ran on the last clock the phone wrote, so when the connection's
  * skew exceeds 5 s it is subtracted from the stamps of the segment's records below the clock pair's `writeSeq`.
  * Records stamped over 60 s ahead of the phone are dropped and counted.
+ *
+ * The caller must not overwrite the persisted skew pair ([RingPosition.clock]) with a newer one while stale
+ * records (a restart segment below the old pair's `writeSeq`) remain unread: they still need the old skew.
  */
 class RingCaptureTimes(
     private val newSession: () -> UUID = UUID::randomUUID,

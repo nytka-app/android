@@ -188,12 +188,21 @@ class FrameQueue(
         )
     }
 
-    /** Drops the oldest chunks until the queue fits its cap (open question 2). */
+    /**
+     * Drops the oldest live chunks until the queue fits its cap (open question 2). A stored chunk is never
+     * deleted: the pendant may free its ring range once nothing holds it back, so when only stored chunks are left
+     * over the cap they are parked (code 0), which keeps their range in `ackedThrough`.
+     */
     private suspend fun enforceCap() {
         while (dao.chunkBytes() + dao.frameBytes() > capBytes) {
-            val oldest = dao.firstChunk() ?: return
-            dao.deleteChunk(oldest.id)
-            droppedChunks++
+            val live = dao.firstChunk(stored = false)
+            if (live != null) {
+                dao.deleteChunk(live.id)
+                droppedChunks++
+            } else {
+                val stored = dao.firstChunk(stored = true) ?: return
+                dao.park(stored.id, 0, "over the queue cap", now())
+            }
         }
     }
 

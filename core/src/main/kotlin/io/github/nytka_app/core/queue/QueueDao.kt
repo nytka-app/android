@@ -38,9 +38,9 @@ abstract class QueueDao {
     @Query("select * from chunks order by stored, id limit 1")
     abstract suspend fun oldestChunk(): SealedChunk?
 
-    /** The chunk sealed first, whatever its source: what the cap drops. */
-    @Query("select * from chunks order by id limit 1")
-    abstract suspend fun firstChunk(): SealedChunk?
+    /** The chunk of one source sealed first: live is all the cap may delete, stored it may only park. */
+    @Query("select * from chunks where stored = :stored order by id limit 1")
+    abstract suspend fun firstChunk(stored: Boolean): SealedChunk?
 
     @Query("select * from chunks where id = :id")
     abstract suspend fun chunk(id: Long): SealedChunk?

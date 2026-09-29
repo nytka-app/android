@@ -273,6 +273,36 @@ class StoredQueueTest {
         }
 
     @Test
+    fun `the cap drops live chunks and never deletes a stored one`() =
+        runTest {
+            // Each chunk: 38 + 10 records of 6 + 2 bytes = 118 bytes.
+            val queue = FrameQueue(inMemory(), capBytes = 150)
+            queue.commit(timed(20L..29L), position(committedNext = 30, nextFrame = 10))
+            queue.seal()
+            repeat(3) { queue.add(live, it.toLong(), 10L + it, byteArrayOf(1)) }
+            queue.seal()
+
+            assertEquals(20L, queue.ackedThrough.first())
+            assertEquals(true, queue.oldest()!!.stored)
+            assertEquals(1L, queue.usageNow().droppedChunks)
+        }
+
+    @Test
+    fun `over the cap with only stored chunks left, they are parked, not deleted`() =
+        runTest {
+            val queue = FrameQueue(inMemory(), capBytes = 100)
+            queue.commit(timed(20L..29L), position(committedNext = 40, nextFrame = 20))
+            queue.commit(timed(30L..39L, firstSeq = 10), position(committedNext = 40, nextFrame = 20))
+            queue.seal()
+
+            val usage = queue.usageNow()
+
+            assertEquals(1, usage.parkedChunks)
+            assertEquals(0L, usage.droppedChunks)
+            assertEquals(20L, queue.ackedThrough.first())
+        }
+
+    @Test
     fun `markAdvanced moves only the advanced point`() =
         runTest {
             val queue = FrameQueue(inMemory())
