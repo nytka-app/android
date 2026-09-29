@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.0](https://github.com/nytka-app/android/compare/v0.4.0...v0.5.0) (2026-09-29)
+
+
+### Features
+
+* Android v0.2 UI (track D) ([#23](https://github.com/nytka-app/android/issues/23)) ([6146786](https://github.com/nytka-app/android/commit/6146786ad8ca3f396882ca0fcdfb464bfef31ff0))
+* five-tab skeleton and API scaffolding for v0.2 and v0.4 (track S2) ([#18](https://github.com/nytka-app/android/issues/18)) ([d9e0d2f](https://github.com/nytka-app/android/commit/d9e0d2fcc26a67ba5553dd65d05285e9c4668394))
+* Memories tab, search and developer Webhooks screen (v0.4 track I) ([#22](https://github.com/nytka-app/android/issues/22)) ([674036c](https://github.com/nytka-app/android/commit/674036c3d76c274abdaf3334af55afdc5a752992))
+* offline sync flow in :app (v0.3 track 3) ([#24](https://github.com/nytka-app/android/issues/24)) ([5142aaf](https://github.com/nytka-app/android/commit/5142aafc2965224cb1d9b9c918c69d20ba5302ed))
+* offline sync screens (v0.3 track 4) ([#25](https://github.com/nytka-app/android/issues/25)) ([2f2a5dd](https://github.com/nytka-app/android/commit/2f2a5dd61cd4ddebd374194ae232f6008ac7ea08))
+* **pendant:** storage protocol, ring records and pendant clock (v0.3 track 1) ([#21](https://github.com/nytka-app/android/issues/21)) ([e2588cb](https://github.com/nytka-app/android/commit/e2588cb0839d4ff81b861c521204074cf6497257))
+* v0.3 track 2, ring times, queue and sync position in :core ([#20](https://github.com/nytka-app/android/issues/20)) ([75458f3](https://github.com/nytka-app/android/commit/75458f340fd50adf12d76883d51c913977b1a15d))
+
 ## [0.4.0](https://github.com/nytka-app/android/compare/v0.3.1...v0.4.0) (2026-09-29)
 
 
