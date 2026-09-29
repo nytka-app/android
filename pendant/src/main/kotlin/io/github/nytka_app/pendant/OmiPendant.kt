@@ -65,7 +65,7 @@ class OmiPendant(
     override val frames: Flow<AudioFrame> = mutableFrames
     override val buttons: Flow<ButtonEvent> = mutableButtons
 
-    private val omiStorage = OmiStorage(GattStorageLink())
+    private val omiStorage = OmiStorage(GattStorageLink(), ::warn)
     override val storage: PendantStorage = omiStorage
 
     private val assembler = FrameAssembler(now)
@@ -292,18 +292,19 @@ class OmiPendant(
         }
 
         // Audio first, so a pendant that reconnects to a running service drops no frame while the rest of setUp runs.
-        var audioOn = audioLock.withLock { subscribeAudioIfWanted(current) }
-        syncPendantClock()
+        val audioOn = audioLock.withLock { subscribeAudioIfWanted(current) }
         val info = readInfo(current)
         omiStorage.evaluate(info.firmware)
         info("setUp: storage ${omiStorage.support.value}")
+        // The time write also tells the SD worker the clock is set: only a pendant with the ring gets it.
+        if (omiStorage.support.value == StorageSupport.Supported) syncPendantClock()
         subscribe(current, OmiUuids.BUTTON, true)
         subscribe(current, OmiUuids.BATTERY_LEVEL, true)
         mutableBattery.value = OmiParsing.battery(read(current, OmiUuids.BATTERY_LEVEL)) ?: mutableBattery.value
         // Audio is the caller's intent and survives the link. A setAudio during setUp only recorded the intent,
         // so subscribe here too if it arrived after the early subscription, before Connected is published.
         audioLock.withLock {
-            if (!audioOn) audioOn = subscribeAudioIfWanted(current)
+            reconcileAudio(current, audioOn)
             mutableConnection.value = PendantConnection.Connected(info)
         }
         connectTimeout.cancel()
@@ -321,6 +322,17 @@ class OmiPendant(
         lastAudioAtMs = elapsed()
         info("setUp: subscribed audio")
         return subscribed
+    }
+
+    /** Makes the audio subscription match the intent as it stands now; the caller holds [audioLock]. */
+    private suspend fun reconcileAudio(
+        current: BluetoothGatt,
+        subscribed: Boolean,
+    ) {
+        when {
+            audioIntent.wanted && !subscribed -> subscribeAudioIfWanted(current)
+            !audioIntent.wanted && subscribed -> subscribe(current, OmiUuids.AUDIO_DATA, false) // muted during setUp
+        }
     }
 
     /** The stamps of stored audio count from the pendant clock: read it before writing the phone's time. */

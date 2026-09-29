@@ -196,7 +196,7 @@ class OmiStorageTest {
             supported()
             val result = backgroundScope.launch { storage.info() }
             runCurrent()
-            advanceTimeBy(6_000)
+            advanceTimeBy(8_000)
             assertTrue(result.isCompleted)
             assertEquals(RingStatus.TIMEOUT, storage.lastStatus.value)
         }
@@ -369,7 +369,7 @@ class OmiStorageTest {
         }
 
     @Test
-    fun `later windows wait five seconds for READ_BEGIN`() =
+    fun `later windows wait seven seconds for READ_BEGIN`() =
         runTest {
             supported()
             answerStop()
@@ -378,7 +378,7 @@ class OmiStorageTest {
             runCurrent()
             assertTrue(first.isCompleted)
             val (second, events) = collect(from = 101)
-            advanceTimeBy(5_001)
+            advanceTimeBy(7_001)
             runCurrent()
             assertTrue(second.isCompleted)
             assertEquals(RingStatus.TIMEOUT, (events.single() as RingEvent.Done).status)
@@ -433,7 +433,7 @@ class OmiStorageTest {
             supported()
             val result = backgroundScope.launch { assertEquals(RingStatus.TIMEOUT, storage.advance(5)) }
             runCurrent()
-            advanceTimeBy(5_001)
+            advanceTimeBy(7_001)
             runCurrent()
             assertTrue(result.isCompleted)
         }

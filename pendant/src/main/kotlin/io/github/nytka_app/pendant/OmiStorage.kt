@@ -35,6 +35,7 @@ interface StorageLink {
  */
 class OmiStorage(
     private val link: StorageLink,
+    private val log: (String) -> Unit = {},
 ) : PendantStorage {
     private val mutableSupport = MutableStateFlow<StorageSupport>(StorageSupport.Unknown)
     private val mutableSkew = MutableStateFlow<Long?>(null)
@@ -172,13 +173,24 @@ class OmiStorage(
                     return false
                 }
                 is RingNotification.Ack ->
-                    if (!begun && n.status != RingStatus.OK) {
+                    if (refused(n, begun)) {
                         emit(RingEvent.Done(n.status, fromSeq)) // a refused READ answers ACK, never DONE
                         return false
                     }
                 is RingNotification.Info -> Unit
             }
         }
+    }
+
+    /** An ACK with a status before READ_BEGIN refuses the READ; after it, it is logged and ignored. */
+    private fun refused(
+        ack: RingNotification.Ack,
+        begun: Boolean,
+    ): Boolean {
+        if (ack.status == RingStatus.OK) return false
+        if (!begun) return true
+        log("storage: ACK status ${ack.status} during a transfer, ignored")
+        return false
     }
 
     override suspend fun advance(seq: Long): Int =
@@ -244,14 +256,17 @@ class OmiStorage(
         } ?: RingNotification.Timeout
 
     companion object {
-        /** READ_BEGIN must follow the first READ of a connection within 10 s, and later ones within 5 s. */
+        /**
+         * READ_BEGIN must follow the first READ of a connection within 10 s, later ones within 7 s. Answers get 7 s
+         * too: the firmware waits up to 5 s for its SD card before answering status 9, which must not read as silence.
+         */
         const val FIRST_BEGIN_TIMEOUT_MS = 10_000L
-        const val BEGIN_TIMEOUT_MS = 5_000L
+        const val BEGIN_TIMEOUT_MS = 7_000L
 
         /** Once a window has begun, data must arrive at least this often. */
         const val DATA_TIMEOUT_MS = 10_000L
 
-        private const val ACK_TIMEOUT_MS = 5_000L
+        private const val ACK_TIMEOUT_MS = 7_000L
         private const val STOP_TIMEOUT_MS = 2_000L
         private const val STORAGE_FEATURE_BIT = 6
 
