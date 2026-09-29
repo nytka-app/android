@@ -19,7 +19,8 @@ import java.io.IOException
 class NytkaApi(
     private val client: OkHttpClient,
     private val settings: suspend () -> Settings,
-) : UploadClient {
+) : UploadClient,
+    ConversationsClient {
     private val json = Json { ignoreUnknownKeys = true }
 
     override suspend fun upload(body: ByteArray): UploadResult {
@@ -53,21 +54,22 @@ class NytkaApi(
 
     suspend fun status(): ApiResult<ServerStatus> = request("GET", "api/v1/status") { json.decodeFromString(it) }
 
-    suspend fun conversations(
+    override suspend fun conversations(
         before: String?,
-        limit: Int = 30,
+        limit: Int,
     ): ApiResult<ConversationPage> =
         request("GET", "api/v1/conversations", mapOf("before" to before, "limit" to limit.toString())) {
             json.decodeFromString(it)
         }
 
-    suspend fun conversation(id: String): ApiResult<ConversationDetail> =
+    override suspend fun conversation(id: String): ApiResult<ConversationDetail> =
         request("GET", "api/v1/conversations/$id") { json.decodeFromString(it) }
 
-    suspend fun deleteConversation(id: String): ApiResult<Unit> = request("DELETE", "api/v1/conversations/$id") { }
+    override suspend fun deleteConversation(id: String): ApiResult<Unit> =
+        request("DELETE", "api/v1/conversations/$id") { }
 
     /** The raw responses, pretty enough for developer mode as they come. */
-    suspend fun transcriptionsJson(id: String): ApiResult<String> =
+    override suspend fun transcriptionsJson(id: String): ApiResult<String> =
         request("GET", "api/v1/conversations/$id/transcriptions") { it }
 
     private suspend fun <T> request(
