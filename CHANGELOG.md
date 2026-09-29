@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.0](https://github.com/nytka-app/android/compare/v0.5.1...v0.6.0) (2026-09-29)
+
+
+### Features
+
+* **app:** show Me and named voices in the transcript, name a voice by tapping it ([#29](https://github.com/nytka-app/android/issues/29)) ([6190577](https://github.com/nytka-app/android/commit/6190577f580073534f409ef54c84b76c8278452d))
+
 ## [0.5.1](https://github.com/nytka-app/android/compare/v0.5.0...v0.5.1) (2026-09-29)
 
 
