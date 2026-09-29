@@ -1,0 +1,15 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.DS_Store
+captures/
+.kotlin/
+*.jks
+*.keystore
+keystore.properties
+
+# Private, never committed: the denylist the hooks read, and personal agent notes.
+.private-terms
+CLAUDE.local.md
