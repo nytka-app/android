@@ -6,8 +6,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import io.github.nytka_app.ui.StatusUiState
 import io.github.nytka_app.ui.developer.DeveloperScreen
+import io.github.nytka_app.ui.developer.server.ServerSettingsScreen
+import io.github.nytka_app.ui.developer.server.TokensScreen
+import io.github.nytka_app.ui.developer.server.WebhooksScreen
 
-/** The Device tab: the device screen, and developer mode opened from its About card. */
+/** The Device tab: the device screen, and developer mode opened from its About card, with its server screens. */
 @Composable
 fun DeviceTab(
     status: StatusUiState,
@@ -16,6 +19,16 @@ fun DeviceTab(
     val navController = rememberNavController()
     NavHost(navController, startDestination = "device") {
         composable("device") { DeviceScreen(status, onMute, onOpenDeveloper = { navController.navigate("developer") }) }
-        composable("developer") { DeveloperScreen(onBack = { navController.popBackStack() }) }
+        composable("developer") {
+            DeveloperScreen(
+                onBack = { navController.popBackStack() },
+                onOpenServerSettings = { navController.navigate("developer/server/settings") },
+                onOpenTokens = { navController.navigate("developer/server/tokens") },
+                onOpenWebhooks = { navController.navigate("developer/server/webhooks") },
+            )
+        }
+        composable("developer/server/settings") { ServerSettingsScreen(onBack = { navController.popBackStack() }) }
+        composable("developer/server/tokens") { TokensScreen(onBack = { navController.popBackStack() }) }
+        composable("developer/server/webhooks") { WebhooksScreen(onBack = { navController.popBackStack() }) }
     }
 }
