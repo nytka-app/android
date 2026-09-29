@@ -15,6 +15,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
+import android.os.SystemClock
 import android.util.Log
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -40,6 +41,8 @@ class OmiPendant(
     private val context: Context,
     scope: CoroutineScope,
     private val now: () -> Long = System::currentTimeMillis,
+    /** Monotonic clock for the watchdog; [now] is wall-clock time and feeds the frames' capture times. */
+    private val elapsed: () -> Long = SystemClock::elapsedRealtime,
     private val logger: PendantLogger = PendantLogger.Android,
 ) : Pendant {
     /** Last resort: nothing launched here may take the process down or strand the link, so it reconnects. */
@@ -91,12 +94,19 @@ class OmiPendant(
 
     private val audioIntent = AudioIntent()
 
+    /** [elapsed] time of the last audio notification, or of switching audio on; the watchdog's clock. */
     @Volatile private var lastAudioAtMs = 0L
     private var watchingAdapter = false
     private var emittedFrames = 0L
     private var overflowFrames = 0L
     private var session: Job? = null
     private val resubscribeFailures = FailureStreak(MAX_RESUBSCRIBE_FAILURES)
+    private val silence = SilenceWatchdog()
+
+    /** What the last `onMtuChanged` reported; observed only, nothing acts on it. Reset per connection. */
+    @Volatile private var mtu: Int? = null
+
+    @Volatile private var mtuStatus: Int? = null
 
     override fun connect(address: String) =
         synchronized(link) {
@@ -125,7 +135,7 @@ class OmiPendant(
             if (mutableConnection.value !is PendantConnection.Connected) return@withLock
             subscribe(current, OmiUuids.AUDIO_DATA, enabled)
             synchronized(assembler) { assembler.reset() }
-            lastAudioAtMs = now()
+            lastAudioAtMs = elapsed()
         }
 
     override suspend fun buzz(haptic: Haptic) {
@@ -237,8 +247,13 @@ class OmiPendant(
 
     /** Runs after every connection: MTU, services, codec check, device info, subscriptions. */
     private suspend fun setUp(current: BluetoothGatt) {
-        operation(OperationKind.Mtu) { current.requestMtu(MTU) }
-        info("setUp: mtu requested")
+        operation(OperationKind.Mtu) {
+            val known = mtu
+            if (known != null) info("setUp: mtu $known already reported, request skipped")
+            known == null && current.requestMtu(MTU)
+        }
+        // The callback can also arrive unprompted or early, so read what it recorded, not the operation's result.
+        mtu?.let { info("setUp: mtu $it") } ?: warn("setUp: mtu unknown (status ${mtuStatus ?: "none"})")
         // A failed discovery or codec read is transient: disconnecting makes the reconnect path try again.
         if (operation(OperationKind.Services) { current.discoverServices() } == null) {
             warn("setUp: service discovery failed")
@@ -278,7 +293,7 @@ class OmiPendant(
             if (audioIntent.wanted) {
                 subscribe(current, OmiUuids.AUDIO_DATA, true)
                 synchronized(assembler) { assembler.reset() }
-                lastAudioAtMs = now()
+                lastAudioAtMs = elapsed()
                 info("setUp: subscribed audio")
             }
             mutableConnection.value = PendantConnection.Connected(info)
@@ -288,25 +303,32 @@ class OmiPendant(
         watch(current)
     }
 
-    /** Resubscribes when audio is wanted but none has arrived for 4 s (the official app's rule). */
+    /** Resubscribes with backoff when audio is wanted but absent; reconnects after a long silence. */
     private suspend fun watch(current: BluetoothGatt) {
         while (true) {
             delay(WATCHDOG_TICK_MS)
             // Bluetooth is turning off or off: the adapter-state path reopens the link, a resubscribe would only fail.
             if (!adapterOn()) continue
             audioLock.withLock {
-                if (audioIntent.wanted && now() - lastAudioAtMs >= RESUBSCRIBE_AFTER_MS) {
-                    warn("watchdog: no audio for ${now() - lastAudioAtMs}ms, resubscribing")
-                    subscribe(current, OmiUuids.AUDIO_DATA, false)
-                    if (subscribe(current, OmiUuids.AUDIO_DATA, true)) {
-                        resubscribeFailures.succeeded()
-                    } else if (resubscribeFailures.failed()) {
-                        // The client is dead though the adapter says on: only a new one can recover.
-                        warn("watchdog: resubscribe keeps failing, reconnecting")
+                if (!audioIntent.wanted) return@withLock // muted: silence is intended
+                when (val action = silence.check(elapsed(), lastAudioAtMs)) {
+                    WatchdogAction.None -> Unit
+                    is WatchdogAction.Escalate -> {
+                        warn("watchdog: no audio for ${action.silentMs}ms, reconnecting")
                         return recoverLink()
                     }
-                    synchronized(assembler) { assembler.reset() }
-                    lastAudioAtMs = now()
+                    is WatchdogAction.Resubscribe -> {
+                        warn("watchdog: no audio for ${action.silentMs}ms, resubscribing, next in ${action.nextMs}ms")
+                        subscribe(current, OmiUuids.AUDIO_DATA, false)
+                        if (subscribe(current, OmiUuids.AUDIO_DATA, true)) {
+                            resubscribeFailures.succeeded()
+                        } else if (resubscribeFailures.failed()) {
+                            // The client is dead though the adapter says on: only a new one can recover.
+                            warn("watchdog: resubscribe keeps failing, reconnecting")
+                            return recoverLink()
+                        }
+                        synchronized(assembler) { assembler.reset() }
+                    }
                 }
             }
         }
@@ -318,7 +340,8 @@ class OmiPendant(
     ) {
         when (uuid) {
             OmiUuids.AUDIO_DATA -> {
-                lastAudioAtMs = now()
+                lastAudioAtMs = elapsed()
+                silence.audioArrived()
                 val frame = synchronized(assembler) { assembler.accept(value) }
                 if (frame != null) {
                     if (mutableFrames.tryEmit(frame)) emittedFrames++ else overflowFrames++
@@ -451,32 +474,45 @@ class OmiPendant(
                 newState: Int,
             ) {
                 info("onConnectionStateChange status=$status newState=$newState")
-                // A late event from a client already replaced (Bluetooth came back on) must not touch the live one.
-                if (current !== gatt) {
-                    guarded(Unit) { current.close() }
-                    return
-                }
-                when (newState) {
-                    BluetoothProfile.STATE_CONNECTED -> {
-                        connectTimeout.cancel() // connected: setUp's own operation timeouts take over
-                        session?.cancel()
-                        session = scope.launch { setUp(current) }
-                    }
-                    BluetoothProfile.STATE_DISCONNECTED -> {
-                        close()
-                        if (address != null) {
-                            mutableConnection.value = PendantConnection.Connecting
-                            reopenLater()
+                // One lock section for the check and the handling: open() assigns gatt after connectGatt returns
+                // (autoConnect on a live ACL can call back before that), and a late event from a replaced client
+                // must not close or reopen the live one.
+                val stale =
+                    synchronized(link) {
+                        if (current !== gatt) return@synchronized true
+                        when (newState) {
+                            BluetoothProfile.STATE_CONNECTED -> {
+                                mtu = null
+                                mtuStatus = null
+                                connectTimeout.cancel() // connected: setUp's own operation timeouts take over
+                                session?.cancel()
+                                session = scope.launch { setUp(current) }
+                            }
+                            BluetoothProfile.STATE_DISCONNECTED -> {
+                                close()
+                                if (address != null) {
+                                    mutableConnection.value = PendantConnection.Connecting
+                                    reopenLater()
+                                }
+                            }
                         }
+                        false
                     }
-                }
+                if (stale) guarded(Unit) { current.close() }
             }
 
             override fun onMtuChanged(
                 current: BluetoothGatt,
                 mtu: Int,
                 status: Int,
-            ) = finish(OperationKind.Mtu, null, byteArrayOf())
+            ) {
+                // A replaced client's MTU says nothing about this link.
+                if (synchronized(link) { current !== gatt }) return
+                mtuStatus = status
+                if (status == BluetoothGatt.GATT_SUCCESS) this@OmiPendant.mtu = mtu
+                // Not through finish(): nothing is pending when the callback comes early, and that is no error.
+                pending?.complete(OperationKind.Mtu, null, byteArrayOf())
+            }
 
             override fun onServicesDiscovered(
                 current: BluetoothGatt,
@@ -565,7 +601,6 @@ class OmiPendant(
         const val MAX_RESUBSCRIBE_FAILURES = 3
         const val OPERATION_TIMEOUT_MS = 5_000L
         const val WATCHDOG_TICK_MS = 1_000L
-        const val RESUBSCRIBE_AFTER_MS = 4_000L
         const val RECONNECT_DELAY_MS = 3_000L
         const val CONNECT_TIMEOUT_MS = 30_000L
         const val TAG = "OmiPendant"

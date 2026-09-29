@@ -80,6 +80,77 @@ internal class FailureStreak(
     }
 }
 
+/** What the watchdog wants done about silence; see [SilenceWatchdog]. */
+internal sealed interface WatchdogAction {
+    data object None : WatchdogAction
+
+    /** Toggle the audio subscription; [nextMs] is how long to wait before the resubscribe after this one. */
+    data class Resubscribe(
+        val silentMs: Long,
+        val nextMs: Long,
+    ) : WatchdogAction
+
+    data class Escalate(
+        val silentMs: Long,
+    ) : WatchdogAction
+}
+
+/**
+ * Decides what to do while audio is wanted but absent. Resubscribing every 4 s forever churned the
+ * CCCD of a link that was slow to recover, so the wait doubles (4, 8, 16 s, at most 30 s) and starts
+ * over as soon as audio arrives. After [escalateAfterMs] of continuous silence it asks for a
+ * reconnect, at most once per [escalateCooldownMs]. Call [check] only while audio is wanted: a muted
+ * pendant is silent by intent and must never reach it. The watch loop owns it; only [audioArrived] may be
+ * called from another thread.
+ */
+internal class SilenceWatchdog(
+    private val firstMs: Long = 4_000,
+    private val maxMs: Long = 30_000,
+    private val escalateAfterMs: Long = 120_000,
+    private val escalateCooldownMs: Long = 300_000,
+) {
+    private var seenAudioAtMs = NEVER
+    private var anchorMs = 0L
+    private var waitMs = firstMs
+    private var escalatedAtMs = NEVER
+
+    @Volatile private var audioSinceCheck = false
+
+    /** Called from the notification thread: real audio, unlike a moved baseline, lifts the escalation cap. */
+    fun audioArrived() {
+        audioSinceCheck = true
+    }
+
+    /** [lastAudioAtMs] moves on every notification and when audio is switched on, which restarts the backoff. */
+    fun check(
+        nowMs: Long,
+        lastAudioAtMs: Long,
+    ): WatchdogAction {
+        if (audioSinceCheck) {
+            audioSinceCheck = false
+            escalatedAtMs = NEVER // the reconnect worked; the cap is for escalations that brought no audio back
+        }
+        if (lastAudioAtMs != seenAudioAtMs) {
+            seenAudioAtMs = lastAudioAtMs
+            anchorMs = lastAudioAtMs
+            waitMs = firstMs
+        }
+        val silentMs = nowMs - lastAudioAtMs
+        if (silentMs >= escalateAfterMs && (escalatedAtMs == NEVER || nowMs - escalatedAtMs >= escalateCooldownMs)) {
+            escalatedAtMs = nowMs
+            return WatchdogAction.Escalate(silentMs)
+        }
+        if (nowMs - anchorMs < waitMs) return WatchdogAction.None
+        anchorMs = nowMs
+        waitMs = (waitMs * 2).coerceAtMost(maxMs)
+        return WatchdogAction.Resubscribe(silentMs, waitMs)
+    }
+
+    private companion object {
+        const val NEVER = -1L
+    }
+}
+
 /**
  * Fires [retry] when a connection attempt is still [isConnecting] after [timeoutMs]. An unbonded
  * `connectGatt(autoConnect = true)` can wait forever without a callback; [retry] opens a new client,
