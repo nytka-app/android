@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0](https://github.com/nytka-app/android/compare/v0.6.0...v0.7.0) (2026-09-30)
+
+
+### Features
+
+* People screen ([#31](https://github.com/nytka-app/android/issues/31)) ([f5eca4d](https://github.com/nytka-app/android/commit/f5eca4d732fca23f24ebf7282e650b99c580b755))
+* weekly mute schedule that feeds the capture controller's mute decision ([#33](https://github.com/nytka-app/android/issues/33)) ([d24cd04](https://github.com/nytka-app/android/commit/d24cd0400ed3de56940c6ea2b8e030e48f6f58ef))
+
+
+### Bug Fixes
+
+* **sync:** do not send STOP after a quiet READ, read again from the committed position ([#32](https://github.com/nytka-app/android/issues/32)) ([983bc51](https://github.com/nytka-app/android/commit/983bc510d5e8fe5ad8cfa8cfd77acd02fbc18d62))
+
 ## [0.6.0](https://github.com/nytka-app/android/compare/v0.5.1...v0.6.0) (2026-09-29)
 
 
