@@ -134,6 +134,17 @@ class BookmarkUploaderTest {
         }
 
     @Test
+    fun `a 404 from a server before v0_8 pauses and keeps the bookmark`() =
+        runTest {
+            outbox.add("a", 1, "pendant")
+            answer(404)
+
+            assertTrue(uploader.drain() is DrainResult.Paused)
+
+            assertEquals("a", outbox.oldest()?.id)
+        }
+
+    @Test
     fun `a 400 drops the bookmark so it cannot block the rest`() =
         runTest {
             outbox.add("bad", 1, "pendant")

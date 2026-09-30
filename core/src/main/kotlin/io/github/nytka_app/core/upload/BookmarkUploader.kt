@@ -28,7 +28,7 @@ class BookmarkUploader(
 
     /**
      * Uploads until the outbox is empty or one does not go through. A 400 means the server can never take the
-     * bookmark, so it is dropped; a 401, 403 or a missing setup pauses; anything else waits for the backoff.
+     * bookmark, so it is dropped; a 401, 403, 404, 405 or a missing setup pauses; anything else waits for the backoff.
      */
     suspend fun drain(): DrainResult = lock.withLock { drainLocked() }
 
@@ -43,7 +43,13 @@ class BookmarkUploader(
                 is ApiResult.Failure ->
                     when (result.kind) {
                         FailureKind.Invalid -> source.remove(row.id)
-                        FailureKind.Unauthorized, FailureKind.Forbidden, FailureKind.NotConfigured ->
+                        // NotFound and Unsupported: a server before v0.8; the bookmarks wait for a settings change.
+                        FailureKind.Unauthorized,
+                        FailureKind.Forbidden,
+                        FailureKind.NotConfigured,
+                        FailureKind.NotFound,
+                        FailureKind.Unsupported,
+                        ->
                             return DrainResult.Paused(result.message)
                         else -> return DrainResult.Failed(backoff.delayMs(++failures))
                     }
