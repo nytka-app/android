@@ -16,6 +16,7 @@ import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
@@ -35,6 +36,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.ZoneId
 import java.util.UUID
@@ -210,13 +212,16 @@ class CaptureController(
      * tap is dropped too, for a firmware that sends the pair in the other order.
      */
     private suspend fun sortTaps(inner: CoroutineScope) {
-        var window: Job? = null
+        var window: TapWindow? = null
         var lastDoubleTapMs: Long? = null
+        var lastPairMs: Long? = null
         pendant.buttons.collect { event ->
-            val open = window?.isActive == true
+            val open = window?.open == true
             when (event) {
                 ButtonEvent.DoubleTap -> {
                     window?.cancel()
+                    // The same gesture reported as two single taps and then as a double tap toggles once.
+                    if (lastPairMs.within(now())) return@collect
                     lastDoubleTapMs = now()
                     toggleMute(inner)
                 }
@@ -224,15 +229,31 @@ class CaptureController(
                     when {
                         open -> {
                             window?.cancel()
+                            lastPairMs = now()
                             toggleMute(inner)
                         }
-                        lastDoubleTapMs?.let { now() - it < TAP_WAIT_MS } != true -> {
-                            val at = now()
-                            window = inner.launch { keep(at) }
+                        !lastDoubleTapMs.within(now()) -> {
+                            val opened = TapWindow()
+                            window = opened
+                            opened.job = inner.launch { keep(now(), opened) }
                         }
                     }
                 ButtonEvent.Release -> Unit
             }
+        }
+    }
+
+    private fun Long?.within(nowMs: Long) = this != null && nowMs - this < TAP_WAIT_MS
+
+    /** The wait after a single tap. It is [open] until a second tap cancels it or the bookmark starts to be saved. */
+    private class TapWindow {
+        @Volatile var open = true
+        lateinit var job: Job
+
+        fun cancel() {
+            if (!open) return
+            open = false
+            job.cancel()
         }
     }
 
@@ -242,10 +263,19 @@ class CaptureController(
         inner.launch(start = CoroutineStart.UNDISPATCHED) { setMuted(wanted, MuteSource.PendantDoubleTap) }
     }
 
-    private suspend fun keep(atMs: Long) {
+    /** Once the wait is over the window closes, so a tap during the write starts a gesture of its own. */
+    private suspend fun keep(
+        atMs: Long,
+        window: TapWindow,
+    ) {
         delay(TAP_WAIT_MS)
+        window.open = false
         val outbox = bookmarks ?: return
-        if (!stored { outbox.add(UUID.randomUUID().toString(), atMs, BookmarkOutbox.SOURCE_PENDANT) }) return
+        val saved =
+            withContext(NonCancellable) {
+                stored { outbox.add(UUID.randomUUID().toString(), atMs, BookmarkOutbox.SOURCE_PENDANT) }
+            }
+        if (!saved) return
         log.i(TAG, "bookmark kept")
         if (pendant.connection.value is PendantConnection.Connected) pendant.buzz(Haptic.Short)
     }

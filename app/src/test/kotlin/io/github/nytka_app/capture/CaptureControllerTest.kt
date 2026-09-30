@@ -10,6 +10,7 @@ import io.github.nytka_app.pendant.FakePendant
 import io.github.nytka_app.pendant.Haptic
 import io.github.nytka_app.pendant.Pendant
 import io.github.nytka_app.pendant.PendantConnection
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -47,12 +48,14 @@ class CaptureControllerTest {
 
     private class FakeBookmarks : BookmarkSink {
         val kept = mutableListOf<Pair<Long, String>>()
+        var gate: CompletableDeferred<Unit>? = null
 
         override suspend fun add(
             id: String,
             atMs: Long,
             source: String,
         ) {
+            gate?.await()
             kept += atMs to source
         }
     }
@@ -255,6 +258,49 @@ class CaptureControllerTest {
             assertTrue(rig.bookmarks.kept.isEmpty())
             assertEquals(listOf(Haptic.Long), rig.pendant.haptics)
             assertTrue(rig.settings.state.value)
+        }
+
+    @Test
+    fun `a tap while the bookmark is being written does not also mute`() =
+        runTest {
+            val rig = rig()
+            val gate = CompletableDeferred<Unit>()
+            rig.bookmarks.gate = gate
+            rig.controller.start("fake")
+            runCurrent()
+
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            advanceTimeBy(701)
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            gate.complete(Unit)
+            advanceTimeBy(2_000)
+
+            assertFalse(rig.settings.state.value)
+            assertEquals(2, rig.bookmarks.kept.size)
+        }
+
+    @Test
+    fun `a double tap reported right after two single taps does not toggle mute back`() =
+        runTest {
+            val rig = rig()
+            rig.controller.start("fake")
+            runCurrent()
+
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            advanceTimeBy(300)
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            advanceTimeBy(200)
+            rig.pendant.press(ButtonEvent.DoubleTap)
+            runCurrent()
+            advanceTimeBy(2_000)
+
+            assertTrue(rig.settings.state.value)
+            assertEquals(listOf(Haptic.Long), rig.pendant.haptics)
+            assertTrue(rig.bookmarks.kept.isEmpty())
         }
 
     @Test
