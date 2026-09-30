@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -140,6 +141,18 @@ fun ConversationsScreen(
                         headlineContent = {
                             Text(row.title ?: row.timeRange, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         },
+                        trailingContent =
+                            if (row.bookmarks > 0) {
+                                {
+                                    Icon(
+                                        Icons.Filled.Star,
+                                        contentDescription = "Has bookmarks",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                    )
+                                }
+                            } else {
+                                null
+                            },
                         supportingContent = {
                             Column {
                                 Text(row.preview, maxLines = 2, overflow = TextOverflow.Ellipsis)

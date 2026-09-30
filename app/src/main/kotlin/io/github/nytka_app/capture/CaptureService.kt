@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.database.SQLException
 import android.os.Build
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
@@ -21,9 +22,11 @@ import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.diagnostics.AppLog
 import io.github.nytka_app.core.diagnostics.DiagnosticsSink
 import io.github.nytka_app.core.diagnostics.DiagnosticsUploader
+import io.github.nytka_app.core.queue.BookmarkOutbox
 import io.github.nytka_app.core.queue.FrameQueue
 import io.github.nytka_app.core.ring.CaptureTimes
 import io.github.nytka_app.core.settings.SettingsStore
+import io.github.nytka_app.core.upload.BookmarkUploader
 import io.github.nytka_app.core.upload.Uploader
 import io.github.nytka_app.di.ApplicationScope
 import kotlinx.coroutines.CoroutineScope
@@ -37,6 +40,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 /**
@@ -48,6 +52,10 @@ class CaptureService : LifecycleService() {
     @Inject lateinit var queue: FrameQueue
 
     @Inject lateinit var uploader: Uploader
+
+    @Inject lateinit var bookmarkOutbox: BookmarkOutbox
+
+    @Inject lateinit var bookmarkUploader: BookmarkUploader
 
     @Inject lateinit var settings: SettingsStore
 
@@ -96,6 +104,7 @@ class CaptureService : LifecycleService() {
         when (intent?.action) {
             ACTION_MUTE -> scope.launch { hub.setMuted(true, MuteSource.Notification) }
             ACTION_UNMUTE -> scope.launch { hub.setMuted(false, MuteSource.Notification) }
+            ACTION_BOOKMARK -> bookmarkNow()
             ACTION_SYNC_NOW, ACTION_STOP_SYNC -> syncAction(intent.action)
         }
         if (!started) {
@@ -103,6 +112,18 @@ class CaptureService : LifecycleService() {
             scope.launch { begin() }
         }
         return START_STICKY
+    }
+
+    /** A bookmark at the phone's clock from the notification's action, with source `app`. */
+    private fun bookmarkNow() {
+        val at = System.currentTimeMillis()
+        scope.launch {
+            try {
+                bookmarkOutbox.add(UUID.randomUUID().toString(), at, BookmarkOutbox.SOURCE_APP)
+            } catch (e: SQLException) {
+                appLog.w(TAG, "The bookmark outbox refused a write: ${e.javaClass.simpleName}")
+            }
+        }
     }
 
     /** Before `begin` has attached the sync there is nothing to tell: the last such action waits for it. */
@@ -126,7 +147,15 @@ class CaptureService : LifecycleService() {
         power.start()
         val pendant = pendants.create(scope, current.fakePendant)
         val capture =
-            CaptureController(pendant, queue, StoreCaptureSettings(settings), scope, log = appLog, muteLog = muteLog)
+            CaptureController(
+                pendant,
+                queue,
+                StoreCaptureSettings(settings),
+                scope,
+                log = appLog,
+                muteLog = muteLog,
+                bookmarks = bookmarkOutbox,
+            )
         val storageSync =
             StorageSyncController(
                 pendant,
@@ -147,6 +176,7 @@ class CaptureService : LifecycleService() {
         capture.start(address)
         storageSync.start()
         scope.launch { uploader.run() }
+        scope.launch { bookmarkUploader.run() }
         recorder = startRecorder(capture, storageSync)
         scope.launch { diagnosticsUploader.run() }
         monitorAlerts(capture)
@@ -223,8 +253,10 @@ class CaptureService : LifecycleService() {
     companion object {
         const val ACTION_MUTE = "io.github.nytka_app.action.MUTE"
         const val ACTION_UNMUTE = "io.github.nytka_app.action.UNMUTE"
+        const val ACTION_BOOKMARK = "io.github.nytka_app.action.BOOKMARK"
         const val ACTION_SYNC_NOW = "io.github.nytka_app.action.SYNC_NOW"
         const val ACTION_STOP_SYNC = "io.github.nytka_app.action.STOP_SYNC"
+        private const val TAG = "CaptureService"
         private const val STATUS_SAMPLE_MS = 250L
         private const val ALERT_CHECK_MS = 30_000L
 

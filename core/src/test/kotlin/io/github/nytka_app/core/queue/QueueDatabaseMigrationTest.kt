@@ -122,6 +122,28 @@ class QueueDatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun `version 4 to 5 keeps the queue and adds the bookmark outbox`() {
+        helper.createDatabase(NAME, 4).use { db ->
+            db.execSQL(
+                "insert into chunks (id, session, firstSeq, frameCount, createdAtMs, body) " +
+                    "values (1, 's', 0, 1, 5, x'0304')",
+            )
+        }
+
+        helper.runMigrationsAndValidate(NAME, 5, true).use { db ->
+            db.query("select length(body) from chunks where id = 1").use {
+                assertTrue(it.moveToFirst())
+                assertEquals(2, it.getInt(0))
+            }
+            db.execSQL("insert into bookmark_outbox (id, atMs, source) values ('b', 5, 'pendant')")
+            db.query("select count(*) from bookmark_outbox").use {
+                it.moveToFirst()
+                assertEquals(1, it.getInt(0))
+            }
+        }
+    }
+
     private companion object {
         const val NAME = "migration-test"
     }

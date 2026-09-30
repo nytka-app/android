@@ -3,6 +3,7 @@ package io.github.nytka_app.ui.conversations
 import androidx.lifecycle.SavedStateHandle
 import io.github.nytka_app.MainDispatcherRule
 import io.github.nytka_app.core.api.ApiResult
+import io.github.nytka_app.core.api.Bookmark
 import io.github.nytka_app.core.api.ConversationDetail
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.Segment
@@ -43,8 +44,9 @@ class ConversationViewModelTest {
         }
 
     private val tasks = FakeTasks(listOf(task("t1"), task("t2", done = true)))
+    private val bookmarks = FakeBookmarks()
 
-    private fun viewModel() = ConversationViewModel(SavedStateHandle(mapOf("id" to "c1")), api, tasks, clock)
+    private fun viewModel() = ConversationViewModel(SavedStateHandle(mapOf("id" to "c1")), api, tasks, bookmarks, clock)
 
     private fun detail(
         status: String = "closed",
@@ -341,5 +343,98 @@ class ConversationViewModelTest {
         api.detail = ApiResult.Failure(FailureKind.NotFound, "Not found.")
 
         assertEquals("This item no longer exists", viewModel().state.value.error)
+    }
+
+    private fun withBookmarks(
+        vararg at: String,
+        segments: List<Segment> = api.detail.let { (it as ApiResult.Ok).value.segments },
+    ): ConversationUiState {
+        api.detail =
+            ApiResult.Ok(detail(segments = segments).copy(bookmarks = at.mapIndexed { i, t -> Bookmark("b$i", t) }))
+        return viewModel().state.value
+    }
+
+    @Test
+    fun `a bookmark inside a segment marks that paragraph`() {
+        val state = withBookmarks("2026-09-29T08:03:02Z")
+
+        assertEquals(
+            listOf(emptyList<BookmarkMark>(), listOf(BookmarkMark("b0"))),
+            state.paragraphs.map { it.bookmarks },
+        )
+    }
+
+    @Test
+    fun `a bookmark between two segments marks the nearer one, the earlier on a tie`() {
+        // Segments end 08:00:09 and start 08:03:00: 08:00:30 is nearer the first, 08:02:00 the second.
+        val nearFirst = withBookmarks("2026-09-29T08:00:30Z", "2026-09-29T08:01:34.500Z", "2026-09-29T08:02:00Z")
+
+        assertEquals(
+            listOf(listOf("b0", "b1"), listOf("b2")),
+            nearFirst.paragraphs.map { p -> p.bookmarks.map { it.id } },
+        )
+    }
+
+    @Test
+    fun `a bookmark before the first or after the last segment marks the edge paragraph`() {
+        val state = withBookmarks("2026-09-29T07:59:00Z", "2026-09-29T08:09:00Z")
+
+        assertEquals(listOf(listOf("b0"), listOf("b1")), state.paragraphs.map { p -> p.bookmarks.map { it.id } })
+    }
+
+    @Test
+    fun `a conversation without segments lists its bookmarks on their own`() {
+        val state = withBookmarks("2026-09-29T08:03:02Z", segments = emptyList())
+
+        assertEquals(listOf(BookmarkMark("b0")), state.looseBookmarks)
+    }
+
+    @Test
+    fun `a server before v0_8 shows no bookmarks`() {
+        val state = viewModel().state.value
+
+        assertTrue(state.paragraphs.all { it.bookmarks.isEmpty() })
+        assertTrue(state.looseBookmarks.isEmpty())
+    }
+
+    @Test
+    fun `a saved note shows on its bookmark, an empty one clears it`() {
+        withBookmarks("2026-09-29T08:03:02Z")
+        val model = viewModel()
+
+        model.setBookmarkNote("b0", "  Call Anna  ")
+        assertEquals(listOf("b0" to "Call Anna"), bookmarks.notes)
+        assertEquals(
+            "Call Anna",
+            model.state.value.paragraphs[1]
+                .bookmarks
+                .single()
+                .note,
+        )
+
+        model.setBookmarkNote("b0", "")
+        assertNull(
+            model.state.value.paragraphs[1]
+                .bookmarks
+                .single()
+                .note,
+        )
+    }
+
+    @Test
+    fun `a note the server refuses leaves the bookmark as it was and says so`() {
+        withBookmarks("2026-09-29T08:03:02Z")
+        bookmarks.answer = ApiResult.Failure(FailureKind.NotFound, "Not found.")
+        val model = viewModel()
+
+        model.setBookmarkNote("b0", "x")
+
+        assertNull(
+            model.state.value.paragraphs[1]
+                .bookmarks
+                .single()
+                .note,
+        )
+        assertEquals("This item no longer exists", model.state.value.error)
     }
 }

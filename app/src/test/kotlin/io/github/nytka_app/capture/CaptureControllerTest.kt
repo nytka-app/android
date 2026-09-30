@@ -1,6 +1,7 @@
 package io.github.nytka_app.capture
 
 import io.github.nytka_app.FakeEventLog
+import io.github.nytka_app.core.queue.BookmarkSink
 import io.github.nytka_app.core.queue.FrameSink
 import io.github.nytka_app.core.settings.MuteSchedule
 import io.github.nytka_app.core.settings.MuteWindow
@@ -9,6 +10,7 @@ import io.github.nytka_app.pendant.FakePendant
 import io.github.nytka_app.pendant.Haptic
 import io.github.nytka_app.pendant.Pendant
 import io.github.nytka_app.pendant.PendantConnection
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -44,6 +46,20 @@ class CaptureControllerTest {
         override suspend fun seal(includePartialStored: Boolean): Int = 1.also { seals++ }
     }
 
+    private class FakeBookmarks : BookmarkSink {
+        val kept = mutableListOf<Pair<Long, String>>()
+        var gate: CompletableDeferred<Unit>? = null
+
+        override suspend fun add(
+            id: String,
+            atMs: Long,
+            source: String,
+        ) {
+            gate?.await()
+            kept += atMs to source
+        }
+    }
+
     private class FakeSettings(
         muted: Boolean,
     ) : CaptureSettings {
@@ -74,6 +90,7 @@ class CaptureControllerTest {
         val sink: FakeSink,
         val settings: FakeSettings,
         val log: FakeEventLog,
+        val bookmarks: FakeBookmarks,
     )
 
     private fun TestScope.rig(
@@ -86,9 +103,19 @@ class CaptureControllerTest {
         val sink = FakeSink()
         val settings = FakeSettings(muted).also { it.scheduleState.value = schedule }
         val log = FakeEventLog()
+        val bookmarks = FakeBookmarks()
         val controller =
-            CaptureController(pendant, sink, settings, backgroundScope, now, log = log, zone = { ZoneOffset.UTC })
-        return Rig(controller, pendant, sink, settings, log)
+            CaptureController(
+                pendant,
+                sink,
+                settings,
+                backgroundScope,
+                now,
+                log = log,
+                zone = { ZoneOffset.UTC },
+                bookmarks = bookmarks,
+            )
+        return Rig(controller, pendant, sink, settings, log, bookmarks)
     }
 
     @Test
@@ -141,6 +168,157 @@ class CaptureControllerTest {
             assertEquals(listOf(Haptic.Long), rig.pendant.haptics)
             assertTrue(rig.settings.state.value)
             assertFalse(rig.pendant.audioEnabled)
+        }
+
+    @Test
+    fun `a single tap is kept after 700 ms at the time it arrived, with one short buzz`() =
+        runTest {
+            val rig = rig()
+            rig.controller.start("fake")
+            runCurrent()
+            advanceTimeBy(1_000)
+
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            advanceTimeBy(699)
+            assertTrue(rig.bookmarks.kept.isEmpty())
+            assertTrue(rig.pendant.haptics.isEmpty())
+            advanceTimeBy(2)
+
+            assertEquals(listOf(1_000L to "pendant"), rig.bookmarks.kept)
+            assertEquals(listOf(Haptic.Short), rig.pendant.haptics)
+            assertFalse(rig.settings.state.value)
+        }
+
+    @Test
+    fun `a double tap inside the wait cancels the bookmark and only mutes`() =
+        runTest {
+            val rig = rig()
+            rig.controller.start("fake")
+            runCurrent()
+
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            advanceTimeBy(300)
+            rig.pendant.press(ButtonEvent.DoubleTap)
+            runCurrent()
+            advanceTimeBy(2_000)
+
+            assertTrue(rig.bookmarks.kept.isEmpty())
+            assertEquals(listOf(Haptic.Long), rig.pendant.haptics)
+            assertTrue(rig.settings.state.value)
+        }
+
+    @Test
+    fun `a double tap sent before its single tap leaves no bookmark either`() =
+        runTest {
+            val rig = rig()
+            rig.controller.start("fake")
+            runCurrent()
+
+            rig.pendant.press(ButtonEvent.DoubleTap)
+            runCurrent()
+            advanceTimeBy(200)
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            advanceTimeBy(2_000)
+
+            assertTrue(rig.bookmarks.kept.isEmpty())
+        }
+
+    @Test
+    fun `a single tap while muted is kept`() =
+        runTest {
+            val rig = rig(muted = true)
+            rig.controller.start("fake")
+            runCurrent()
+
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            advanceTimeBy(701)
+
+            assertEquals(1, rig.bookmarks.kept.size)
+            assertEquals(listOf(Haptic.Short), rig.pendant.haptics)
+        }
+
+    @Test
+    fun `two single taps inside the wait are a double tap, one mute and no bookmark`() =
+        runTest {
+            val rig = rig()
+            rig.controller.start("fake")
+            runCurrent()
+
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            advanceTimeBy(400)
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            advanceTimeBy(2_000)
+
+            assertTrue(rig.bookmarks.kept.isEmpty())
+            assertEquals(listOf(Haptic.Long), rig.pendant.haptics)
+            assertTrue(rig.settings.state.value)
+        }
+
+    @Test
+    fun `a tap while the bookmark is being written does not also mute`() =
+        runTest {
+            val rig = rig()
+            val gate = CompletableDeferred<Unit>()
+            rig.bookmarks.gate = gate
+            rig.controller.start("fake")
+            runCurrent()
+
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            advanceTimeBy(701)
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            gate.complete(Unit)
+            advanceTimeBy(2_000)
+
+            assertFalse(rig.settings.state.value)
+            assertEquals(2, rig.bookmarks.kept.size)
+        }
+
+    @Test
+    fun `a double tap reported right after two single taps does not toggle mute back`() =
+        runTest {
+            val rig = rig()
+            rig.controller.start("fake")
+            runCurrent()
+
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            advanceTimeBy(300)
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            advanceTimeBy(200)
+            rig.pendant.press(ButtonEvent.DoubleTap)
+            runCurrent()
+            advanceTimeBy(2_000)
+
+            assertTrue(rig.settings.state.value)
+            assertEquals(listOf(Haptic.Long), rig.pendant.haptics)
+            assertTrue(rig.bookmarks.kept.isEmpty())
+        }
+
+    @Test
+    fun `two single taps more than the wait apart are two bookmarks`() =
+        runTest {
+            val rig = rig()
+            rig.controller.start("fake")
+            runCurrent()
+
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            advanceTimeBy(800)
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            advanceTimeBy(800)
+
+            assertEquals(2, rig.bookmarks.kept.size)
+            assertFalse(rig.settings.state.value)
         }
 
     @Test

@@ -15,8 +15,10 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import io.github.nytka_app.core.queue.FrameQueue
+import io.github.nytka_app.core.upload.BookmarkUploader
 import io.github.nytka_app.core.upload.DrainResult
 import io.github.nytka_app.core.upload.Uploader
+import kotlinx.coroutines.CancellationException
 import java.util.concurrent.TimeUnit
 
 /**
@@ -31,14 +33,28 @@ class UploadDrainWorker
         @Assisted params: WorkerParameters,
         private val queue: FrameQueue,
         private val uploader: Uploader,
+        private val bookmarkUploader: BookmarkUploader,
     ) : CoroutineWorker(context, params) {
         override suspend fun doWork(): Result {
             queue.seal()
+            val bookmarks = drainBookmarks()
             return when (uploader.drain()) {
-                DrainResult.Empty, is DrainResult.Paused -> Result.success()
+                DrainResult.Empty, is DrainResult.Paused ->
+                    if (bookmarks is DrainResult.Failed) Result.retry() else Result.success()
                 is DrainResult.Failed -> Result.retry()
             }
         }
+
+        /** A database error in the bookmark outbox must not fail the audio drain. */
+        @Suppress("TooGenericExceptionCaught")
+        private suspend fun drainBookmarks(): DrainResult? =
+            try {
+                bookmarkUploader.drain()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                null
+            }
 
         companion object {
             private val online = Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build()

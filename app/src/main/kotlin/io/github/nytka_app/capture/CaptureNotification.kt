@@ -70,6 +70,13 @@ object CaptureNotification {
                     .setAction(if (status.muted) CaptureService.ACTION_UNMUTE else CaptureService.ACTION_MUTE),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
+        val bookmark =
+            PendingIntent.getService(
+                context,
+                2,
+                Intent(context, CaptureService::class.java).setAction(CaptureService.ACTION_BOOKMARK),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
         return NotificationCompat
             .Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
@@ -80,6 +87,7 @@ object CaptureNotification {
             .setOnlyAlertOnce(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .addAction(0, if (status.muted) "Unmute" else "Mute", toggle)
+            .addAction(0, "Bookmark", bookmark)
             .build()
     }
 }

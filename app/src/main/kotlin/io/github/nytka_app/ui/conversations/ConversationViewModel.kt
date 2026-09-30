@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.nytka_app.core.api.AiState
 import io.github.nytka_app.core.api.ApiResult
+import io.github.nytka_app.core.api.BookmarksClient
 import io.github.nytka_app.core.api.ConversationDetail
 import io.github.nytka_app.core.api.ConversationsClient
 import io.github.nytka_app.core.api.FailureKind
@@ -19,6 +20,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
+import java.time.Duration
+import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -34,6 +37,13 @@ data class Paragraph(
     val showSpeaker: Boolean = false,
     val speakerColor: Int = 0,
     val voiceId: String? = null,
+    /** The bookmarks whose time is nearest this paragraph. */
+    val bookmarks: List<BookmarkMark> = emptyList(),
+)
+
+data class BookmarkMark(
+    val id: String,
+    val note: String? = null,
 )
 
 data class TaskLine(
@@ -54,6 +64,8 @@ data class ConversationUiState(
     val chip: String? = null,
     val tasks: List<TaskLine> = emptyList(),
     val paragraphs: List<Paragraph> = emptyList(),
+    /** Bookmarks of a conversation with no transcript, so there is no paragraph to mark. */
+    val looseBookmarks: List<BookmarkMark> = emptyList(),
     val open: Boolean = false,
     val loading: Boolean = true,
     val error: String? = null,
@@ -68,6 +80,7 @@ class ConversationViewModel
         savedState: SavedStateHandle,
         private val api: ConversationsClient,
         private val tasks: TasksClient,
+        private val bookmarks: BookmarksClient,
         private val clock: Clock,
     ) : ViewModel() {
         private val id: String = checkNotNull(savedState["id"]) { "The conversation route carries an id." }
@@ -172,6 +185,31 @@ class ConversationViewModel
             state.copy(tasks = state.tasks.map { if (it.id == taskId) it.copy(done = done) else it })
         }
 
+        /** Saves the note of a bookmark; an empty one clears it. The server allows 200 characters. */
+        fun setBookmarkNote(
+            bookmarkId: String,
+            note: String,
+        ) {
+            val wanted = note.trim().take(MAX_BOOKMARK_NOTE).ifEmpty { null }
+            viewModelScope.launch {
+                when (val result = bookmarks.setBookmarkNote(bookmarkId, wanted)) {
+                    is ApiResult.Ok -> mutableState.update { it.withNote(bookmarkId, wanted) }
+                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.itemNotice()) }
+                }
+            }
+        }
+
+        private fun ConversationUiState.withNote(
+            bookmarkId: String,
+            note: String?,
+        ): ConversationUiState {
+            fun List<BookmarkMark>.set() = map { if (it.id == bookmarkId) it.copy(note = note) else it }
+            return copy(
+                paragraphs = paragraphs.map { it.copy(bookmarks = it.bookmarks.set()) },
+                looseBookmarks = looseBookmarks.set(),
+            )
+        }
+
         fun delete() {
             viewModelScope.launch {
                 when (val result = api.deleteConversation(id)) {
@@ -211,6 +249,7 @@ class ConversationViewModel
                         voiceId = it.speakerId.takeIf { _ -> it.isUser != true },
                     ).also { previous = speaker }
                 }
+            val marks = place(detail)
             return ConversationUiState(
                 title = title ?: Formatting.dayTitle(start.atZone(zone).toLocalDate(), LocalDate.now(clock)),
                 currentTitle = title,
@@ -224,11 +263,38 @@ class ConversationViewModel
                         else -> null
                     },
                 tasks = detail.tasks.map { TaskLine(it.id, it.text, it.done) },
-                paragraphs = paragraphs,
+                paragraphs = paragraphs.mapIndexed { i, p -> p.copy(bookmarks = marks[i].orEmpty()) },
+                looseBookmarks =
+                    if (paragraphs.isEmpty()) detail.bookmarks.map { BookmarkMark(it.id, it.note) } else emptyList(),
                 open = detail.status == "open",
                 loading = false,
             )
         }
+
+        /**
+         * The bookmarks of each segment, by index: a bookmark goes to the segment whose span is nearest its time, the
+         * earlier one on a tie. A bookmark inside a segment is at distance zero.
+         */
+        private fun place(detail: ConversationDetail): Map<Int, List<BookmarkMark>> {
+            val spans = detail.segments.map { Formatting.instant(it.startedAt) to Formatting.instant(it.endedAt) }
+            if (spans.isEmpty()) return emptyMap()
+            return detail.bookmarks
+                .sortedBy { Formatting.instant(it.at) }
+                .groupBy({ nearest(spans, Formatting.instant(it.at)) }) { BookmarkMark(it.id, it.note) }
+        }
+
+        private fun nearest(
+            spans: List<Pair<Instant, Instant>>,
+            at: Instant,
+        ): Int =
+            spans.indices.minBy { i ->
+                val (start, end) = spans[i]
+                when {
+                    at < start -> Duration.between(at, start)
+                    at > end -> Duration.between(end, at)
+                    else -> Duration.ZERO
+                }
+            }
 
         companion object {
             /** How often a summary in the making is looked for. */
@@ -239,6 +305,7 @@ class ConversationViewModel
 
             private const val MAX_TITLE = 120
             private const val MAX_NAME = 80
+            const val MAX_BOOKMARK_NOTE = 200
             private const val ME = "Me"
             private const val PENDING_CHIP = "Summarizing"
         }
