@@ -2,6 +2,8 @@ package io.github.nytka_app.capture
 
 import io.github.nytka_app.FakeEventLog
 import io.github.nytka_app.core.queue.FrameSink
+import io.github.nytka_app.core.settings.MuteSchedule
+import io.github.nytka_app.core.settings.MuteWindow
 import io.github.nytka_app.pendant.ButtonEvent
 import io.github.nytka_app.pendant.FakePendant
 import io.github.nytka_app.pendant.Haptic
@@ -18,6 +20,11 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneOffset
+import java.time.temporal.TemporalAdjusters
 import java.util.UUID
 
 class CaptureControllerTest {
@@ -42,6 +49,8 @@ class CaptureControllerTest {
     ) : CaptureSettings {
         val state = MutableStateFlow(muted)
         override val muted = state
+        val scheduleState = MutableStateFlow(MuteSchedule())
+        override val schedule = scheduleState
 
         override suspend fun setMuted(muted: Boolean) {
             state.value = muted
@@ -67,13 +76,18 @@ class CaptureControllerTest {
         val log: FakeEventLog,
     )
 
-    private fun TestScope.rig(muted: Boolean = false): Rig {
-        val now = { testScheduler.currentTime }
+    private fun TestScope.rig(
+        muted: Boolean = false,
+        schedule: MuteSchedule = MuteSchedule(),
+        startMs: Long = 0,
+    ): Rig {
+        val now = { startMs + testScheduler.currentTime }
         val pendant = FakePendant(listOf(byteArrayOf(1)), backgroundScope, now)
         val sink = FakeSink()
-        val settings = FakeSettings(muted)
+        val settings = FakeSettings(muted).also { it.scheduleState.value = schedule }
         val log = FakeEventLog()
-        val controller = CaptureController(pendant, sink, settings, backgroundScope, now, log = log)
+        val controller =
+            CaptureController(pendant, sink, settings, backgroundScope, now, log = log, zone = { ZoneOffset.UTC })
         return Rig(controller, pendant, sink, settings, log)
     }
 
@@ -346,5 +360,139 @@ class CaptureControllerTest {
             rig.pendant.connect("fake")
             runCurrent()
             assertNull(rig.controller.status.value.disconnectedSinceMs)
+        }
+
+    private fun at(
+        day: DayOfWeek,
+        hour: Int,
+        minute: Int,
+        second: Int = 0,
+    ): Long =
+        LocalDate
+            .of(1970, 1, 1)
+            .with(TemporalAdjusters.nextOrSame(day))
+            .atTime(hour, minute, second)
+            .toInstant(ZoneOffset.UTC)
+            .toEpochMilli()
+
+    private fun window(
+        vararg days: DayOfWeek,
+        from: LocalTime,
+        to: LocalTime,
+    ) = MuteSchedule(listOf(MuteWindow(days.toSet(), from, to)))
+
+    private val evening = window(DayOfWeek.THURSDAY, from = LocalTime.of(22, 0), to = LocalTime.of(23, 0))
+    private val overnight = window(DayOfWeek.THURSDAY, from = LocalTime.of(22, 0), to = LocalTime.of(7, 0))
+
+    @Test
+    fun `inside a schedule window the audio is off and nothing is recorded`() =
+        runTest {
+            val rig = rig(schedule = evening, startMs = at(DayOfWeek.THURSDAY, 22, 30))
+            rig.controller.start("fake")
+            advanceTimeBy(100)
+
+            assertFalse(rig.pendant.audioEnabled)
+            assertTrue(rig.controller.status.value.muted)
+            assertTrue(rig.sink.frames.isEmpty())
+        }
+
+    @Test
+    fun `outside a window the audio is on, and the window turns it off and on at its edges`() =
+        runTest {
+            val rig = rig(schedule = evening, startMs = at(DayOfWeek.THURSDAY, 21, 59, 59) + 999)
+            rig.controller.start("fake")
+            runCurrent()
+            assertTrue(rig.pendant.audioEnabled)
+            assertFalse(rig.controller.status.value.muted)
+
+            advanceTimeBy(1) // 22:00:00.000, the start is inside
+            runCurrent()
+            assertFalse(rig.pendant.audioEnabled)
+
+            advanceTimeBy(60 * 60 * 1000 - 1) // 22:59:59.999
+            runCurrent()
+            assertFalse(rig.pendant.audioEnabled)
+
+            advanceTimeBy(1) // 23:00:00.000, the end is outside
+            runCurrent()
+            assertTrue(rig.pendant.audioEnabled)
+        }
+
+    @Test
+    fun `a window crossing midnight covers the next morning and only after its own day`() =
+        runTest {
+            val night = rig(schedule = overnight, startMs = at(DayOfWeek.FRIDAY, 3, 0))
+            night.controller.start("fake")
+            runCurrent()
+            assertFalse(night.pendant.audioEnabled)
+
+            advanceTimeBy(4 * 60 * 60 * 1000L) // 07:00 Friday
+            runCurrent()
+            assertTrue(night.pendant.audioEnabled)
+            night.controller.stop()
+
+            val saturday = rig(schedule = overnight, startMs = at(DayOfWeek.SATURDAY, 3, 0)) // Friday is not a day
+            saturday.controller.start("fake")
+            runCurrent()
+            assertTrue(saturday.pendant.audioEnabled)
+        }
+
+    @Test
+    fun `the manual mute still holds when no window is open, and a window holds when it is off`() =
+        runTest {
+            val rig = rig(muted = true, schedule = evening, startMs = at(DayOfWeek.THURSDAY, 22, 30))
+            rig.controller.start("fake")
+            runCurrent()
+            rig.settings.state.value = false // unmuting inside a window changes nothing
+            runCurrent()
+            assertFalse(rig.pendant.audioEnabled)
+
+            advanceTimeBy(31 * 60 * 1000L) // past 23:00
+            runCurrent()
+            assertTrue(rig.pendant.audioEnabled)
+        }
+
+    @Test
+    fun `reconnecting inside a window does not subscribe audio again`() =
+        runTest {
+            val rig = rig(schedule = evening, startMs = at(DayOfWeek.THURSDAY, 22, 30))
+            val calls = CountingPendant(rig.pendant)
+            val controller =
+                CaptureController(
+                    calls,
+                    rig.sink,
+                    rig.settings,
+                    backgroundScope,
+                    { at(DayOfWeek.THURSDAY, 22, 30) + testScheduler.currentTime },
+                    log = rig.log,
+                    zone = { ZoneOffset.UTC },
+                )
+            controller.start("fake")
+            runCurrent()
+            assertEquals(1, calls.setAudioCalls)
+            assertFalse(rig.pendant.audioEnabled)
+
+            rig.pendant.dropLink()
+            runCurrent()
+            rig.pendant.connect("fake")
+            advanceTimeBy(100)
+
+            assertFalse(rig.pendant.audioEnabled)
+            assertEquals(1, calls.setAudioCalls)
+            assertTrue(rig.sink.frames.isEmpty())
+        }
+
+    @Test
+    fun `editing the schedule takes effect at once`() =
+        runTest {
+            val rig = rig(startMs = at(DayOfWeek.THURSDAY, 22, 30))
+            rig.controller.start("fake")
+            runCurrent()
+            assertTrue(rig.pendant.audioEnabled)
+
+            rig.settings.scheduleState.value = evening
+            runCurrent()
+
+            assertFalse(rig.pendant.audioEnabled)
         }
 }

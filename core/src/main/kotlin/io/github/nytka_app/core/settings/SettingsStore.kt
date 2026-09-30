@@ -47,6 +47,7 @@ class SettingsStore(
             preferences[ALERT_UNREACHABLE] = next.alertUnreachableMinutes
             preferences[ALERT_BATTERY] = next.alertBatteryPercent
             preferences[DIAGNOSTICS_UPLOAD] = next.diagnosticsUpload
+            preferences[MUTE_SCHEDULE] = next.muteSchedule.encode()
         }
     }
 
@@ -67,6 +68,7 @@ class SettingsStore(
             alertUnreachableMinutes = preferences[ALERT_UNREACHABLE] ?: Settings().alertUnreachableMinutes,
             alertBatteryPercent = preferences[ALERT_BATTERY] ?: Settings().alertBatteryPercent,
             diagnosticsUpload = preferences[DIAGNOSTICS_UPLOAD] ?: false,
+            muteSchedule = MuteSchedule.decode(preferences[MUTE_SCHEDULE]),
         )
 
     /** Stored by name, so reordering the steps moves no one; a name no longer known starts over. */
@@ -89,6 +91,7 @@ class SettingsStore(
         private val ALERT_UNREACHABLE = intPreferencesKey("alert_unreachable_minutes")
         private val ALERT_BATTERY = intPreferencesKey("alert_battery_percent")
         private val DIAGNOSTICS_UPLOAD = booleanPreferencesKey("diagnostics_upload")
+        private val MUTE_SCHEDULE = stringPreferencesKey("mute_schedule")
 
         fun create(
             context: Context,

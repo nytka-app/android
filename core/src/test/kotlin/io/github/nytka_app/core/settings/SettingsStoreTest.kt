@@ -13,6 +13,8 @@ import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.time.DayOfWeek
+import java.time.LocalTime
 
 class SettingsStoreTest {
     @get:Rule
@@ -62,6 +64,16 @@ class SettingsStoreTest {
                     alertUnreachableMinutes = 2,
                     alertBatteryPercent = 30,
                     diagnosticsUpload = true,
+                    muteSchedule =
+                        MuteSchedule(
+                            listOf(
+                                MuteWindow(
+                                    setOf(DayOfWeek.MONDAY, DayOfWeek.SUNDAY),
+                                    LocalTime.of(22, 0),
+                                    LocalTime.of(7, 30),
+                                ),
+                            ),
+                        ),
                 )
             val store = store()
 

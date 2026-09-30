@@ -3,6 +3,7 @@ package io.github.nytka_app.capture
 import android.database.SQLException
 import io.github.nytka_app.core.diagnostics.EventLog
 import io.github.nytka_app.core.queue.FrameSink
+import io.github.nytka_app.core.settings.MuteSchedule
 import io.github.nytka_app.core.settings.SettingsStore
 import io.github.nytka_app.pendant.ButtonEvent
 import io.github.nytka_app.pendant.Haptic
@@ -26,13 +27,21 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
 import java.util.UUID
 
 interface CaptureSettings {
     val muted: Flow<Boolean>
+
+    /** The weekly windows that mute like [muted]; none unless a setting provides them. */
+    val schedule: Flow<MuteSchedule> get() = flowOf(MuteSchedule())
 
     suspend fun setMuted(muted: Boolean)
 }
@@ -41,6 +50,7 @@ class StoreCaptureSettings(
     private val store: SettingsStore,
 ) : CaptureSettings {
     override val muted: Flow<Boolean> = store.settings.map { it.muted }.distinctUntilChanged()
+    override val schedule: Flow<MuteSchedule> = store.settings.map { it.muteSchedule }.distinctUntilChanged()
 
     override suspend fun setMuted(muted: Boolean) = store.update { it.copy(muted = muted) }
 }
@@ -88,6 +98,7 @@ class CaptureController(
     private val sealEveryMs: Long = 30_000,
     private val log: EventLog = EventLog.Logcat,
     private val muteLog: MuteLogRecorder? = null,
+    private val zone: () -> ZoneId = ZoneId::systemDefault,
 ) {
     private val mutableStatus = MutableStateFlow(CaptureStatus())
     val status: StateFlow<CaptureStatus> = mutableStatus.asStateFlow()
@@ -107,6 +118,25 @@ class CaptureController(
     /** What the pendant was last told about audio; null before the first call of a start. */
     private var intent: Boolean? = null
 
+    /**
+     * The manual mute or a schedule window: what decides the pendant's audio. The schedule is checked against [now]
+     * in the phone's current zone and again at least every minute, so a change of zone or clock is picked up.
+     */
+    private val effectiveMuted: Flow<Boolean> =
+        combine(settings.muted, scheduleMuted()) { manual, scheduled -> manual || scheduled }.distinctUntilChanged()
+
+    private fun scheduleMuted(): Flow<Boolean> =
+        settings.schedule.flatMapLatest { schedule ->
+            flow {
+                while (true) {
+                    val at = Instant.ofEpochMilli(now()).atZone(zone())
+                    emit(schedule.mutedAt(at))
+                    val wait = schedule.untilChange(at)?.toMillis() ?: SCHEDULE_RECHECK_MS
+                    delay(minOf(wait, SCHEDULE_RECHECK_MS))
+                }
+            }
+        }
+
     private suspend fun setIntent(audio: Boolean) {
         intent = audio
         pendant.setAudio(audio)
@@ -123,7 +153,7 @@ class CaptureController(
         mutableStatus.value = CaptureStatus(running = true, session = session.toString(), disconnectedSinceMs = now())
 
         inner.launch {
-            val inputs = combine(pendant.connection, settings.muted) { connection, isMuted -> connection to isMuted }
+            val inputs = combine(pendant.connection, effectiveMuted) { connection, isMuted -> connection to isMuted }
             inputs.collect { (connection, isMuted) ->
                 muted = isMuted
                 mutableStatus.update {
@@ -151,7 +181,7 @@ class CaptureController(
                 }
             }
         }
-        muteLog?.let { recorder -> inner.launch { settings.muted.collectLatest { recorder.record(it) } } }
+        muteLog?.let { recorder -> inner.launch { effectiveMuted.collectLatest { recorder.record(it) } } }
         inner.launch {
             pendant.buttons
                 .filter { it == ButtonEvent.DoubleTap }
@@ -178,7 +208,7 @@ class CaptureController(
      * phone comes back subscribes inside setUp instead of after Connected; until then the pendant drops frames.
      */
     private suspend fun connectWithIntent(address: String) {
-        val isMuted = settings.muted.first()
+        val isMuted = effectiveMuted.first()
         muted = isMuted
         setIntent(!isMuted)
         pendant.connect(address)
@@ -221,5 +251,6 @@ class CaptureController(
     private companion object {
         const val TAG = "CaptureController"
         const val LIVE_BUZZ_GAP_MS = 150L
+        const val SCHEDULE_RECHECK_MS = 60_000L
     }
 }
