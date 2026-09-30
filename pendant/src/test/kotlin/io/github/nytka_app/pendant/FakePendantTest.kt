@@ -137,4 +137,18 @@ class FakePendantTest {
             assertFalse(pendant.settings.setLed(80))
             assertTrue(pendant.ring.ledWrites.isEmpty())
         }
+
+    @Test
+    fun `settings reads that never answer do not hold up the connection or the storage`() =
+        runTest {
+            val pendant = pendant()
+            pendant.ring.settingsHang = true
+
+            pendant.connect("fake")
+            runCurrent()
+
+            assertTrue(pendant.connection.value is PendantConnection.Connected)
+            assertEquals(StorageSupport.Supported, pendant.storage.support.value)
+            assertEquals(SettingsValues(), pendant.settings.values.value)
+        }
 }

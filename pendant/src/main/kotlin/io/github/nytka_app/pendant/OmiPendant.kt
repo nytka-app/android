@@ -113,6 +113,7 @@ class OmiPendant(
     private var emittedFrames = 0L
     private var overflowFrames = 0L
     private var session: Job? = null
+    private var settingsLoad: Job? = null
     private val resubscribeFailures = FailureStreak(MAX_RESUBSCRIBE_FAILURES)
     private val watchdog = LinkWatchdog()
     private val resume = ResumeDetector()
@@ -247,6 +248,7 @@ class OmiPendant(
     /** Drops the link and its state. The audio intent stays: only [disconnect] clears it. */
     private fun close() {
         session?.cancel()
+        settingsLoad?.cancel()
         pending?.done?.complete(null)
         omiStorage.linkLost()
         omiSettings.linkLost()
@@ -299,7 +301,6 @@ class OmiPendant(
         val info = readInfo(current)
         omiStorage.evaluate(info.firmware)
         info("setUp: storage ${omiStorage.support.value}")
-        omiSettings.load()
         // The time write also tells the SD worker the clock is set: only a pendant with the ring gets it.
         if (omiStorage.support.value == StorageSupport.Supported) syncPendantClock()
         subscribe(current, OmiUuids.BUTTON, true)
@@ -312,6 +313,9 @@ class OmiPendant(
             mutableConnection.value = PendantConnection.Connected(info)
         }
         connectTimeout.cancel()
+        // Apart from setUp: three unanswered reads take 15 s, and Connected and watch() must not wait for them.
+        settingsLoad?.cancel()
+        settingsLoad = scope.launch { omiSettings.load() }
         info("setUp: connected")
         lastAnyNotificationAtMs = elapsed() // the link just answered our reads: the liveness clock starts here
         watch(current)

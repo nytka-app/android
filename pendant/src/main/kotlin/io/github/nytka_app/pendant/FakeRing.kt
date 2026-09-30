@@ -3,6 +3,7 @@ package io.github.nytka_app.pendant
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import java.nio.ByteBuffer
@@ -148,11 +149,24 @@ class FakeRing(
     /** Makes the next settings reads and writes fail, like a link that drops them. */
     var settingsFail = false
 
-    override suspend fun readLed(): Int? = if (settingsFail) null else led
+    /** Every settings write takes this long. */
+    var settingsDelayMs = 0L
 
-    override suspend fun readGain(): Int? = if (settingsFail) null else gain
+    /** The settings reads never answer, like a link that drops them without an error. */
+    var settingsHang = false
+
+    override suspend fun readLed(): Int? {
+        if (settingsHang) awaitCancellation()
+        return if (settingsFail) null else led
+    }
+
+    override suspend fun readGain(): Int? {
+        if (settingsHang) awaitCancellation()
+        return if (settingsFail) null else gain
+    }
 
     override suspend fun writeLed(value: Int): Boolean {
+        if (settingsDelayMs > 0) delay(settingsDelayMs)
         if (settingsFail) return false
         ledWrites += value
         led = value.coerceAtMost(LedDim.MAX)
@@ -160,6 +174,7 @@ class FakeRing(
     }
 
     override suspend fun writeGain(value: Int): Boolean {
+        if (settingsDelayMs > 0) delay(settingsDelayMs)
         if (settingsFail) return false
         gainWrites += value
         gain = value.coerceAtMost(MicGain.MAX)

@@ -3,7 +3,7 @@ package io.github.nytka_app.capture
 import io.github.nytka_app.pendant.Pendant
 import io.github.nytka_app.pendant.PendantConnection
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,8 +22,9 @@ data class PendantSettingsState(
     val led: Int? = null,
     /** Microphone gain level, 0 to 8. */
     val gain: Int? = null,
-    /** Counts failed writes, so a slider that moved can go back to the pendant's real value. */
-    val failures: Int = 0,
+    /** Count failed writes of each control, so only a slider that moved goes back to the pendant's real value. */
+    val ledFailures: Int = 0,
+    val gainFailures: Int = 0,
     val error: String? = null,
 )
 
@@ -47,21 +48,29 @@ class PendantSettingsController(
     private val minIntervalMs: Long = MIN_INTERVAL_MS,
 ) : PendantSettingsControls {
     private val settings = pendant.settings
-    private val failure = MutableStateFlow(Failure())
+    private val ledFailure = MutableStateFlow(Failure())
+    private val gainFailure = MutableStateFlow(Failure())
 
     override val state: StateFlow<PendantSettingsState> =
-        combine(pendant.connection, settings.support, settings.values, failure) { connection, support, values, failed ->
+        combine(
+            pendant.connection,
+            settings.support,
+            settings.values,
+            ledFailure,
+            gainFailure,
+        ) { connection, support, values, ledFailed, gainFailed ->
             val connected = connection is PendantConnection.Connected
             PendantSettingsState(
                 led = values.led?.takeIf { connected && support.led },
                 gain = values.gain?.takeIf { connected && support.gain },
-                failures = failed.count,
-                error = failed.message,
+                ledFailures = ledFailed.count,
+                gainFailures = gainFailed.count,
+                error = ledFailed.message ?: gainFailed.message,
             )
         }.stateIn(scope, SharingStarted.Eagerly, PendantSettingsState())
 
-    private val led = Debounced(LED_FAILED) { settings.setLed(it) }
-    private val gain = Debounced(GAIN_FAILED) { settings.setGain(it) }
+    private val led = Debounced(ledFailure, LED_FAILED) { settings.setLed(it) }
+    private val gain = Debounced(gainFailure, GAIN_FAILED) { settings.setGain(it) }
 
     override fun commitLed(percent: Int) = led.submit(percent)
 
@@ -72,29 +81,32 @@ class PendantSettingsController(
         val message: String? = null,
     )
 
+    /**
+     * One long-lived collector per control, fed by a conflated channel: a value sent while a write or the wait is
+     * running replaces the earlier one, and is never lost.
+     */
     private inner class Debounced(
+        private val failure: MutableStateFlow<Failure>,
         private val failedMessage: String,
         private val write: suspend (Int) -> Boolean,
     ) {
-        private var wanted: Int? = null
-        private var job: Job? = null
+        private val wanted = Channel<Int>(Channel.CONFLATED)
+
+        init {
+            scope.launch {
+                for (value in wanted) {
+                    if (write(value)) {
+                        failure.update { it.copy(message = null) }
+                    } else {
+                        failure.update { Failure(it.count + 1, failedMessage) }
+                    }
+                    delay(minIntervalMs)
+                }
+            }
+        }
 
         fun submit(value: Int) {
-            wanted = value
-            if (job?.isActive == true) return
-            job =
-                scope.launch {
-                    while (true) {
-                        val next = wanted ?: break
-                        wanted = null
-                        if (write(next)) {
-                            failure.update { it.copy(message = null) }
-                        } else {
-                            failure.update { Failure(it.count + 1, failedMessage) }
-                        }
-                        delay(minIntervalMs)
-                    }
-                }
+            wanted.trySend(value)
         }
     }
 

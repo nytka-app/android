@@ -30,7 +30,8 @@ object LedDim {
 
 /**
  * Microphone gain (`19b10012`): a level from 0 to 8 that the firmware maps to the PDM gain register in
- * `src/mic.c`, `mic_set_gain`: 0 mute, then -20, -10, 0, +6, +10, +20 (the default, level 6), +30 and +40 dB.
+ * `omi/firmware/omi/src/mic.c`, `mic_set_gain`: 0 mute, then -20, -10, 0, +6, +10, +20 (the default, level 6),
+ * +30 and +40 dB.
  * The firmware caps a larger byte at 8.
  */
 object MicGain {

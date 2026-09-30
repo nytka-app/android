@@ -544,7 +544,7 @@ class DeviceViewModelTest {
     fun `the card carries a failed write's message`() {
         val viewModel = viewModel()
 
-        pendantSettings.current.value = PendantSettingsState(led = 50, failures = 1, error = "Could not save.")
+        pendantSettings.current.value = PendantSettingsState(led = 50, ledFailures = 1, error = "Could not save.")
 
         assertEquals(
             "Could not save.",

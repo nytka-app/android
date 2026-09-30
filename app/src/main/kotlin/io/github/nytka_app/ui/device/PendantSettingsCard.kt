@@ -56,7 +56,7 @@ fun PendantSettingsCard(
                     steps = 0,
                     label = ::ledLabel,
                     warning = ::ledWarning,
-                    failures = card.failures,
+                    failures = card.ledFailures,
                     onCommit = onLed,
                 )
             }
@@ -68,7 +68,7 @@ fun PendantSettingsCard(
                     steps = MicGain.MAX - MicGain.MIN - 1,
                     label = ::gainLabel,
                     warning = ::gainWarning,
-                    failures = card.failures,
+                    failures = card.gainFailures,
                     onCommit = onGain,
                 )
             }

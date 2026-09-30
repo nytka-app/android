@@ -146,7 +146,8 @@ class PendantSettingsControllerTest {
             rig.controller.commitLed(90)
             runCurrent()
 
-            assertEquals(1, rig.controller.state.value.failures)
+            assertEquals(1, rig.controller.state.value.ledFailures)
+            assertEquals(0, rig.controller.state.value.gainFailures)
             assertEquals(PendantSettingsController.LED_FAILED, rig.controller.state.value.error)
             assertEquals(50, rig.controller.state.value.led)
 
@@ -174,5 +175,61 @@ class PendantSettingsControllerTest {
                 rig.pendant.ring.gainWrites
                     .isEmpty(),
             )
+        }
+
+    @Test
+    fun `a commit exactly when the wait ends is written`() =
+        runTest {
+            val rig = connected()
+            rig.controller.commitLed(30)
+            runCurrent()
+
+            advanceTimeBy(1_999)
+            rig.controller.commitLed(40)
+            advanceTimeBy(1) // the wait ends at this instant
+            rig.controller.commitLed(50)
+            runCurrent()
+            advanceTimeBy(2_000)
+            runCurrent()
+
+            assertEquals(
+                30,
+                rig.pendant.ring.ledWrites
+                    .first(),
+            )
+            assertEquals(
+                50,
+                rig.pendant.ring.ledWrites
+                    .last(),
+            )
+            assertEquals(50, rig.pendant.ring.led)
+        }
+
+    @Test
+    fun `a commit while a write is running is written after it`() =
+        runTest {
+            val rig = connected()
+            rig.pendant.ring.settingsDelayMs = 500
+
+            rig.controller.commitGain(2)
+            advanceTimeBy(100)
+            rig.controller.commitGain(5)
+            advanceTimeBy(5_000)
+            runCurrent()
+
+            assertEquals(listOf(2, 5), rig.pendant.ring.gainWrites)
+        }
+
+    @Test
+    fun `a failed led write does not reset the gain slider`() =
+        runTest {
+            val rig = connected()
+            rig.pendant.ring.settingsFail = true
+
+            rig.controller.commitLed(90)
+            runCurrent()
+
+            assertEquals(1, rig.controller.state.value.ledFailures)
+            assertEquals(0, rig.controller.state.value.gainFailures)
         }
 }

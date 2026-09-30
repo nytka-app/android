@@ -66,7 +66,8 @@ Robolectric, MockWebServer, Turbine · ktlint, detekt.
 ## Pendant settings
 
 LED brightness (`19b10011`, 0 to 100) and mic gain (`19b10012`, level 0 to 8) come from the settings
-service `19b10010` in `BasedHardware/omi` at `2e34261` (`transport.c`, `mic.c` `mic_set_gain`, `settings.c`).
+service `19b10010` in `BasedHardware/omi` at `2e34261` (`omi/firmware/omi/src/lib/core/transport.c`, `omi/firmware/omi/src/mic.c` `mic_set_gain`,
+`omi/firmware/omi/src/settings.c`).
 The firmware saves each write to flash, so `PendantSettingsController` writes each control at most once
 per 2 s, after the slider is released. Gain 0 is mute and levels 1 to 8 are -20, -10, 0, +6, +10, +20,
 +30, +40 dB. `OmiSettings` writes only after `19b10021` reports bit 7 (LED) or bit 8 (gain). Nothing
