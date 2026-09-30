@@ -77,6 +77,10 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   summary, its tasks and the transcript, with the speaker's name in color above each run of words
   when the transcription provider names speakers. Its ⋮ menu has **Rename** (an empty title restores
   the generated one), **Regenerate summary** (not while the conversation is open) and **Delete**.
+  When the server kept the audio (14 days by default, and none for imported conversations), a play
+  bar sits above the transcript: play or pause, the position and length, and a slider. Tap the time
+  beside a paragraph to play from there. Pauses between speech are not stored, so they are skipped.
+  Playback stops when you leave the screen or the app.
   Titles, summaries and tasks come from a language model on your server: without one, a row shows the
   start of the transcript instead.
 - **Tasks.** What your conversations left you to do, newest first, with the conversation's title and
@@ -153,6 +157,11 @@ which takes a while, and **Discard…** frees it on the pendant unread, after a 
   Nytka hears nothing and the pendant discards its audio, and Nytka stays muted when the pendant
   reconnects. What the pendant records while the phone is away is handled by
   [Offline sync](#offline-sync).
+- **Bookmark** with a single tap on the pendant: one short buzz after about a second means it is kept.
+  A double tap (or two quick single taps) mutes instead and keeps no bookmark. **Bookmark** in the
+  notification does the same from the phone. Bookmarks upload like audio, also while muted. A
+  conversation shows a star beside the nearest paragraph, where you can tap to add a note. The tap
+  works only while the pendant is connected.
 - **Offline**, audio waits on the phone and uploads once the server answers again, with the times
   it was said. The queue holds up to 1 GiB, about 60 hours. Past 80% Nytka warns you; when it is
   full, the oldest live audio goes first.

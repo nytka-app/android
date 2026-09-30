@@ -76,7 +76,7 @@ Robolectric, MockWebServer, Turbine · ktlint, detekt.
   create call into "This server needs an update", a `404` on one item into "This item no longer
   exists" and a `403` into "The app needs an admin token." (`ui/ServerNotices.kt`).
 - Room schemas under `core/schemas/` are committed. A schema change bumps the database version (now
-  4) and adds a migration, never a destructive fallback: the queue holds audio nobody can record
+  5) and adds a migration, never a destructive fallback: the queue holds audio nobody can record
   again.
 - Pendant facts (UUIDs, packet header, button codes, the storage service) come from
   `BasedHardware/omi` at a pinned commit; name the file when adding one.

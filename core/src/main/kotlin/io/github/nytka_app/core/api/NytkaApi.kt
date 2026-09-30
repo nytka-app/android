@@ -173,6 +173,19 @@ class NytkaApi(
         }
     }
 
+    /** The URL of [path] on the configured server with the bearer header, for a caller that fetches it itself. */
+    internal suspend fun authorized(path: String): AudioRequest? =
+        (target() as? Target.Ready)?.let {
+            AudioRequest(
+                it.base
+                    .newBuilder()
+                    .addEncodedPathSegments(path)
+                    .build()
+                    .toString(),
+                "Bearer ${it.token}",
+            )
+        }
+
     private fun failure(response: Response): ApiResult.Failure =
         when (response.code) {
             400 -> invalid(response.body.string()) ?: ApiResult.Failure(FailureKind.Server, "The server answered 400.")

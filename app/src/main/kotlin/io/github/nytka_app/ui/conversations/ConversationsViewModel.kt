@@ -30,6 +30,8 @@ data class ConversationRow(
     val title: String? = null,
     /** "Summarizing" or "Summary failed"; null otherwise, and always on a server before v0.2. */
     val chip: String? = null,
+    /** How many bookmarks the conversation holds; the row shows an icon when it is above zero. */
+    val bookmarks: Int = 0,
 )
 
 data class DaySection(
@@ -181,6 +183,7 @@ class ConversationsViewModel
                                 it.summary?.takeIf(String::isNotBlank) ?: it.preview,
                                 it.title?.takeIf(String::isNotBlank),
                                 aiChip(it.aiStatus),
+                                it.bookmarks,
                             )
                         },
                     )

@@ -9,7 +9,8 @@ import io.github.nytka_app.core.diagnostics.DiagnosticRow
 import io.github.nytka_app.core.diagnostics.DiagnosticsDao
 
 // Version 2 adds the diagnostic samples, version 3 their kind (sample or log), version 4 the ring sync (stored
-// frames and chunks, the position, parked chunks, the mute log); version 1 held the queue only.
+// frames and chunks, the position, parked chunks, the mute log), version 5 the bookmark outbox; version 1 held the
+// queue only.
 // Never a destructive fallback: the queue holds audio nobody can record again.
 @Database(
     entities =
@@ -20,15 +21,23 @@ import io.github.nytka_app.core.diagnostics.DiagnosticsDao
             ParkedChunk::class,
             RingPositionRow::class,
             MuteLogRow::class,
+            BookmarkRow::class,
         ],
-    version = 4,
+    version = 5,
     autoMigrations =
-        [AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4)],
+        [
+            AutoMigration(from = 1, to = 2),
+            AutoMigration(from = 2, to = 3),
+            AutoMigration(from = 3, to = 4),
+            AutoMigration(from = 4, to = 5),
+        ],
 )
 abstract class QueueDatabase : RoomDatabase() {
     abstract fun queue(): QueueDao
 
     abstract fun diagnostics(): DiagnosticsDao
+
+    abstract fun bookmarks(): BookmarksDao
 
     companion object {
         fun open(

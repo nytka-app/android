@@ -1,8 +1,15 @@
 package io.github.nytka_app.ui.conversations
 
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.nytka_app.MainDispatcherRule
 import io.github.nytka_app.core.api.ApiResult
+import io.github.nytka_app.core.api.AudioIndex
+import io.github.nytka_app.core.api.AudioRun
+import io.github.nytka_app.core.api.Bookmark
 import io.github.nytka_app.core.api.ConversationDetail
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.Segment
@@ -43,8 +50,13 @@ class ConversationViewModelTest {
         }
 
     private val tasks = FakeTasks(listOf(task("t1"), task("t2", done = true)))
+    private val bookmarks = FakeBookmarks()
 
-    private fun viewModel() = ConversationViewModel(SavedStateHandle(mapOf("id" to "c1")), api, tasks, clock)
+    private val audio = FakeAudio()
+    private val player = FakePlayer()
+
+    private fun viewModel() =
+        ConversationViewModel(SavedStateHandle(mapOf("id" to "c1")), api, tasks, bookmarks, audio, player, clock)
 
     private fun detail(
         status: String = "closed",
@@ -341,5 +353,223 @@ class ConversationViewModelTest {
         api.detail = ApiResult.Failure(FailureKind.NotFound, "Not found.")
 
         assertEquals("This item no longer exists", viewModel().state.value.error)
+    }
+
+    private fun withBookmarks(
+        vararg at: String,
+        segments: List<Segment> = api.detail.let { (it as ApiResult.Ok).value.segments },
+    ): ConversationUiState {
+        api.detail =
+            ApiResult.Ok(detail(segments = segments).copy(bookmarks = at.mapIndexed { i, t -> Bookmark("b$i", t) }))
+        return viewModel().state.value
+    }
+
+    @Test
+    fun `a bookmark inside a segment marks that paragraph`() {
+        val state = withBookmarks("2026-09-29T08:03:02Z")
+
+        assertEquals(
+            listOf(emptyList<BookmarkMark>(), listOf(BookmarkMark("b0"))),
+            state.paragraphs.map { it.bookmarks },
+        )
+    }
+
+    @Test
+    fun `a bookmark between two segments marks the nearer one, the earlier on a tie`() {
+        // Segments end 08:00:09 and start 08:03:00: 08:00:30 is nearer the first, 08:02:00 the second.
+        val nearFirst = withBookmarks("2026-09-29T08:00:30Z", "2026-09-29T08:01:34.500Z", "2026-09-29T08:02:00Z")
+
+        assertEquals(
+            listOf(listOf("b0", "b1"), listOf("b2")),
+            nearFirst.paragraphs.map { p -> p.bookmarks.map { it.id } },
+        )
+    }
+
+    @Test
+    fun `a bookmark before the first or after the last segment marks the edge paragraph`() {
+        val state = withBookmarks("2026-09-29T07:59:00Z", "2026-09-29T08:09:00Z")
+
+        assertEquals(listOf(listOf("b0"), listOf("b1")), state.paragraphs.map { p -> p.bookmarks.map { it.id } })
+    }
+
+    @Test
+    fun `a conversation without segments lists its bookmarks on their own`() {
+        val state = withBookmarks("2026-09-29T08:03:02Z", segments = emptyList())
+
+        assertEquals(listOf(BookmarkMark("b0")), state.looseBookmarks)
+    }
+
+    @Test
+    fun `a server before v0_8 shows no bookmarks`() {
+        val state = viewModel().state.value
+
+        assertTrue(state.paragraphs.all { it.bookmarks.isEmpty() })
+        assertTrue(state.looseBookmarks.isEmpty())
+    }
+
+    @Test
+    fun `a saved note shows on its bookmark, an empty one clears it`() {
+        withBookmarks("2026-09-29T08:03:02Z")
+        val model = viewModel()
+
+        model.setBookmarkNote("b0", "  Call Anna  ")
+        assertEquals(listOf("b0" to "Call Anna"), bookmarks.notes)
+        assertEquals(
+            "Call Anna",
+            model.state.value.paragraphs[1]
+                .bookmarks
+                .single()
+                .note,
+        )
+
+        model.setBookmarkNote("b0", "")
+        assertNull(
+            model.state.value.paragraphs[1]
+                .bookmarks
+                .single()
+                .note,
+        )
+    }
+
+    @Test
+    fun `a note the server refuses leaves the bookmark as it was and says so`() {
+        withBookmarks("2026-09-29T08:03:02Z")
+        bookmarks.answer = ApiResult.Failure(FailureKind.NotFound, "Not found.")
+        val model = viewModel()
+
+        model.setBookmarkNote("b0", "x")
+
+        assertNull(
+            model.state.value.paragraphs[1]
+                .bookmarks
+                .single()
+                .note,
+        )
+        assertEquals("This item no longer exists", model.state.value.error)
+    }
+
+    private fun withAudio() {
+        audio.index =
+            ApiResult.Ok(
+                AudioIndex(
+                    durationMs = 20_000,
+                    runs =
+                        listOf(
+                            AudioRun(0, "2026-09-29T08:00:00Z", "2026-09-29T08:00:10Z"),
+                            AudioRun(10_000, "2026-09-29T08:03:00Z", "2026-09-29T08:03:10Z"),
+                        ),
+                ),
+            )
+    }
+
+    @Test
+    fun `no play bar when the server has no audio`() {
+        val model = viewModel()
+
+        assertNull(model.state.value.playback)
+        model.togglePlay()
+        assertTrue(player.calls.isEmpty())
+    }
+
+    @Test
+    fun `a play bar with the length when the index answers`() {
+        withAudio()
+
+        assertEquals(Playback(durationMs = 20_000), viewModel().state.value.playback)
+    }
+
+    @Test
+    fun `the play bar survives the transcript being read again`() {
+        withAudio()
+        val model = viewModel()
+
+        model.rename("New title")
+
+        assertEquals(Playback(durationMs = 20_000), model.state.value.playback)
+    }
+
+    @Test
+    fun `tapping a paragraph seeks to where it was said and plays`() {
+        withAudio()
+        val model = viewModel()
+
+        model.playFrom(1)
+
+        assertEquals(listOf("seek 10000", "play"), player.calls)
+        assertEquals(Playback(20_000, positionMs = 10_000, playing = true), model.state.value.playback)
+    }
+
+    @Test
+    fun `the player is prepared once`() {
+        withAudio()
+        val model = viewModel()
+
+        model.playFrom(0)
+        model.playFrom(1)
+
+        assertEquals(1, player.prepares)
+    }
+
+    @Test
+    fun `nothing plays when the player cannot be prepared`() {
+        withAudio()
+        player.canPrepare = false
+
+        viewModel().playFrom(0)
+
+        assertTrue(player.calls.isEmpty())
+    }
+
+    @Test
+    fun `the button plays, then pauses`() {
+        withAudio()
+        val model = viewModel()
+
+        model.togglePlay()
+        assertTrue(
+            model.state.value.playback!!
+                .playing,
+        )
+        model.togglePlay()
+
+        assertEquals(listOf("play", "pause"), player.calls)
+        assertFalse(
+            model.state.value.playback!!
+                .playing,
+        )
+    }
+
+    @Test
+    fun `seeking moves the playhead without playing`() {
+        withAudio()
+        val model = viewModel()
+
+        model.seekTo(5_000)
+
+        assertEquals(listOf("seek 5000"), player.calls)
+    }
+
+    @Test
+    fun `a failure of the player shows on the bar`() {
+        withAudio()
+        val model = viewModel()
+
+        player.state.value = PlayerState(failed = true)
+
+        assertTrue(
+            model.state.value.playback!!
+                .failed,
+        )
+    }
+
+    @Test
+    fun `the player is released with the screen`() {
+        withAudio()
+        val store = ViewModelStore()
+        ViewModelProvider(store, viewModelFactory { initializer { viewModel() } })[ConversationViewModel::class.java]
+
+        store.clear()
+
+        assertTrue(player.released)
     }
 }

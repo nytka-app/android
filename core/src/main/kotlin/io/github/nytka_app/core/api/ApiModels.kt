@@ -59,6 +59,8 @@ data class ConversationSummary(
     val title: String? = null,
     val summary: String? = null,
     val aiStatus: String = AiState.NONE,
+    /** How many bookmarks fall in the conversation; a server before v0.8 sends none. */
+    val bookmarks: Int = 0,
 )
 
 @Serializable
@@ -116,6 +118,15 @@ data class ConversationDetail(
     val aiMessage: String? = null,
     val aiUpdatedAt: String? = null,
     val tasks: List<NytkaTask> = emptyList(),
+    val bookmarks: List<Bookmark> = emptyList(),
+)
+
+/** A tap on the pendant (or a mark from the app) at [at], with the note a person added. */
+@Serializable
+data class Bookmark(
+    val id: String,
+    val at: String,
+    val note: String? = null,
 )
 
 /** One entry of `GET /settings`; values travel as strings, and a secret has no value, only [isSet]. */
