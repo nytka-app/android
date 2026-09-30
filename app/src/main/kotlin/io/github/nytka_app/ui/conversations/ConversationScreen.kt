@@ -229,7 +229,7 @@ private fun SpeakerLabel(
 
 /** Names one voice; every line of it, past and future, shows the name. */
 @Composable
-private fun NameVoiceDialog(
+internal fun NameVoiceDialog(
     initial: String,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
@@ -252,7 +252,7 @@ private fun NameVoiceDialog(
     )
 }
 
-private const val MAX_NAME = 80
+internal const val MAX_NAME = 80
 
 /** An empty title restores the generated one. */
 @Composable

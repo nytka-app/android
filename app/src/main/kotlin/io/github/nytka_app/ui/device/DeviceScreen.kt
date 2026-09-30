@@ -45,6 +45,7 @@ fun DeviceScreen(
     status: StatusUiState,
     onMute: (Boolean) -> Unit,
     onOpenDeveloper: () -> Unit,
+    onOpenPeople: () -> Unit,
     viewModel: DeviceViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -84,6 +85,12 @@ fun DeviceScreen(
         item { MuteScheduleSection(state.muteSchedule, viewModel::setMuteSchedule) }
         item { ServerSection(state, status, viewModel::checkServer) }
         item { SettingsSection(state, viewModel::save) }
+        item {
+            Section("People") {
+                Text("Name the voices Nytka hears, and tidy up the people it knows.")
+                OutlinedButton(onClick = onOpenPeople) { Text("People") }
+            }
+        }
         item {
             Section("About") {
                 Text(

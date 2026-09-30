@@ -9,6 +9,7 @@ import io.github.nytka_app.ui.developer.DeveloperScreen
 import io.github.nytka_app.ui.developer.server.ServerSettingsScreen
 import io.github.nytka_app.ui.developer.server.TokensScreen
 import io.github.nytka_app.ui.developer.server.WebhooksScreen
+import io.github.nytka_app.ui.people.PeopleScreen
 
 /** The Device tab: the device screen, and developer mode opened from its About card, with its server screens. */
 @Composable
@@ -18,7 +19,15 @@ fun DeviceTab(
 ) {
     val navController = rememberNavController()
     NavHost(navController, startDestination = "device") {
-        composable("device") { DeviceScreen(status, onMute, onOpenDeveloper = { navController.navigate("developer") }) }
+        composable("device") {
+            DeviceScreen(
+                status,
+                onMute,
+                onOpenDeveloper = { navController.navigate("developer") },
+                onOpenPeople = { navController.navigate("people") },
+            )
+        }
+        composable("people") { PeopleScreen(onBack = { navController.popBackStack() }) }
         composable("developer") {
             DeveloperScreen(
                 onBack = { navController.popBackStack() },
