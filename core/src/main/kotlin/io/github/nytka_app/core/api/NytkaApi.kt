@@ -178,6 +178,8 @@ class NytkaApi(
             404 -> ApiResult.Failure(FailureKind.NotFound, "Not found.")
             405 -> ApiResult.Failure(FailureKind.Unsupported, "The server does not know this call.")
             409 -> ApiResult.Failure(FailureKind.Conflict, "This conflicts with what the server holds.")
+            503 -> ApiResult.Failure(FailureKind.Unavailable, "The server answered 503.")
+            504 -> ApiResult.Failure(FailureKind.Timeout, "The server answered 504.")
             else -> ApiResult.Failure(FailureKind.Server, "The server answered ${response.code}.")
         }
 

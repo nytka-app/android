@@ -112,7 +112,7 @@ class NytkaApiTest {
         runTest {
             answer(404)
             answer(401)
-            answer(503)
+            answer(500)
 
             assertEquals(FailureKind.NotFound, (api.conversation("x") as ApiResult.Failure).kind)
             assertEquals(FailureKind.Unauthorized, (api.info() as ApiResult.Failure).kind)
