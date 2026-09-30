@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
@@ -28,6 +30,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -47,6 +50,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
@@ -65,6 +69,7 @@ fun ConversationScreen(
     var renaming by remember { mutableStateOf(false) }
     var naming by remember { mutableStateOf<Pair<String, String>?>(null) }
     LaunchedEffect(state.deleted) { if (state.deleted) onDeleted() }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.pause() }
     // A summary in the making shows up on its own, while the screen is in front.
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(viewModel, lifecycleOwner, state.chip) {
@@ -118,6 +123,9 @@ fun ConversationScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item { Text("${state.timeRange} · ${state.length}", style = MaterialTheme.typography.titleMedium) }
+            state.playback?.let { playback ->
+                item { PlayBar(playback, onToggle = viewModel::togglePlay, onSeek = viewModel::seekTo) }
+            }
             state.chip?.let { chip -> item { AiChip(chip) } }
             state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
             state.summary?.let { summary ->
@@ -139,7 +147,13 @@ fun ConversationScreen(
                 }
             }
             items(state.looseBookmarks) { mark -> BookmarkLine(mark, viewModel::setBookmarkNote) }
-            items(state.paragraphs) { ParagraphItem(it, onName = { naming = it }, onSave = viewModel::setBookmarkNote) }
+            transcript(
+                state.paragraphs,
+                canPlay = state.playback != null,
+                onName = { naming = it },
+                onSave = viewModel::setBookmarkNote,
+                onPlay = viewModel::playFrom,
+            )
             state.raw?.let { raw ->
                 item { Text(raw, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall) }
             }
@@ -184,6 +198,55 @@ fun ConversationScreen(
     }
 }
 
+/** The paragraphs; the time of one plays from there when [canPlay]. */
+private fun LazyListScope.transcript(
+    paragraphs: List<Paragraph>,
+    canPlay: Boolean,
+    onName: (Pair<String, String>) -> Unit,
+    onSave: (String, String) -> Unit,
+    onPlay: (Int) -> Unit,
+) = itemsIndexed(paragraphs) { i, paragraph ->
+    ParagraphItem(paragraph, onName, onSave, onPlay = if (canPlay) ({ onPlay(i) }) else null)
+}
+
+/** Play or pause, the position and length, and a slider. A drag seeks when it ends, not on every move. */
+@Composable
+private fun PlayBar(
+    playback: Playback,
+    onToggle: () -> Unit,
+    onSeek: (Long) -> Unit,
+) {
+    var dragging by remember { mutableStateOf<Float?>(null) }
+    val shown = dragging ?: playback.positionMs.toFloat()
+    ElevatedCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onToggle) { Text(if (playback.playing) "Pause" else "Play") }
+                Slider(
+                    value = shown.coerceIn(0f, playback.durationMs.toFloat()),
+                    onValueChange = { dragging = it },
+                    onValueChangeFinished = {
+                        dragging?.let { onSeek(it.toLong()) }
+                        dragging = null
+                    },
+                    valueRange = 0f..playback.durationMs.toFloat().coerceAtLeast(1f),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            Text(
+                if (playback.failed) {
+                    "The audio could not be played."
+                } else {
+                    "${Formatting.position(shown.toLong())} / ${Formatting.position(playback.durationMs)}"
+                },
+                style = MaterialTheme.typography.labelMedium,
+                color = if (playback.failed) MaterialTheme.colorScheme.error else Color.Unspecified,
+                modifier = Modifier.padding(start = 16.dp, bottom = 4.dp),
+            )
+        }
+    }
+}
+
 @Composable
 private fun InfoCard(
     title: String,
@@ -221,6 +284,7 @@ private fun ParagraphItem(
     paragraph: Paragraph,
     onName: (Pair<String, String>) -> Unit,
     onSave: (String, String) -> Unit,
+    onPlay: (() -> Unit)?,
 ) {
     Column {
         if (paragraph.showSpeaker) {
@@ -230,7 +294,11 @@ private fun ParagraphItem(
             Text(
                 paragraph.time,
                 style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.width(56.dp),
+                color = if (onPlay != null) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                modifier =
+                    Modifier
+                        .width(56.dp)
+                        .then(if (onPlay != null) Modifier.clickable(onClick = onPlay) else Modifier),
             )
             Text(paragraph.text)
         }

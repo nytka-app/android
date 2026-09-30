@@ -48,4 +48,11 @@ object Formatting {
         val minutes = (seconds + 30) / 60
         return if (minutes < 60) "$minutes min" else "${minutes / 60} h ${minutes % 60} min"
     }
+
+    /** A playback position: 1:05, or 1:02:05 from an hour on. */
+    fun position(ms: Long): String {
+        val seconds = ms.coerceAtLeast(0) / 1000
+        val (h, m, sec) = Triple(seconds / 3600, seconds / 60 % 60, seconds % 60)
+        return if (h > 0) "%d:%02d:%02d".format(h, m, sec) else "%d:%02d".format(m, sec)
+    }
 }

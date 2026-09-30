@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.nytka_app.core.api.AiState
 import io.github.nytka_app.core.api.ApiResult
+import io.github.nytka_app.core.api.AudioClient
+import io.github.nytka_app.core.api.AudioIndex
 import io.github.nytka_app.core.api.BookmarksClient
 import io.github.nytka_app.core.api.ConversationDetail
 import io.github.nytka_app.core.api.ConversationsClient
@@ -19,6 +21,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.Clock
 import java.time.Duration
 import java.time.Instant
@@ -52,6 +56,14 @@ data class TaskLine(
     val done: Boolean,
 )
 
+/** The play bar. It exists only when the server has audio for the conversation. */
+data class Playback(
+    val durationMs: Long,
+    val positionMs: Long = 0,
+    val playing: Boolean = false,
+    val failed: Boolean = false,
+)
+
 data class ConversationUiState(
     /** The title, generated or set; the day until the first summary. */
     val title: String = "",
@@ -67,6 +79,8 @@ data class ConversationUiState(
     /** Bookmarks of a conversation with no transcript, so there is no paragraph to mark. */
     val looseBookmarks: List<BookmarkMark> = emptyList(),
     val open: Boolean = false,
+    /** Null until the server answers 200 for the audio index, and for good when it does not. */
+    val playback: Playback? = null,
     val loading: Boolean = true,
     val error: String? = null,
     val deleted: Boolean = false,
@@ -81,13 +95,20 @@ class ConversationViewModel
         private val api: ConversationsClient,
         private val tasks: TasksClient,
         private val bookmarks: BookmarksClient,
+        private val audio: AudioClient,
+        private val player: AudioPlayer,
         private val clock: Clock,
     ) : ViewModel() {
         private val id: String = checkNotNull(savedState["id"]) { "The conversation route carries an id." }
         private val mutableState = MutableStateFlow(ConversationUiState())
         val state: StateFlow<ConversationUiState> = mutableState.asStateFlow()
+        private var index: AudioIndex? = null
+        private var segmentStarts: List<Instant> = emptyList()
+        private val prepareLock = Mutex()
+        private var prepared = false
 
         init {
+            viewModelScope.launch { loadAudio() }
             viewModelScope.launch {
                 when (val result = api.conversation(id)) {
                     is ApiResult.Ok -> mutableState.value = show(result.value)
@@ -102,6 +123,51 @@ class ConversationViewModel
                 }
             }
         }
+
+        /** Any answer but 200 (no audio, an older server, a network error) leaves the screen without a play bar. */
+        private suspend fun loadAudio() {
+            val loaded = (audio.audioIndex(id) as? ApiResult.Ok)?.value ?: return
+            index = loaded
+            mutableState.update { it.copy(playback = Playback(loaded.durationMs)) }
+            player.state.collect { s ->
+                mutableState.update {
+                    it.copy(
+                        playback = it.playback?.copy(positionMs = s.positionMs, playing = s.playing, failed = s.failed),
+                    )
+                }
+            }
+        }
+
+        fun togglePlay() {
+            val playback = mutableState.value.playback ?: return
+            if (playback.playing) player.pause() else start(null, play = true)
+        }
+
+        /** Moves the playhead without changing whether it plays. */
+        fun seekTo(positionMs: Long) = start(positionMs, play = false)
+
+        /** Plays from where the paragraph at [paragraph] was said. */
+        fun playFrom(paragraph: Int) {
+            val at = segmentStarts.getOrNull(paragraph) ?: return
+            val position = index?.positionOf(at) ?: return
+            start(position, play = true)
+        }
+
+        fun pause() = player.pause()
+
+        private fun start(
+            positionMs: Long?,
+            play: Boolean,
+        ) {
+            viewModelScope.launch {
+                val ready = prepareLock.withLock { prepared || player.prepare(id).also { prepared = it } }
+                if (!ready) return@launch
+                positionMs?.let(player::seekTo)
+                if (play) player.play()
+            }
+        }
+
+        override fun onCleared() = player.release()
 
         /**
          * While the summary is being made, looks again every [POLL_MS] until it is there. The screen runs it while it
@@ -230,6 +296,7 @@ class ConversationViewModel
 
         private fun show(detail: ConversationDetail): ConversationUiState {
             val zone = clock.zone
+            segmentStarts = detail.segments.map { Formatting.instant(it.startedAt) }
             val start = Formatting.instant(detail.startedAt)
             val end = Formatting.instant(detail.endedAt)
             val title = detail.title?.takeIf(String::isNotBlank)
@@ -267,6 +334,7 @@ class ConversationViewModel
                 looseBookmarks =
                     if (paragraphs.isEmpty()) detail.bookmarks.map { BookmarkMark(it.id, it.note) } else emptyList(),
                 open = detail.status == "open",
+                playback = mutableState.value.playback,
                 loading = false,
             )
         }
