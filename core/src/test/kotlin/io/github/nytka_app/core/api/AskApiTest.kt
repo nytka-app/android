@@ -9,6 +9,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import java.util.concurrent.TimeUnit
 
 /** The ask call against the contract of the v0.8 server. */
 class AskApiTest {
@@ -72,6 +73,38 @@ class AskApiTest {
             assertEquals("The server answered 503.", unavailable.message)
             assertEquals(FailureKind.Timeout, timeout.kind)
             assertEquals("The server answered 504.", timeout.message)
+        }
+
+    @Test
+    fun `a 502 is a bad gateway`() =
+        runTest {
+            answer(502)
+
+            assertEquals(FailureKind.BadGateway, (api.ask("q") as ApiResult.Failure).kind)
+        }
+
+    @Test
+    fun `a read timeout is a timeout`() =
+        runTest {
+            val slow =
+                AskApi(
+                    NytkaApi(OkHttpClient.Builder().readTimeout(100, TimeUnit.MILLISECONDS).build()) {
+                        Settings(server.url("/").toString(), "token-1", privateNetwork = true)
+                    },
+                )
+            server.enqueue(
+                MockResponse
+                    .Builder()
+                    .code(200)
+                    .body("{}")
+                    .bodyDelay(2, TimeUnit.SECONDS)
+                    .build(),
+            )
+
+            val failure = slow.ask("q") as ApiResult.Failure
+
+            assertEquals(FailureKind.Timeout, failure.kind)
+            assertEquals("The server took too long to answer.", failure.message)
         }
 
     @Test

@@ -83,6 +83,7 @@ class AskViewModelTest {
             mapOf(
                 FailureKind.Unavailable to AskViewModel.NO_MODEL,
                 FailureKind.Timeout to AskViewModel.TIMED_OUT,
+                FailureKind.BadGateway to AskViewModel.MODEL_FAILED,
                 FailureKind.Network to AskViewModel.UNREACHABLE,
                 FailureKind.NotFound to NEEDS_UPDATE,
             )

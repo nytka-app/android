@@ -68,6 +68,7 @@ class AskViewModel
                                     when (result.kind) {
                                         FailureKind.Unavailable -> NO_MODEL
                                         FailureKind.Timeout -> TIMED_OUT
+                                        FailureKind.BadGateway -> MODEL_FAILED
                                         FailureKind.Network -> UNREACHABLE
                                         else -> result.notice()
                                     },
@@ -93,7 +94,8 @@ class AskViewModel
 
         companion object {
             const val MAX_QUESTION = 500
-            const val NO_MODEL = "The server has no model set up to answer questions."
+            const val NO_MODEL = "The server has no model set up, or is restarting."
+            const val MODEL_FAILED = "The model could not answer. Try again."
             const val TIMED_OUT = "The server took too long to answer. Try a shorter question."
             const val UNREACHABLE = "The server could not be reached."
         }

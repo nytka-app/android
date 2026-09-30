@@ -18,6 +18,7 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import java.io.IOException
+import java.io.InterruptedIOException
 
 /** HTTP API v1 of a Nytka server. Reads the settings on every call. Never logs the token. */
 class NytkaApi(
@@ -162,6 +163,9 @@ class NytkaApi(
             execute(target, method, path, requestBody(method, body), query).use { response ->
                 if (response.isSuccessful) ApiResult.Ok(parse(response.body.string())) else failure(response)
             }
+        } catch (_: InterruptedIOException) {
+            // A read or call timeout; SocketTimeoutException is one.
+            ApiResult.Failure(FailureKind.Timeout, "The server took too long to answer.")
         } catch (e: IOException) {
             ApiResult.Failure(FailureKind.Network, e.message ?: "Network error")
         } catch (e: SerializationException) {
@@ -179,6 +183,7 @@ class NytkaApi(
             405 -> ApiResult.Failure(FailureKind.Unsupported, "The server does not know this call.")
             409 -> ApiResult.Failure(FailureKind.Conflict, "This conflicts with what the server holds.")
             503 -> ApiResult.Failure(FailureKind.Unavailable, "The server answered 503.")
+            502 -> ApiResult.Failure(FailureKind.BadGateway, "The server answered 502.")
             504 -> ApiResult.Failure(FailureKind.Timeout, "The server answered 504.")
             else -> ApiResult.Failure(FailureKind.Server, "The server answered ${response.code}.")
         }
