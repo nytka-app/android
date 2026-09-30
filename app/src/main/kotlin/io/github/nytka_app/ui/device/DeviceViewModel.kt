@@ -6,6 +6,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.nytka_app.BuildConfig
 import io.github.nytka_app.capture.DeviceActions
 import io.github.nytka_app.capture.PairedPendant
+import io.github.nytka_app.capture.PendantSettingsControls
+import io.github.nytka_app.capture.PendantSettingsState
 import io.github.nytka_app.capture.SyncControls
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
@@ -53,6 +55,8 @@ data class DeviceUiState(
     val version: String = BuildConfig.VERSION_NAME,
     /** The Pendant storage card; null hides it (no pendant, or a server without offline sync). */
     val storage: StorageCard? = null,
+    /** The Pendant settings card; null hides it (not connected, or the pendant reports neither setting). */
+    val pendantSettings: PendantSettingsState? = null,
     /** Packets the first sync found, while it waits for "import or discard"; null when nothing is asked. */
     val backlogPackets: Long? = null,
     /** Whether /info lists `offline-sync`; null until it answers and after a failed check. Only true shows the card. */
@@ -88,12 +92,20 @@ class DeviceViewModel
         private val sync: SyncControls,
         private val serverSettings: ServerSettingsClient,
         private val phoneZone: PhoneZone,
+        private val pendantSettings: PendantSettingsControls,
     ) : ViewModel() {
         private val local = MutableStateFlow(DeviceUiState())
 
         val state: StateFlow<DeviceUiState> =
-            combine(settings.settings, local, sync.status, sync.connected) { current, screen, storage, connected ->
+            combine(
+                settings.settings,
+                local,
+                sync.status,
+                sync.connected,
+                pendantSettings.state,
+            ) { current, screen, storage, connected, pendant ->
                 screen.copy(
+                    pendantSettings = pendant.takeIf { connected && (it.led != null || it.gain != null) },
                     storage =
                         storageCard(storage, current.pendantAddress != null || current.fakePendant, connected)
                             ?.takeIf { screen.serverSync == true },
@@ -283,6 +295,11 @@ class DeviceViewModel
                 }
             }
         }
+
+        /** A finished slider gesture: the controller writes it, at most once every 2 seconds. */
+        fun commitLed(percent: Int) = pendantSettings.commitLed(percent)
+
+        fun commitGain(level: Int) = pendantSettings.commitGain(level)
 
         fun syncNow() = sync.syncNow()
 

@@ -30,8 +30,14 @@ class CaptureHub
         /** The offline sync, whether or not the service runs. */
         val syncStatus: StateFlow<StorageSyncStatus> = mutableSync.asStateFlow()
 
+        private val mutableSettings = MutableStateFlow(PendantSettingsState())
+
+        /** The pendant's LED and microphone settings, whether or not the service runs. */
+        val settingsState: StateFlow<PendantSettingsState> = mutableSettings.asStateFlow()
+
         private val controller = MutableStateFlow<CaptureController?>(null)
         private val sync = MutableStateFlow<StorageSyncController?>(null)
+        private val pendantSettings = MutableStateFlow<PendantSettingsControls?>(null)
 
         @OptIn(ExperimentalCoroutinesApi::class)
         val captured: Flow<CapturedFrame> = controller.flatMapLatest { it?.captured ?: emptyFlow() }
@@ -44,15 +50,33 @@ class CaptureHub
             sync.value = controller
         }
 
+        fun attachSettings(controls: PendantSettingsControls) {
+            pendantSettings.value = controls
+        }
+
         fun detach() {
             controller.value = null
             sync.value = null
+            pendantSettings.value = null
+            mutableSettings.value = PendantSettingsState()
             mutableStatus.value = CaptureStatus()
             mutableSync.value = StorageSyncStatus()
         }
 
         fun publishSync(status: StorageSyncStatus) {
             mutableSync.value = status
+        }
+
+        fun publishSettings(state: PendantSettingsState) {
+            mutableSettings.value = state
+        }
+
+        fun commitLed(percent: Int) {
+            pendantSettings.value?.commitLed(percent)
+        }
+
+        fun commitGain(level: Int) {
+            pendantSettings.value?.commitGain(level)
         }
 
         fun syncNow() {

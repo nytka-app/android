@@ -65,8 +65,10 @@ class OmiPendant(
     override val frames: Flow<AudioFrame> = mutableFrames
     override val buttons: Flow<ButtonEvent> = mutableButtons
 
-    private val omiStorage = OmiStorage(GattStorageLink(), ::warn)
+    private val omiStorage = OmiStorage(GattLink(), ::warn)
     override val storage: PendantStorage = omiStorage
+    private val omiSettings = OmiSettings(GattLink(), ::warn)
+    override val settings: PendantSettings = omiSettings
 
     private val assembler = FrameAssembler(now)
     private val operations = Mutex()
@@ -247,6 +249,7 @@ class OmiPendant(
         session?.cancel()
         pending?.done?.complete(null)
         omiStorage.linkLost()
+        omiSettings.linkLost()
         releaseGatt()
         synchronized(assembler) { assembler.reset() }
     }
@@ -296,6 +299,7 @@ class OmiPendant(
         val info = readInfo(current)
         omiStorage.evaluate(info.firmware)
         info("setUp: storage ${omiStorage.support.value}")
+        omiSettings.load()
         // The time write also tells the SD worker the clock is set: only a pendant with the ring gets it.
         if (omiStorage.support.value == StorageSupport.Supported) syncPendantClock()
         subscribe(current, OmiUuids.BUTTON, true)
@@ -537,8 +541,10 @@ class OmiPendant(
             current.writeDescriptor(descriptor)
         }
 
-    /** The storage service on the current GATT client: every call fails or returns null once the link is gone. */
-    private inner class GattStorageLink : StorageLink {
+    /** The storage and settings services on the current GATT client; a call fails once the link is gone. */
+    private inner class GattLink :
+        StorageLink,
+        SettingsLink {
         override suspend fun subscribeControl(): Boolean =
             gatt?.let { subscribe(it, OmiUuids.STORAGE_CONTROL, true) } ?: false
 
@@ -550,6 +556,14 @@ class OmiPendant(
             writeTo(OmiUuids.TIME_SYNC_WRITE, RingProtocol.clock(epochS))
 
         override suspend fun readFeatures(): Long? = RingProtocol.u32le(readFrom(OmiUuids.FEATURES))
+
+        override suspend fun readLed(): Int? = OmiParsing.setting(readFrom(OmiUuids.LED_DIM))
+
+        override suspend fun readGain(): Int? = OmiParsing.setting(readFrom(OmiUuids.MIC_GAIN))
+
+        override suspend fun writeLed(value: Int): Boolean = writeTo(OmiUuids.LED_DIM, byteArrayOf(value.toByte()))
+
+        override suspend fun writeGain(value: Int): Boolean = writeTo(OmiUuids.MIC_GAIN, byteArrayOf(value.toByte()))
 
         private suspend fun readFrom(uuid: UUID): ByteArray? = gatt?.let { read(it, uuid) }
 

@@ -39,6 +39,8 @@ class FakePendant(
     val ring = FakeRing(scope)
     private val omiStorage = OmiStorage(ring).also { ring.listener = it::onNotification }
     override val storage: PendantStorage = omiStorage
+    private val omiSettings = OmiSettings(ring)
+    override val settings: PendantSettings = omiSettings
 
     val haptics: List<Haptic> get() = recordedHaptics.toList()
 
@@ -53,6 +55,7 @@ class FakePendant(
             scope.launch {
                 omiStorage.syncClock { now() / 1000 }
                 omiStorage.evaluate(ring.firmware)
+                omiSettings.load()
             }
         }
         applyAudio() // like OmiPendant: the caller's audio intent survives a lost link
@@ -89,6 +92,7 @@ class FakePendant(
         audioEnabled = false
         ring.disconnect()
         omiStorage.linkLost()
+        omiSettings.linkLost()
         mutableConnection.value = PendantConnection.Disconnected
     }
 

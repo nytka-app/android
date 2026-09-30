@@ -100,4 +100,41 @@ class FakePendantTest {
             listOf(1, 2, 5, 3).map(ButtonEvent::fromCode),
         )
     }
+
+    @Test
+    fun `settings round trip through the fake ring after a connect`() =
+        runTest {
+            val pendant = pendant()
+            assertEquals(SettingsSupport(), pendant.settings.support.value)
+
+            pendant.connect("fake")
+            runCurrent()
+
+            assertEquals(SettingsSupport(led = true, gain = true), pendant.settings.support.value)
+            assertEquals(SettingsValues(led = 50, gain = 6), pendant.settings.values.value)
+
+            assertTrue(pendant.settings.setLed(80))
+            assertTrue(pendant.settings.setGain(3))
+            assertEquals(80, pendant.ring.led)
+            assertEquals(3, pendant.ring.gain)
+
+            pendant.dropLink()
+            assertEquals(SettingsSupport(), pendant.settings.support.value)
+            pendant.connect("fake")
+            runCurrent()
+            assertEquals(SettingsValues(led = 80, gain = 3), pendant.settings.values.value)
+        }
+
+    @Test
+    fun `a ring without the feature bits offers no settings and takes no writes`() =
+        runTest {
+            val pendant = pendant()
+            pendant.ring.features = 1L shl 6
+            pendant.connect("fake")
+            runCurrent()
+
+            assertEquals(SettingsSupport(), pendant.settings.support.value)
+            assertFalse(pendant.settings.setLed(80))
+            assertTrue(pendant.ring.ledWrites.isEmpty())
+        }
 }
