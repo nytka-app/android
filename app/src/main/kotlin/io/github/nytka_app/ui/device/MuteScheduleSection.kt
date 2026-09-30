@@ -35,6 +35,10 @@ import java.time.format.TextStyle
 fun MuteScheduleSection(
     schedule: MuteSchedule,
     onChange: (MuteSchedule) -> Unit,
+    server: MuteServerState? = null,
+    timeZoneHint: String? = null,
+    timeZoneError: String? = null,
+    onSetServerTimeZone: () -> Unit = {},
 ) {
     Section("Mute schedule") {
         Text(
@@ -60,6 +64,31 @@ fun MuteScheduleSection(
         }
         FilledTonalButton(onClick = { onChange(schedule.copy(windows = schedule.windows + NEW_WINDOW)) }) {
             Text("Add a window")
+        }
+        when (server) {
+            null -> Unit
+            MuteServerState.Applied -> Text("Also applied on your server", style = MaterialTheme.typography.bodySmall)
+            is MuteServerState.Failed ->
+                Text(
+                    "Server not updated: ${server.reason} Retried on your next save or app start.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+        }
+        timeZoneHint?.let { zone ->
+            Text(
+                "Your server's time zone is UTC or not set, but this phone is on $zone. " +
+                    "Set the server to $zone or the windows will apply at the wrong hours there.",
+                style = MaterialTheme.typography.bodySmall,
+            )
+            OutlinedButton(onClick = onSetServerTimeZone) { Text("Set server time zone to $zone") }
+        }
+        timeZoneError?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
         }
     }
 }

@@ -10,6 +10,10 @@ import io.github.nytka_app.capture.SyncState
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.ServerInfo
+import io.github.nytka_app.core.api.ServerSetting
+import io.github.nytka_app.core.api.ServerSettingsClient
+import io.github.nytka_app.core.settings.MuteSchedule
+import io.github.nytka_app.core.settings.MuteWindow
 import io.github.nytka_app.core.settings.Settings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -17,6 +21,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.time.DayOfWeek
+import java.time.LocalTime
 
 class DeviceViewModelTest {
     @get:Rule
@@ -39,11 +45,38 @@ class DeviceViewModelTest {
             ServerInfo("0.1.0", 1, features = listOf(ServerInfo.FEATURE_OFFLINE_SYNC)),
         )
 
+    private class FakeServerSettings : ServerSettingsClient {
+        var catalog =
+            listOf(
+                ServerSetting("mute.windows", "json", "[]"),
+                ServerSetting("user.timeZone", "string", null, default = "UTC"),
+            )
+        var failure: ApiResult.Failure? = null
+        val sent = mutableListOf<Map<String, String?>>()
+
+        override suspend fun settings(): ApiResult<List<ServerSetting>> = failure ?: ApiResult.Ok(catalog)
+
+        override suspend fun update(values: Map<String, String?>): ApiResult<List<ServerSetting>> {
+            sent += values
+            failure?.let { return it }
+            catalog = catalog.map { if (it.key in values) it.copy(value = values[it.key]) else it }
+            return ApiResult.Ok(catalog)
+        }
+    }
+
+    private val server = FakeServerSettings()
+    private var phoneZone = "Europe/Kyiv"
+    private val weekdays =
+        MuteSchedule(
+            listOf(MuteWindow(DayOfWeek.entries.take(5).toSet(), LocalTime.of(9, 30), LocalTime.of(10, 0))),
+        )
+    private val weekdaysJson = """[{"days":[1,2,3,4,5],"start":"09:30","end":"10:00"}]"""
+
     private fun viewModel() =
         DeviceViewModel(settings, {
             infoCalls++
             info
-        }, actions, sync)
+        }, actions, sync, server, { phoneZone })
 
     private fun saveServerOnTheLocalNetwork() {
         settings.state.value = settings.state.value.copy(serverUrl = "http://192.168.1.10:8080/", privateNetwork = true)
@@ -367,6 +400,103 @@ class DeviceViewModelTest {
             StorageAction.None,
             viewModel.state.value.storage!!
                 .action,
+        )
+    }
+
+    private fun failedReason(viewModel: DeviceViewModel) =
+        (viewModel.state.value.muteServer as MuteServerState.Failed).reason
+
+    @Test
+    fun `saving the schedule pushes it to the server and says so`() {
+        val viewModel = viewModel()
+
+        viewModel.setMuteSchedule(weekdays)
+
+        assertEquals(weekdays, settings.state.value.muteSchedule)
+        assertEquals(mapOf("mute.windows" to weekdaysJson), server.sent.last())
+        assertEquals(MuteServerState.Applied, viewModel.state.value.muteServer)
+    }
+
+    @Test
+    fun `clearing the schedule pushes an empty array`() {
+        settings.state.value = settings.state.value.copy(muteSchedule = weekdays)
+        val viewModel = viewModel()
+
+        viewModel.setMuteSchedule(MuteSchedule())
+
+        assertEquals(mapOf("mute.windows" to "[]"), server.sent.last())
+    }
+
+    @Test
+    fun `the start pushes the saved schedule when the server holds another and skips it when equal`() {
+        settings.state.value = settings.state.value.copy(muteSchedule = weekdays)
+        viewModel()
+        assertEquals(listOf(mapOf<String, String?>("mute.windows" to weekdaysJson)), server.sent)
+
+        server.sent.clear()
+        viewModel()
+        assertTrue(server.sent.isEmpty())
+    }
+
+    @Test
+    fun `a failed push says why in plain words and the next start retries`() {
+        server.failure = ApiResult.Failure(FailureKind.Network, "offline")
+        val viewModel = viewModel()
+
+        viewModel.setMuteSchedule(weekdays)
+
+        assertTrue(failedReason(viewModel).contains("could not be reached"))
+
+        server.failure = null
+        viewModel()
+        assertEquals(weekdaysJson, server.sent.last()["mute.windows"])
+    }
+
+    @Test
+    fun `a server without mute windows gets a quiet message`() {
+        server.catalog = listOf(ServerSetting("llm.model", "string", "x"))
+        val viewModel = viewModel()
+        assertTrue(failedReason(viewModel).contains("does not know mute windows"))
+
+        server.failure = ApiResult.Failure(FailureKind.NotFound, "not found")
+        viewModel.setMuteSchedule(weekdays)
+
+        assertTrue(failedReason(viewModel).contains("does not know mute windows"))
+        assertNull(viewModel.state.value.timeZoneHint)
+    }
+
+    @Test
+    fun `a utc server and a phone in another zone show the hint and one tap fixes it`() {
+        val viewModel = viewModel()
+        assertEquals("Europe/Kyiv", viewModel.state.value.timeZoneHint)
+
+        viewModel.setServerTimeZone()
+
+        assertEquals(mapOf("user.timeZone" to "Europe/Kyiv"), server.sent.last())
+        assertNull(viewModel.state.value.timeZoneHint)
+    }
+
+    @Test
+    fun `no hint when the server has the phone's zone or the phone is on utc`() {
+        server.catalog = server.catalog.map { if (it.key == "user.timeZone") it.copy(value = "Europe/Kyiv") else it }
+        assertNull(viewModel().state.value.timeZoneHint)
+
+        server.catalog = server.catalog.map { if (it.key == "user.timeZone") it.copy(value = null) else it }
+        phoneZone = "UTC"
+        assertNull(viewModel().state.value.timeZoneHint)
+    }
+
+    @Test
+    fun `a refused time zone change keeps the hint and explains`() {
+        val viewModel = viewModel()
+        server.failure = ApiResult.Failure(FailureKind.Forbidden, "no")
+
+        viewModel.setServerTimeZone()
+
+        assertEquals("Europe/Kyiv", viewModel.state.value.timeZoneHint)
+        assertTrue(
+            viewModel.state.value.timeZoneError!!
+                .contains("cannot change server settings"),
         )
     }
 }
