@@ -9,12 +9,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
@@ -136,21 +138,8 @@ fun ConversationScreen(
                     }
                 }
             }
-            items(state.paragraphs) { paragraph ->
-                Column {
-                    if (paragraph.showSpeaker) {
-                        SpeakerLabel(paragraph, onName = { naming = it })
-                    }
-                    Row {
-                        Text(
-                            paragraph.time,
-                            style = MaterialTheme.typography.labelMedium,
-                            modifier = Modifier.width(56.dp),
-                        )
-                        Text(paragraph.text)
-                    }
-                }
-            }
+            items(state.looseBookmarks) { mark -> BookmarkLine(mark, viewModel::setBookmarkNote) }
+            items(state.paragraphs) { ParagraphItem(it, onName = { naming = it }, onSave = viewModel::setBookmarkNote) }
             state.raw?.let { raw ->
                 item { Text(raw, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall) }
             }
@@ -224,6 +213,88 @@ private fun SpeakerLabel(
             Modifier
                 .padding(top = 8.dp)
                 .then(if (voiceId != null) Modifier.clickable { onName(voiceId to label) } else Modifier),
+    )
+}
+
+@Composable
+private fun ParagraphItem(
+    paragraph: Paragraph,
+    onName: (Pair<String, String>) -> Unit,
+    onSave: (String, String) -> Unit,
+) {
+    Column {
+        if (paragraph.showSpeaker) {
+            SpeakerLabel(paragraph, onName = onName)
+        }
+        Row {
+            Text(
+                paragraph.time,
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.width(56.dp),
+            )
+            Text(paragraph.text)
+        }
+        paragraph.bookmarks.forEach { mark -> BookmarkLine(mark, onSave) }
+    }
+}
+
+/** A bookmark beside its paragraph: a star and the note, or a prompt to add one. Tapping edits the note. */
+@Composable
+private fun BookmarkLine(
+    mark: BookmarkMark,
+    onSave: (String, String) -> Unit,
+) {
+    var editing by remember { mutableStateOf(false) }
+    if (editing) {
+        BookmarkNoteDialog(
+            initial = mark.note.orEmpty(),
+            onDismiss = { editing = false },
+            onSave = {
+                editing = false
+                onSave(mark.id, it)
+            },
+        )
+    }
+    Row(
+        Modifier.fillMaxWidth().clickable { editing = true }.padding(start = 56.dp, top = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(
+            Icons.Filled.Star,
+            contentDescription = "Bookmark",
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp),
+        )
+        Text(
+            mark.note ?: "Add a note",
+            style = MaterialTheme.typography.bodySmall,
+            color = if (mark.note == null) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
+        )
+    }
+}
+
+/** Sets the note of a bookmark; an empty one clears it. */
+@Composable
+private fun BookmarkNoteDialog(
+    initial: String,
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit,
+) {
+    var text by rememberSaveable { mutableStateOf(initial) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Bookmark note") },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it.take(ConversationViewModel.MAX_BOOKMARK_NOTE) },
+                label = { Text("Note") },
+                supportingText = { Text("Leave it empty to remove the note.") },
+            )
+        },
+        confirmButton = { TextButton(onClick = { onSave(text) }) { Text("Save") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
 

@@ -2,6 +2,8 @@ package io.github.nytka_app.capture
 
 import android.database.SQLException
 import io.github.nytka_app.core.diagnostics.EventLog
+import io.github.nytka_app.core.queue.BookmarkOutbox
+import io.github.nytka_app.core.queue.BookmarkSink
 import io.github.nytka_app.core.queue.FrameSink
 import io.github.nytka_app.core.settings.MuteSchedule
 import io.github.nytka_app.core.settings.SettingsStore
@@ -12,6 +14,7 @@ import io.github.nytka_app.pendant.Pendant
 import io.github.nytka_app.pendant.PendantConnection
 import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
@@ -25,7 +28,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -99,6 +101,7 @@ class CaptureController(
     private val log: EventLog = EventLog.Logcat,
     private val muteLog: MuteLogRecorder? = null,
     private val zone: () -> ZoneId = ZoneId::systemDefault,
+    private val bookmarks: BookmarkSink? = null,
 ) {
     private val mutableStatus = MutableStateFlow(CaptureStatus())
     val status: StateFlow<CaptureStatus> = mutableStatus.asStateFlow()
@@ -182,11 +185,7 @@ class CaptureController(
             }
         }
         muteLog?.let { recorder -> inner.launch { effectiveMuted.collectLatest { recorder.record(it) } } }
-        inner.launch {
-            pendant.buttons
-                .filter { it == ButtonEvent.DoubleTap }
-                .collect { setMuted(!muted, MuteSource.PendantDoubleTap) }
-        }
+        inner.launch { sortTaps(inner) }
         inner.launch {
             pendant.battery.collect { battery ->
                 mutableStatus.update { it.copy(battery = battery) }
@@ -201,6 +200,54 @@ class CaptureController(
             }
         }
         inner.launch { connectWithIntent(address) }
+    }
+
+    /**
+     * Sorts the pendant's taps. The firmware sends a single tap about 320 ms after the press, so a slow double tap can
+     * arrive as two single taps. A single tap opens a [TAP_WAIT_MS] window; a double tap or a second single tap inside
+     * it is the mute gesture and toggles mute once, keeping no bookmark. A lone single tap becomes a bookmark at the
+     * phone's clock when the tap arrived, kept when the window closes, muted or not. A single tap right after a double
+     * tap is dropped too, for a firmware that sends the pair in the other order.
+     */
+    private suspend fun sortTaps(inner: CoroutineScope) {
+        var window: Job? = null
+        var lastDoubleTapMs: Long? = null
+        pendant.buttons.collect { event ->
+            val open = window?.isActive == true
+            when (event) {
+                ButtonEvent.DoubleTap -> {
+                    window?.cancel()
+                    lastDoubleTapMs = now()
+                    toggleMute(inner)
+                }
+                ButtonEvent.SingleTap ->
+                    when {
+                        open -> {
+                            window?.cancel()
+                            toggleMute(inner)
+                        }
+                        lastDoubleTapMs?.let { now() - it < TAP_WAIT_MS } != true -> {
+                            val at = now()
+                            window = inner.launch { keep(at) }
+                        }
+                    }
+                ButtonEvent.Release -> Unit
+            }
+        }
+    }
+
+    /** Started at once, so the next tap sees the new state; the buzz waits inside its own coroutine. */
+    private fun toggleMute(inner: CoroutineScope) {
+        val wanted = !muted
+        inner.launch(start = CoroutineStart.UNDISPATCHED) { setMuted(wanted, MuteSource.PendantDoubleTap) }
+    }
+
+    private suspend fun keep(atMs: Long) {
+        delay(TAP_WAIT_MS)
+        val outbox = bookmarks ?: return
+        if (!stored { outbox.add(UUID.randomUUID().toString(), atMs, BookmarkOutbox.SOURCE_PENDANT) }) return
+        log.i(TAG, "bookmark kept")
+        if (pendant.connection.value is PendantConnection.Connected) pendant.buzz(Haptic.Short)
     }
 
     /**
@@ -251,6 +298,7 @@ class CaptureController(
     private companion object {
         const val TAG = "CaptureController"
         const val LIVE_BUZZ_GAP_MS = 150L
+        const val TAP_WAIT_MS = 700L
         const val SCHEDULE_RECHECK_MS = 60_000L
     }
 }

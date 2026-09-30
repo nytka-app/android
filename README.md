@@ -153,6 +153,11 @@ which takes a while, and **Discard…** frees it on the pendant unread, after a 
   Nytka hears nothing and the pendant discards its audio, and Nytka stays muted when the pendant
   reconnects. What the pendant records while the phone is away is handled by
   [Offline sync](#offline-sync).
+- **Bookmark** with a single tap on the pendant: one short buzz after about a second means it is kept.
+  A double tap (or two quick single taps) mutes instead and keeps no bookmark. **Bookmark** in the
+  notification does the same from the phone. Bookmarks upload like audio, also while muted. A
+  conversation shows a star beside the nearest paragraph, where you can tap to add a note. The tap
+  works only while the pendant is connected.
 - **Offline**, audio waits on the phone and uploads once the server answers again, with the times
   it was said. The queue holds up to 1 GiB, about 60 hours. Past 80% Nytka warns you; when it is
   full, the oldest live audio goes first.

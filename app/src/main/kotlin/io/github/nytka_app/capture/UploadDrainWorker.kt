@@ -15,6 +15,7 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import io.github.nytka_app.core.queue.FrameQueue
+import io.github.nytka_app.core.upload.BookmarkUploader
 import io.github.nytka_app.core.upload.DrainResult
 import io.github.nytka_app.core.upload.Uploader
 import java.util.concurrent.TimeUnit
@@ -31,11 +32,14 @@ class UploadDrainWorker
         @Assisted params: WorkerParameters,
         private val queue: FrameQueue,
         private val uploader: Uploader,
+        private val bookmarkUploader: BookmarkUploader,
     ) : CoroutineWorker(context, params) {
         override suspend fun doWork(): Result {
             queue.seal()
+            val bookmarks = bookmarkUploader.drain()
             return when (uploader.drain()) {
-                DrainResult.Empty, is DrainResult.Paused -> Result.success()
+                DrainResult.Empty, is DrainResult.Paused ->
+                    if (bookmarks is DrainResult.Failed) Result.retry() else Result.success()
                 is DrainResult.Failed -> Result.retry()
             }
         }
