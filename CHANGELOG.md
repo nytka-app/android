@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.0](https://github.com/nytka-app/android/compare/v0.8.0...v0.9.0) (2026-09-30)
+
+
+### Features
+
+* **ask:** the Ask tab answers a question with numbered sources ([#37](https://github.com/nytka-app/android/issues/37)) ([c2f7415](https://github.com/nytka-app/android/commit/c2f741537ee7d281cfce27810d95a2e35e3a115c))
+* audio playback on the conversation screen (v0.8) ([#39](https://github.com/nytka-app/android/issues/39)) ([197f876](https://github.com/nytka-app/android/commit/197f87678a84ca6582db9fe483ac0a1f1f1bd7bc))
+* bookmarks (v0.8 track A-B) ([#38](https://github.com/nytka-app/android/issues/38)) ([2b06d90](https://github.com/nytka-app/android/commit/2b06d909fc1cfce661c312426fe2ca255626f835))
+
 ## [0.8.0](https://github.com/nytka-app/android/compare/v0.7.0...v0.8.0) (2026-09-30)
 
 
