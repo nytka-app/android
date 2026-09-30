@@ -100,4 +100,48 @@ class MuteScheduleTest {
         )
         assertEquals(MuteSchedule(), MuteSchedule.decode("4,9999,10"))
     }
+
+    @Test
+    fun `the server json carries iso weekdays and 24 hour local times`() {
+        val schedule =
+            MuteSchedule(
+                listOf(
+                    window(
+                        DayOfWeek.FRIDAY,
+                        DayOfWeek.MONDAY,
+                        DayOfWeek.WEDNESDAY,
+                        DayOfWeek.THURSDAY,
+                        DayOfWeek.TUESDAY,
+                        from = "09:30",
+                        to = "10:00",
+                    ),
+                    window(DayOfWeek.SUNDAY, from = "22:00", to = "07:05"),
+                ),
+            )
+
+        assertEquals(
+            """[{"days":[1,2,3,4,5],"start":"09:30","end":"10:00"},{"days":[7],"start":"22:00","end":"07:05"}]""",
+            schedule.toServerJson(),
+        )
+    }
+
+    @Test
+    fun `an empty schedule and windows that mute nothing are an empty array`() {
+        assertEquals("[]", MuteSchedule().toServerJson())
+        val idle =
+            MuteSchedule(
+                listOf(window(from = "09:00", to = "10:00"), window(DayOfWeek.MONDAY, from = "09:00", to = "09:00")),
+            )
+        assertEquals("[]", idle.toServerJson())
+    }
+
+    @Test
+    fun `the server value matches whatever its spacing and null is empty`() {
+        val json = MuteSchedule(listOf(window(DayOfWeek.MONDAY, from = "09:00", to = "10:00"))).toServerJson()
+
+        assertTrue(MuteSchedule.sameOnServer("""[ { "days": [1], "start": "09:00", "end": "10:00" } ]""", json))
+        assertTrue(MuteSchedule.sameOnServer(null, "[]"))
+        assertFalse(MuteSchedule.sameOnServer("[]", json))
+        assertFalse(MuteSchedule.sameOnServer("not json", json))
+    }
 }

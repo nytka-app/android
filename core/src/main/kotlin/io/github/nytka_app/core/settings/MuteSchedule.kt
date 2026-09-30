@@ -1,9 +1,15 @@
 package io.github.nytka_app.core.settings
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import java.time.DayOfWeek
 import java.time.Duration
 import java.time.LocalTime
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * One weekly window: from [start] on each of [days] until [end], the phone's wall clock. An [end] at or before
@@ -66,6 +72,29 @@ data class MuteSchedule(
             .minOrNull()
             ?.let { Duration.between(at, it) }
 
+    /**
+     * The server's `mute.windows` value: JSON with ISO weekdays (1 Monday to 7 Sunday) and local `HH:mm`. Windows that
+     * mute nothing are left out, so an empty schedule is `[]`.
+     */
+    fun toServerJson(): String =
+        JsonArray(
+            windows.filter { it.active }.map { w ->
+                JsonObject(
+                    mapOf(
+                        "days" to
+                            JsonArray(
+                                w.days
+                                    .map { it.value }
+                                    .sorted()
+                                    .map(::JsonPrimitive),
+                            ),
+                        "start" to JsonPrimitive(w.start.format(SERVER_TIME)),
+                        "end" to JsonPrimitive(w.end.format(SERVER_TIME)),
+                    ),
+                )
+            },
+        ).toString()
+
     /** For DataStore: `days,startMinute,endMinute` per window, joined by `;`; days is a Monday-first bitmask. */
     fun encode(): String =
         windows.joinToString(";") { w ->
@@ -75,9 +104,20 @@ data class MuteSchedule(
 
     companion object {
         private const val SECONDS_PER_MINUTE = 60
+        private val SERVER_TIME = DateTimeFormatter.ofPattern("HH:mm")
         private const val MINUTES_PER_HOUR = 60
         private const val MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR
         private const val DAY_MASK = 0x7F
+
+        /** Whether the server's stored `mute.windows` says the same as [json], whatever its spacing; null is `[]`. */
+        fun sameOnServer(
+            stored: String?,
+            json: String,
+        ): Boolean {
+            fun parse(text: String?): JsonElement? = runCatching { Json.parseToJsonElement(text ?: "[]") }.getOrNull()
+            val left = parse(stored)
+            return left != null && left == parse(json)
+        }
 
         /** What [encode] wrote; a window that does not parse is skipped, so a damaged value never blocks capture. */
         fun decode(text: String?): MuteSchedule = MuteSchedule(text.orEmpty().split(';').mapNotNull(::decodeWindow))

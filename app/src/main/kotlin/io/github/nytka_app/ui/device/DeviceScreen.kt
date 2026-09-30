@@ -82,7 +82,16 @@ fun DeviceScreen(
                 )
             }
         }
-        item { MuteScheduleSection(state.muteSchedule, viewModel::setMuteSchedule) }
+        item {
+            MuteScheduleSection(
+                state.muteSchedule,
+                viewModel::setMuteSchedule,
+                state.muteServer,
+                state.timeZoneHint,
+                state.timeZoneError,
+                viewModel::setServerTimeZone,
+            )
+        }
         item { ServerSection(state, status, viewModel::checkServer) }
         item { SettingsSection(state, viewModel::save) }
         item {
