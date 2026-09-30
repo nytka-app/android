@@ -51,7 +51,7 @@ class MainActivity : ComponentActivity() {
                             },
                             tasks = { onOpenConversation -> TasksTab(onOpenConversation) },
                             memories = { onOpenConversation -> MemoriesTab(onOpenConversation) },
-                            ask = { AskTab() },
+                            ask = { onOpenConversation -> AskTab(onOpenConversation) },
                             device = { DeviceTab(status, statusViewModel::setMuted) },
                         )
                     }

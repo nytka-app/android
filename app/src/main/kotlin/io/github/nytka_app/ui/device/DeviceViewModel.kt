@@ -348,7 +348,8 @@ class DeviceViewModel
                     FailureKind.Unauthorized -> "the token was refused."
                     FailureKind.Forbidden -> "this token cannot change server settings."
                     FailureKind.Conflict -> "the setting is locked on the server."
-                    FailureKind.Server -> "the server reported an error."
+                    FailureKind.Server, FailureKind.Unavailable, FailureKind.Timeout, FailureKind.BadGateway ->
+                        "the server reported an error."
                 }
         }
     }

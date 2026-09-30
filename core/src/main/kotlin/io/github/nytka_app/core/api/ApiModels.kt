@@ -206,7 +206,8 @@ internal data class ProblemErrors(
 /**
  * Why a call failed. [Forbidden] is a 403 (the token's scope is too small), [Conflict] a 409 and
  * [Invalid] a 400 that names what was wrong in [ApiResult.Failure.errors]. [Unsupported] is a 405: the server does
- * not know the endpoint, whatever the item.
+ * not know the endpoint, whatever the item. [Unavailable] is a 503 (a model the call needs is not set up) and
+ * [Timeout] a 504 (the server's own call to it ran out of time). [BadGateway] is a 502 (that call failed another way). A read or call timeout is also [Timeout].
  */
 enum class FailureKind {
     NotConfigured,
@@ -218,6 +219,9 @@ enum class FailureKind {
     Server,
     Network,
     Unsupported,
+    Unavailable,
+    Timeout,
+    BadGateway,
 }
 
 sealed interface ApiResult<out T> {

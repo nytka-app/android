@@ -23,7 +23,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 
 /**
- * The tab bar and one slot per tab. Any tab can open a conversation: [tasks] and [memories] receive
+ * The tab bar and one slot per tab. Any tab can open a conversation: [tasks], [memories] and [ask] receive
  * `onOpenConversation(id)`, which selects the Conversations tab and hands the id to [conversations] as
  * `openRequests`; that tab opens `conversation/{id}` in its own NavHost.
  */
@@ -32,7 +32,7 @@ fun NytkaNavHost(
     conversations: @Composable (openRequests: Flow<String>) -> Unit,
     tasks: @Composable (onOpenConversation: (String) -> Unit) -> Unit,
     memories: @Composable (onOpenConversation: (String) -> Unit) -> Unit,
-    ask: @Composable () -> Unit,
+    ask: @Composable (onOpenConversation: (String) -> Unit) -> Unit,
     device: @Composable () -> Unit,
     topBar: @Composable () -> Unit = {},
 ) {
@@ -74,7 +74,7 @@ fun NytkaNavHost(
             composable(AppTab.Conversations.route) { conversations(openRequests) }
             composable(AppTab.Tasks.route) { tasks(onOpenConversation) }
             composable(AppTab.Memories.route) { memories(onOpenConversation) }
-            composable(AppTab.Ask.route) { ask() }
+            composable(AppTab.Ask.route) { ask(onOpenConversation) }
             composable(AppTab.Device.route) { device() }
         }
     }
