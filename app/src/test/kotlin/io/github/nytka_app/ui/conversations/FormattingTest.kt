@@ -34,4 +34,11 @@ class FormattingTest {
         assertEquals("15 min", Formatting.length(start, start.plusSeconds(15 * 60 + 29)))
         assertEquals("1 h 5 min", Formatting.length(start, start.plusSeconds(65 * 60)))
     }
+
+    @Test
+    fun `a playback position reads as minutes and seconds, with hours from an hour on`() {
+        assertEquals("0:00", Formatting.position(0))
+        assertEquals("1:05", Formatting.position(65_900))
+        assertEquals("1:02:05", Formatting.position(3_725_000))
+    }
 }

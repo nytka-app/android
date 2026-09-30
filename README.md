@@ -77,6 +77,10 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   summary, its tasks and the transcript, with the speaker's name in color above each run of words
   when the transcription provider names speakers. Its ⋮ menu has **Rename** (an empty title restores
   the generated one), **Regenerate summary** (not while the conversation is open) and **Delete**.
+  When the server kept the audio (14 days by default, and none for imported conversations), a play
+  bar sits above the transcript: play or pause, the position and length, and a slider. Tap the time
+  beside a paragraph to play from there. Pauses between speech are not stored, so they are skipped.
+  Playback stops when you leave the screen or the app.
   Titles, summaries and tasks come from a language model on your server: without one, a row shows the
   start of the transcript instead.
 - **Tasks.** What your conversations left you to do, newest first, with the conversation's title and

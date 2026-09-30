@@ -1,8 +1,14 @@
 package io.github.nytka_app.ui.conversations
 
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.nytka_app.MainDispatcherRule
 import io.github.nytka_app.core.api.ApiResult
+import io.github.nytka_app.core.api.AudioIndex
+import io.github.nytka_app.core.api.AudioRun
 import io.github.nytka_app.core.api.Bookmark
 import io.github.nytka_app.core.api.ConversationDetail
 import io.github.nytka_app.core.api.FailureKind
@@ -46,7 +52,11 @@ class ConversationViewModelTest {
     private val tasks = FakeTasks(listOf(task("t1"), task("t2", done = true)))
     private val bookmarks = FakeBookmarks()
 
-    private fun viewModel() = ConversationViewModel(SavedStateHandle(mapOf("id" to "c1")), api, tasks, bookmarks, clock)
+    private val audio = FakeAudio()
+    private val player = FakePlayer()
+
+    private fun viewModel() =
+        ConversationViewModel(SavedStateHandle(mapOf("id" to "c1")), api, tasks, bookmarks, audio, player, clock)
 
     private fun detail(
         status: String = "closed",
@@ -436,5 +446,130 @@ class ConversationViewModelTest {
                 .note,
         )
         assertEquals("This item no longer exists", model.state.value.error)
+    }
+
+    private fun withAudio() {
+        audio.index =
+            ApiResult.Ok(
+                AudioIndex(
+                    durationMs = 20_000,
+                    runs =
+                        listOf(
+                            AudioRun(0, "2026-09-29T08:00:00Z", "2026-09-29T08:00:10Z"),
+                            AudioRun(10_000, "2026-09-29T08:03:00Z", "2026-09-29T08:03:10Z"),
+                        ),
+                ),
+            )
+    }
+
+    @Test
+    fun `no play bar when the server has no audio`() {
+        val model = viewModel()
+
+        assertNull(model.state.value.playback)
+        model.togglePlay()
+        assertTrue(player.calls.isEmpty())
+    }
+
+    @Test
+    fun `a play bar with the length when the index answers`() {
+        withAudio()
+
+        assertEquals(Playback(durationMs = 20_000), viewModel().state.value.playback)
+    }
+
+    @Test
+    fun `the play bar survives the transcript being read again`() {
+        withAudio()
+        val model = viewModel()
+
+        model.rename("New title")
+
+        assertEquals(Playback(durationMs = 20_000), model.state.value.playback)
+    }
+
+    @Test
+    fun `tapping a paragraph seeks to where it was said and plays`() {
+        withAudio()
+        val model = viewModel()
+
+        model.playFrom(1)
+
+        assertEquals(listOf("seek 10000", "play"), player.calls)
+        assertEquals(Playback(20_000, positionMs = 10_000, playing = true), model.state.value.playback)
+    }
+
+    @Test
+    fun `the player is prepared once`() {
+        withAudio()
+        val model = viewModel()
+
+        model.playFrom(0)
+        model.playFrom(1)
+
+        assertEquals(1, player.prepares)
+    }
+
+    @Test
+    fun `nothing plays when the player cannot be prepared`() {
+        withAudio()
+        player.canPrepare = false
+
+        viewModel().playFrom(0)
+
+        assertTrue(player.calls.isEmpty())
+    }
+
+    @Test
+    fun `the button plays, then pauses`() {
+        withAudio()
+        val model = viewModel()
+
+        model.togglePlay()
+        assertTrue(
+            model.state.value.playback!!
+                .playing,
+        )
+        model.togglePlay()
+
+        assertEquals(listOf("play", "pause"), player.calls)
+        assertFalse(
+            model.state.value.playback!!
+                .playing,
+        )
+    }
+
+    @Test
+    fun `seeking moves the playhead without playing`() {
+        withAudio()
+        val model = viewModel()
+
+        model.seekTo(5_000)
+
+        assertEquals(listOf("seek 5000"), player.calls)
+    }
+
+    @Test
+    fun `a failure of the player shows on the bar`() {
+        withAudio()
+        val model = viewModel()
+
+        player.state.value = PlayerState(failed = true)
+
+        assertTrue(
+            model.state.value.playback!!
+                .failed,
+        )
+    }
+
+    @Test
+    fun `the player is released with the screen`() {
+        withAudio()
+        val store = ViewModelStore()
+        ViewModelProvider(store, viewModelFactory { initializer { viewModel() } })[ConversationViewModel::class.java]
+
+        store.clear()
+
+        assertTrue(player.released)
     }
 }
