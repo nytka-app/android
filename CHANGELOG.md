@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0](https://github.com/nytka-app/android/compare/v0.9.0...v0.10.0) (2026-09-30)
+
+
+### Features
+
+* pendant settings, LED brightness and microphone gain (NYTKA-44) ([#41](https://github.com/nytka-app/android/issues/41)) ([6938a54](https://github.com/nytka-app/android/commit/6938a54af9c5e76b21418762735d5a3b4cd74380))
+
 ## [0.9.0](https://github.com/nytka-app/android/compare/v0.8.0...v0.9.0) (2026-09-30)
 
 
