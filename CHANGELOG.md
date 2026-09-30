@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.0](https://github.com/nytka-app/android/compare/v0.7.0...v0.8.0) (2026-09-30)
+
+
+### Features
+
+* **device:** push the mute schedule to the server as mute.windows ([#35](https://github.com/nytka-app/android/issues/35)) ([80ea519](https://github.com/nytka-app/android/commit/80ea519b85112eca81901964afd0a0fcbdd9cd5d))
+
 ## [0.7.0](https://github.com/nytka-app/android/compare/v0.6.0...v0.7.0) (2026-09-30)
 
 
