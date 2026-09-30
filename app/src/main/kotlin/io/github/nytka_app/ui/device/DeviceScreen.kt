@@ -82,6 +82,9 @@ fun DeviceScreen(
                 )
             }
         }
+        state.pendantSettings?.let { card ->
+            item { PendantSettingsCard(card, viewModel::commitLed, viewModel::commitGain) }
+        }
         item {
             MuteScheduleSection(
                 state.muteSchedule,

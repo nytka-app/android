@@ -91,7 +91,7 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   conversation it came from (a memory you add yourself has none). **+** adds one and ⋮ edits or
   deletes one. A memory you delete does not come back from later conversations.
 - **Ask.** A placeholder that says "Arrives in a later version".
-- **Device.** The pendant and its storage, the server, the settings and the version.
+- **Device.** The pendant, its storage and settings, the server, the settings and the version.
 
 **Search** opens from the magnifier above the conversation list. It looks through transcripts,
 titles, summaries and memories, in Ukrainian and English, while you type: from one letter or digit,
@@ -149,6 +149,18 @@ which takes a while, and **Discard…** frees it on the pendant unread, after a 
 - **What sync cannot recover.** Audio that a stalled Bluetooth link dropped while the phone was
   connected (the pendant never stores it), audio the pendant overwrote or freed early (shown as
   *Lost*), a backlog you discard, and muted stretches, which are dropped on purpose.
+
+## Pendant settings
+
+While the pendant is connected, the **Device** tab has a **Pendant settings** card with two sliders,
+for pendants that report the feature (firmware 3.0.21 does). **LED brightness** runs from 0 to 100 %
+and dims every status light; at 0 the link and charging lights stay dark too, and the card says so.
+**Microphone gain** has levels 0 to 8: 0 is mute, then -20, -10, 0, +6, +10, +20 (the default,
+level 6), +30 and +40 dB, as the firmware maps them. Level 0 records silence, and the card warns
+about it. The value is written when you let go of the slider, at most once every 2 seconds for each
+slider, because the pendant saves it to its flash memory and keeps it after a restart. Nytka reads
+the current values on every connection and stores nothing on the server. A failed write shows a
+message and puts the slider back.
 
 ## Everyday use
 

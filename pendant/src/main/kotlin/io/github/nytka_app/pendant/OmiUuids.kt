@@ -3,7 +3,7 @@ package io.github.nytka_app.pendant
 import java.util.UUID
 
 /**
- * Omi consumer firmware 3.0.x (`BasedHardware/omi` at `2e34261`, `omi/firmware/omi`). The features, time and
+ * Omi consumer firmware 3.0.x (`BasedHardware/omi` at `2e34261`, `omi/firmware/omi`). The settings, features, time and
  * storage UUIDs come from `src/lib/core/transport.c` and `src/lib/core/storage.c`, identical at `a2d37dea`.
  */
 object OmiUuids {
@@ -16,6 +16,9 @@ object OmiUuids {
     val MODEL_NUMBER: UUID = UUID.fromString("00002a24-0000-1000-8000-00805f9b34fb")
     val FIRMWARE_REVISION: UUID = UUID.fromString("00002a26-0000-1000-8000-00805f9b34fb")
     val HARDWARE_REVISION: UUID = UUID.fromString("00002a27-0000-1000-8000-00805f9b34fb")
+    val SETTINGS_SERVICE: UUID = UUID.fromString("19b10010-e8f2-537e-4f6c-d104768a1214")
+    val LED_DIM: UUID = UUID.fromString("19b10011-e8f2-537e-4f6c-d104768a1214")
+    val MIC_GAIN: UUID = UUID.fromString("19b10012-e8f2-537e-4f6c-d104768a1214")
     val FEATURES: UUID = UUID.fromString("19b10021-e8f2-537e-4f6c-d104768a1214")
     val TIME_SYNC_SERVICE: UUID = UUID.fromString("19b10030-e8f2-537e-4f6c-d104768a1214")
     val TIME_SYNC_WRITE: UUID = UUID.fromString("19b10031-e8f2-537e-4f6c-d104768a1214")

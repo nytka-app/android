@@ -171,6 +171,9 @@ class CaptureService : LifecycleService() {
         sync = storageSync
         hub.attach(capture)
         hub.attachSync(storageSync)
+        val pendantSettings = PendantSettingsController(pendant, scope)
+        hub.attachSettings(pendantSettings)
+        scope.launch { pendantSettings.state.collect(hub::publishSettings) }
         pendingSyncAction?.let(::syncAction)
         pendingSyncAction = null
         capture.start(address)

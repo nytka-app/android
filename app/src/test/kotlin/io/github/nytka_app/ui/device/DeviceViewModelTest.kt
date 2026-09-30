@@ -1,10 +1,12 @@
 package io.github.nytka_app.ui.device
 
 import io.github.nytka_app.FakeDeviceActions
+import io.github.nytka_app.FakePendantSettingsControls
 import io.github.nytka_app.FakeSettings
 import io.github.nytka_app.FakeSyncControls
 import io.github.nytka_app.MainDispatcherRule
 import io.github.nytka_app.capture.PairedPendant
+import io.github.nytka_app.capture.PendantSettingsState
 import io.github.nytka_app.capture.StorageSyncStatus
 import io.github.nytka_app.capture.SyncState
 import io.github.nytka_app.core.api.ApiResult
@@ -39,6 +41,7 @@ class DeviceViewModelTest {
         )
     private val actions = FakeDeviceActions()
     private val sync = FakeSyncControls()
+    private val pendantSettings = FakePendantSettingsControls()
     private var infoCalls = 0
     private var info: ApiResult<ServerInfo> =
         ApiResult.Ok(
@@ -76,7 +79,7 @@ class DeviceViewModelTest {
         DeviceViewModel(settings, {
             infoCalls++
             info
-        }, actions, sync, server, { phoneZone })
+        }, actions, sync, server, { phoneZone }, pendantSettings)
 
     private fun saveServerOnTheLocalNetwork() {
         settings.state.value = settings.state.value.copy(serverUrl = "http://192.168.1.10:8080/", privateNetwork = true)
@@ -498,5 +501,78 @@ class DeviceViewModelTest {
             viewModel.state.value.timeZoneError!!
                 .contains("cannot change server settings"),
         )
+    }
+
+    @Test
+    fun `the pendant settings card is hidden until the pendant reports a setting`() {
+        val viewModel = viewModel()
+        assertNull(viewModel.state.value.pendantSettings)
+
+        pendantSettings.current.value = PendantSettingsState(led = 50, gain = 6)
+
+        assertEquals(PendantSettingsState(led = 50, gain = 6), viewModel.state.value.pendantSettings)
+    }
+
+    @Test
+    fun `the card shows the one setting the pendant reports`() {
+        val viewModel = viewModel()
+
+        pendantSettings.current.value = PendantSettingsState(gain = 3)
+
+        assertEquals(
+            3,
+            viewModel.state.value.pendantSettings
+                ?.gain,
+        )
+        assertNull(
+            viewModel.state.value.pendantSettings
+                ?.led,
+        )
+    }
+
+    @Test
+    fun `the card is hidden while the pendant is not connected`() {
+        val viewModel = viewModel()
+        pendantSettings.current.value = PendantSettingsState(led = 50, gain = 6)
+
+        sync.link.value = false
+
+        assertNull(viewModel.state.value.pendantSettings)
+    }
+
+    @Test
+    fun `the card carries a failed write's message`() {
+        val viewModel = viewModel()
+
+        pendantSettings.current.value = PendantSettingsState(led = 50, ledFailures = 1, error = "Could not save.")
+
+        assertEquals(
+            "Could not save.",
+            viewModel.state.value.pendantSettings
+                ?.error,
+        )
+    }
+
+    @Test
+    fun `slider commits go to the pendant settings`() {
+        val viewModel = viewModel()
+
+        viewModel.commitLed(30)
+        viewModel.commitGain(2)
+
+        assertEquals(listOf("led 30", "gain 2"), pendantSettings.calls)
+    }
+
+    @Test
+    fun `the slider words show percent, decibels and the two warnings`() {
+        assertEquals("40 %", ledLabel(40))
+        assertEquals("Level 6 of 8, +20 dB", gainLabel(6))
+        assertEquals("Level 1 of 8, -20 dB", gainLabel(1))
+        assertEquals("Level 3 of 8, 0 dB", gainLabel(3))
+        assertEquals("Level 0, muted", gainLabel(0))
+        assertTrue(ledWarning(0)!!.contains("dark"))
+        assertNull(ledWarning(1))
+        assertTrue(gainWarning(0)!!.contains("silence"))
+        assertNull(gainWarning(1))
     }
 }

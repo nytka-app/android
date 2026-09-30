@@ -15,9 +15,9 @@ Robolectric, MockWebServer, Turbine · ktlint, detekt.
 
 | Module | Holds |
 |---|---|
-| `:pendant` | `Pendant`, `FrameAssembler`, `OmiPendant` (Bluetooth), the storage service (`OmiStorage`, `RingProtocol`, `RingRecords`), `FakePendant` with `FakeRing`; no UI |
+| `:pendant` | `Pendant`, `FrameAssembler`, `OmiPendant` (Bluetooth), the storage service (`OmiStorage`, `RingProtocol`, `RingRecords`), the settings service (`OmiSettings`: LED brightness, mic gain), `FakePendant` with `FakeRing`; no UI |
 | `:core` | chunk format, `FrameQueue` (Room), capture times and the mute filter (`ring/`), settings, `NytkaApi` and its clients, `Uploader`; tested on the JVM |
-| `:app` | Hilt wiring, `CaptureController`, `StorageSyncController` and the services, alerts, Compose screens |
+| `:app` | Hilt wiring, `CaptureController`, `StorageSyncController`, `PendantSettingsController` and the services, alerts, Compose screens |
 
 ## Commands
 
@@ -62,6 +62,16 @@ Robolectric, MockWebServer, Turbine · ktlint, detekt.
    `ackedThrough`, so `ADVANCE` never passes it. The app never sends `CLEAR`, and writes nothing to
    the storage service until `OmiStorage` reports support (firmware 3.0.20 or later, feature bit 6).
    A sync starts only when `/api/v1/info` lists `offline-sync`.
+
+## Pendant settings
+
+LED brightness (`19b10011`, 0 to 100) and mic gain (`19b10012`, level 0 to 8) come from the settings
+service `19b10010` in `BasedHardware/omi` at `2e34261` (`omi/firmware/omi/src/lib/core/transport.c`, `omi/firmware/omi/src/mic.c` `mic_set_gain`,
+`omi/firmware/omi/src/settings.c`).
+The firmware saves each write to flash, so `PendantSettingsController` writes each control at most once
+per 2 s, after the slider is released. Gain 0 is mute and levels 1 to 8 are -20, -10, 0, +6, +10, +20,
++30, +40 dB. `OmiSettings` writes only after `19b10021` reports bit 7 (LED) or bit 8 (gain). Nothing
+about them goes to the server.
 
 ## Conventions
 

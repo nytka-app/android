@@ -138,6 +138,9 @@ interface Pendant {
 
     val storage: PendantStorage
 
+    /** LED brightness and microphone gain; nothing is offered until the pendant reports the feature. */
+    val settings: PendantSettings
+
     /** Connects and keeps reconnecting until [disconnect]. */
     fun connect(address: String)
 

@@ -3,6 +3,7 @@ package io.github.nytka_app.pendant
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import java.nio.ByteBuffer
@@ -18,12 +19,13 @@ import java.nio.ByteOrder
 class FakeRing(
     private val scope: CoroutineScope,
     var firmware: String = "3.0.21",
-    var features: Long = 1L shl 6,
+    var features: Long = (1L shl 6) or (1L shl 7) or (1L shl 8),
     /** 3.0.21's PR #9954: the firmware moves `readSeq` to what it sent, at DONE, at stop and at disconnect. */
     var autoAdvance: Boolean = true,
     val capacityPackets: Long = 1_000,
     var mtu: Int = 247,
-) : StorageLink {
+) : StorageLink,
+    SettingsLink {
     var listener: ((ByteArray) -> Unit)? = null
 
     var readSeq = 0L
@@ -137,6 +139,47 @@ class FakeRing(
     }
 
     override suspend fun readFeatures(): Long? = features
+
+    /** The settings characteristics, at the firmware's defaults (`src/settings.c`); writes are recorded. */
+    var led: Int = 50
+    var gain: Int = 6
+    val ledWrites = mutableListOf<Int>()
+    val gainWrites = mutableListOf<Int>()
+
+    /** Makes the next settings reads and writes fail, like a link that drops them. */
+    var settingsFail = false
+
+    /** Every settings write takes this long. */
+    var settingsDelayMs = 0L
+
+    /** The settings reads never answer, like a link that drops them without an error. */
+    var settingsHang = false
+
+    override suspend fun readLed(): Int? {
+        if (settingsHang) awaitCancellation()
+        return if (settingsFail) null else led
+    }
+
+    override suspend fun readGain(): Int? {
+        if (settingsHang) awaitCancellation()
+        return if (settingsFail) null else gain
+    }
+
+    override suspend fun writeLed(value: Int): Boolean {
+        if (settingsDelayMs > 0) delay(settingsDelayMs)
+        if (settingsFail) return false
+        ledWrites += value
+        led = value.coerceAtMost(LedDim.MAX)
+        return true
+    }
+
+    override suspend fun writeGain(value: Int): Boolean {
+        if (settingsDelayMs > 0) delay(settingsDelayMs)
+        if (settingsFail) return false
+        gainWrites += value
+        gain = value.coerceAtMost(MicGain.MAX)
+        return true
+    }
 
     private fun append(
         stampS: Long,
