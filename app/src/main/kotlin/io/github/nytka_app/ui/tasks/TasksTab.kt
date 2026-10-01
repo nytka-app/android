@@ -36,10 +36,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nytka_app.R
 
 /**
  * The Tasks tab: open tasks newest first, done ones below, collapsed. A task opens its conversation through
@@ -61,7 +63,7 @@ fun TasksTab(
                 item {
                     Column(Modifier.padding(horizontal = 16.dp)) {
                         Text(error, color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = viewModel::refresh) { Text("Retry") }
+                        TextButton(onClick = viewModel::refresh) { Text(stringResource(R.string.action_retry)) }
                     }
                 }
             }
@@ -73,10 +75,10 @@ fun TasksTab(
             }
             if (state.open.isEmpty() && !state.loading && state.error == null) {
                 item {
-                    Text(
-                        "No open tasks. Tasks the language model finds in your conversations show up here.",
-                        modifier = Modifier.padding(16.dp),
-                    )
+                        Text(
+                            stringResource(R.string.tasks_tab_empty),
+                            modifier = Modifier.padding(16.dp),
+                        )
                 }
             }
             completedSection(state, viewModel, onOpenConversation, { editing = it }, { deleting = it })
@@ -116,10 +118,10 @@ private fun LazyListScope.completedSection(
     if (state.error == null || state.completedShown) {
         item(key = "done-header") {
             TextButton(onClick = viewModel::toggleCompleted, Modifier.padding(horizontal = 8.dp)) {
-                Text("Done")
+                Text(stringResource(R.string.action_done))
                 Icon(
                     if (state.completedShown) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                    contentDescription = if (state.completedShown) "Hide done tasks" else "Show done tasks",
+                    contentDescription = if (state.completedShown) stringResource(R.string.hide_done_tasks) else stringResource(R.string.show_done_tasks),
                 )
             }
         }
@@ -130,12 +132,12 @@ private fun LazyListScope.completedSection(
     }
     if (state.completed.isNotEmpty() && !state.completedEndReached) {
         item(key = "more-done") {
-            TextButton(onClick = viewModel::loadMoreCompleted, Modifier.padding(horizontal = 8.dp)) {
-                Text("Show more")
+                TextButton(onClick = viewModel::loadMoreCompleted, Modifier.padding(horizontal = 8.dp)) {
+                Text(stringResource(R.string.action_show_more))
             }
         }
     }
-    if (state.completed.isEmpty()) item(key = "no-done") { Text("Nothing done yet.", Modifier.padding(16.dp)) }
+    if (state.completed.isEmpty()) item(key = "no-done") { Text(stringResource(R.string.nothing_done_yet), Modifier.padding(16.dp)) }
 }
 
 @Composable
@@ -148,8 +150,8 @@ private fun DeleteDialog(
         onDismissRequest = onDismiss,
         title = { Text("Delete this task?") },
         text = { Text(text) },
-        confirmButton = { TextButton(onClick = onDelete) { Text("Delete") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -170,13 +172,13 @@ private fun TaskItem(
         supportingContent = { if (task.source.isNotEmpty()) Text(task.source) },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { menuOpen = true }) { Icon(Icons.Filled.MoreVert, contentDescription = "More") }
+                IconButton(onClick = { menuOpen = true                     }) { Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.action_more)) }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                    DropdownMenuItem(text = { Text("Edit") }, onClick = {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.action_rename)) }, onClick = {
                         menuOpen = false
                         onEdit()
                     })
-                    DropdownMenuItem(text = { Text("Delete") }, onClick = {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.action_delete)) }, onClick = {
                         menuOpen = false
                         onDelete()
                     })
@@ -204,8 +206,8 @@ private fun EditDialog(
                 label = { Text("Task") },
             )
         },
-        confirmButton = { TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank()) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank()) { Text(stringResource(R.string.action_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 

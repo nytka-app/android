@@ -1,3 +1,150 @@
 <resources>
+    <!-- App -->
     <string name="app_name">Nytka</string>
+
+    <!-- Common -->
+    <string name="action_back">Back</string>
+    <string name="action_search">Search</string>
+    <string name="action_more">More</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_create">Create</string>
+    <string name="action_done">Done</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_copy">Copy</string>
+    <string name="action_allow">Allow</string>
+    <string name="open_settings">Open settings</string>
+    <string name="action_show_more">Show more</string>
+    <string name="hide_done_tasks">Hide done tasks</string>
+    <string name="show_done_tasks">Show done tasks</string>
+    <string name="nothing_done_yet">Nothing done yet.</string>
+    <string name="set">Set</string>
+    <string name="not_set">Not set</string>
+    <string name="testing">Testing…</string>
+    <string name="test_connection">Test connection</string>
+    <string name="continue_action">Continue</string>
+    <string name="i_understand">I understand</string>
+    <string name="regenerate_summary">Regenerate summary</string>
+    <string name="raw_transcription">Raw transcription</string>
+    <string name="summary">Summary</string>
+    <string name="tasks">Tasks</string>
+    <string name="has_bookmarks_content_description">Has bookmarks</string>
+
+    <!-- Server notices -->
+    <string name="server_needs_update">This server needs an update</string>
+    <string name="app_needs_admin_token">The app needs an admin token.</string>
+    <string name="item_no_longer_exists">This item no longer exists</string>
+
+    <!-- Developer -->
+    <string name="developer_mode">Developer mode</string>
+    <string name="developer_mode_title">Developer mode</string>
+    <string name="bluetooth">Bluetooth</string>
+    <string name="packets_per_second_format">Packets: %.1f per second</string>
+    <string name="lost_percent_format">Lost: %.2f%% (under 1%% is healthy)</string>
+    <string name="frames_dropped">Frames dropped: %d</string>
+    <string name="frames_this_session">Frames this session: %d</string>
+    <string name="queue_and_upload">Queue and upload</string>
+    <string name="queue_mb_format">Queue: %.1f MB</string>
+    <string name="sealed_chunks_and_unsealed_format">Sealed chunks: %d, frames not yet sealed: %d</string>
+    <string name="chunks_dropped_at_cap">Chunks dropped at the cap: %d</string>
+    <string name="uploaded_this_run">Uploaded this run: %d</string>
+    <string name="last_upload_none">Last upload: none</string>
+    <string name="server">Server</string>
+    <string name="check_status">Check status</string>
+    <string name="server_settings">Server settings</string>
+    <string name="access_tokens">Access tokens</string>
+    <string name="webhooks">Webhooks</string>
+    <string name="testing_section">Testing</string>
+    <string name="fake_pendant_label">Fake pendant (replays a bundled recording)</string>
+    <string name="save_next_60_seconds">Save the next 60 seconds of frames</string>
+    <string name="copy_debug_report">Copy debug report</string>
+    <string name="diagnostics">Diagnostics</string>
+    <string name="diagnostics_samples_format">%d samples kept for 7 days, one every 10 seconds while capture runs</string>
+    <string name="export_diagnostics">Export diagnostics</string>
+
+    <!-- Server settings -->
+    <string name="server_settings_title">Server settings</string>
+    <string name="saved_server_values">Saved. The server uses the new values from its next job.</string>
+    <string name="set_by_server_env">Set by the server\'s environment</string>
+    <string name="default_with_empty">Default: %s. Empty restores it.</string>
+
+    <!-- Tokens -->
+    <string name="access_tokens_title">Access tokens</string>
+    <string name="create_token">Create token</string>
+    <string name="revoke">Revoke</string>
+    <string name="name">Name</string>
+    <string name="token_name_label">Name</string>
+
+    <!-- Webhooks -->
+    <string name="webhooks_title">Webhooks</string>
+
+    <!-- Conversations -->
+    <string name="conversations_title">Conversations</string>
+    <string name="no_conversations_yet">No conversations yet. Speech shows up here a few minutes after it is said.</string>
+    <string name="summary_failed">Summary failed</string>
+    <string name="summarizing">Summarizing</string>
+    <string name="time_range_and_length_format">%s · %s</string>
+    <string name="bookmarks_count_format">%d bookmarks</string>
+    <string name="back_content_description">Back</string>
+    <string name="more_content_description">More</string>
+    <string name="search_content_description">Search</string>
+    <string name="has_bookmarks">Has bookmarks</string>
+
+    <!-- Conversation screen -->
+    <string name="summary_card_title">Summary</string>
+    <string name="tasks_card_title">Tasks</string>
+    <string name="task_save_failed">The task could not be saved.</string>
+    <string name="summary_not_made_now">No summary can be made now: the conversation is still open, or the server has no language model set up.</string>
+    <string name="me">Me</string>
+
+    <!-- Search -->
+    <string name="search_title">Search</string>
+    <string name="search_hint">Search conversations and memories</string>
+    <string name="nothing_found">Nothing found.</string>
+
+    <!-- First run -->
+    <string name="set_up_nytka">Set up Nytka</string>
+    <string name="step_of_format">Step %1$d of %2$d</string>
+    <string name="server_step_description">Your Nytka server\'s address and token, from its .env file.</string>
+    <string name="server_url_hint">Server URL, e.g. https://nytka.example.com</string>
+    <string name="token_hint">Token</string>
+    <string name="private_network_label">Private network (allow plain HTTP)</string>
+    <string name="private_network_warning">Plain HTTP sends audio unencrypted. Use it only on a VPN or tailnet you trust.</string>
+    <string name="permissions_description">Nytka needs the nearby-devices permission to reach the pendant, and notifications to show that it is recording. It never uses the phone\'s microphone.</string>
+    <string name="permissions_denied_nearby">Without nearby devices Nytka cannot reach the pendant. Tap Allow to be asked again.</string>
+    <string name="permissions_blocked_nearby">Without nearby devices Nytka cannot reach the pendant. If Android does not ask again, allow it in the system settings for Nytka, then come back and tap Allow.</string>
+
+    <!-- Tasks -->
+    <string name="tasks_tab_empty">No open tasks. Tasks the language model finds in your conversations show up here.</string>
+
+    <!-- Device -->
+    <string name="device_title">Device</string>
+    <string name="pendant">Pendant</string>
+    <string name="no_pendant_paired">No pendant paired</string>
+    <string name="connected">Connected</string>
+    <string name="connecting">Connecting…</string>
+    <string name="disconnected">Not connected</string>
+    <string name="battery_percent_format">Battery %d%%</string>
+    <string name="firmware_format">Firmware %s</string>
+    <string name="pair_pendant">Pair pendant</string>
+    <string name="forget">Forget</string>
+    <string name="forget_pendant_title">Forget this pendant?</string>
+    <string name="forget_pendant_message">Capture stops, and the pendant has to be paired again. Queued audio still uploads.</string>
+    <string name="mute">Mute</string>
+    <string name="people">People</string>
+    <string name="people_description">Name the voices Nytka hears, and tidy up the people it knows.</string>
+    <string name="about">About</string>
+    <string name="taps_to_developer_format">%d more taps for developer mode</string>
+    <string name="about_affiliation">An independent project for the Omi pendant; not affiliated with Based Hardware.</string>
+    <string name="pairing_chooser_no_pendant">The chooser returned no pendant.</string>
+    <string name="delete_conversation_title">Delete this conversation?</string>
+    <string name="delete_conversation_message">Its transcript and audio are deleted from your server. This cannot be undone.</string>
+    <string name="local_network_blocked_message">If this server is on your local network, Android blocks it until you allow Nearby devices for Nytka.</string>
+    <string name="people_title">People</string>
+    <string name="people_section">People</string>
+    <string name="unnamed_voices_section">Unnamed voices</string>
+    <string name="no_people_yet">Nobody is named yet. Tap a voice below, or a speaker in a conversation.</string>
+    <string name="no_unnamed_voices">No unnamed voices.</string>
 </resources>

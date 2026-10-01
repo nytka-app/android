@@ -29,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nytka_app.R
 
 /**
  * The Conversations tab's search icon shows only while this is true. A server without search answers 404 and the
@@ -60,11 +62,11 @@ fun SearchScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Search") },
+                title = { Text(stringResource(R.string.search_title)) },
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
-                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
                 },
             )
         },
@@ -78,7 +80,7 @@ fun SearchScreen(
                 OutlinedTextField(
                     value = state.query,
                     onValueChange = viewModel::setQuery,
-                    label = { Text("Search conversations and memories") },
+                    label = { Text(stringResource(R.string.search_hint)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().focusRequester(focus),
                 )
@@ -97,7 +99,7 @@ fun SearchScreen(
             state.error?.let { error ->
                 item {
                     Text(error, color = MaterialTheme.colorScheme.error)
-                    TextButton(onClick = viewModel::retry) { Text("Retry") }
+                    TextButton(onClick = viewModel::retry) { Text(stringResource(R.string.action_retry)) }
                 }
             }
             items(state.rows, key = { it.key }) { row ->
@@ -121,7 +123,7 @@ fun SearchScreen(
                 item(key = "more") { LaunchedEffect(state.rows.size) { viewModel.loadMore() } }
             }
             if (state.nothingFound) {
-                item { Text("Nothing found.") }
+                item { Text(stringResource(R.string.nothing_found)) }
             }
         }
     }

@@ -41,10 +41,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nytka_app.R
 import io.github.nytka_app.core.api.AccessToken
 import io.github.nytka_app.ui.conversations.Formatting
 import kotlinx.coroutines.launch
@@ -66,11 +68,11 @@ fun TokensScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Access tokens") },
+                title = { Text(stringResource(R.string.access_tokens_title)) },
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
-                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
                 },
             )
         },
@@ -81,14 +83,14 @@ fun TokensScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                FilledTonalButton(onClick = { creating = true }, enabled = state.error == null) { Text("Create token") }
+                FilledTonalButton(onClick = { creating = true }, enabled = state.error == null) { Text(stringResource(R.string.create_token)) }
             }
             if (state.loading) item { CircularProgressIndicator() }
             state.error?.let { error ->
                 item {
                     Column {
                         Text(error, color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = viewModel::load) { Text("Retry") }
+                        TextButton(onClick = viewModel::load) { Text(stringResource(R.string.action_retry)) }
                     }
                 }
             }
@@ -120,9 +122,9 @@ fun TokensScreen(
                 TextButton(onClick = {
                     revoking = null
                     viewModel.revoke(token.id)
-                }) { Text("Revoke") }
+                }) { Text(stringResource(R.string.revoke)) }
             },
-            dismissButton = { TextButton(onClick = { revoking = null }) { Text("Cancel") } },
+            dismissButton = { TextButton(onClick = { revoking = null }) { Text(stringResource(R.string.action_cancel)) } },
         )
     }
 }
@@ -144,7 +146,7 @@ private fun TokenCard(
             if (token.revokedAt != null) {
                 Text("Revoked ${whenText(token.revokedAt)}", color = MaterialTheme.colorScheme.error)
             } else {
-                OutlinedButton(onClick = onRevoke) { Text("Revoke") }
+                OutlinedButton(onClick = onRevoke) { Text(stringResource(R.string.revoke)) }
             }
         }
     }
@@ -160,13 +162,13 @@ private fun CreateDialog(
     var scope by rememberSaveable { mutableStateOf("read") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Create token") },
+        title = { Text(stringResource(R.string.create_token)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it.take(MAX_NAME) },
-                    label = { Text("Name") },
+                    label = { Text(stringResource(R.string.name)) },
                     singleLine = true,
                     isError = error != null,
                     supportingText = { error?.let { Text(it) } },
@@ -175,8 +177,8 @@ private fun CreateDialog(
                 ScopeChoice("admin", "Admin: everything, including this app", scope) { scope = it }
             }
         },
-        confirmButton = { TextButton(onClick = { onCreate(name, scope) }) { Text("Create") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onCreate(name, scope) }) { Text(stringResource(R.string.action_create)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -224,7 +226,7 @@ private fun CreatedDialog(
                         ),
                     )
                 }
-            }) { Text("Copy") }
+            }) { Text(stringResource(R.string.action_copy)) }
         },
     )
 }

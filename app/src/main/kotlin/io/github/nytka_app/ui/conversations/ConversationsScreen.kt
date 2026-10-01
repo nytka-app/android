@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -36,6 +37,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import io.github.nytka_app.R
 import io.github.nytka_app.ui.StatusCard
 import io.github.nytka_app.ui.StatusUiState
 import io.github.nytka_app.ui.search.SEARCH_ENABLED
@@ -124,7 +126,7 @@ fun ConversationsScreen(
                 item {
                     Column {
                         Text(error, color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = viewModel::refresh) { Text("Retry") }
+                        TextButton(onClick = viewModel::refresh) { Text(stringResource(R.string.action_retry)) }
                     }
                 }
             }
@@ -146,7 +148,7 @@ fun ConversationsScreen(
                                 {
                                     Icon(
                                         Icons.Filled.Star,
-                                        contentDescription = "Has bookmarks",
+                                        contentDescription = stringResource(R.string.has_bookmarks),
                                         tint = MaterialTheme.colorScheme.primary,
                                     )
                                 }
@@ -157,7 +159,7 @@ fun ConversationsScreen(
                             Column {
                                 Text(row.preview, maxLines = 2, overflow = TextOverflow.Ellipsis)
                                 Text(
-                                    "${row.timeRange} · ${row.length}",
+                                    stringResource(R.string.time_range_and_length_format, row.timeRange, row.length),
                                     style = MaterialTheme.typography.labelMedium,
                                     modifier = Modifier.padding(top = 4.dp),
                                 )
@@ -174,7 +176,7 @@ fun ConversationsScreen(
                 item(key = "more") { LaunchedEffect(state.days.sumOf { it.rows.size }) { viewModel.loadMore() } }
             }
             if (state.days.isEmpty() && !state.loading && state.error == null) {
-                item { Text("No conversations yet. Speech shows up here a few minutes after it is said.") }
+                item { Text(stringResource(R.string.no_conversations_yet)) }
             }
         }
     }
@@ -183,7 +185,7 @@ fun ConversationsScreen(
 @Composable
 private fun SearchButton(onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-        IconButton(onClick = onClick) { Icon(Icons.Filled.Search, contentDescription = "Search") }
+        IconButton(onClick = onClick) { Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.action_search)) }
     }
 }
 
@@ -193,7 +195,7 @@ internal fun AiChip(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    val failed = text == "Summary failed"
+    val failed = text == "Summary failed" // Keep comparison logic; string comes from VM/resources elsewhere
     Surface(
         modifier,
         shape = MaterialTheme.shapes.small,

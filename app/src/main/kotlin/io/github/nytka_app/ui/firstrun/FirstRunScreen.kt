@@ -23,11 +23,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nytka_app.R
 import io.github.nytka_app.core.settings.FirstRunStep
 import io.github.nytka_app.ui.LocalNetworkHint
 import io.github.nytka_app.ui.LocalNetworkPrompt
@@ -43,9 +45,9 @@ fun FirstRunScreen(viewModel: FirstRunViewModel = hiltViewModel()) {
         Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("Set up Nytka", style = MaterialTheme.typography.headlineMedium)
+        Text(stringResource(R.string.set_up_nytka), style = MaterialTheme.typography.headlineMedium)
         Text(
-            "Step ${state.step.ordinal + 1} of ${FirstRunStep.entries.size}",
+            stringResource(R.string.step_of_format, state.step.ordinal + 1, FirstRunStep.entries.size),
             style = MaterialTheme.typography.labelLarge,
         )
         when (state.step) {
@@ -62,11 +64,11 @@ private fun ServerStep(
     state: FirstRunUiState,
     viewModel: FirstRunViewModel,
 ) {
-    Text("Your Nytka server's address and token, from its .env file.")
+    Text(stringResource(R.string.server_step_description))
     OutlinedTextField(
         value = state.url,
         onValueChange = { viewModel.edit(it, state.token, state.privateNetwork) },
-        label = { Text("Server URL, e.g. https://nytka.example.com") },
+        label = { Text(stringResource(R.string.server_url_hint)) },
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
         modifier = Modifier.fillMaxWidth(),
@@ -74,26 +76,26 @@ private fun ServerStep(
     OutlinedTextField(
         value = state.token,
         onValueChange = { viewModel.edit(state.url, it, state.privateNetwork) },
-        label = { Text("Token") },
+        label = { Text(stringResource(R.string.token_hint)) },
         singleLine = true,
         visualTransformation = PasswordVisualTransformation(),
         modifier = Modifier.fillMaxWidth(),
     )
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Switch(checked = state.privateNetwork, onCheckedChange = { viewModel.edit(state.url, state.token, it) })
-        Text("Private network (allow plain HTTP)")
+        Text(stringResource(R.string.private_network_label))
     }
     if (state.privateNetwork) {
         Text(
-            "Plain HTTP sends audio unencrypted. Use it only on a VPN or tailnet you trust.",
+            stringResource(R.string.private_network_warning),
             color = MaterialTheme.colorScheme.error,
         )
     }
     LocalNetworkPrompt(state.askLocalNetwork, viewModel::localNetworkAnswered)
     state.serverError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     LocalNetworkHint(state.serverUnreachable, onAllowed = viewModel::testConnection)
-    Button(onClick = viewModel::testConnection, enabled = !state.testing) {
-        Text(if (state.testing) "Testing…" else "Test connection")
+        Button(onClick = viewModel::testConnection, enabled = !state.testing) {
+        Text(if (state.testing) stringResource(R.string.testing) else stringResource(R.string.test_connection))
     }
 }
 
@@ -114,28 +116,24 @@ private fun PermissionsStep(
             required = listOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT),
             onAnswer = viewModel::permissionsAnswered,
         )
-    Text(
-        "Nytka needs the nearby-devices permission to reach the pendant, and notifications to show that it is " +
-            "recording. It never uses the phone's microphone.",
-    )
+    Text(stringResource(R.string.permissions_description))
     when (state.permissions) {
         PermissionAnswer.Denied ->
             Text(
-                "Without nearby devices Nytka cannot reach the pendant. Tap Allow to be asked again.",
+                stringResource(R.string.permissions_denied_nearby),
                 color = MaterialTheme.colorScheme.error,
             )
         PermissionAnswer.Blocked ->
             Text(
-                "Without nearby devices Nytka cannot reach the pendant. If Android does not ask again, allow it in " +
-                    "the system settings for Nytka, then come back and tap Allow.",
+                stringResource(R.string.permissions_blocked_nearby),
                 color = MaterialTheme.colorScheme.error,
             )
         else -> Unit
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(onClick = request) { Text("Allow") }
+        Button(onClick = request) { Text(stringResource(R.string.action_allow)) }
         if (state.permissions == PermissionAnswer.Blocked) {
-            OutlinedButton(onClick = viewModel::openSettings) { Text("Open settings") }
+            OutlinedButton(onClick = viewModel::openSettings) { Text(stringResource(R.string.open_settings)) }
         }
     }
 }
@@ -148,9 +146,9 @@ private fun ConsentStep(
     Text(CONSENT_TEXT, style = MaterialTheme.typography.bodyLarge)
     Row(verticalAlignment = Alignment.CenterVertically) {
         Checkbox(checked = state.consentChecked, onCheckedChange = viewModel::setConsent)
-        Text("I understand")
+        Text(stringResource(R.string.i_understand))
     }
-    Button(onClick = viewModel::acceptConsent, enabled = state.consentChecked) { Text("Continue") }
+    Button(onClick = viewModel::acceptConsent, enabled = state.consentChecked) { Text(stringResource(R.string.continue_action)) }
 }
 
 @Composable

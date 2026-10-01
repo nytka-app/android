@@ -39,12 +39,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nytka_app.R
 import kotlinx.coroutines.launch
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -62,11 +63,11 @@ fun DeveloperScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Developer mode") },
+                title = { Text(stringResource(R.string.developer_mode_title)) },
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
-                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
                 },
             )
         },
@@ -77,42 +78,42 @@ fun DeveloperScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                Section("Bluetooth") {
-                    Text("Packets: ${"%.1f".format(Locale.ROOT, state.packetsPerSecond)} per second")
-                    Text("Lost: ${"%.2f".format(Locale.ROOT, state.lossPercent)}% (under 1% is healthy)")
-                    Text("Frames dropped: ${state.droppedFrames}")
-                    Text("Frames this session: ${state.framesThisSession}")
+                Section(stringResource(R.string.bluetooth)) {
+                    Text(stringResource(R.string.packets_per_second_format, state.packetsPerSecond))
+                    Text(stringResource(R.string.lost_percent_format, state.lossPercent))
+                    Text(stringResource(R.string.frames_dropped, state.droppedFrames))
+                    Text(stringResource(R.string.frames_this_session, state.framesThisSession))
                 }
             }
             item {
-                Section("Queue and upload") {
-                    Text("Queue: ${"%.1f".format(Locale.ROOT, state.queueMegabytes)} MB")
-                    Text("Sealed chunks: ${state.sealedChunks}, frames not yet sealed: ${state.unsealedFrames}")
-                    Text("Chunks dropped at the cap: ${state.droppedChunks}")
-                    Text("Uploaded this run: ${state.uploadedChunks}")
-                    Text("Last upload: ${state.lastUpload ?: "none"}")
+                Section(stringResource(R.string.queue_and_upload)) {
+                    Text(stringResource(R.string.queue_mb_format, state.queueMegabytes))
+                    Text(stringResource(R.string.sealed_chunks_and_unsealed_format, state.sealedChunks, state.unsealedFrames))
+                    Text(stringResource(R.string.chunks_dropped_at_cap, state.droppedChunks))
+                    Text(stringResource(R.string.uploaded_this_run, state.uploadedChunks))
+                    Text(state.lastUpload ?: stringResource(R.string.last_upload_none))
                 }
             }
             state.storage?.let { details -> item { StorageSectionCard(details) } }
             item {
-                Section("Server") {
+                Section(stringResource(R.string.server)) {
                     Text(state.serverStatus)
-                    OutlinedButton(onClick = viewModel::refreshServerStatus) { Text("Check status") }
-                    ServerRow("Server settings", onOpenServerSettings)
-                    ServerRow("Access tokens", onOpenTokens)
-                    ServerRow("Webhooks", onOpenWebhooks)
+                    OutlinedButton(onClick = viewModel::refreshServerStatus) { Text(stringResource(R.string.check_status)) }
+                    ServerRow(stringResource(R.string.server_settings), onOpenServerSettings)
+                    ServerRow(stringResource(R.string.access_tokens), onOpenTokens)
+                    ServerRow(stringResource(R.string.webhooks), onOpenWebhooks)
                 }
             }
             item {
-                Section("Testing") {
+                Section(stringResource(R.string.testing_section)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Switch(checked = state.fakePendant, onCheckedChange = viewModel::setFakePendant)
-                        Text("Fake pendant (replays a bundled recording)")
+                        Text(stringResource(R.string.fake_pendant_label))
                     }
-                    FilledTonalButton(onClick = viewModel::recordFixture) { Text("Save the next 60 seconds of frames") }
+                    FilledTonalButton(onClick = viewModel::recordFixture) { Text(stringResource(R.string.save_next_60_seconds)) }
                     state.fixture?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                     FilledTonalButton(onClick = {
                         scope.launch {
@@ -126,13 +127,13 @@ fun DeveloperScreen(
                                 ),
                             )
                         }
-                    }) { Text("Copy debug report") }
+                    }) { Text(stringResource(R.string.copy_debug_report)) }
                 }
             }
             item {
-                Section("Diagnostics") {
-                    Text("${state.diagnosticsSamples} samples kept for 7 days, one every 10 seconds while capture runs")
-                    FilledTonalButton(onClick = viewModel::exportDiagnostics) { Text("Export diagnostics") }
+                Section(stringResource(R.string.diagnostics)) {
+                    Text(stringResource(R.string.diagnostics_samples_format, state.diagnosticsSamples))
+                    FilledTonalButton(onClick = viewModel::exportDiagnostics) { Text(stringResource(R.string.export_diagnostics)) }
                     state.diagnosticsExport?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
