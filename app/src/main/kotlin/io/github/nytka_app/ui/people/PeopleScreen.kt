@@ -31,9 +31,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nytka_app.R
 import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.core.api.UnnamedVoice
 import io.github.nytka_app.ui.conversations.Formatting
@@ -61,10 +63,13 @@ fun PeopleScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("People") },
+                title = { Text(stringResource(R.string.people_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
                     }
                 },
             )
@@ -89,9 +94,9 @@ fun PeopleScreen(
                     }
                 }
                 if (state.error == null) {
-                    item { SectionTitle("People") }
+                    item { SectionTitle(stringResource(R.string.people_section)) }
                     if (state.people.isEmpty() && !state.loading) {
-                        item { Empty("Nobody is named yet. Tap a voice below, or a speaker in a conversation.") }
+                        item { Empty(stringResource(R.string.no_people_yet)) }
                     }
                     items(state.people, key = { "p" + it.id }) { person ->
                         ListItem(
@@ -100,8 +105,12 @@ fun PeopleScreen(
                             modifier = Modifier.clickable { viewModel.openPerson(person) },
                         )
                     }
-                    item { SectionTitle("Unnamed voices") }
-                    if (state.voices.isEmpty() && !state.loading) item { Empty("No unnamed voices.") }
+                    item { SectionTitle(stringResource(R.string.unnamed_voices_section)) }
+                    if (state.voices.isEmpty() &&
+                        !state.loading
+                    ) {
+                        item { Empty(stringResource(R.string.no_unnamed_voices)) }
+                    }
                     items(state.voices, key = { "v" + it.speakerId }) { voice ->
                         ListItem(
                             headlineContent = { Text(voiceTitle(voice)) },

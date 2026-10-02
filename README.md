@@ -271,6 +271,10 @@ adb install app/build/outputs/apk/oss/debug/app-oss-debug.apk
 `oss` is the flavor Releases publishes; `play` is kept for a later store listing and only has to
 compile.
 
+The UI is in English and in Ukrainian: `app/src/main/res/values/strings.xml` holds the English,
+`values-uk/strings.xml` the Ukrainian. A new language is a new `values-<locale>` folder whose
+`<string>` names match the English ones.
+
 ## License
 
 Apache-2.0, see [LICENSE](LICENSE) and [NOTICE](NOTICE).
