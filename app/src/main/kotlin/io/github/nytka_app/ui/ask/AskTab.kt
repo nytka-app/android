@@ -32,9 +32,11 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nytka_app.ui.theme.NytkaPreviewTheme
 
 /**
  * The Ask tab: a question about your history, answered with numbered sources. A source, or its `[n]` in the answer,
@@ -45,7 +47,24 @@ fun AskTab(
     onOpenConversation: (String) -> Unit,
     viewModel: AskViewModel = hiltViewModel(),
 ) {
+
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    AskTab(
+        state = state,
+        onOpenConversation = onOpenConversation,
+        onSetQuestion = viewModel::setQuestion,
+        onAskClick = viewModel::ask
+    )
+}
+
+@Composable
+private fun AskTab(
+    state: AskUiState,
+    onOpenConversation: (String) -> Unit,
+    onSetQuestion: (String) -> Unit,
+    onAskClick: () -> Unit,
+) {
     val linkColor = MaterialTheme.colorScheme.primary
 
     LazyColumn(
@@ -57,7 +76,7 @@ fun AskTab(
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
                     value = state.question,
-                    onValueChange = viewModel::setQuestion,
+                    onValueChange = onSetQuestion,
                     label = { Text("Ask about your conversations") },
                     modifier = Modifier.weight(1f),
                     maxLines = 4,
@@ -69,15 +88,17 @@ fun AskTab(
                             .size(24.dp),
                     )
                 } else {
-                    IconButton(onClick = viewModel::ask, enabled = state.canAsk) {
+                    IconButton(onClick = onAskClick, enabled = state.canAsk) {
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Ask")
                     }
                 }
             }
         }
+
         state.error?.let { error ->
             item { Text(error, color = MaterialTheme.colorScheme.error) }
         }
+
         state.result?.let { result ->
             item { Text(answerText(result.parts, linkColor, onOpenConversation)) }
             if (result.sources.isNotEmpty()) {
@@ -92,6 +113,19 @@ fun AskTab(
                 }
             }
         }
+    }
+}
+
+@PreviewLightDark
+@Composable
+private fun AskTabPreview() {
+    NytkaPreviewTheme {
+        AskTab(
+            state = AskUiState(),
+            onOpenConversation = {},
+            onSetQuestion = {},
+            onAskClick = {},
+        )
     }
 }
 
