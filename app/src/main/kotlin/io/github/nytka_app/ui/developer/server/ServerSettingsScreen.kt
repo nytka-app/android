@@ -49,12 +49,17 @@ fun ServerSettingsScreen(
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
-                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
+                    }
                 },
                 actions = {
                     TextButton(onClick = viewModel::save, enabled = state.anyChanged && !state.saving) {
                         Text(
-                            stringResource(R.string.action_save)
+                            stringResource(R.string.action_save),
                         )
                     }
                 },
@@ -73,7 +78,11 @@ fun ServerSettingsScreen(
                 item {
                     Column {
                         Text(error, color = MaterialTheme.colorScheme.error)
-                        if (state.fields.isEmpty()) TextButton(onClick = viewModel::load) { Text(stringResource(R.string.action_retry)) }
+                        if (state.fields.isEmpty()) {
+                            TextButton(
+                                onClick = viewModel::load,
+                            ) { Text(stringResource(R.string.action_retry)) }
+                        }
                     }
                 }
             }
@@ -109,10 +118,12 @@ private fun SettingRow(
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(setting.key)
-                    if (locked) Text(
-                        stringResource(R.string.set_by_server_env),
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    if (locked) {
+                        Text(
+                            stringResource(R.string.set_by_server_env),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                 }
                 Switch(
                     checked = field.text.equals("true", ignoreCase = true),

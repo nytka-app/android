@@ -97,7 +97,7 @@ private fun ServerStep(
     LocalNetworkPrompt(state.askLocalNetwork, viewModel::localNetworkAnswered)
     state.serverError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     LocalNetworkHint(state.serverUnreachable, onAllowed = viewModel::testConnection)
-        Button(onClick = viewModel::testConnection, enabled = !state.testing) {
+    Button(onClick = viewModel::testConnection, enabled = !state.testing) {
         Text(if (state.testing) stringResource(R.string.testing) else stringResource(R.string.test_connection))
     }
 }
@@ -153,7 +153,9 @@ private fun ConsentStep(
         Checkbox(checked = state.consentChecked, onCheckedChange = viewModel::setConsent)
         Text(stringResource(R.string.i_understand))
     }
-    Button(onClick = viewModel::acceptConsent, enabled = state.consentChecked) { Text(stringResource(R.string.continue_action)) }
+    Button(onClick = viewModel::acceptConsent, enabled = state.consentChecked) {
+        Text(stringResource(R.string.continue_action))
+    }
 }
 
 @Composable

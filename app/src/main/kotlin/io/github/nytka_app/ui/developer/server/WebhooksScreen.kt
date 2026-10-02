@@ -47,8 +47,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.github.nytka_app.core.api.Delivery
 import io.github.nytka_app.R
+import io.github.nytka_app.core.api.Delivery
 import io.github.nytka_app.core.api.Webhook
 import kotlinx.coroutines.launch
 
@@ -71,7 +71,12 @@ fun WebhooksScreen(
                 navigationIcon = {
                     IconButton(
                         onClick = back,
-                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
+                    }
                 },
                 actions = {
                     if (selected == null && state.error == null) {

@@ -72,7 +72,12 @@ fun TokensScreen(
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
-                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
+                    }
                 },
             )
         },
@@ -85,7 +90,9 @@ fun TokensScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                FilledTonalButton(onClick = { creating = true }, enabled = state.error == null) { Text(stringResource(R.string.create_token)) }
+                FilledTonalButton(onClick = {
+                    creating = true
+                }, enabled = state.error == null) { Text(stringResource(R.string.create_token)) }
             }
             if (state.loading) item { CircularProgressIndicator() }
             state.error?.let { error ->
@@ -126,7 +133,11 @@ fun TokensScreen(
                     viewModel.revoke(token.id)
                 }) { Text(stringResource(R.string.revoke)) }
             },
-            dismissButton = { TextButton(onClick = { revoking = null }) { Text(stringResource(R.string.action_cancel)) } },
+            dismissButton = {
+                TextButton(
+                    onClick = { revoking = null },
+                ) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 }
@@ -179,7 +190,11 @@ private fun CreateDialog(
                 ScopeChoice("admin", "Admin: everything, including this app", scope) { scope = it }
             }
         },
-        confirmButton = { TextButton(onClick = { onCreate(name, scope) }) { Text(stringResource(R.string.action_create)) } },
+        confirmButton = {
+            TextButton(
+                onClick = { onCreate(name, scope) },
+            ) { Text(stringResource(R.string.action_create)) }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

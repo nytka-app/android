@@ -34,12 +34,12 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nytka_app.R
 import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.pendant.PendantConnection
 import io.github.nytka_app.ui.LocalNetworkHint
 import io.github.nytka_app.ui.LocalNetworkPrompt
 import io.github.nytka_app.ui.PairButton
-import io.github.nytka_app.R
 import io.github.nytka_app.ui.StatusUiState
 
 @Composable
@@ -117,7 +117,11 @@ fun DeviceScreen(
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                if (state.developerMode) OutlinedButton(onClick = onOpenDeveloper) { Text(stringResource(R.string.developer_mode)) }
+                if (state.developerMode) {
+                    OutlinedButton(
+                        onClick = onOpenDeveloper,
+                    ) { Text(stringResource(R.string.developer_mode)) }
+                }
                 Text(
                     "An independent project for the Omi pendant; not affiliated with Based Hardware.",
                     style = MaterialTheme.typography.bodySmall,
@@ -147,7 +151,11 @@ fun DeviceScreen(
                     viewModel.forgetPendant()
                 }) { Text(stringResource(R.string.forget)) }
             },
-            dismissButton = { TextButton(onClick = { confirmForget = false }) { Text(stringResource(R.string.action_cancel)) } },
+            dismissButton = {
+                TextButton(
+                    onClick = { confirmForget = false },
+                ) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 }

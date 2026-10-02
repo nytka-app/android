@@ -37,7 +37,7 @@ fun StatusChip(state: StatusUiState) {
             Box(
                 Modifier
                     .size(8.dp)
-                    .background(dot, CircleShape)
+                    .background(dot, CircleShape),
             )
         },
     )
@@ -46,34 +46,40 @@ fun StatusChip(state: StatusUiState) {
 @PreviewLightDark
 @Composable
 private fun StatusChipPreview() {
-    val turnedOff = StatusUiState(
-        capture = CaptureStatus(),
-        muted = false,
-        serverLine = "",
-        queuedChunks = 0,
-        developerMode = false,
-        serverUnreachable = false
-    )
-
-    val muted = turnedOff.copy(
-        capture = turnedOff.capture.copy(running = true),
-        muted = true
-    )
-
-    val recording = turnedOff.copy(
-        capture = turnedOff.capture.copy(
-            running = true,
-            connection = PendantConnection.Connected(PendantInfo("")),
-            battery = 67
-        ),
-        muted = false,
-    )
-
-    val waiting = turnedOff.copy(
-        capture = turnedOff.capture.copy(
-            running = true
+    val turnedOff =
+        StatusUiState(
+            capture = CaptureStatus(),
+            muted = false,
+            serverLine = "",
+            queuedChunks = 0,
+            developerMode = false,
+            serverUnreachable = false,
         )
-    )
+
+    val muted =
+        turnedOff.copy(
+            capture = turnedOff.capture.copy(running = true),
+            muted = true,
+        )
+
+    val recording =
+        turnedOff.copy(
+            capture =
+                turnedOff.capture.copy(
+                    running = true,
+                    connection = PendantConnection.Connected(PendantInfo("")),
+                    battery = 67,
+                ),
+            muted = false,
+        )
+
+    val waiting =
+        turnedOff.copy(
+            capture =
+                turnedOff.capture.copy(
+                    running = true,
+                ),
+        )
 
     NytkaPreviewTheme {
         StatusChip(turnedOff)

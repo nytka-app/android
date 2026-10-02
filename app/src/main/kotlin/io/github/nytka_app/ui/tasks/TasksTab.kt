@@ -75,10 +75,10 @@ fun TasksTab(
             }
             if (state.open.isEmpty() && !state.loading && state.error == null) {
                 item {
-                        Text(
-                            stringResource(R.string.tasks_tab_empty),
-                            modifier = Modifier.padding(16.dp),
-                        )
+                    Text(
+                        stringResource(R.string.tasks_tab_empty),
+                        modifier = Modifier.padding(16.dp),
+                    )
                 }
             }
             completedSection(state, viewModel, onOpenConversation, { editing = it }, { deleting = it })
@@ -121,7 +121,14 @@ private fun LazyListScope.completedSection(
                 Text(stringResource(R.string.action_done))
                 Icon(
                     if (state.completedShown) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                    contentDescription = if (state.completedShown) stringResource(R.string.hide_done_tasks) else stringResource(R.string.show_done_tasks),
+                    contentDescription =
+                        if (state.completedShown) {
+                            stringResource(
+                                R.string.hide_done_tasks,
+                            )
+                        } else {
+                            stringResource(R.string.show_done_tasks)
+                        },
                 )
             }
         }
@@ -132,12 +139,16 @@ private fun LazyListScope.completedSection(
     }
     if (state.completed.isNotEmpty() && !state.completedEndReached) {
         item(key = "more-done") {
-                TextButton(onClick = viewModel::loadMoreCompleted, Modifier.padding(horizontal = 8.dp)) {
+            TextButton(onClick = viewModel::loadMoreCompleted, Modifier.padding(horizontal = 8.dp)) {
                 Text(stringResource(R.string.action_show_more))
             }
         }
     }
-    if (state.completed.isEmpty()) item(key = "no-done") { Text(stringResource(R.string.nothing_done_yet), Modifier.padding(16.dp)) }
+    if (state.completed.isEmpty()) {
+        item(key = "no-done") {
+            Text(stringResource(R.string.nothing_done_yet), Modifier.padding(16.dp))
+        }
+    }
 }
 
 @Composable
@@ -172,7 +183,9 @@ private fun TaskItem(
         supportingContent = { if (task.source.isNotEmpty()) Text(task.source) },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { menuOpen = true                     }) { Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.action_more)) }
+                IconButton(onClick = {
+                    menuOpen = true
+                }) { Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.action_more)) }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                     DropdownMenuItem(text = { Text(stringResource(R.string.action_rename)) }, onClick = {
                         menuOpen = false
@@ -209,7 +222,12 @@ private fun EditDialog(
                 label = { Text("Task") },
             )
         },
-        confirmButton = { TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank()) { Text(stringResource(R.string.action_save)) } },
+        confirmButton = {
+            TextButton(
+                onClick = { onSave(text) },
+                enabled = text.isNotBlank(),
+            ) { Text(stringResource(R.string.action_save)) }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

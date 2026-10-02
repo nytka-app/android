@@ -26,7 +26,8 @@ fun PairButton(
     val chooser =
         rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
-                pairing.complete(result.data)?.let(onPaired) ?: onError(context.getString(R.string.pairing_chooser_no_pendant))
+                pairing.complete(result.data)?.let(onPaired)
+                    ?: onError(context.getString(R.string.pairing_chooser_no_pendant))
             }
         }
     Button(onClick = {

@@ -67,7 +67,12 @@ fun DeveloperScreen(
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
-                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
+                    }
                 },
             )
         },
@@ -90,7 +95,13 @@ fun DeveloperScreen(
             item {
                 Section(stringResource(R.string.queue_and_upload)) {
                     Text(stringResource(R.string.queue_mb_format, state.queueMegabytes))
-                    Text(stringResource(R.string.sealed_chunks_and_unsealed_format, state.sealedChunks, state.unsealedFrames))
+                    Text(
+                        stringResource(
+                            R.string.sealed_chunks_and_unsealed_format,
+                            state.sealedChunks,
+                            state.unsealedFrames,
+                        ),
+                    )
                     Text(stringResource(R.string.chunks_dropped_at_cap, state.droppedChunks))
                     Text(stringResource(R.string.uploaded_this_run, state.uploadedChunks))
                     Text(state.lastUpload ?: stringResource(R.string.last_upload_none))
@@ -100,7 +111,9 @@ fun DeveloperScreen(
             item {
                 Section(stringResource(R.string.server)) {
                     Text(state.serverStatus)
-                    OutlinedButton(onClick = viewModel::refreshServerStatus) { Text(stringResource(R.string.check_status)) }
+                    OutlinedButton(
+                        onClick = viewModel::refreshServerStatus,
+                    ) { Text(stringResource(R.string.check_status)) }
                     ServerRow(stringResource(R.string.server_settings), onOpenServerSettings)
                     ServerRow(stringResource(R.string.access_tokens), onOpenTokens)
                     ServerRow(stringResource(R.string.webhooks), onOpenWebhooks)
@@ -115,7 +128,9 @@ fun DeveloperScreen(
                         Switch(checked = state.fakePendant, onCheckedChange = viewModel::setFakePendant)
                         Text(stringResource(R.string.fake_pendant_label))
                     }
-                    FilledTonalButton(onClick = viewModel::recordFixture) { Text(stringResource(R.string.save_next_60_seconds)) }
+                    FilledTonalButton(
+                        onClick = viewModel::recordFixture,
+                    ) { Text(stringResource(R.string.save_next_60_seconds)) }
                     state.fixture?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                     FilledTonalButton(onClick = {
                         scope.launch {
@@ -135,7 +150,9 @@ fun DeveloperScreen(
             item {
                 Section(stringResource(R.string.diagnostics)) {
                     Text(stringResource(R.string.diagnostics_samples_format, state.diagnosticsSamples))
-                    FilledTonalButton(onClick = viewModel::exportDiagnostics) { Text(stringResource(R.string.export_diagnostics)) }
+                    FilledTonalButton(
+                        onClick = viewModel::exportDiagnostics,
+                    ) { Text(stringResource(R.string.export_diagnostics)) }
                     state.diagnosticsExport?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

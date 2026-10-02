@@ -185,7 +185,9 @@ fun ConversationsScreen(
 @Composable
 private fun SearchButton(onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-        IconButton(onClick = onClick) { Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.action_search)) }
+        IconButton(
+            onClick = onClick,
+        ) { Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.action_search)) }
     }
 }
 

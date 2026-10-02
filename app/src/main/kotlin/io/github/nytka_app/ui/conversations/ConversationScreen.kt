@@ -85,7 +85,12 @@ fun ConversationScreen(
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
-                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back)) }
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
+                    }
                 },
                 actions = {
                     IconButton(
@@ -126,7 +131,12 @@ fun ConversationScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { Text(stringResource(R.string.time_range_and_length_format, state.timeRange, state.length), style = MaterialTheme.typography.titleMedium) }
+            item {
+                Text(
+                    stringResource(R.string.time_range_and_length_format, state.timeRange, state.length),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
             state.playback?.let { playback ->
                 item { PlayBar(playback, onToggle = viewModel::togglePlay, onSeek = viewModel::seekTo) }
             }
@@ -197,7 +207,11 @@ fun ConversationScreen(
                     viewModel.delete()
                 }) { Text(stringResource(R.string.action_delete)) }
             },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.action_cancel)) } },
+            dismissButton = {
+                TextButton(
+                    onClick = { confirmDelete = false },
+                ) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 }
@@ -393,7 +407,12 @@ internal fun NameVoiceDialog(
                 singleLine = true,
             )
         },
-        confirmButton = { TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank()) { Text(stringResource(R.string.action_save)) } },
+        confirmButton = {
+            TextButton(
+                onClick = { onSave(text) },
+                enabled = text.isNotBlank(),
+            ) { Text(stringResource(R.string.action_save)) }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

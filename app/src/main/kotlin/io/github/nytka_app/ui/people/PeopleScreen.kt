@@ -66,7 +66,10 @@ fun PeopleScreen(
                 title = { Text(stringResource(R.string.people_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
                     }
                 },
             )
@@ -103,7 +106,11 @@ fun PeopleScreen(
                         )
                     }
                     item { SectionTitle(stringResource(R.string.unnamed_voices_section)) }
-                    if (state.voices.isEmpty() && !state.loading) item { Empty(stringResource(R.string.no_unnamed_voices)) }
+                    if (state.voices.isEmpty() &&
+                        !state.loading
+                    ) {
+                        item { Empty(stringResource(R.string.no_unnamed_voices)) }
+                    }
                     items(state.voices, key = { "v" + it.speakerId }) { voice ->
                         ListItem(
                             headlineContent = { Text(voiceTitle(voice)) },
