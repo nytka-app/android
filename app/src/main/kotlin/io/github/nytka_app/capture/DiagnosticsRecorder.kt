@@ -167,6 +167,7 @@ class DiagnosticsRecorder(
                 reason.startsWith("The server refused") -> "Unauthorized"
                 reason.startsWith("No token") || reason.startsWith("Enter ") || reason.startsWith("Plain http") ->
                     "NotConfigured"
+
                 else -> "Paused"
             }
     }

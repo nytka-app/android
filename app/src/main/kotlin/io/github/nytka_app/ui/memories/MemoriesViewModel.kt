@@ -91,6 +91,7 @@ class MemoriesViewModel
                         if (at >= 0) items[at] = saved else items.add(0, saved)
                         mutableState.update { it.copy(rows = rows(), editor = null) }
                     }
+
                     is ApiResult.Failure -> {
                         val gone = editor.target != null && result.kind == FailureKind.NotFound
                         mutableState.update {
@@ -140,6 +141,7 @@ class MemoriesViewModel
                     failure.errors.values
                         .flatten()
                         .firstOrNull() ?: failure.message
+
                 else -> if (editing) failure.itemNotice() else failure.notice()
             }
 
@@ -163,6 +165,7 @@ class MemoriesViewModel
                                 )
                             }
                         }
+
                         is ApiResult.Failure ->
                             mutableState.update {
                                 it.copy(loading = false, refreshing = false, error = result.notice())

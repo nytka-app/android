@@ -205,6 +205,7 @@ class ConversationViewModel
                             mutableState.value =
                                 show(it.value)
                         }
+
                     is ApiResult.Failure -> mutableState.update { it.copy(error = result.itemNotice()) }
                 }
             }

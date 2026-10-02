@@ -40,7 +40,10 @@ fun FirstRunScreen(viewModel: FirstRunViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     if (!state.loaded) return
     Column(
-        Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
+        Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text("Set up Nytka", style = MaterialTheme.typography.headlineMedium)
@@ -124,12 +127,14 @@ private fun PermissionsStep(
                 "Without nearby devices Nytka cannot reach the pendant. Tap Allow to be asked again.",
                 color = MaterialTheme.colorScheme.error,
             )
+
         PermissionAnswer.Blocked ->
             Text(
                 "Without nearby devices Nytka cannot reach the pendant. If Android does not ask again, allow it in " +
                     "the system settings for Nytka, then come back and tap Allow.",
                 color = MaterialTheme.colorScheme.error,
             )
+
         else -> Unit
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -72,6 +72,7 @@ class WebhooksViewModel
                                     },
                             )
                         }
+
                     is ApiResult.Failure -> mutableState.update { it.copy(loading = false, error = result.notice()) }
                 }
             }
@@ -106,6 +107,7 @@ class WebhooksViewModel
                                 secret = NewSecret(result.value.url, result.value.secret),
                             )
                         }
+
                     is ApiResult.Failure ->
                         mutableState.update { it.copy(creator = WebhookCreator(error = creatorError(result))) }
                 }
@@ -146,6 +148,7 @@ class WebhooksViewModel
                                 it
                             }
                         }
+
                     is ApiResult.Failure ->
                         itemFailed(result) { copy(deliveriesLoading = false, note = it) }
                 }
@@ -160,6 +163,7 @@ class WebhooksViewModel
                         mutableState.update { it.copy(note = "Test sent. It shows below once delivered.") }
                         loadDeliveries(id)
                     }
+
                     is ApiResult.Failure -> itemFailed(result) { copy(note = it) }
                 }
             }
@@ -210,6 +214,7 @@ class WebhooksViewModel
                     failure.errors.values
                         .flatten()
                         .firstOrNull() ?: failure.message
+
                 else -> failure.notice()
             }
 
@@ -233,6 +238,7 @@ class WebhooksViewModel
                     url.length > MAX_URL -> "The URL is too long."
                     !(url.startsWith("https://") || url.startsWith("http://")) || url.substringAfter("://").isEmpty() ->
                         "The URL must start with http:// or https://."
+
                     else -> null
                 }
         }

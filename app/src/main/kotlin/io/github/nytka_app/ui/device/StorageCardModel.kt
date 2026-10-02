@@ -75,14 +75,17 @@ private fun stateLine(status: StorageSyncStatus): String {
             } else {
                 "About ${packetsToDuration(status.storedPackets)} stored. It syncs when connected."
             }
+
         SyncState.Checking -> "Checking the pendant…"
         SyncState.Syncing -> syncingLine(status)
         is SyncState.WaitingForUploads ->
             "Waiting for uploads: the queue is ${(state.queueFraction * PERCENT).toInt()}% full."
+
         is SyncState.AwaitingBacklog -> "About ${packetsToDuration(state.packets)} stored. Waiting for your answer."
         is SyncState.Paused -> pausedLine(state.reason)
         is SyncState.Retrying ->
             "The pendant did not answer (status ${state.status}). Trying again in ${delayText(state.retryInMs)}."
+
         is SyncState.ServerUnavailable -> "The server did not answer. Trying again in ${delayText(state.retryInMs)}."
         // The card is hidden for this state; the line only keeps the `when` total.
         is SyncState.ServerOutdated -> "The server is too old for offline sync."

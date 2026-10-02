@@ -175,7 +175,8 @@ class StorageSyncController(
     private var backlogAnswer: CompletableDeferred<Boolean>? = null
 
     /** Stop was pressed: no sync until the next connection or [syncNow]. */
-    @Volatile private var held = false
+    @Volatile
+    private var held = false
 
     // The sync of the current connection.
     private var position: RingPosition? = null
@@ -219,6 +220,7 @@ class StorageSyncController(
             is SyncState.WaitingForUploads,
             is SyncState.AwaitingBacklog,
             -> return
+
             else -> Unit
         }
         held = false
@@ -324,11 +326,13 @@ class StorageSyncController(
                     setState(SyncState.Idle)
                     return
                 }
+
                 Outcome.Again -> Unit
                 is Outcome.Stop -> {
                     setState(outcome.state)
                     return
                 }
+
                 is Outcome.Retry -> {
                     val wait = tuning.retryDelaysMs[minOf(failures++, tuning.retryDelaysMs.lastIndex)]
                     log.w(TAG, "sync retry in ${wait / MS}s: ${outcome.note}")
@@ -546,6 +550,7 @@ class StorageSyncController(
                             }
                             yield() // live capture shares the dispatcher
                         }
+
                         is RingEvent.Done -> done = event
                     }
                     true
@@ -562,11 +567,13 @@ class StorageSyncController(
         mutableStatus.update { it.copy(kbPerSecond = kbPerSecond ?: it.kbPerSecond, lastDoneStatus = status) }
         log.i(
             TAG,
-            "window from $from: $packets packets, ${kbPerSecond?.let {
-                "%.0f".format(
-                    it,
-                )
-            } ?: "?"} KB/s, status $status",
+            "window from $from: $packets packets, ${
+                kbPerSecond?.let {
+                    "%.0f".format(
+                        it,
+                    )
+                } ?: "?"
+            } KB/s, status $status",
         )
 
         if (refilled) return restartEpoch(ring)
@@ -666,6 +673,7 @@ class StorageSyncController(
                 }
                 log.i(TAG, "advanced the ring to $target (status $status)")
             }
+
             RingStatus.LINK_LOST, RingStatus.UNAVAILABLE -> return false
             else -> log.w(TAG, "ADVANCE($target) answered $status, trying again later")
         }

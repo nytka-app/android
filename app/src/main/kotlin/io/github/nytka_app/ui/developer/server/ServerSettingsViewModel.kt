@@ -59,6 +59,7 @@ class ServerSettingsViewModel
                 when (val result = api.settings()) {
                     is ApiResult.Ok ->
                         mutableState.value = ServerSettingsUiState(fields = result.value.map(::field), loading = false)
+
                     is ApiResult.Failure -> mutableState.update { it.copy(loading = false, error = result.notice()) }
                 }
             }
@@ -99,6 +100,7 @@ class ServerSettingsViewModel
                     is ApiResult.Ok ->
                         mutableState.value =
                             ServerSettingsUiState(fields = result.value.map(::field), loading = false, saved = true)
+
                     is ApiResult.Failure -> mutableState.update { it.failed(result) }
                 }
             }
@@ -118,6 +120,7 @@ class ServerSettingsViewModel
                     when {
                         result.kind == FailureKind.Conflict ->
                             "The server refused a change: a setting is locked by its environment."
+
                         result.kind == FailureKind.Invalid && leftover.isEmpty() -> "Some values are not valid."
                         result.kind == FailureKind.Invalid -> leftover.joinToString(" ")
                         else -> result.notice()

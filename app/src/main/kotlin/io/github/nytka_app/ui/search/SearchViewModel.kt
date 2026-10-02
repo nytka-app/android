@@ -125,6 +125,7 @@ class SearchViewModel
                                 )
                             }
                         }
+
                         is ApiResult.Failure ->
                             mutableState.update {
                                 it.copy(searching = false, searched = true, error = result.notice())
