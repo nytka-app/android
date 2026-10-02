@@ -16,6 +16,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -39,23 +40,28 @@ import io.github.nytka_app.ui.rememberPermissionRequest
 fun FirstRunScreen(viewModel: FirstRunViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     if (!state.loaded) return
-    Column(
-        Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text("Set up Nytka", style = MaterialTheme.typography.headlineMedium)
-        Text(
-            "Step ${state.step.ordinal + 1} of ${FirstRunStep.entries.size}",
-            style = MaterialTheme.typography.labelLarge,
-        )
-        when (state.step) {
-            FirstRunStep.Server -> ServerStep(state, viewModel)
-            FirstRunStep.Permissions -> PermissionsStep(state, viewModel)
-            FirstRunStep.Consent -> ConsentStep(state, viewModel)
-            FirstRunStep.Pairing -> PairingStep(state, viewModel)
+
+    Scaffold { padding ->
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(padding),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text("Set up Nytka", style = MaterialTheme.typography.headlineMedium)
+            Text(
+                "Step ${state.step.ordinal + 1} of ${FirstRunStep.entries.size}",
+                style = MaterialTheme.typography.labelLarge,
+            )
+            when (state.step) {
+                FirstRunStep.Server -> ServerStep(state, viewModel)
+                FirstRunStep.Permissions -> PermissionsStep(state, viewModel)
+                FirstRunStep.Consent -> ConsentStep(state, viewModel)
+                FirstRunStep.Pairing -> PairingStep(state, viewModel)
+            }
         }
     }
 }
