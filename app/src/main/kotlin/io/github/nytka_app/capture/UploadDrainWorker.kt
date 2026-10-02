@@ -41,6 +41,7 @@ class UploadDrainWorker
             return when (uploader.drain()) {
                 DrainResult.Empty, is DrainResult.Paused ->
                     if (bookmarks is DrainResult.Failed) Result.retry() else Result.success()
+
                 is DrainResult.Failed -> Result.retry()
             }
         }

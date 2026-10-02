@@ -51,6 +51,7 @@ class FrameAssembler(
                 if (inStep) completed = take() else drop()
                 start(notification, arrivedAtMs)
             }
+
             inStep && assembling && fragment == lastFragment + 1 -> append(notification, arrivedAtMs)
             else -> drop()
         }

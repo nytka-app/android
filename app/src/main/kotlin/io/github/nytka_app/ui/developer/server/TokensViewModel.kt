@@ -65,6 +65,7 @@ class TokensViewModel
                         mutableState.update { it.copy(created = result.value) }
                         load()
                     }
+
                     is ApiResult.Failure ->
                         mutableState.update {
                             it.copy(
@@ -77,6 +78,7 @@ class TokensViewModel
                                                 .joinToString(
                                                     " ",
                                                 ).ifEmpty { result.message }
+
                                         else -> result.notice()
                                     },
                             )

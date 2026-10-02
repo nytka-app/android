@@ -46,6 +46,7 @@ class DiagnosticsUploader(
                         sent += step.count
                         limit = PAGE_SIZE
                     }
+
                     is Step.Shrink -> limit = step.limit
                     Step.Dropped -> Unit
                     Step.Stop -> break
@@ -79,8 +80,10 @@ class DiagnosticsUploader(
                 source.markUploaded(page.map { it.id })
                 Step.Sent(page.size)
             }
+
             DiagnosticsResult.BadRequest, DiagnosticsResult.TooLarge ->
                 if (page.size == 1) drop(page.single()) else Step.Shrink(page.size / 2)
+
             DiagnosticsResult.NotSupported -> {
                 settings.update { it.copy(diagnosticsUpload = false) }
                 mutableNote.value = NOT_SUPPORTED_NOTE

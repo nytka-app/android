@@ -118,7 +118,8 @@ class CaptureController(
     private var nextSeq = 0L
 
     /** True until the settings say otherwise: nothing is recorded before the mute state is known. */
-    @Volatile private var muted = true
+    @Volatile
+    private var muted = true
 
     /** What the pendant was last told about audio; null before the first call of a start. */
     private var intent: Boolean? = null
@@ -225,6 +226,7 @@ class CaptureController(
                     lastDoubleTapMs = now()
                     toggleMute(inner)
                 }
+
                 ButtonEvent.SingleTap ->
                     when {
                         open -> {
@@ -232,12 +234,14 @@ class CaptureController(
                             lastPairMs = now()
                             toggleMute(inner)
                         }
+
                         !lastDoubleTapMs.within(now()) -> {
                             val opened = TapWindow()
                             window = opened
                             opened.job = inner.launch { keep(now(), opened) }
                         }
                     }
+
                 ButtonEvent.Release -> Unit
             }
         }
@@ -247,7 +251,8 @@ class CaptureController(
 
     /** The wait after a single tap. It is [open] until a second tap cancels it or the bookmark starts to be saved. */
     private class TapWindow {
-        @Volatile var open = true
+        @Volatile
+        var open = true
         lateinit var job: Job
 
         fun cancel() {

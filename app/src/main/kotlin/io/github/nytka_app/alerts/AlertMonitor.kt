@@ -68,10 +68,12 @@ class AlertMonitor {
             Alert.PendantAway ->
                 inputs.running &&
                     inputs.disconnectedSinceMs.olderThan(inputs.disconnectedAfterMinutes, nowMs)
+
             Alert.ServerUnreachable -> inputs.unreachableSinceMs.olderThan(inputs.unreachableAfterMinutes, nowMs)
             Alert.BatteryLow ->
                 inputs.battery != null &&
                     inputs.battery <= inputs.batteryPercent + if (up) BATTERY_CLEAR_MARGIN else 0
+
             Alert.QueueFilling ->
                 inputs.queueFraction >=
                     FrameQueue.ALERT_FRACTION - if (up) QUEUE_CLEAR_MARGIN else 0.0

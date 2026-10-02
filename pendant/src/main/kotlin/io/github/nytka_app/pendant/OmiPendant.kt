@@ -92,23 +92,28 @@ class OmiPendant(
     /** Serialises mute and the watchdog's resubscribe, so a resubscribe cannot undo a mute. */
     private val audioLock = Mutex()
 
-    @Volatile private var pending: PendingOperation? = null
+    @Volatile
+    private var pending: PendingOperation? = null
 
-    @Volatile private var gatt: BluetoothGatt? = null
+    @Volatile
+    private var gatt: BluetoothGatt? = null
 
-    @Volatile private var address: String? = null
+    @Volatile
+    private var address: String? = null
 
     private val audioIntent = AudioIntent()
 
     /** [elapsed] time of the last audio notification, or of switching audio on; the watchdog's audio clock. */
-    @Volatile private var lastAudioAtMs = 0L
+    @Volatile
+    private var lastAudioAtMs = 0L
 
     /**
      * [elapsed] time of the last notification of any kind, or of the link coming up; the watchdog's liveness clock.
      * The pendant notifies its battery every 5 s while connected, so a link that has shown that pulse and then says
      * nothing is dead.
      */
-    @Volatile private var lastAnyNotificationAtMs = 0L
+    @Volatile
+    private var lastAnyNotificationAtMs = 0L
     private var watchingAdapter = false
     private var emittedFrames = 0L
     private var overflowFrames = 0L
@@ -119,9 +124,11 @@ class OmiPendant(
     private val resume = ResumeDetector()
 
     /** What the last `onMtuChanged` reported; observed only, nothing acts on it. Reset per connection. */
-    @Volatile private var mtu: Int? = null
+    @Volatile
+    private var mtu: Int? = null
 
-    @Volatile private var mtuStatus: Int? = null
+    @Volatile
+    private var mtuStatus: Int? = null
 
     override fun connect(address: String) =
         synchronized(link) {
@@ -376,6 +383,7 @@ class OmiPendant(
                         warn("watchdog: no notification of any kind for ${action.quietMs}ms, reconnecting")
                         return recoverLink()
                     }
+
                     is WatchdogAction.Resubscribe -> {
                         info("watchdog: no audio for ${action.silentMs}ms, resubscribing, next in ${action.nextMs}ms")
                         subscribe(current, OmiUuids.AUDIO_DATA, false)
@@ -419,6 +427,7 @@ class OmiPendant(
                         )
                     }
             }
+
             OmiUuids.BUTTON -> OmiParsing.button(value)?.let { mutableButtons.tryEmit(it) }
             OmiUuids.BATTERY_LEVEL -> mutableBattery.value = OmiParsing.battery(value)
             OmiUuids.STORAGE_CONTROL -> omiStorage.onNotification(value)
@@ -604,6 +613,7 @@ class OmiPendant(
                                 session?.cancel()
                                 session = scope.launch { setUp(current) }
                             }
+
                             BluetoothProfile.STATE_DISCONNECTED -> {
                                 close()
                                 if (address != null) {

@@ -153,6 +153,7 @@ class ConversationsViewModel
                             mutableState.value =
                                 ConversationsUiState(days = group(items), endReached = nextBefore == null)
                         }
+
                         is ApiResult.Failure ->
                             mutableState.update {
                                 it.copy(

@@ -74,7 +74,10 @@ fun PeopleScreen(
         PullToRefreshBox(
             isRefreshing = state.loading,
             onRefresh = viewModel::refresh,
-            modifier = Modifier.fillMaxSize().padding(padding),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding),
         ) {
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
                 state.error?.let { error ->
@@ -116,6 +119,7 @@ fun PeopleScreen(
         is PeopleDialog.Actions -> ActionsDialog(dialog.person, viewModel)
         is PeopleDialog.Rename ->
             RenameDialog(dialog, onDismiss = viewModel::dismissDialog, onSave = { viewModel.rename(dialog.person, it) })
+
         is PeopleDialog.Merge ->
             MergeDialog(
                 dialog.person,
@@ -123,6 +127,7 @@ fun PeopleScreen(
                 onDismiss = viewModel::dismissDialog,
                 onPick = { viewModel.merge(dialog.person, it) },
             )
+
         is PeopleDialog.Delete -> DeleteDialog(dialog.person, viewModel)
         is PeopleDialog.NameVoice ->
             NameVoiceDialog(

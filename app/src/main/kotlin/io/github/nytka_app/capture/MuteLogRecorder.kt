@@ -25,7 +25,8 @@ class MuteLogRecorder(
     private val lock = Mutex()
     private var last: Boolean? = null
 
-    @Volatile private var latest: Boolean? = null
+    @Volatile
+    private var latest: Boolean? = null
 
     suspend fun record(muted: Boolean) {
         val at = now()

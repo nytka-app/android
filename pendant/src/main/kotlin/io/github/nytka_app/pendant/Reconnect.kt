@@ -15,7 +15,8 @@ import java.util.concurrent.atomic.AtomicLong
  * subscribes again by itself when [wanted] is true.
  */
 internal class AudioIntent {
-    @Volatile var wanted = false
+    @Volatile
+    var wanted = false
         private set
 
     fun set(enabled: Boolean) {
@@ -150,7 +151,8 @@ internal class LinkWatchdog(
     private var idleAnnounced = false
     private var escalatedAtMs = NEVER
 
-    @Volatile private var pulseSeen = false
+    @Volatile
+    private var pulseSeen = false
 
     /** Called from the notification thread for a notification that is not audio: the battery's or the button's. */
     fun pulseArrived() {

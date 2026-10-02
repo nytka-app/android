@@ -126,6 +126,7 @@ class DeveloperViewModel
                                             ?: "none"
                                     )
                             }
+
                         is ApiResult.Failure -> result.message
                     }
                 local.update { it.copy(serverStatus = text) }

@@ -28,6 +28,12 @@ fun StatusChip(state: StatusUiState) {
     AssistChip(
         onClick = {},
         label = { Text(listOfNotNull(label, state.capture.battery?.let { "$it%" }).joinToString(" · ")) },
-        leadingIcon = { Box(Modifier.size(8.dp).background(dot, CircleShape)) },
+        leadingIcon = {
+            Box(
+                Modifier
+                    .size(8.dp)
+                    .background(dot, CircleShape),
+            )
+        },
     )
 }

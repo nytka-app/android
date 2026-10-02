@@ -56,7 +56,9 @@ fun ServerSettingsScreen(
         },
     ) { padding ->
         LazyColumn(
-            Modifier.fillMaxSize().padding(padding),
+            Modifier
+                .fillMaxSize()
+                .padding(padding),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -96,6 +98,7 @@ private fun SettingRow(
                 }
                 Text(if (setting.isSet) "Set" else "Not set")
             }
+
         setting.type == ServerSetting.TYPE_BOOL ->
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -108,6 +111,7 @@ private fun SettingRow(
                     enabled = !locked,
                 )
             }
+
         else ->
             OutlinedTextField(
                 value = field.text,

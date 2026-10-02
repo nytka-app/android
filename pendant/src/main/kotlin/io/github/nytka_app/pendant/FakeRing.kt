@@ -119,12 +119,15 @@ class FakeRing(
                 } else if (!notReady()) {
                     read(buffer.getLong(1), if (value.size == 13) buffer.getInt(9).toLong() and 0xFFFFFFFFL else 0)
                 }
+
             CMD_ADVANCE ->
                 if (value.size != 9) ack(RingStatus.INVALID_COMMAND) else advance(buffer.getLong(1))
+
             CMD_CLEAR -> {
                 clear()
                 ack(RingStatus.OK)
             }
+
             else -> ack(RingStatus.INVALID_COMMAND)
         }
         return true

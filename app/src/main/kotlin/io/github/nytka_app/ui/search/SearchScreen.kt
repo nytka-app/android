@@ -70,7 +70,9 @@ fun SearchScreen(
         },
     ) { padding ->
         LazyColumn(
-            Modifier.fillMaxSize().padding(padding),
+            Modifier
+                .fillMaxSize()
+                .padding(padding),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -80,7 +82,10 @@ fun SearchScreen(
                     onValueChange = viewModel::setQuery,
                     label = { Text("Search conversations and memories") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth().focusRequester(focus),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focus),
                 )
             }
             item {

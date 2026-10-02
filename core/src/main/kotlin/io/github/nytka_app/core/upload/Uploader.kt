@@ -75,6 +75,7 @@ class Uploader(
                         )
                     }
                 }
+
                 is UploadResult.Dropped -> {
                     if (chunk.stored) chunks.park(chunk.id, result.code, result.reason) else chunks.remove(chunk.id)
                     mutableState.update {
@@ -88,6 +89,7 @@ class Uploader(
                         )
                     }
                 }
+
                 UploadResult.Unauthorized -> return pause("The server refused the token.")
                 is UploadResult.NotConfigured -> return pause(result.reason)
                 is UploadResult.Retry -> {
@@ -116,6 +118,7 @@ class Uploader(
                     delay(EMPTY_PAUSE_MS)
                     withTimeoutOrNull(EMPTY_RECHECK_MS) { chunks.usage.first { it.chunks > 0 } }
                 }
+
                 is DrainResult.Failed -> delay(result.retryAfterMs)
                 is DrainResult.Paused -> {
                     val paused = settings.first().connectionKey

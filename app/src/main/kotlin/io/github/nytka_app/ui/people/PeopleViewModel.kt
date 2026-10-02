@@ -168,6 +168,7 @@ class PeopleViewModel
                                 "Deleted ${person.name}, but the voice model could not be removed."
                             },
                         )
+
                     is ApiResult.Failure -> failed(result)
                 }
             }

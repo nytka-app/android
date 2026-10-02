@@ -40,6 +40,7 @@ class BookmarkUploader(
                     source.remove(row.id)
                     failures = 0
                 }
+
                 is ApiResult.Failure ->
                     when (result.kind) {
                         FailureKind.Invalid -> source.remove(row.id)
@@ -49,8 +50,8 @@ class BookmarkUploader(
                         FailureKind.NotConfigured,
                         FailureKind.NotFound,
                         FailureKind.Unsupported,
-                        ->
-                            return DrainResult.Paused(result.message)
+                        -> return DrainResult.Paused(result.message)
+
                         else -> return DrainResult.Failed(backoff.delayMs(++failures))
                     }
             }

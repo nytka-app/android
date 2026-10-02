@@ -13,9 +13,11 @@ import javax.inject.Inject
 /** Renews presence observation after a reboot, so the pendant coming into range starts capture. */
 @AndroidEntryPoint
 class BootReceiver : BroadcastReceiver() {
-    @Inject lateinit var settings: SettingsStore
+    @Inject
+    lateinit var settings: SettingsStore
 
-    @Inject @ApplicationScope
+    @Inject
+    @ApplicationScope
     lateinit var applicationScope: CoroutineScope
 
     override fun onReceive(

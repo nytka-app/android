@@ -78,7 +78,10 @@ fun MemoriesTab(
         }
         FloatingActionButton(
             onClick = viewModel::startAdd,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+            modifier =
+                Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
         ) { Icon(Icons.Filled.Add, contentDescription = "Add a memory") }
     }
 
@@ -137,15 +140,17 @@ private fun MemoryItem(
             }
         },
         modifier =
-            Modifier.fillMaxWidth().then(
-                if (row.conversationId !=
-                    null
-                ) {
-                    Modifier.clickable(onClick = onOpen)
-                } else {
-                    Modifier
-                },
-            ),
+            Modifier
+                .fillMaxWidth()
+                .then(
+                    if (row.conversationId !=
+                        null
+                    ) {
+                        Modifier.clickable(onClick = onOpen)
+                    } else {
+                        Modifier
+                    },
+                ),
     )
 }
 

@@ -78,6 +78,7 @@ class NytkaApi(
                         DiagnosticsResult.Accepted(
                             json.decodeFromString<DiagnosticsAnswer>(response.body.string()).accepted,
                         )
+
                     401 -> DiagnosticsResult.Unauthorized
                     404 -> DiagnosticsResult.NotSupported
                     400 -> DiagnosticsResult.BadRequest
