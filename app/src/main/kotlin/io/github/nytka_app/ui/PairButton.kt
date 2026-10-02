@@ -23,11 +23,12 @@ fun PairButton(
 ) {
     val context = LocalContext.current
     val pairing = remember { CompanionPairing(context) }
+    val noPendantString = stringResource(R.string.pairing_chooser_no_pendant)
     val chooser =
         rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
                 pairing.complete(result.data)?.let(onPaired)
-                    ?: onError(context.getString(R.string.pairing_chooser_no_pendant))
+                    ?: onError(noPendantString)
             }
         }
     Button(onClick = {
