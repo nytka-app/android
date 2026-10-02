@@ -49,33 +49,47 @@ import javax.inject.Inject
  */
 @AndroidEntryPoint
 class CaptureService : LifecycleService() {
-    @Inject lateinit var queue: FrameQueue
+    @Inject
+    lateinit var queue: FrameQueue
 
-    @Inject lateinit var uploader: Uploader
+    @Inject
+    lateinit var uploader: Uploader
 
-    @Inject lateinit var bookmarkOutbox: BookmarkOutbox
+    @Inject
+    lateinit var bookmarkOutbox: BookmarkOutbox
 
-    @Inject lateinit var bookmarkUploader: BookmarkUploader
+    @Inject
+    lateinit var bookmarkUploader: BookmarkUploader
 
-    @Inject lateinit var settings: SettingsStore
+    @Inject
+    lateinit var settings: SettingsStore
 
-    @Inject lateinit var diagnostics: DiagnosticsSink
+    @Inject
+    lateinit var diagnostics: DiagnosticsSink
 
-    @Inject lateinit var appLog: AppLog
+    @Inject
+    lateinit var appLog: AppLog
 
-    @Inject lateinit var diagnosticsUploader: DiagnosticsUploader
+    @Inject
+    lateinit var diagnosticsUploader: DiagnosticsUploader
 
-    @Inject lateinit var hub: CaptureHub
+    @Inject
+    lateinit var hub: CaptureHub
 
-    @Inject lateinit var pendants: PendantFactory
+    @Inject
+    lateinit var pendants: PendantFactory
 
-    @Inject lateinit var infoClient: InfoClient
+    @Inject
+    lateinit var infoClient: InfoClient
 
-    @Inject lateinit var captureTimes: CaptureTimes
+    @Inject
+    lateinit var captureTimes: CaptureTimes
 
-    @Inject lateinit var muteLog: MuteLogRecorder
+    @Inject
+    lateinit var muteLog: MuteLogRecorder
 
-    @Inject @ApplicationScope
+    @Inject
+    @ApplicationScope
     lateinit var applicationScope: CoroutineScope
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)

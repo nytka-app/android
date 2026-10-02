@@ -1,7 +1,6 @@
 package io.github.nytka_app.core.api
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 
 /** A lasting fact about the user. [source] is `ai` or `user`; the conversation fields are null without a source. */
 @Serializable

@@ -42,7 +42,10 @@ fun FirstRunScreen(viewModel: FirstRunViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     if (!state.loaded) return
     Column(
-        Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
+        Modifier
+            .fillMaxSize()
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(stringResource(R.string.set_up_nytka), style = MaterialTheme.typography.headlineMedium)
@@ -123,11 +126,13 @@ private fun PermissionsStep(
                 stringResource(R.string.permissions_denied_nearby),
                 color = MaterialTheme.colorScheme.error,
             )
+
         PermissionAnswer.Blocked ->
             Text(
                 stringResource(R.string.permissions_blocked_nearby),
                 color = MaterialTheme.colorScheme.error,
             )
+
         else -> Unit
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

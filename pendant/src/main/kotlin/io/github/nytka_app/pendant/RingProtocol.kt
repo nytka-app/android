@@ -181,12 +181,14 @@ object RingProtocol {
                 } else {
                     null
                 }
+
             NOTIFY_READ_BEGIN ->
                 if (value.size >= READ_BEGIN_SIZE) {
                     RingNotification.ReadBegin(buffer.getLong(1), buffer.getInt(9).toLong() and 0xFFFFFFFFL)
                 } else {
                     null
                 }
+
             else -> null
         }
     }

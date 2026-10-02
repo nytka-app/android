@@ -153,6 +153,7 @@ class FirstRunViewModel
                         settings.update { it.copy(token = "") }
                         mutableState.update { it.copy(testing = false, serverError = READ_TOKEN_REFUSED) }
                     }
+
                     is ApiResult.Ok -> {
                         settings.update { it.copy(firstRunStep = FirstRunStep.Permissions) }
                         mutableState.update {
@@ -163,6 +164,7 @@ class FirstRunViewModel
                             )
                         }
                     }
+
                     is ApiResult.Failure ->
                         mutableState.update {
                             it.copy(

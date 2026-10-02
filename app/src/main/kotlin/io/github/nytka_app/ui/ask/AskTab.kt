@@ -63,7 +63,11 @@ fun AskTab(
                     maxLines = 4,
                 )
                 if (state.asking) {
-                    CircularProgressIndicator(Modifier.padding(start = 12.dp).size(24.dp))
+                    CircularProgressIndicator(
+                        Modifier
+                            .padding(start = 12.dp)
+                            .size(24.dp),
+                    )
                 } else {
                     IconButton(onClick = viewModel::ask, enabled = state.canAsk) {
                         Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Ask")

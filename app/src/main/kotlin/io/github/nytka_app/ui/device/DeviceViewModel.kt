@@ -168,6 +168,7 @@ class DeviceViewModel
                         )
                     }
                 }
+
                 is ApiResult.Ok ->
                     local.update {
                         it.copy(
@@ -178,6 +179,7 @@ class DeviceViewModel
                             serverSync = result.value.has(ServerInfo.FEATURE_OFFLINE_SYNC),
                         )
                     }
+
                 is ApiResult.Failure ->
                     local.update {
                         it.copy(
@@ -246,6 +248,7 @@ class DeviceViewModel
                                     local.update { it.copy(muteServer = MuteServerState.Applied) }
                                     showZoneHint(catalog.value)
                                 }
+
                                 else -> pushMute(schedule)
                             }
                         }
@@ -353,6 +356,7 @@ class DeviceViewModel
                     null, FailureKind.NotFound, FailureKind.Invalid, FailureKind.Unsupported ->
                         "this server does not know mute windows yet, so audio recorded while the pendant is away " +
                             "is not filtered there."
+
                     else -> zoneFailure(failure)
                 }
 
@@ -360,6 +364,7 @@ class DeviceViewModel
                 when (failure.kind) {
                     FailureKind.NotFound, FailureKind.Invalid, FailureKind.Unsupported ->
                         "this server does not support it yet."
+
                     FailureKind.Network -> "the server could not be reached."
                     FailureKind.NotConfigured -> "no server is set up."
                     FailureKind.Unauthorized -> "the token was refused."

@@ -42,9 +42,11 @@ class OmiStorage(
     private val mutableStatus = MutableStateFlow<Int?>(null)
     private val operations = Mutex()
 
-    @Volatile private var inbox: Channel<ByteArray>? = null
+    @Volatile
+    private var inbox: Channel<ByteArray>? = null
 
-    @Volatile private var subscribed = false
+    @Volatile
+    private var subscribed = false
     private var reads = 0
 
     override val support: StateFlow<StorageSupport> = mutableSupport
@@ -153,10 +155,12 @@ class OmiStorage(
                     emit(RingEvent.Done(RingStatus.TIMEOUT, nextSeq))
                     return false
                 }
+
                 RingNotification.Closed -> {
                     emit(RingEvent.Done(RingStatus.LINK_LOST, nextSeq))
                     return false
                 }
+
                 is RingNotification.ReadBegin -> {
                     reassembler.restart(n.startSeq)
                     nextSeq = n.startSeq
@@ -164,6 +168,7 @@ class OmiStorage(
                     waitMs = DATA_TIMEOUT_MS
                     emit(RingEvent.Begin(n.startSeq, n.count))
                 }
+
                 is RingNotification.Data ->
                     if (begun) {
                         val records = reassembler.append(n.bytes)
@@ -172,15 +177,18 @@ class OmiStorage(
                             emit(RingEvent.Records(records))
                         }
                     }
+
                 is RingNotification.Done -> {
                     emit(RingEvent.Done(n.status, n.nextSeq))
                     return false
                 }
+
                 is RingNotification.Ack ->
                     if (refused(n, begun)) {
                         emit(RingEvent.Done(n.status, fromSeq)) // a refused READ answers ACK, never DONE
                         return false
                     }
+
                 is RingNotification.Info -> Unit
             }
         }
@@ -285,14 +293,17 @@ class OmiStorage(
                         "Offline sync needs firmware ${FirmwareVersion.RING_STORAGE} or later; " +
                             "this pendant did not report its firmware.",
                     )
+
                 version < FirmwareVersion.RING_STORAGE ->
                     StorageSupport.Unsupported(
                         "Offline sync needs firmware ${FirmwareVersion.RING_STORAGE} or later; " +
                             "this pendant has $version. Update it with the official Omi app.",
                     )
+
                 features == null -> StorageSupport.Unsupported("The pendant did not report its features.")
                 (features shr STORAGE_FEATURE_BIT) and 1L == 0L ->
                     StorageSupport.Unsupported("This pendant does not offer offline storage.")
+
                 else -> StorageSupport.Supported
             }
         }

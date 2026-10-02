@@ -19,6 +19,7 @@ object AlertNotifications {
             Alert.ServerUnreachable ->
                 "The server has been unreachable for ${inputs.unreachableAfterMinutes} minutes. " +
                     "Audio waits in the queue."
+
             Alert.BatteryLow -> "The pendant battery is at ${inputs.battery}%."
             Alert.QueueFilling ->
                 "The upload queue is ${(FrameQueue.ALERT_FRACTION * 100).toInt()}% full; " +

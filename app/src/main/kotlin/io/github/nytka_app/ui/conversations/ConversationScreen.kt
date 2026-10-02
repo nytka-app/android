@@ -120,7 +120,9 @@ fun ConversationScreen(
         },
     ) { padding ->
         LazyColumn(
-            Modifier.fillMaxSize().padding(padding),
+            Modifier
+                .fillMaxSize()
+                .padding(padding),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
@@ -326,7 +328,10 @@ private fun BookmarkLine(
         )
     }
     Row(
-        Modifier.fillMaxWidth().clickable { editing = true }.padding(start = 56.dp, top = 4.dp),
+        Modifier
+            .fillMaxWidth()
+            .clickable { editing = true }
+            .padding(start = 56.dp, top = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {

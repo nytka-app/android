@@ -57,7 +57,8 @@ class AppLog(
     private val lock = Mutex()
     private var generation = 0L
 
-    @Volatile private var run: Run? = null
+    @Volatile
+    private var run: Run? = null
 
     /** Lines the queue threw away since the writer last said so. */
     private val dropped = AtomicInteger()

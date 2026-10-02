@@ -83,7 +83,11 @@ fun WebhooksScreen(
             )
         },
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .padding(padding),
+        ) {
             if (selected == null) {
                 WebhookList(state, viewModel, Modifier.weight(1f))
             } else {
@@ -268,7 +272,12 @@ private fun EventRow(
     checked: Boolean,
     onChange: (Boolean) -> Unit,
 ) {
-    Row(Modifier.fillMaxWidth().clickable { onChange(!checked) }, verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clickable { onChange(!checked) },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Checkbox(checked = checked, onCheckedChange = onChange)
         Text(label)
     }

@@ -358,18 +358,14 @@ class StorageSyncControllerTest {
             assertTrue(
                 rig.sink.committedFrames.none {
                     it.capturedAtMs in
-                        ((STAMP_S + 3) * 1000 + 1)..((STAMP_S + 7) * 1000 - 1)
+                        ((STAMP_S + 3) * 1000 + 1)..<(STAMP_S + 7) * 1000
                 },
             )
             // Numbered without holes, since a hole makes the server wait ten minutes.
-            assertEquals(
-                (
-                    0L until
-                        rig.sink.committedFrames.size
-                            .toLong()
-                ).toList(),
-                rig.sink.committedFrames.map { it.seq },
-            )
+
+            val expected = (0L until rig.sink.committedFrames.size).toList()
+            val actual = rig.sink.committedFrames.map { it.seq }
+            assertEquals(expected, actual)
 
             // Nothing of the muted part is in the queue, so once the rest is accepted the whole ring is freed.
             rig.sink.accept(120)

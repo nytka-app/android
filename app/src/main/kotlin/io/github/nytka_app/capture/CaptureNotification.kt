@@ -45,6 +45,7 @@ object CaptureNotification {
                 } else {
                     " · syncing"
                 }
+
             else -> ""
         }
     }

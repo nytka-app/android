@@ -72,6 +72,7 @@ class TasksViewModel
                         }
                         if (mutableState.value.completedShown) loadCompleted(reset = true)
                     }
+
                     is ApiResult.Failure ->
                         mutableState.update { it.copy(loading = false, refreshing = false, error = result.notice()) }
                 }
@@ -100,6 +101,7 @@ class TasksViewModel
                             )
                         }
                     }
+
                     is ApiResult.Failure -> mutableState.update { it.copy(error = result.notice()) }
                 }
                 loadingMore = false
@@ -143,6 +145,7 @@ class TasksViewModel
                             )
                         }
                     }
+
                     is ApiResult.Failure -> mutableState.update { it.copy(error = result.notice()) }
                 }
             }
@@ -206,6 +209,7 @@ class TasksViewModel
                                 error = null,
                             )
                         }
+
                     is ApiResult.Failure -> mutableState.update { it.copy(error = result.itemNotice()) }
                 }
             }
@@ -222,6 +226,7 @@ class TasksViewModel
                                 error = null,
                             )
                         }
+
                     is ApiResult.Failure -> mutableState.update { it.copy(error = result.itemNotice()) }
                 }
             }

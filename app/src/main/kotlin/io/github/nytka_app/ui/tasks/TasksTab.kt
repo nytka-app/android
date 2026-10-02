@@ -185,7 +185,10 @@ private fun TaskItem(
                 }
             }
         },
-        modifier = Modifier.fillMaxWidth().clickable { onOpenConversation(task.conversationId) },
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable { onOpenConversation(task.conversationId) },
     )
 }
 

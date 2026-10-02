@@ -108,6 +108,7 @@ class RingCaptureTimes(
                     pending += record to stamp
                     anchor(stamp)
                 }
+
                 else -> pending += record to stamp
             }
         }

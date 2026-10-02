@@ -1,7 +1,6 @@
 package io.github.nytka_app.core.api
 
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 
 @Serializable
 data class LastDelivery(
