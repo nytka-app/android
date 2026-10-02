@@ -47,14 +47,13 @@ fun AskTab(
     onOpenConversation: (String) -> Unit,
     viewModel: AskViewModel = hiltViewModel(),
 ) {
-
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     AskTab(
         state = state,
         onOpenConversation = onOpenConversation,
         onSetQuestion = viewModel::setQuestion,
-        onAskClick = viewModel::ask
+        onAskClick = viewModel::ask,
     )
 }
 

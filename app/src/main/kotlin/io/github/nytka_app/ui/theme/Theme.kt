@@ -45,10 +45,11 @@ private fun getColorScheme(): ColorScheme {
     val isSystemInDarkTheme = isSystemInDarkTheme()
     val context = LocalContext.current
 
-    val colorScheme = when {
-        isSystemInDarkTheme -> dynamicDarkColorScheme(context)
-        else -> dynamicLightColorScheme(context)
-    }
+    val colorScheme =
+        when {
+            isSystemInDarkTheme -> dynamicDarkColorScheme(context)
+            else -> dynamicLightColorScheme(context)
+        }
 
     return colorScheme
 }

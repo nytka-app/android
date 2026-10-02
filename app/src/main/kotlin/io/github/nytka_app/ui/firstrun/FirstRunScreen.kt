@@ -43,11 +43,12 @@ fun FirstRunScreen(viewModel: FirstRunViewModel = hiltViewModel()) {
 
     Scaffold { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-                .verticalScroll(rememberScrollState())
-                .padding(padding),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState())
+                    .padding(padding),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text("Set up Nytka", style = MaterialTheme.typography.headlineMedium)
