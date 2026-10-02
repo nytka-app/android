@@ -28,6 +28,8 @@ jobs:
   apk:
     needs: release-please
     if: needs.release-please.outputs.created == 'true'
+    # The signing secrets live in this environment, which only protected branches can use.
+    environment: release
     runs-on: ubuntu-latest
     permissions:
       contents: write
