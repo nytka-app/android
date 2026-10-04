@@ -133,6 +133,16 @@ class NytkaApi(
                 }.toString(),
         ) { }
 
+    override suspend fun markSegment(
+        segmentId: Long,
+        isUser: Boolean?,
+    ): ApiResult<Segment> =
+        request(
+            "PATCH",
+            "api/v1/segments/$segmentId",
+            body = buildJsonObject { put("isUser", isUser?.let(::JsonPrimitive) ?: JsonNull) }.toString(),
+        ) { json.decodeFromString(it) }
+
     override suspend fun enrichConversation(id: String): ApiResult<Unit> =
         request("POST", "api/v1/conversations/$id/enrich") { }
 
@@ -154,6 +164,21 @@ class NytkaApi(
         query: Map<String, String?> = emptyMap(),
         body: String? = null,
         parse: (String) -> T,
+    ): ApiResult<T> =
+        exchange(method, path, requestBody(method, body), query) { code, text ->
+            if (code in 200..299) ApiResult.Ok(parse(text())) else null
+        }
+
+    /**
+     * One call with any [body], for a client whose answers [read] decodes itself: it gets the status code and the
+     * response text, and a null from it (without reading the text) makes the usual failure of that code.
+     */
+    internal suspend fun <T> exchange(
+        method: String,
+        path: String,
+        body: RequestBody?,
+        query: Map<String, String?> = emptyMap(),
+        read: (code: Int, text: () -> String) -> ApiResult<T>?,
     ): ApiResult<T> {
         val target =
             when (val t = target()) {
@@ -161,8 +186,8 @@ class NytkaApi(
                 is Target.Ready -> t
             }
         return try {
-            execute(target, method, path, requestBody(method, body), query).use { response ->
-                if (response.isSuccessful) ApiResult.Ok(parse(response.body.string())) else failure(response)
+            execute(target, method, path, body, query).use { response ->
+                read(response.code) { response.body.string() } ?: failure(response)
             }
         } catch (_: InterruptedIOException) {
             // A read or call timeout; SocketTimeoutException is one.

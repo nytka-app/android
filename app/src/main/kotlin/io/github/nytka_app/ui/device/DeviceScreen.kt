@@ -28,6 +28,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -36,6 +37,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.capture.PairedPendant
+import io.github.nytka_app.firmware.FirmwareNotice
 import io.github.nytka_app.pendant.PendantConnection
 import io.github.nytka_app.ui.LocalNetworkHint
 import io.github.nytka_app.ui.LocalNetworkPrompt
@@ -48,6 +50,7 @@ fun DeviceScreen(
     onMute: (Boolean) -> Unit,
     onOpenDeveloper: () -> Unit,
     onOpenPeople: () -> Unit,
+    onOpenVoice: () -> Unit,
     viewModel: DeviceViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -56,6 +59,10 @@ fun DeviceScreen(
     var backlogDismissed by rememberSaveable { mutableStateOf(false) }
     // A later question is a new one: show it again.
     LaunchedEffect(state.backlogPackets == null) { if (state.backlogPackets == null) backlogDismissed = false }
+
+    val pendantInfo = (status.capture.connection as? PendantConnection.Connected)?.info
+    // Also runs again when the switch changes: the checker reads the setting.
+    LaunchedEffect(pendantInfo, state.firmwareCheck) { viewModel.pendantSeen(pendantInfo) }
 
     LocalNetworkPrompt(state.askLocalNetwork, viewModel::localNetworkAnswered)
     LazyColumn(
@@ -72,6 +79,7 @@ fun DeviceScreen(
                 onPairError = { pairError = it },
                 onMute = onMute,
                 onForget = { confirmForget = true },
+                onFirmwareCheck = viewModel::setFirmwareCheck,
             )
         }
         state.storage?.let { card ->
@@ -103,6 +111,14 @@ fun DeviceScreen(
             Section(stringResource(R.string.people)) {
                 Text(stringResource(R.string.people_description))
                 OutlinedButton(onClick = onOpenPeople) { Text(stringResource(R.string.people)) }
+            }
+        }
+        if (state.serverVoice == true) {
+            item {
+                Section(stringResource(R.string.voice_title)) {
+                    Text(stringResource(R.string.voice_entry_summary))
+                    OutlinedButton(onClick = onOpenVoice) { Text(stringResource(R.string.voice_entry_button)) }
+                }
             }
         }
         item {
@@ -169,6 +185,7 @@ private fun PendantSection(
     onPairError: (String) -> Unit,
     onMute: (Boolean) -> Unit,
     onForget: () -> Unit,
+    onFirmwareCheck: (Boolean) -> Unit,
 ) {
     Section("Pendant") {
         val connection = status.capture.connection
@@ -184,6 +201,7 @@ private fun PendantSection(
         )
         status.capture.battery?.let { Text(stringResource(R.string.battery_percent_format, it)) }
         info?.firmware?.let { Text(stringResource(R.string.firmware_format, it)) }
+        state.firmwareNotice?.let { FirmwareNoticeText(it) }
         pairError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (state.pendantAddress == null) {
@@ -195,6 +213,30 @@ private fun PendantSection(
                 OutlinedButton(onClick = { onForget() }) { Text("Forget") }
             }
         }
+        if (state.pendantAddress != null) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Switch(checked = state.firmwareCheck, onCheckedChange = onFirmwareCheck)
+                Text(stringResource(R.string.firmware_check_label))
+            }
+            Text(
+                stringResource(R.string.firmware_check_explanation),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+    }
+}
+
+@Composable
+private fun FirmwareNoticeText(notice: FirmwareNotice) {
+    val uri = LocalUriHandler.current
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            stringResource(R.string.firmware_available_format, notice.latest, notice.current),
+            color = MaterialTheme.colorScheme.primary,
+        )
+        TextButton(
+            onClick = { uri.openUri(notice.instructionsUrl) },
+        ) { Text(stringResource(R.string.firmware_how_to_update)) }
     }
 }
 

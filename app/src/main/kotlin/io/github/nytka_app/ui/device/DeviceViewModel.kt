@@ -21,6 +21,9 @@ import io.github.nytka_app.core.api.UrlCheck
 import io.github.nytka_app.core.settings.MuteSchedule
 import io.github.nytka_app.core.settings.Settings
 import io.github.nytka_app.core.settings.SettingsSource
+import io.github.nytka_app.firmware.FirmwareNotice
+import io.github.nytka_app.firmware.FirmwareNotices
+import io.github.nytka_app.pendant.PendantInfo
 import io.github.nytka_app.ui.firstrun.READ_TOKEN_REFUSED
 import io.github.nytka_app.ui.mustAskForLocalNetwork
 import kotlinx.coroutines.Job
@@ -61,12 +64,18 @@ data class DeviceUiState(
     val backlogPackets: Long? = null,
     /** Whether /info lists `offline-sync`; null until it answers and after a failed check. Only true shows the card. */
     val serverSync: Boolean? = null,
+    /** Whether /info lists `voice` (the server has the speaker model); only true shows "Your voice". */
+    val serverVoice: Boolean? = null,
     val muteSchedule: MuteSchedule = MuteSchedule(),
     /** The line under the mute editor: whether the server has the schedule; null until the first answer. */
     val muteServer: MuteServerState? = null,
     /** The phone's time zone id when the server's zone is UTC or unset and the phone's is not; else null. */
     val timeZoneHint: String? = null,
     val timeZoneError: String? = null,
+    /** Whether Nytka looks for a newer pendant firmware (a setting, on by default). */
+    val firmwareCheck: Boolean = true,
+    /** A newer firmware than the connected pendant runs; null when none is known. */
+    val firmwareNotice: FirmwareNotice? = null,
 )
 
 sealed interface MuteServerState {
@@ -93,6 +102,7 @@ class DeviceViewModel
         private val serverSettings: ServerSettingsClient,
         private val phoneZone: PhoneZone,
         private val pendantSettings: PendantSettingsControls,
+        private val firmware: FirmwareNotices,
     ) : ViewModel() {
         private val local = MutableStateFlow(DeviceUiState())
 
@@ -118,6 +128,7 @@ class DeviceViewModel
                     privateNetwork = current.privateNetwork,
                     developerMode = current.developerMode,
                     muteSchedule = current.muteSchedule,
+                    firmwareCheck = current.firmwareCheck,
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, DeviceUiState())
 
@@ -177,6 +188,7 @@ class DeviceViewModel
                             apiMismatch = result.value.apiVersion != NytkaApi.API_VERSION,
                             serverUnreachable = false,
                             serverSync = result.value.has(ServerInfo.FEATURE_OFFLINE_SYNC),
+                            serverVoice = result.value.has(ServerInfo.FEATURE_VOICE),
                         )
                     }
 
@@ -187,6 +199,7 @@ class DeviceViewModel
                             apiVersion = null,
                             apiMismatch = false,
                             serverSync = null,
+                            serverVoice = null,
                             serverUnreachable = result.kind == FailureKind.Network,
                         )
                     }
@@ -303,6 +316,22 @@ class DeviceViewModel
         fun commitLed(percent: Int) = pendantSettings.commitLed(percent)
 
         fun commitGain(level: Int) = pendantSettings.commitGain(level)
+
+        private var firmwareJob: Job? = null
+
+        /** The connected pendant's info, or null when none is connected; may ask GitHub, at most once a day. */
+        fun pendantSeen(info: PendantInfo?) {
+            firmwareJob?.cancel()
+            firmwareJob =
+                viewModelScope.launch {
+                    val notice = info?.let { firmware.notice(it) }
+                    local.update { it.copy(firmwareNotice = notice) }
+                }
+        }
+
+        fun setFirmwareCheck(on: Boolean) {
+            viewModelScope.launch { settings.update { it.copy(firmwareCheck = on) } }
+        }
 
         fun syncNow() = sync.syncNow()
 

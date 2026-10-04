@@ -25,7 +25,7 @@ have their own.
 - A Nytka server the phone can reach, with its address and an `admin` token: `Nytka__AdminToken` in
   the server's `.env`, or an admin token made in the app. A `read` token is refused ("The app needs
   an admin token."). The
-  [server README](https://github.com/nytka-app/server#first-run-about-5-minutes) sets one up with
+  [server README](https://github.com/nytka-app/server#install-in-15-minutes) sets one up with
   Docker Compose. Keep the address and the token where you can paste them on the phone: the token
   is a long random string. The tabs, the sync and the server settings below need server 0.4.0 or
   later. An older server still takes audio, and a screen it lacks says "This server needs an update".
@@ -81,6 +81,10 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   bar sits above the transcript: play or pause, the position and length, and a slider. Tap the time
   beside a paragraph to play from there. Pauses between speech are not stored, so they are skipped.
   Playback stops when you leave the screen or the app.
+  Touch and hold a paragraph to say whose it is: **This is me**, **This is not me**, or **Clear**
+  (only where you marked it). Your mark beats the server's guess and shows as "Me · marked"; a line
+  the server's voice match or the provider calls yours shows "Me · voice" or "Me · provider". Needs
+  server 0.12.0 and an admin token.
   Titles, summaries and tasks come from a language model on your server: without one, a row shows the
   start of the transcript instead.
 - **Tasks.** What your conversations left you to do, newest first, with the conversation's title and
@@ -91,7 +95,8 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   conversation it came from (a memory you add yourself has none). **+** adds one and ⋮ edits or
   deletes one. A memory you delete does not come back from later conversations.
 - **Ask.** A placeholder that says "Arrives in a later version".
-- **Device.** The pendant, its storage and settings, the server, the settings and the version.
+- **Device.** The pendant, its storage and settings, the server, the settings, People,
+  [Your voice](#your-voice) and the version.
 
 **Search** opens from the magnifier above the conversation list. It looks through transcripts,
 titles, summaries and memories, in Ukrainian and English, while you type: from one letter or digit,
@@ -162,6 +167,52 @@ slider, because the pendant saves it to its flash memory and keeps it after a re
 the current values on every connection and stores nothing on the server. A failed write shows a
 message and puts the slider back.
 
+## Pendant firmware notice
+
+The **Pendant** card on the **Device** tab shows the firmware the connected pendant reports. Nytka
+also tells you when Omi has published a newer one: the card then says "Firmware 3.0.21 is available
+(this pendant has 3.0.20)" with a **How to update** link to Omi's own instructions. Nytka only tells
+you. It never downloads or installs firmware; the official Omi app does that (install it, update,
+uninstall it again).
+
+- **When it asks.** At most once every 24 hours, and only while the Device tab shows a connected
+  pendant, Nytka asks GitHub for the newest release of `BasedHardware/omi` in the pendant's firmware
+  stream (three or four requests, no token). Offline, it tries again an hour later at the earliest.
+- **Which pendants.** Only the consumer pendant, which reports the model "Omi CV 1" and a 3.x
+  firmware, and whose releases are tagged `Omi_CV1_v<version>`. Omi's other hardware (DevKit 1 and 2,
+  EVT, Glass) has its own tags and is not checked; a pendant that reports anything else gets no
+  notice, because a wrong guess would send you to the wrong firmware. Pre-releases are ignored.
+- **What GitHub learns.** Your IP address, like any website you open. No account, token, cookie,
+  pendant data, audio, or server address leaves the phone for this. Switch it off with **Check for
+  new pendant firmware** on the Device tab (on by default); then Nytka never contacts GitHub.
+
+## Your voice
+
+With server 0.12 or later and its speaker model (`/api/v1/info` lists `voice`), the **Device** tab
+has a **Your voice** card. It teaches the server your voice once, so it marks the lines you said as
+yours whatever the transcription service says. It needs an admin token.
+
+Choose the languages you speak (Ukrainian, Russian, English) and tap **Enroll**. The screen shows
+three short sentences per language: read them aloud with the pendant on, somewhere quiet, for at
+least 30 seconds in all (with one language, read them twice). A meter shows the pendant's level and
+a counter the seconds against the server's 120-second limit; recording stops by itself at the limit.
+**Send** gives the reading to the server, which answers with how much speech it used. It refuses a
+reading with less than 20 seconds of speech, one too short to make 3 samples, or one whose samples
+do not sound like one voice (another speaker or noise), and the screen says which and what to do.
+
+The reading comes from the pendant, never the phone's microphone, because the server matches pendant
+audio later. While you read, the pendant's live audio goes only to the enrollment and is not queued
+for upload, so the reading never becomes a conversation; capture goes back to normal as soon as you
+send, cancel, reach the limit or leave the screen. The audio of the reading is not kept on the phone,
+and the server keeps only the voiceprint.
+
+Once enrolled, the card shows when, from how many samples, and how many of your segments the
+voiceprint learned from since. **Re-enroll** starts over, **Add more** blends a new reading in (for
+example another language), **Forget what it learned** goes back to the enrolled voiceprint, and
+**Forget my voice** (asked first) deletes the voiceprint, every segment fingerprint and the labels
+made from them; your own marks stay. See the
+[server README](https://github.com/nytka-app/server#your-voice).
+
 ## Everyday use
 
 - **Mute** with a double tap on the pendant: one long buzz means muted, two short buzzes mean
@@ -218,10 +269,11 @@ message and puts the slider back.
 
 Audio waiting to upload, in the app's private storage, until the server has it; the settings; the
 token, encrypted with a key that never leaves the Android Keystore; how far the pendant's storage
-has been read; and a log of when you muted and unmuted (times and on or off, nothing else). Android
+has been read; the time and result of the last firmware check; and a log of when you muted and unmuted (times and on or off, nothing else). Android
 backups and phone-to-phone transfers skip all of it, so a new phone starts with first run. The
 pendant keeps the audio it stored until your server has it. The app talks to your server and nothing
-else: no analytics, no crash reporting, no Omi cloud.
+else, apart from the once-a-day [firmware notice](#pendant-firmware-notice) (GitHub, switchable): no
+analytics, no crash reporting, no Omi cloud.
 
 Diagnostics samples hold counters and short status words: no audio, no words, no server address, no
 token. They stay on the phone for 7 days and leave it only when you export them or switch on *Send

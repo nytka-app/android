@@ -147,4 +147,93 @@
     <string name="unnamed_voices_section">Unnamed voices</string>
     <string name="no_people_yet">Nobody is named yet. Tap a voice below, or a speaker in a conversation</string>
     <string name="no_unnamed_voices">No unnamed voices</string>
+
+    <!-- Firmware notice -->
+    <string name="firmware_check_label">Check for new pendant firmware</string>
+    <string name="firmware_check_explanation">At most once a day, while this screen shows a connected Omi pendant, Nytka asks GitHub for Omi\'s newest firmware release. GitHub sees your IP address, as any website would; nothing about you, the pendant or your server is sent. Nytka only tells you: it never installs firmware.</string>
+    <string name="firmware_available_format">Firmware %1$s is available (this pendant has %2$s).</string>
+    <string name="firmware_how_to_update">How to update</string>
+
+    <!-- Segment marks -->
+    <string name="segment_mark_me">This is me</string>
+    <string name="segment_mark_not_me">This is not me</string>
+    <string name="segment_mark_clear">Clear</string>
+    <string name="segment_source_marked">marked</string>
+    <string name="segment_source_voice">voice</string>
+    <string name="segment_source_provider">provider</string>
+
+    <!-- Your voice -->
+    <string name="voice_title">Your voice</string>
+    <string name="voice_entry_summary">Teach Nytka your voice, so it marks the lines you said as yours.</string>
+    <string name="voice_entry_button">Your voice</string>
+    <string name="voice_loading">Reading the server…</string>
+    <string name="voice_not_enrolled">No voice is enrolled yet. Nytka uses the transcription service\'s labels until you enroll.</string>
+    <string name="voice_enrolled_at">Enrolled on %s</string>
+    <string name="voice_updated_at">Voiceprint last changed on %s</string>
+    <string name="voice_samples">Samples: %d</string>
+    <plurals name="voice_learned">
+        <item quantity="one">Learned from %d more segment of yours since</item>
+        <item quantity="other">Learned from %d more segments of yours since</item>
+    </plurals>
+    <string name="voice_no_model">The server has no speaker model installed, so it cannot learn a voice.</string>
+    <string name="voice_languages">Which languages do you speak?</string>
+    <string name="voice_language_uk">Ukrainian</string>
+    <string name="voice_language_ru">Russian</string>
+    <string name="voice_language_en">English</string>
+    <string name="voice_how">Wear the pendant as usual and read the sentences aloud in a quiet place, at your normal pace. Read for at least 30 seconds in all: with one language, read its sentences twice. While you read, the pendant\'s audio goes to the enrollment and not into a conversation.</string>
+    <string name="voice_enroll">Enroll</string>
+    <string name="voice_reenroll">Re-enroll</string>
+    <string name="voice_add_more">Add more</string>
+    <string name="voice_add_more_hint">Re-enroll starts over. Add more blends a new reading into your voiceprint, for example for another language.</string>
+    <string name="voice_reset">Forget what it learned</string>
+    <string name="voice_forget">Forget my voice</string>
+    <string name="voice_read_aloud">Read aloud</string>
+    <string name="voice_elapsed">%1$d s of %2$d s</string>
+    <string name="voice_level">Level</string>
+    <string name="voice_pendant_silent">The pendant is not sending audio. Connect it and unmute it.</string>
+    <string name="voice_full">The 120 second limit is reached. Send the reading.</string>
+    <string name="voice_send">Send</string>
+    <string name="voice_sending">Sending…</string>
+    <string name="voice_forget_title">Forget your voice?</string>
+    <string name="voice_forget_text">Nytka deletes your voiceprint, every segment fingerprint and the labels made from them. Lines go back to the transcription service\'s labels. Your own \"this is me\" marks stay.</string>
+    <string name="voice_forget_confirm">Forget</string>
+
+    <!-- Your voice: results -->
+    <plurals name="voice_speech_seconds">
+        <item quantity="one">%d second</item>
+        <item quantity="other">%d seconds</item>
+    </plurals>
+    <plurals name="voice_sample_count">
+        <item quantity="one">%d sample</item>
+        <item quantity="other">%d samples</item>
+    </plurals>
+    <string name="voice_done">Enrolled: %1$s of speech, %2$s.</string>
+    <string name="voice_too_little_speech">Nytka heard only %1$s of speech and needs at least 20 seconds. Read the sentences again, a little longer, with the pendant close.</string>
+    <string name="voice_too_few_samples">The speech was too short to make 3 samples. Read for longer, without long pauses.</string>
+    <string name="voice_samples_disagree">The samples do not sound like one voice. Record again somewhere quiet, with nobody else talking.</string>
+    <string name="voice_refused">The server could not use this reading. Record again.</string>
+    <string name="voice_too_long">The reading is longer than 120 seconds. Record again and send it sooner.</string>
+    <string name="voice_unreadable">The server could not read the audio. Record again.</string>
+    <string name="voice_other_model">Your voiceprint was made by another speaker model. Use Re-enroll to start over.</string>
+    <string name="voice_not_recording">The pendant is not sending audio. Connect it and unmute it, then start again.</string>
+    <string name="voice_nothing_recorded">Nothing was recorded. Check that the pendant is connected and unmuted.</string>
+    <string name="voice_forgotten">Your voice is forgotten.</string>
+    <string name="voice_reset_done">Back to the voice you enrolled.</string>
+
+    <!-- Your voice: prompts, in the language they are read in, so never translated -->
+    <string-array name="voice_prompts_uk" translatable="false">
+        <item>Щоранку я п\'ю каву на балконі й дивлюся, як місто повільно прокидається.</item>
+        <item>Минулого літа ми їздили до Львова, гуляли старими вуличками та їли гарячі сирники.</item>
+        <item>Нагадай мені в четвер зателефонувати бабусі й забрати з пошти посилку від друга.</item>
+    </string-array>
+    <string-array name="voice_prompts_ru" translatable="false">
+        <item>Вчера вечером мы долго гуляли по набережной и спорили о новых фильмах.</item>
+        <item>Если завтра будет дождь, я останусь дома, сварю борщ и почитаю интересную книгу.</item>
+        <item>Пожалуйста, перешли мне счёт за электричество до пятницы, чтобы я успел всё оплатить.</item>
+    </string-array>
+    <string-array name="voice_prompts_en" translatable="false">
+        <item>The weather changed so quickly that we had to wait under the old bridge for the rain to pass.</item>
+        <item>I usually start my morning with a short walk, a strong coffee and a quick look at my calendar.</item>
+        <item>Could you remind me to call the dentist on Thursday and pick up fresh vegetables on the way home?</item>
+    </string-array>
 </resources>

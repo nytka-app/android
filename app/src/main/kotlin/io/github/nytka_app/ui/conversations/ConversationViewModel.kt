@@ -12,6 +12,7 @@ import io.github.nytka_app.core.api.BookmarksClient
 import io.github.nytka_app.core.api.ConversationDetail
 import io.github.nytka_app.core.api.ConversationsClient
 import io.github.nytka_app.core.api.FailureKind
+import io.github.nytka_app.core.api.Segment
 import io.github.nytka_app.core.api.TasksClient
 import io.github.nytka_app.ui.ITEM_GONE
 import io.github.nytka_app.ui.itemNotice
@@ -41,6 +42,14 @@ data class Paragraph(
     val showSpeaker: Boolean = false,
     val speakerColor: Int = 0,
     val voiceId: String? = null,
+    /** The segment's id, for the wearer's mark. */
+    val segmentId: Long = 0,
+    /** Whether the segment's text is the wearer's, as the server last said or as the wearer just marked it. */
+    val isUser: Boolean? = null,
+    /** Why a line is attributed as it is: "marked" or "voice", also "provider" for the wearer's lines; else null. */
+    val sourceNote: String? = null,
+    /** True while the wearer's own mark stands, so it can be cleared. */
+    val marked: Boolean = false,
     /** The bookmarks whose time is nearest this paragraph. */
     val bookmarks: List<BookmarkMark> = emptyList(),
 )
@@ -85,6 +94,8 @@ data class ConversationUiState(
     val error: String? = null,
     val deleted: Boolean = false,
     val raw: String? = null,
+    /** A message for a snackbar, until [ConversationViewModel.noteShown]. */
+    val note: String? = null,
 )
 
 @HiltViewModel
@@ -104,6 +115,7 @@ class ConversationViewModel
         val state: StateFlow<ConversationUiState> = mutableState.asStateFlow()
         private var index: AudioIndex? = null
         private var segmentStarts: List<Instant> = emptyList()
+        private var segments: List<Segment> = emptyList()
         private val prepareLock = Mutex()
         private var prepared = false
 
@@ -211,6 +223,48 @@ class ConversationViewModel
             }
         }
 
+        fun noteShown() = mutableState.update { it.copy(note = null) }
+
+        /**
+         * The wearer's mark on a line: true "this is me", false "this is not me", null clears it. A mark shows at once
+         * and is taken back, with a note, if the server refuses. A clear waits for the server, which alone knows which
+         * label then applies.
+         */
+        fun markSegment(
+            segmentId: Long,
+            isUser: Boolean?,
+        ) {
+            val before = segments.firstOrNull { it.id == segmentId } ?: return
+            val shown = isUser?.let { before.copy(isUser = it, isUserSource = SOURCE_MANUAL) }
+            if (shown != null) replace(shown)
+            viewModelScope.launch {
+                when (val result = api.markSegment(segmentId, isUser)) {
+                    is ApiResult.Ok -> replace(result.value)
+                    is ApiResult.Failure -> {
+                        if (shown != null && segments.firstOrNull { it.id == segmentId } == shown) replace(before)
+                        val note = if (result.kind == FailureKind.Forbidden) result.itemNotice() else MARK_FAILED
+                        mutableState.update { it.copy(note = note) }
+                    }
+                }
+            }
+        }
+
+        private fun replace(segment: Segment) {
+            segments = segments.map { if (it.id == segment.id) segment else it }
+            mutableState.update { state ->
+                val old = state.paragraphs
+                state.copy(
+                    paragraphs =
+                        paragraphsOf(segments).mapIndexed {
+                            i,
+                            p,
+                            ->
+                            p.copy(bookmarks = old[i].bookmarks)
+                        },
+                )
+            }
+        }
+
         fun regenerate() {
             if (mutableState.value.open) return
             viewModelScope.launch {
@@ -297,26 +351,12 @@ class ConversationViewModel
 
         private fun show(detail: ConversationDetail): ConversationUiState {
             val zone = clock.zone
+            segments = detail.segments
             segmentStarts = detail.segments.map { Formatting.instant(it.startedAt) }
             val start = Formatting.instant(detail.startedAt)
             val end = Formatting.instant(detail.endedAt)
             val title = detail.title?.takeIf(String::isNotBlank)
-            val colors = LinkedHashMap<String, Int>()
-            var previous: String? = null
-            val paragraphs =
-                detail.segments.map {
-                    val speaker =
-                        if (it.isUser == true) ME else (it.personName ?: it.speaker)?.takeIf(String::isNotBlank)
-                    val color = speaker?.let { name -> colors.getOrPut(name) { colors.size % SPEAKER_COLORS } } ?: 0
-                    Paragraph(
-                        Formatting.clock(Formatting.instant(it.startedAt), zone),
-                        it.text,
-                        speaker,
-                        showSpeaker = speaker != null && speaker != previous,
-                        speakerColor = color,
-                        voiceId = it.speakerId.takeIf { _ -> it.isUser != true },
-                    ).also { previous = speaker }
-                }
+            val paragraphs = paragraphsOf(detail.segments)
             val marks = place(detail)
             return ConversationUiState(
                 title = title ?: Formatting.dayTitle(start.atZone(zone).toLocalDate(), LocalDate.now(clock)),
@@ -339,6 +379,39 @@ class ConversationViewModel
                 loading = false,
             )
         }
+
+        private fun paragraphsOf(list: List<Segment>): List<Paragraph> {
+            val zone = clock.zone
+            val colors = LinkedHashMap<String, Int>()
+            var previous: Pair<String?, String?>? = null
+            return list.map {
+                val speaker =
+                    if (it.isUser == true) ME else (it.personName ?: it.speaker)?.takeIf(String::isNotBlank)
+                val note = sourceNote(it)
+                val color = speaker?.let { name -> colors.getOrPut(name) { colors.size % SPEAKER_COLORS } } ?: 0
+                Paragraph(
+                    Formatting.clock(Formatting.instant(it.startedAt), zone),
+                    it.text,
+                    speaker,
+                    // A change of source starts a run too, so a mark inside one speaker's lines shows.
+                    showSpeaker = speaker != null && (speaker to note) != previous,
+                    speakerColor = color,
+                    voiceId = it.speakerId.takeIf { _ -> it.isUser != true },
+                    segmentId = it.id,
+                    isUser = it.isUser,
+                    sourceNote = note,
+                    marked = it.isUserSource == SOURCE_MANUAL,
+                ).also { previous = speaker to note }
+            }
+        }
+
+        /** A manual mark always shows; the voice and the provider say so only where they pick the wearer. */
+        private fun sourceNote(segment: Segment): String? =
+            when {
+                segment.isUserSource == SOURCE_MANUAL -> "marked"
+                segment.isUser != true -> null
+                else -> segment.isUserSource?.takeIf { it == "voice" || it == "provider" }
+            }
 
         /**
          * The bookmarks of each segment, by index: a bookmark goes to the segment whose span is nearest its time, the
@@ -376,6 +449,8 @@ class ConversationViewModel
             private const val MAX_NAME = 80
             const val MAX_BOOKMARK_NOTE = 200
             private const val ME = "Me"
+            private const val SOURCE_MANUAL = "manual"
+            private const val MARK_FAILED = "The mark could not be saved."
             private const val PENDING_CHIP = "Summarizing"
         }
     }

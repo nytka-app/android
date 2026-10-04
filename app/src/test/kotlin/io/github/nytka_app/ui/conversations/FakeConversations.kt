@@ -5,6 +5,7 @@ import io.github.nytka_app.core.api.ConversationDetail
 import io.github.nytka_app.core.api.ConversationPage
 import io.github.nytka_app.core.api.ConversationSummary
 import io.github.nytka_app.core.api.ConversationsClient
+import io.github.nytka_app.core.api.Segment
 import kotlinx.coroutines.CompletableDeferred
 
 class FakeConversations : ConversationsClient {
@@ -18,6 +19,8 @@ class FakeConversations : ConversationsClient {
     val named = mutableListOf<Pair<String, String>>()
     var nameAnswer: ApiResult<Unit> = ApiResult.Ok(Unit)
     var renameAnswer: ApiResult<ConversationDetail>? = null
+    val marked = mutableListOf<Pair<Long, Boolean?>>()
+    var markAnswer: suspend (Long, Boolean?) -> ApiResult<Segment> = { _, _ -> error("No answer set.") }
     var enrichAnswer: ApiResult<Unit> = ApiResult.Ok(Unit)
 
     /** Each gate holds back the next request's answer, which is fixed when the request comes in, until it completes. */
@@ -47,6 +50,14 @@ class FakeConversations : ConversationsClient {
         speakerId: String,
         name: String,
     ): ApiResult<Unit> = nameAnswer.also { named += speakerId to name }
+
+    override suspend fun markSegment(
+        segmentId: Long,
+        isUser: Boolean?,
+    ): ApiResult<Segment> {
+        marked += segmentId to isUser
+        return markAnswer(segmentId, isUser)
+    }
 
     override suspend fun enrichConversation(id: String): ApiResult<Unit> = enrichAnswer.also { enriched += id }
 

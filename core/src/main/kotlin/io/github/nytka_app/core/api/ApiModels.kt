@@ -15,6 +15,7 @@ data class ServerInfo(
 
     companion object {
         const val FEATURE_OFFLINE_SYNC = "offline-sync"
+        const val FEATURE_VOICE = "voice"
 
         const val SCOPE_ADMIN = "admin"
         const val SCOPE_READ = "read"
@@ -80,6 +81,11 @@ data class Segment(
     val speakerId: String? = null,
     /** True for the wearer's own lines; null when the provider did not say. */
     val isUser: Boolean? = null,
+    /**
+     * What decided [isUser]: "manual" (a mark by the wearer), "voice" (Nytka's voiceprint) or "provider"; null when
+     * nothing did, and on a server before 0.12.
+     */
+    val isUserSource: String? = null,
     val personId: String? = null,
     /** The name given to the voice, or null. */
     val personName: String? = null,

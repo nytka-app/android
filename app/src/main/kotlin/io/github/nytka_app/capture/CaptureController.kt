@@ -7,6 +7,7 @@ import io.github.nytka_app.core.queue.BookmarkSink
 import io.github.nytka_app.core.queue.FrameSink
 import io.github.nytka_app.core.settings.MuteSchedule
 import io.github.nytka_app.core.settings.SettingsStore
+import io.github.nytka_app.pendant.AudioFrame
 import io.github.nytka_app.pendant.ButtonEvent
 import io.github.nytka_app.pendant.Haptic
 import io.github.nytka_app.pendant.LinkStats
@@ -121,6 +122,13 @@ class CaptureController(
     @Volatile
     private var muted = true
 
+    /**
+     * While set, live frames go here and never to the queue: voice enrollment reads them, and the server would
+     * otherwise turn the reading into a conversation. Sequence numbers do not advance, so the session has no hole.
+     */
+    @Volatile
+    var diversion: ((AudioFrame) -> Unit)? = null
+
     /** What the pendant was last told about audio; null before the first call of a start. */
     private var intent: Boolean? = null
 
@@ -179,6 +187,11 @@ class CaptureController(
         }
         inner.launch {
             pendant.frames.collect { frame ->
+                val divert = diversion
+                if (!muted && divert != null) {
+                    divert(frame)
+                    return@collect
+                }
                 // A full disk must not crash the service; the sequence advances only for stored frames.
                 if (!muted && stored { sink.add(session, nextSeq, frame.capturedAtMs, frame.payload) }) {
                     nextSeq++

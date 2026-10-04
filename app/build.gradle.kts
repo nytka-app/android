@@ -14,7 +14,7 @@ fun versionCodeOf(version: String): Int {
     return (major * 10_000 + minor * 100 + patch).coerceAtLeast(1)
 }
 
-val appVersion = "0.10.0" // x-release-please-version
+val appVersion = "0.12.0" // x-release-please-version
 
 android {
     namespace = "io.github.nytka_app"
@@ -26,6 +26,13 @@ android {
         targetSdk = 37
         versionName = appVersion
         versionCode = versionCodeOf(appVersion)
+    }
+
+    // The signing-block blob that AGP adds by default is an opaque binary to F-Droid's scanner and
+    // IzzyOnDroid, and it breaks byte-for-byte reproducible builds.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
     }
 
     flavorDimensions += "store"
@@ -104,5 +111,6 @@ dependencies {
     testImplementation(libs.coroutines.test)
     testImplementation(libs.turbine)
     testImplementation(libs.robolectric)
+    testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.androidx.test.core)
 }

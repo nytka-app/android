@@ -148,4 +148,82 @@
     <string name="unnamed_voices_section">Голоси без імен</string>
     <string name="no_people_yet">Імен ще немає. Торкніться голосу нижче або спікера в розмові</string>
     <string name="no_unnamed_voices">Немає голосів без імен</string>
+
+    <!-- Firmware notice -->
+    <string name="firmware_check_label">Перевіряти нову прошивку кулона</string>
+    <string name="firmware_check_explanation">Не частіше ніж раз на день, поки цей екран показує підключений кулон Omi, Nytka запитує в GitHub найновіший реліз прошивки Omi. GitHub бачить вашу IP-адресу, як і будь-який вебсайт; нічого про вас, кулон чи ваш сервер не надсилається. Nytka лише повідомляє: вона ніколи не встановлює прошивку.</string>
+    <string name="firmware_available_format">Доступна прошивка %1$s (на цьому кулоні %2$s).</string>
+    <string name="firmware_how_to_update">Як оновити</string>
+
+    <!-- Segment marks -->
+    <string name="segment_mark_me">Це я</string>
+    <string name="segment_mark_not_me">Це не я</string>
+    <string name="segment_mark_clear">Очистити</string>
+    <string name="segment_source_marked">позначено</string>
+    <string name="segment_source_voice">голос</string>
+    <string name="segment_source_provider">сервіс транскрипції</string>
+
+    <!-- Your voice -->
+    <string name="voice_title">Ваш голос</string>
+    <string name="voice_entry_summary">Навчіть Nytka вашого голосу, щоб вона позначала ваші репліки як ваші.</string>
+    <string name="voice_entry_button">Ваш голос</string>
+    <string name="voice_loading">Читаю дані сервера…</string>
+    <string name="voice_not_enrolled">Голос ще не записано. Доки ви цього не зробите, Nytka використовує позначки сервісу транскрипції.</string>
+    <string name="voice_enrolled_at">Записано %s</string>
+    <string name="voice_updated_at">Відбиток голосу востаннє змінено %s</string>
+    <string name="voice_samples">Зразків: %d</string>
+    <plurals name="voice_learned">
+        <item quantity="one">Відтоді вивчено ще %d ваш фрагмент</item>
+        <item quantity="few">Відтоді вивчено ще %d ваші фрагменти</item>
+        <item quantity="many">Відтоді вивчено ще %d ваших фрагментів</item>
+        <item quantity="other">Відтоді вивчено ще %d вашого фрагмента</item>
+    </plurals>
+    <string name="voice_no_model">На сервері немає моделі мовця, тож він не може вивчити голос.</string>
+    <string name="voice_languages">Якими мовами ви говорите?</string>
+    <string name="voice_language_uk">Українська</string>
+    <string name="voice_language_ru">Російська</string>
+    <string name="voice_language_en">Англійська</string>
+    <string name="voice_how">Носіть кулон як завжди й читайте речення вголос у тихому місці, у звичному темпі. Читайте загалом щонайменше 30 секунд: якщо мова одна, прочитайте її речення двічі. Поки ви читаєте, звук кулона йде на запис голосу, а не в розмову.</string>
+    <string name="voice_enroll">Записати голос</string>
+    <string name="voice_reenroll">Записати знову</string>
+    <string name="voice_add_more">Додати ще</string>
+    <string name="voice_add_more_hint">«Записати знову» починає з нуля. «Додати ще» додає новий запис до відбитка голосу, наприклад для іншої мови.</string>
+    <string name="voice_reset">Забути вивчене</string>
+    <string name="voice_forget">Забути мій голос</string>
+    <string name="voice_read_aloud">Прочитайте вголос</string>
+    <string name="voice_elapsed">%1$d с із %2$d с</string>
+    <string name="voice_level">Рівень</string>
+    <string name="voice_pendant_silent">Кулон не надсилає звук. Підключіть його й увімкніть мікрофон.</string>
+    <string name="voice_full">Досягнуто межі у 120 секунд. Надішліть запис.</string>
+    <string name="voice_send">Надіслати</string>
+    <string name="voice_sending">Надсилаю…</string>
+    <string name="voice_forget_title">Забути ваш голос?</string>
+    <string name="voice_forget_text">Nytka видалить відбиток вашого голосу, відбитки всіх фрагментів і зроблені з них позначки. Репліки знову матимуть позначки сервісу транскрипції. Ваші власні позначки «це я» залишаться.</string>
+    <string name="voice_forget_confirm">Забути</string>
+
+    <!-- Your voice: results -->
+    <plurals name="voice_speech_seconds">
+        <item quantity="one">%d секунда</item>
+        <item quantity="few">%d секунди</item>
+        <item quantity="many">%d секунд</item>
+        <item quantity="other">%d секунди</item>
+    </plurals>
+    <plurals name="voice_sample_count">
+        <item quantity="one">%d зразок</item>
+        <item quantity="few">%d зразки</item>
+        <item quantity="many">%d зразків</item>
+        <item quantity="other">%d зразка</item>
+    </plurals>
+    <string name="voice_done">Голос записано: %1$s мовлення, %2$s.</string>
+    <string name="voice_too_little_speech">Nytka почула лише %1$s мовлення, а потрібно щонайменше 20 секунд. Прочитайте речення ще раз, трохи довше, тримаючи кулон близько.</string>
+    <string name="voice_too_few_samples">Мовлення замало, щоб скласти 3 зразки. Читайте довше, без довгих пауз.</string>
+    <string name="voice_samples_disagree">Зразки не схожі на один голос. Запишіть ще раз у тихому місці, коли ніхто інший не говорить.</string>
+    <string name="voice_refused">Сервер не зміг використати цей запис. Запишіть ще раз.</string>
+    <string name="voice_too_long">Запис довший за 120 секунд. Запишіть ще раз і надішліть раніше.</string>
+    <string name="voice_unreadable">Сервер не зміг прочитати звук. Запишіть ще раз.</string>
+    <string name="voice_other_model">Відбиток голосу зроблено іншою моделлю мовця. Натисніть «Записати знову», щоб почати з нуля.</string>
+    <string name="voice_not_recording">Кулон не надсилає звук. Підключіть його й увімкніть мікрофон, тоді почніть знову.</string>
+    <string name="voice_nothing_recorded">Нічого не записано. Перевірте, що кулон підключено й мікрофон увімкнено.</string>
+    <string name="voice_forgotten">Ваш голос забуто.</string>
+    <string name="voice_reset_done">Повернено голос, який ви записали.</string>
 </resources>

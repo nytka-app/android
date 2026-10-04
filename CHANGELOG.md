@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.12.0](https://github.com/nytka-app/android/compare/v0.11.0...v0.12.0) (2026-10-04)
+
+
+### Features
+
+* enroll your voice from the pendant (voice A-E) ([#53](https://github.com/nytka-app/android/issues/53)) ([9ef7f7f](https://github.com/nytka-app/android/commit/9ef7f7f110b26c58d2473219169e55b21fef43bb))
+* mark a transcript line as yours or not yours ([#51](https://github.com/nytka-app/android/issues/51)) ([04983df](https://github.com/nytka-app/android/commit/04983df465554ea8cfeb74481bccb3c2b91eb21e))
+
+## [0.11.0](https://github.com/nytka-app/android/compare/v0.10.0...v0.11.0) (2026-10-04)
+
+
+### Features
+
+* tell the user when Omi has published newer pendant firmware ([#47](https://github.com/nytka-app/android/issues/47)) ([063c807](https://github.com/nytka-app/android/commit/063c8077df21faaa19f847591cc1ddaf7b6fb23d))
+
 ## [0.10.0](https://github.com/nytka-app/android/compare/v0.9.0...v0.10.0) (2026-09-30)
 
 
