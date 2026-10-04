@@ -446,7 +446,9 @@ compile.
 
 The UI is in English and in Ukrainian: `app/src/main/res/values/strings.xml` holds the English,
 `values-uk/strings.xml` the Ukrainian. A new language is a new `values-<locale>` folder whose
-`<string>` names match the English ones.
+`<string>` and `<plurals>` names match the English ones. Add the language to
+`app/src/main/res/xml/locales_config.xml` as well, or Android 13's per-app language setting will not
+list it.
 
 ## License
 

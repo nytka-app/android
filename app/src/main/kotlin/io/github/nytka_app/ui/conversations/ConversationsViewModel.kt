@@ -26,6 +26,9 @@ import java.time.Clock
 import java.time.LocalDate
 import javax.inject.Inject
 
+/** Where a conversation's summary stands; the screen words it. */
+enum class SummaryChip { Summarizing, Failed }
+
 data class ConversationRow(
     val id: String,
     val timeRange: String,
@@ -34,8 +37,8 @@ data class ConversationRow(
     val preview: String,
     /** The title, generated or set; null until the first run, when the row shows the time range instead. */
     val title: String? = null,
-    /** "Summarizing" or "Summary failed"; null otherwise, and always on a server before v0.2. */
-    val chip: String? = null,
+    /** Summarizing or failed; null otherwise, and always on a server before v0.2. */
+    val chip: SummaryChip? = null,
     /** How many bookmarks the conversation holds; the row shows an icon when it is above zero. */
     val bookmarks: Int = 0,
     /** Sorted tag names; none from a server without the `tags` feature. */
@@ -253,10 +256,10 @@ class ConversationsViewModel
                 }
         }
 
-        private fun aiChip(aiStatus: String): String? =
+        private fun aiChip(aiStatus: String): SummaryChip? =
             when (aiStatus) {
-                AiState.PENDING -> "Summarizing"
-                AiState.FAILED -> "Summary failed"
+                AiState.PENDING -> SummaryChip.Summarizing
+                AiState.FAILED -> SummaryChip.Failed
                 else -> null
             }
 

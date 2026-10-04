@@ -249,17 +249,17 @@ private fun TopActions(
 /** A small label for where the summary stands; red when the model gave up. */
 @Composable
 internal fun AiChip(
-    text: String,
+    chip: SummaryChip,
     modifier: Modifier = Modifier,
 ) {
-    val failed = text == "Summary failed" // Keep comparison logic; string comes from VM/resources elsewhere
+    val failed = chip == SummaryChip.Failed
     Surface(
         modifier,
         shape = MaterialTheme.shapes.small,
         color = if (failed) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
     ) {
         Text(
-            text,
+            stringResource(if (failed) R.string.summary_failed else R.string.summarizing),
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
         )

@@ -14,7 +14,9 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import io.github.nytka_app.R
 import io.github.nytka_app.capture.PendantSettingsState
 import io.github.nytka_app.pendant.LedDim
 import io.github.nytka_app.pendant.MicGain
@@ -47,10 +49,10 @@ fun PendantSettingsCard(
 ) {
     ElevatedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Pendant settings", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.pendant_settings), style = MaterialTheme.typography.titleMedium)
             card.led?.let {
                 SettingSlider(
-                    title = "LED brightness",
+                    title = stringResource(R.string.led_brightness),
                     value = it,
                     range = LedDim.MIN..LedDim.MAX,
                     steps = 0,
@@ -62,7 +64,7 @@ fun PendantSettingsCard(
             }
             card.gain?.let {
                 SettingSlider(
-                    title = "Microphone gain",
+                    title = stringResource(R.string.microphone_gain),
                     value = it,
                     range = MicGain.MIN..MicGain.MAX,
                     steps = MicGain.MAX - MicGain.MIN - 1,
@@ -74,7 +76,7 @@ fun PendantSettingsCard(
             }
             card.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             Text(
-                "The pendant keeps these in its own memory; nothing is sent to your server.",
+                stringResource(R.string.pendant_settings_note),
                 style = MaterialTheme.typography.bodySmall,
             )
         }

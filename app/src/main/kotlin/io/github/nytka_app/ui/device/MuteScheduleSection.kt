@@ -23,7 +23,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import io.github.nytka_app.R
 import io.github.nytka_app.core.settings.MuteSchedule
 import io.github.nytka_app.core.settings.MuteWindow
 import java.time.DayOfWeek
@@ -40,9 +42,9 @@ fun MuteScheduleSection(
     timeZoneError: String? = null,
     onSetServerTimeZone: () -> Unit = {},
 ) {
-    Section("Mute schedule") {
+    Section(stringResource(R.string.mute_schedule)) {
         Text(
-            "Nothing is recorded in these windows, as if you had muted. A window can run past midnight.",
+            stringResource(R.string.mute_schedule_description),
             style = MaterialTheme.typography.bodySmall,
         )
         schedule.windows.forEachIndexed { index, window ->
@@ -63,25 +65,27 @@ fun MuteScheduleSection(
             )
         }
         FilledTonalButton(onClick = { onChange(schedule.copy(windows = schedule.windows + NEW_WINDOW)) }) {
-            Text("Add a window")
+            Text(stringResource(R.string.add_window))
         }
         when (server) {
             null -> Unit
-            MuteServerState.Applied -> Text("Also applied on your server", style = MaterialTheme.typography.bodySmall)
+            MuteServerState.Applied ->
+                Text(stringResource(R.string.mute_applied_on_server), style = MaterialTheme.typography.bodySmall)
             is MuteServerState.Failed ->
                 Text(
-                    "Server not updated: ${server.reason} Retried on your next save or app start.",
+                    stringResource(R.string.mute_server_failed_format, server.reason),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.error,
                 )
         }
         timeZoneHint?.let { zone ->
             Text(
-                "Your server's time zone is UTC or not set, but this phone is on $zone. " +
-                    "Set the server to $zone or the windows will apply at the wrong hours there.",
+                stringResource(R.string.time_zone_hint_format, zone),
                 style = MaterialTheme.typography.bodySmall,
             )
-            OutlinedButton(onClick = onSetServerTimeZone) { Text("Set server time zone to $zone") }
+            OutlinedButton(onClick = onSetServerTimeZone) {
+                Text(stringResource(R.string.set_server_time_zone_format, zone))
+            }
         }
         timeZoneError?.let {
             Text(
@@ -127,12 +131,16 @@ private fun WindowEditor(
             }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedButton(onClick = { picking = true }) { Text("From ${window.start}") }
-            OutlinedButton(onClick = { picking = false }) { Text("To ${window.end}") }
-            TextButton(onClick = onRemove) { Text("Remove") }
+            OutlinedButton(onClick = { picking = true }) {
+                Text(stringResource(R.string.window_from_format, window.start.toString()))
+            }
+            OutlinedButton(onClick = { picking = false }) {
+                Text(stringResource(R.string.window_to_format, window.end.toString()))
+            }
+            TextButton(onClick = onRemove) { Text(stringResource(R.string.action_remove)) }
         }
         if (!window.active) {
-            Text("Pick at least one day and different times.", style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.window_inactive_hint), style = MaterialTheme.typography.bodySmall)
         }
     }
     picking?.let { start ->
@@ -158,7 +166,11 @@ private fun TimeDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         text = { TimePicker(state) },
-        confirmButton = { TextButton(onClick = { onPicked(LocalTime.of(state.hour, state.minute)) }) { Text("OK") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = {
+            TextButton(onClick = { onPicked(LocalTime.of(state.hour, state.minute)) }) {
+                Text(stringResource(R.string.action_ok))
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

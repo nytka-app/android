@@ -169,13 +169,15 @@ fun DeveloperScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Switch(checked = state.diagnosticsUpload, onCheckedChange = viewModel::setDiagnosticsUpload)
-                        Text("Send diagnostics to my server")
+                        Text(stringResource(R.string.send_diagnostics_to_server))
                     }
                     state.diagnosticsNote?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                 }
             }
             item { AlertSection(state, viewModel::setThresholds) }
-            item { OutlinedButton(onClick = viewModel::turnOff) { Text("Turn off developer mode") } }
+            item {
+                OutlinedButton(onClick = viewModel::turnOff) { Text(stringResource(R.string.turn_off_developer_mode)) }
+            }
         }
     }
 }
@@ -193,17 +195,17 @@ private fun AlertSection(
     ) { mutableStateOf(state.unreachableMinutes.toString()) }
     var battery by rememberSaveable(state.batteryPercent) { mutableStateOf(state.batteryPercent.toString()) }
 
-    Section("Alert thresholds") {
-        NumberField("Pendant disconnected, minutes", disconnected) { disconnected = it }
-        NumberField("Server unreachable, minutes", unreachable) { unreachable = it }
-        NumberField("Battery, percent", battery) { battery = it }
+    Section(stringResource(R.string.alert_thresholds)) {
+        NumberField(stringResource(R.string.pendant_disconnected_minutes), disconnected) { disconnected = it }
+        NumberField(stringResource(R.string.server_unreachable_minutes), unreachable) { unreachable = it }
+        NumberField(stringResource(R.string.battery_percent_label), battery) { battery = it }
         FilledTonalButton(onClick = {
             onSave(
                 disconnected.toIntOrNull() ?: state.disconnectedMinutes,
                 unreachable.toIntOrNull() ?: state.unreachableMinutes,
                 battery.toIntOrNull() ?: state.batteryPercent,
             )
-        }) { Text("Save thresholds") }
+        }) { Text(stringResource(R.string.save_thresholds)) }
     }
 }
 

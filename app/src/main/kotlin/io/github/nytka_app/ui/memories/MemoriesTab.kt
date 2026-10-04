@@ -31,10 +31,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nytka_app.R
 
 /**
  * The Memories tab: what the server has learned about you, newest first. A memory with a source opens that
@@ -57,7 +59,7 @@ fun MemoriesTab(
                 state.error?.let { error ->
                     item {
                         Text(error, color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = viewModel::refresh) { Text("Retry") }
+                        TextButton(onClick = viewModel::refresh) { Text(stringResource(R.string.action_retry)) }
                     }
                 }
                 items(state.rows, key = { it.id }) { row ->
@@ -72,7 +74,7 @@ fun MemoriesTab(
                     item(key = "more") { LaunchedEffect(state.rows.size) { viewModel.loadMore() } }
                 }
                 if (state.rows.isEmpty() && !state.loading && state.error == null) {
-                    item { Text(EMPTY) }
+                    item { Text(stringResource(R.string.no_memories_yet)) }
                 }
             }
         }
@@ -82,7 +84,7 @@ fun MemoriesTab(
                 Modifier
                     .align(Alignment.BottomEnd)
                     .padding(16.dp),
-        ) { Icon(Icons.Filled.Add, contentDescription = "Add a memory") }
+        ) { Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_memory)) }
     }
 
     state.editor?.let { editor ->
@@ -91,22 +93,20 @@ fun MemoriesTab(
     deleting?.let { id ->
         AlertDialog(
             onDismissRequest = { deleting = null },
-            title = { Text("Delete this memory?") },
-            text = { Text("The server will not learn it from your conversations again.") },
+            title = { Text(stringResource(R.string.delete_memory_title)) },
+            text = { Text(stringResource(R.string.delete_memory_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.delete(id)
                     deleting = null
-                }) { Text("Delete") }
+                }) { Text(stringResource(R.string.action_delete)) }
             },
-            dismissButton = { TextButton(onClick = { deleting = null }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(onClick = { deleting = null }) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 }
-
-private const val EMPTY =
-    "No memories yet. Memories are lasting facts about you, such as where you work or what you like. " +
-        "They come from summarized conversations, or you can add one."
 
 @Composable
 private fun MemoryItem(
@@ -125,14 +125,14 @@ private fun MemoryItem(
         trailingContent = {
             Box {
                 IconButton(onClick = { menuOpen = true }) {
-                    Icon(Icons.Filled.MoreVert, contentDescription = "Memory options")
+                    Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.memory_options))
                 }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                    DropdownMenuItem(text = { Text("Edit") }, onClick = {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.action_edit)) }, onClick = {
                         menuOpen = false
                         onEdit()
                     })
-                    DropdownMenuItem(text = { Text("Delete") }, onClick = {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.action_delete)) }, onClick = {
                         menuOpen = false
                         onDelete()
                     })
@@ -163,20 +163,25 @@ private fun MemoryDialog(
     var text by rememberSaveable(editor.target?.id) { mutableStateOf(editor.target?.text.orEmpty()) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (editor.target == null) "Add a memory" else "Edit memory") },
+        title = {
+            Text(stringResource(if (editor.target == null) R.string.add_memory else R.string.edit_memory_title))
+        },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it.take(MemoriesViewModel.MAX_LENGTH) },
-                label = { Text("A fact about you") },
+                label = { Text(stringResource(R.string.memory_label)) },
                 supportingText = { Text(editor.error ?: "${text.length} / ${MemoriesViewModel.MAX_LENGTH}") },
                 isError = editor.error != null,
                 minLines = 2,
             )
         },
         confirmButton = {
-            TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank() && !editor.saving) { Text("Save") }
+            TextButton(
+                onClick = { onSave(text) },
+                enabled = text.isNotBlank() && !editor.saving,
+            ) { Text(stringResource(R.string.action_save)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

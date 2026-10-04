@@ -163,8 +163,8 @@ private fun PairingStep(
     state: FirstRunUiState,
     viewModel: FirstRunViewModel,
 ) {
-    Text("Turn the pendant on, keep it next to the phone, and pick it in the list that opens.")
+    Text(stringResource(R.string.pairing_step_description))
     state.pairError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     PairButton(onPaired = viewModel::paired, onError = viewModel::pairingFailed)
-    TextButton(onClick = viewModel::skipPairing) { Text("Set up later") }
+    TextButton(onClick = viewModel::skipPairing) { Text(stringResource(R.string.set_up_later)) }
 }

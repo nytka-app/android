@@ -155,8 +155,8 @@ class ConversationsViewModelTest {
         )
         assertEquals("text a", rows[1].preview)
         assertNull(rows[1].title)
-        assertEquals("Summarizing", rows[1].chip)
-        assertEquals("Summary failed", rows[2].chip)
+        assertEquals(SummaryChip.Summarizing, rows[1].chip)
+        assertEquals(SummaryChip.Failed, rows[2].chip)
     }
 
     @Test

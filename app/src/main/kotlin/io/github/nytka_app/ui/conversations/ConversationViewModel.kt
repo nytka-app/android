@@ -121,8 +121,8 @@ data class ConversationUiState(
     val timeRange: String = "",
     val length: String = "",
     val summary: String? = null,
-    /** "Summarizing" or "Summary failed"; null otherwise, and on a server before v0.2. */
-    val chip: String? = null,
+    /** Summarizing or failed; null otherwise, and on a server before v0.2. */
+    val chip: SummaryChip? = null,
     val tasks: List<TaskLine> = emptyList(),
     val paragraphs: List<Paragraph> = emptyList(),
     /** Bookmarks of a conversation with no transcript, so there is no paragraph to mark. */
@@ -245,7 +245,7 @@ class ConversationViewModel
          * is resumed; it returns at once when nothing is pending.
          */
         suspend fun keepFresh() {
-            while (mutableState.value.chip == PENDING_CHIP) {
+            while (mutableState.value.chip == SummaryChip.Summarizing) {
                 delay(POLL_MS)
                 (api.conversation(id) as? ApiResult.Ok)?.let { mutableState.value = show(it.value) }
             }
@@ -489,7 +489,7 @@ class ConversationViewModel
             if (mutableState.value.open) return
             viewModelScope.launch {
                 when (val result = api.enrichConversation(id)) {
-                    is ApiResult.Ok -> mutableState.update { it.copy(chip = PENDING_CHIP, error = null) }
+                    is ApiResult.Ok -> mutableState.update { it.copy(chip = SummaryChip.Summarizing, error = null) }
                     is ApiResult.Failure ->
                         mutableState.update {
                             it.copy(
@@ -586,8 +586,8 @@ class ConversationViewModel
                 summary = detail.summary?.takeIf(String::isNotBlank),
                 chip =
                     when (detail.aiStatus) {
-                        AiState.PENDING -> PENDING_CHIP
-                        AiState.FAILED -> "Summary failed"
+                        AiState.PENDING -> SummaryChip.Summarizing
+                        AiState.FAILED -> SummaryChip.Failed
                         else -> null
                     },
                 tasks = detail.tasks.map { TaskLine(it.id, it.text, it.done) },
@@ -678,6 +678,5 @@ class ConversationViewModel
             private const val ME = "Me"
             private const val SOURCE_MANUAL = "manual"
             private const val MARK_FAILED = "The mark could not be saved."
-            private const val PENDING_CHIP = "Summarizing"
         }
     }

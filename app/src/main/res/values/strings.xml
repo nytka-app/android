@@ -1,6 +1,6 @@
 <resources>
     <!-- App -->
-    <string name="app_name">Nytka</string>
+    <string name="app_name" translatable="false">Nytka</string>
 
     <!-- Common -->
     <string name="action_back">Back</string>
@@ -47,7 +47,7 @@
     <string name="frames_this_session">Frames this session: %d</string>
     <string name="queue_and_upload">Queue and upload</string>
     <string name="queue_mb_format">Queue: %.1f MB</string>
-    <string name="sealed_chunks_and_unsealed_format">Sealed chunks: %d, frames not yet sealed: %d</string>
+    <string name="sealed_chunks_and_unsealed_format">Sealed chunks: %1$d, frames not yet sealed: %2$d</string>
     <string name="chunks_dropped_at_cap">Chunks dropped at the cap: %d</string>
     <string name="uploaded_this_run">Uploaded this run: %d</string>
     <string name="last_upload_none">Last upload: none</string>
@@ -86,8 +86,11 @@
     <string name="no_conversations_yet">No conversations yet. Speech shows up here a few minutes after it is said</string>
     <string name="summary_failed">Summary failed</string>
     <string name="summarizing">Summarizing</string>
-    <string name="time_range_and_length_format">%s · %s</string>
-    <string name="bookmarks_count_format">%d bookmarks</string>
+    <string name="time_range_and_length_format">%1$s · %2$s</string>
+    <plurals name="bookmarks_count_format">
+        <item quantity="one">%d bookmark</item>
+        <item quantity="other">%d bookmarks</item>
+    </plurals>
     <string name="back_content_description">Back</string>
     <string name="more_content_description">More</string>
     <string name="search_content_description">Search</string>
@@ -137,7 +140,10 @@
     <string name="people">People</string>
     <string name="people_description">People has its own tab</string>
     <string name="about">About</string>
-    <string name="taps_to_developer_format">%d more taps for developer mode</string>
+    <plurals name="taps_to_developer_format">
+        <item quantity="one">%d more tap for developer mode</item>
+        <item quantity="other">%d more taps for developer mode</item>
+    </plurals>
     <string name="about_affiliation">An independent project for the Omi pendant; not affiliated with Based Hardware</string>
     <string name="pairing_chooser_no_pendant">The chooser returned no pendant</string>
     <string name="delete_conversation_title">Delete this conversation?</string>
@@ -402,4 +408,147 @@
     <string name="name_not_known">Name not known yet</string>
     <string name="action_add_name">Add name</string>
     <string name="role_merged_format">Merged with %1$s: that name was already in the list.</string>
+
+    <!-- More common -->
+    <string name="action_add">Add</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_stop">Stop</string>
+    <string name="action_discard">Discard</string>
+    <string name="action_discard_ellipsis">Discard…</string>
+    <string name="action_import">Import</string>
+    <string name="action_ok">OK</string>
+    <string name="action_bookmark">Bookmark</string>
+    <string name="unknown">Unknown</string>
+    <string name="never">never</string>
+    <string name="unmute">Unmute</string>
+    <string name="settings">Settings</string>
+    <string name="arrives_in_later_version">Arrives in a later version</string>
+
+    <!-- Status and tabs -->
+    <string name="muted">Muted</string>
+    <string name="recording">Recording</string>
+    <string name="not_recording">Not recording</string>
+    <string name="capture_off">Off</string>
+    <string name="capture_waiting">Waiting</string>
+    <string name="pendant_battery_format">Pendant battery: %s</string>
+    <string name="server_line_format">Server: %s</string>
+    <string name="queued_chunks_format">Queued chunks: %d</string>
+    <string name="recording_channel">Recording</string>
+    <string name="alerts_channel">Alerts</string>
+
+    <!-- Webhooks screen -->
+    <string name="webhook_title">Webhook</string>
+    <string name="add_webhook">Add a webhook</string>
+    <string name="webhook_summary_format">%1$s · %2$s</string>
+    <string name="no_webhooks_yet">No webhooks yet. A webhook tells another tool when a conversation, task or memory is new</string>
+    <string name="all_events">All events</string>
+    <string name="webhook_last_delivery_format">last %s</string>
+    <string name="webhook_no_deliveries">no deliveries</string>
+    <string name="send_test">Send test</string>
+    <string name="deliveries">Deliveries</string>
+    <string name="webhook_delivery_format">%1$s · %2$s</string>
+    <string name="no_deliveries_yet">No deliveries yet</string>
+    <string name="delete_webhook_title">Delete this webhook?</string>
+    <string name="delete_webhook_message">Its delivery log goes with it. This cannot be undone</string>
+    <string name="webhook_url_label">URL</string>
+    <string name="webhook_description_label">Description (optional)</string>
+    <string name="signing_secret_title">Signing secret</string>
+    <string name="signing_secret_message_format">Copy it now. It is not shown again, and it signs what %s receives</string>
+
+    <!-- Tokens screen -->
+    <string name="revoke_token_title_format">Revoke \"%s\"?</string>
+    <string name="revoke_token_message">Anything that uses this token stops working at once. This cannot be undone</string>
+    <string name="token_scope_format">Scope %s</string>
+    <string name="token_scope_hint_format">Scope %1$s, ends in %2$s</string>
+    <string name="token_created_format">Created %s</string>
+    <string name="token_last_used_format">Last used %s</string>
+    <string name="token_revoked_format">Revoked %s</string>
+    <string name="token_scope_read">Read: conversations and tasks, and MCP for agents</string>
+    <string name="token_scope_admin">Admin: everything, including this app</string>
+    <string name="token_title_format">Token \"%s\"</string>
+    <string name="token_copy_now_message">Copy it now. The server cannot show it again</string>
+
+    <!-- Developer extras -->
+    <string name="send_diagnostics_to_server">Send diagnostics to my server</string>
+    <string name="turn_off_developer_mode">Turn off developer mode</string>
+    <string name="alert_thresholds">Alert thresholds</string>
+    <string name="pendant_disconnected_minutes">Pendant disconnected, minutes</string>
+    <string name="server_unreachable_minutes">Server unreachable, minutes</string>
+    <string name="battery_percent_label">Battery, percent</string>
+    <string name="save_thresholds">Save thresholds</string>
+
+    <!-- First run extras -->
+    <string name="pairing_step_description">Turn the pendant on, keep it next to the phone, and pick it in the list that opens</string>
+    <string name="set_up_later">Set up later</string>
+
+    <!-- Tasks extras -->
+    <string name="delete_task_title">Delete this task?</string>
+    <string name="edit_task_title">Edit task</string>
+    <string name="task_label">Task</string>
+
+    <!-- Memories tab -->
+    <string name="no_memories_yet">No memories yet. Memories are lasting facts about you, such as where you work or what you like. They come from summarized conversations, or you can add one</string>
+    <string name="add_memory">Add a memory</string>
+    <string name="delete_memory_title">Delete this memory?</string>
+    <string name="delete_memory_message">The server will not learn it from your conversations again</string>
+    <string name="memory_options">Memory options</string>
+    <string name="edit_memory_title">Edit memory</string>
+    <string name="memory_label">A fact about you</string>
+
+    <!-- Pendant storage -->
+    <string name="pendant_storage">Pendant storage</string>
+    <string name="sync_now">Sync now</string>
+    <string name="import_or_discard">Import or discard…</string>
+    <string name="discard_audio_title">Discard the stored audio?</string>
+    <string name="discard_audio_message_format">About %s of audio is freed on the pendant without being read. It cannot be recovered</string>
+    <string name="import_audio_title">Import the stored audio?</string>
+    <string name="import_audio_message_format">The pendant holds about %s of audio it recorded while the phone was away. Importing reads it all and uploads it to your server, which takes a while</string>
+
+    <!-- Device extras -->
+    <string name="no_server_set">No server set</string>
+    <string name="api_version_format">API version %d</string>
+    <string name="api_mismatch_format">This server speaks API version %1$d; this app speaks %2$d. Update whichever is older</string>
+    <string name="check_again">Check again</string>
+    <string name="server_url_label">Server URL</string>
+    <string name="token_keep_hint">Token (leave empty to keep)</string>
+    <string name="allow_plain_http_title">Allow plain HTTP?</string>
+    <string name="allow_plain_http_message">Without HTTPS your audio and transcripts cross the network unencrypted. Turn this on only for a server you reach through a VPN or tailnet you trust</string>
+    <string name="app_version_format">Nytka %s</string>
+
+    <!-- Mute schedule -->
+    <string name="mute_schedule">Mute schedule</string>
+    <string name="mute_schedule_description">Nothing is recorded in these windows, as if you had muted. A window can run past midnight</string>
+    <string name="add_window">Add a window</string>
+    <string name="mute_applied_on_server">Also applied on your server</string>
+    <string name="mute_server_failed_format">Server not updated: %s Retried on your next save or app start</string>
+    <string name="time_zone_hint_format">Your server\'s time zone is UTC or not set, but this phone is on %1$s. Set the server to %1$s or the windows will apply at the wrong hours there</string>
+    <string name="set_server_time_zone_format">Set server time zone to %s</string>
+    <string name="window_from_format">From %s</string>
+    <string name="window_to_format">To %s</string>
+    <string name="window_inactive_hint">Pick at least one day and different times</string>
+
+    <!-- Pendant settings -->
+    <string name="pendant_settings">Pendant settings</string>
+    <string name="led_brightness">LED brightness</string>
+    <string name="microphone_gain">Microphone gain</string>
+    <string name="pendant_settings_note">The pendant keeps these in its own memory; nothing is sent to your server</string>
+
+    <!-- Conversation extras -->
+    <string name="bookmark_content_description">Bookmark</string>
+    <string name="add_a_note">Add a note</string>
+    <string name="bookmark_note_title">Bookmark note</string>
+    <string name="note_label">Note</string>
+    <string name="bookmark_note_hint">Leave it empty to remove the note</string>
+    <string name="who_is_this_title">Who is this?</string>
+    <string name="speaker_name_hint">The same name on another voice joins them into one person</string>
+    <string name="title_label">Title</string>
+    <string name="title_hint">Leave it empty to use the generated title</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="audio_play_failed">The audio could not be played</string>
+
+    <!-- Ask tab -->
+    <string name="ask_hint">Ask about your conversations</string>
+    <string name="sources">Sources</string>
 </resources>

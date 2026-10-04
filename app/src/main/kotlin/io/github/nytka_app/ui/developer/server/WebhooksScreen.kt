@@ -67,7 +67,11 @@ fun WebhooksScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (selected == null) stringResource(R.string.webhooks_title) else "Webhook") },
+                title = {
+                    Text(
+                        stringResource(if (selected == null) R.string.webhooks_title else R.string.webhook_title),
+                    )
+                },
                 navigationIcon = {
                     IconButton(
                         onClick = back,
@@ -81,7 +85,7 @@ fun WebhooksScreen(
                 actions = {
                     if (selected == null && state.error == null) {
                         IconButton(onClick = viewModel::startAdd) {
-                            Icon(Icons.Filled.Add, contentDescription = "Add a webhook")
+                            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_webhook))
                         }
                     }
                 },
@@ -119,13 +123,15 @@ private fun WebhookList(
             state.error?.let { error ->
                 item {
                     Text(error, color = MaterialTheme.colorScheme.error)
-                    TextButton(onClick = viewModel::refresh) { Text("Retry") }
+                    TextButton(onClick = viewModel::refresh) { Text(stringResource(R.string.action_retry)) }
                 }
             }
             items(state.webhooks, key = { it.id }) { hook ->
                 ListItem(
                     headlineContent = { Text(hook.url, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                    supportingContent = { Text("${eventsText(hook)} · ${lastDeliveryText(hook)}") },
+                    supportingContent = {
+                        Text(stringResource(R.string.webhook_summary_format, eventsText(hook), lastDeliveryText(hook)))
+                    },
                     trailingContent = {
                         Switch(checked = hook.active, onCheckedChange = { viewModel.setActive(hook.id, it) })
                     },
@@ -134,18 +140,21 @@ private fun WebhookList(
             }
             if (state.webhooks.isEmpty() && !state.loading && state.error == null) {
                 item {
-                    Text(
-                        "No webhooks yet. A webhook tells another tool when a conversation, task or memory is new.",
-                    )
+                    Text(stringResource(R.string.no_webhooks_yet))
                 }
             }
         }
     }
 }
 
-private fun eventsText(hook: Webhook) = if ("*" in hook.events) "All events" else hook.events.joinToString(", ")
+@Composable
+private fun eventsText(hook: Webhook) =
+    if ("*" in hook.events) stringResource(R.string.all_events) else hook.events.joinToString(", ")
 
-private fun lastDeliveryText(hook: Webhook) = hook.lastDelivery?.let { "last ${it.status}" } ?: "no deliveries"
+@Composable
+private fun lastDeliveryText(hook: Webhook) =
+    hook.lastDelivery?.let { stringResource(R.string.webhook_last_delivery_format, it.status) }
+        ?: stringResource(R.string.webhook_no_deliveries)
 
 @Composable
 private fun WebhookDetail(
@@ -167,32 +176,38 @@ private fun WebhookDetail(
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilledTonalButton(onClick = viewModel::sendTest) { Text("Send test") }
-                OutlinedButton(onClick = { confirmDelete = true }) { Text("Delete") }
+                FilledTonalButton(onClick = viewModel::sendTest) { Text(stringResource(R.string.send_test)) }
+                OutlinedButton(onClick = { confirmDelete = true }) { Text(stringResource(R.string.action_delete)) }
             }
             state.note?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         }
-        item { Text("Deliveries", style = MaterialTheme.typography.titleSmall) }
+        item { Text(stringResource(R.string.deliveries), style = MaterialTheme.typography.titleSmall) }
         items(state.deliveries, key = { it.id }) { delivery ->
             ListItem(
-                headlineContent = { Text("${delivery.eventType} · ${delivery.status}") },
+                headlineContent = {
+                    Text(stringResource(R.string.webhook_delivery_format, delivery.eventType, delivery.status))
+                },
                 supportingContent = { Text(deliveryDetail(delivery)) },
             )
         }
-        if (state.deliveries.isEmpty() && !state.deliveriesLoading) item { Text("No deliveries yet.") }
+        if (state.deliveries.isEmpty() && !state.deliveriesLoading) {
+            item { Text(stringResource(R.string.no_deliveries_yet)) }
+        }
     }
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete this webhook?") },
-            text = { Text("Its delivery log goes with it. This cannot be undone.") },
+            title = { Text(stringResource(R.string.delete_webhook_title)) },
+            text = { Text(stringResource(R.string.delete_webhook_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false
                     viewModel.delete()
-                }) { Text("Delete") }
+                }) { Text(stringResource(R.string.action_delete)) }
             },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 }
@@ -221,13 +236,13 @@ private fun AddWebhookDialog(
     val picked = chosen.split(",").filter { it.isNotEmpty() }.toSet()
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add a webhook") },
+        title = { Text(stringResource(R.string.add_webhook)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
-                    label = { Text("URL") },
+                    label = { Text(stringResource(R.string.webhook_url_label)) },
                     singleLine = true,
                     isError = creator.error != null,
                     supportingText = creator.error?.let { error -> { Text(error) } },
@@ -235,10 +250,10 @@ private fun AddWebhookDialog(
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Description (optional)") },
+                    label = { Text(stringResource(R.string.webhook_description_label)) },
                     singleLine = true,
                 )
-                EventRow("All events", all) { all = it }
+                EventRow(stringResource(R.string.all_events), all) { all = it }
                 if (!all) {
                     WebhooksViewModel.EVENTS.forEach { (event, label) ->
                         EventRow(label, event in picked) { on ->
@@ -265,9 +280,9 @@ private fun AddWebhookDialog(
                     )
                 },
                 enabled = url.isNotBlank() && !creator.saving,
-            ) { Text("Add") }
+            ) { Text(stringResource(R.string.action_add)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -298,14 +313,14 @@ private fun SecretDialog(
     val scope = rememberCoroutineScope()
     AlertDialog(
         onDismissRequest = {},
-        title = { Text("Signing secret") },
+        title = { Text(stringResource(R.string.signing_secret_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Copy it now. It is not shown again, and it signs what ${secret.url} receives.")
+                Text(stringResource(R.string.signing_secret_message_format, secret.url))
                 SelectionContainer { Text(secret.secret, fontFamily = FontFamily.Monospace) }
             }
         },
-        confirmButton = { TextButton(onClick = onDone) { Text("Done") } },
+        confirmButton = { TextButton(onClick = onDone) { Text(stringResource(R.string.action_done)) } },
         dismissButton = {
             TextButton(onClick = {
                 scope.launch {
@@ -315,7 +330,7 @@ private fun SecretDialog(
                         android.os.PersistableBundle().apply { putBoolean(EXTRA_IS_SENSITIVE, true) }
                     clipboard.setClipEntry(ClipEntry(clip))
                 }
-            }) { Text("Copy") }
+            }) { Text(stringResource(R.string.action_copy)) }
         },
     )
 }

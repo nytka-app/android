@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -38,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.firmware.FirmwareNotice
+import io.github.nytka_app.core.api.NytkaApi
 import io.github.nytka_app.pendant.PendantConnection
 import io.github.nytka_app.ui.LocalNetworkHint
 import io.github.nytka_app.ui.LocalNetworkPrompt
@@ -136,14 +138,18 @@ fun DeviceScreen(
             }
         }
         item {
-            Section("About") {
+            Section(stringResource(R.string.about)) {
                 Text(
-                    "Nytka ${state.version}",
+                    stringResource(R.string.app_version_format, state.version),
                     modifier = Modifier.clickable(onClick = viewModel::tapVersion),
                 )
                 if (!state.developerMode && state.tapsToDeveloper in 1..3) {
                     Text(
-                        "${state.tapsToDeveloper} more taps for developer mode",
+                        pluralStringResource(
+                            R.plurals.taps_to_developer_format,
+                            state.tapsToDeveloper,
+                            state.tapsToDeveloper,
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -153,7 +159,7 @@ fun DeviceScreen(
                     ) { Text(stringResource(R.string.developer_mode)) }
                 }
                 Text(
-                    "An independent project for the Omi pendant; not affiliated with Based Hardware.",
+                    stringResource(R.string.about_affiliation),
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -201,7 +207,7 @@ private fun PendantSection(
     onForget: () -> Unit,
     onFirmwareCheck: (Boolean) -> Unit,
 ) {
-    Section("Pendant") {
+    Section(stringResource(R.string.pendant)) {
         val connection = status.capture.connection
         val info = (connection as? PendantConnection.Connected)?.info
         Text(state.pendantName ?: stringResource(R.string.no_pendant_paired))
@@ -223,8 +229,8 @@ private fun PendantSection(
             } else {
                 FilledTonalButton(
                     onClick = { onMute(!status.muted) },
-                ) { Text(if (status.muted) "Unmute" else "Mute") }
-                OutlinedButton(onClick = { onForget() }) { Text("Forget") }
+                ) { Text(stringResource(if (status.muted) R.string.unmute else R.string.mute)) }
+                OutlinedButton(onClick = { onForget() }) { Text(stringResource(R.string.forget)) }
             }
         }
         if (state.pendantAddress != null) {
@@ -260,21 +266,20 @@ private fun ServerSection(
     status: StatusUiState,
     onCheck: () -> Unit,
 ) {
-    Section("Server") {
-        Text(state.serverUrl.ifEmpty { "No server set" })
+    Section(stringResource(R.string.server)) {
+        Text(state.serverUrl.ifEmpty { stringResource(R.string.no_server_set) })
         Text(state.serverState)
-        state.apiVersion?.let { Text("API version $it") }
+        state.apiVersion?.let { Text(stringResource(R.string.api_version_format, it)) }
         if (state.apiMismatch) {
             Text(
-                "This server speaks API version ${state.apiVersion}; this app speaks 1. " +
-                    "Update whichever is older.",
+                stringResource(R.string.api_mismatch_format, state.apiVersion ?: 0, NytkaApi.API_VERSION),
                 color = MaterialTheme.colorScheme.error,
             )
         }
-        Text("Queued chunks: ${status.queuedChunks}")
+        Text(stringResource(R.string.queued_chunks_format, status.queuedChunks))
         Text(status.serverLine)
         LocalNetworkHint(state.serverUnreachable || status.serverUnreachable, onAllowed = onCheck)
-        OutlinedButton(onClick = onCheck) { Text("Check again") }
+        OutlinedButton(onClick = onCheck) { Text(stringResource(R.string.check_again)) }
     }
 }
 
@@ -289,11 +294,11 @@ private fun SettingsSection(
     var privateNetwork by rememberSaveable(state.privateNetwork) { mutableStateOf(state.privateNetwork) }
     var confirmPrivate by rememberSaveable { mutableStateOf(false) }
 
-    Section("Settings") {
+    Section(stringResource(R.string.settings)) {
         OutlinedTextField(
             value = url,
             onValueChange = { url = it },
-            label = { Text("Server URL") },
+            label = { Text(stringResource(R.string.server_url_label)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
             modifier = Modifier.fillMaxWidth(),
@@ -301,7 +306,9 @@ private fun SettingsSection(
         OutlinedTextField(
             value = token,
             onValueChange = { token = it },
-            label = { Text(if (state.tokenSet) "Token (leave empty to keep)" else "Token") },
+            label = {
+                Text(stringResource(if (state.tokenSet) R.string.token_keep_hint else R.string.token_hint))
+            },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
@@ -316,32 +323,31 @@ private fun SettingsSection(
                         false
                 }
             })
-            Text("Private network (allow plain HTTP)")
+            Text(stringResource(R.string.private_network_label))
         }
         state.saveError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         FilledTonalButton(onClick = {
             onSave(url, token, privateNetwork)
             token = ""
-        }) { Text("Save") }
+        }) { Text(stringResource(R.string.action_save)) }
     }
 
     if (confirmPrivate) {
         AlertDialog(
             onDismissRequest = { confirmPrivate = false },
-            title = { Text("Allow plain HTTP?") },
+            title = { Text(stringResource(R.string.allow_plain_http_title)) },
             text = {
-                Text(
-                    "Without HTTPS your audio and transcripts cross the network unencrypted. Turn this on only for a " +
-                        "server you reach through a VPN or tailnet you trust.",
-                )
+                Text(stringResource(R.string.allow_plain_http_message))
             },
             confirmButton = {
                 TextButton(onClick = {
                     confirmPrivate = false
                     privateNetwork = true
-                }) { Text("Allow") }
+                }) { Text(stringResource(R.string.action_allow)) }
             },
-            dismissButton = { TextButton(onClick = { confirmPrivate = false }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(onClick = { confirmPrivate = false }) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 }
