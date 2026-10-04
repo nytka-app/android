@@ -1,0 +1,1 @@
+The app in Ukrainian. Fewer stuck connections: when a Bluetooth request times out or Bluetooth turns off, the app reconnects instead of showing a silent "connected". Diagnostics now include signal strength and the disconnect reason, and developer mode can request a high-priority connection.
