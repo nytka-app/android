@@ -1,0 +1,1 @@
+Your voice: enroll your voice from the pendant (Device tab, about 30 seconds of reading), so the server can tell which lines are yours. Long-press a transcript line to mark it "This is me" or "This is not me". Needs Nytka server 0.12.0.
