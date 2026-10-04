@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.13.0](https://github.com/nytka-app/android/compare/v0.12.0...v0.13.0) (2026-10-04)
+
+
+### Features
+
+* show the app in Ukrainian and move UI text to string resources ([#43](https://github.com/nytka-app/android/issues/43)) ([34df560](https://github.com/nytka-app/android/commit/34df560836728df25d658911de75a3b023a4c39f))
+
+
+### Bug Fixes
+
+* **pendant:** reconnect a setUp whose client stopped taking requests ([#56](https://github.com/nytka-app/android/issues/56)) ([91f3337](https://github.com/nytka-app/android/commit/91f3337986cea0fd02a76ebb17fbfeaf31b3df3e))
+
 ## [0.12.0](https://github.com/nytka-app/android/compare/v0.11.0...v0.12.0) (2026-10-04)
 
 
