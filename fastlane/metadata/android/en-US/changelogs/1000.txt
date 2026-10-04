@@ -1,0 +1,1 @@
+Pendant settings: set the LED brightness and the microphone gain from the Device tab.

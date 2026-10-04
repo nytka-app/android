@@ -25,7 +25,7 @@ have their own.
 - A Nytka server the phone can reach, with its address and an `admin` token: `Nytka__AdminToken` in
   the server's `.env`, or an admin token made in the app. A `read` token is refused ("The app needs
   an admin token."). The
-  [server README](https://github.com/nytka-app/server#first-run-about-5-minutes) sets one up with
+  [server README](https://github.com/nytka-app/server#install-in-15-minutes) sets one up with
   Docker Compose. Keep the address and the token where you can paste them on the phone: the token
   is a long random string. The tabs, the sync and the server settings below need server 0.4.0 or
   later. An older server still takes audio, and a screen it lacks says "This server needs an update".
