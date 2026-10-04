@@ -52,6 +52,7 @@ class SettingsStore(
             preferences[FIRMWARE_CHECK] = next.firmwareCheck
             preferences[FIRMWARE_CHECKED_AT] = next.firmwareCheckedAt
             next.firmwareLatest?.let { preferences[FIRMWARE_LATEST] = it } ?: preferences.remove(FIRMWARE_LATEST)
+            preferences[HIGH_PRIORITY_CONNECTION] = next.highPriorityConnection
         }
     }
 
@@ -77,6 +78,7 @@ class SettingsStore(
             firmwareCheck = preferences[FIRMWARE_CHECK] ?: true,
             firmwareCheckedAt = preferences[FIRMWARE_CHECKED_AT] ?: 0,
             firmwareLatest = preferences[FIRMWARE_LATEST],
+            highPriorityConnection = preferences[HIGH_PRIORITY_CONNECTION] ?: false,
         )
 
     /** Stored by name, so reordering the steps moves no one; a name no longer known starts over. */
@@ -103,6 +105,7 @@ class SettingsStore(
         private val FIRMWARE_CHECK = booleanPreferencesKey("firmware_check")
         private val FIRMWARE_CHECKED_AT = longPreferencesKey("firmware_checked_at")
         private val FIRMWARE_LATEST = stringPreferencesKey("firmware_latest")
+        private val HIGH_PRIORITY_CONNECTION = booleanPreferencesKey("high_priority_connection")
 
         fun create(
             context: Context,

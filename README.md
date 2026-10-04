@@ -237,7 +237,9 @@ made from them; your own marks stay. See the
 - The **Device** tab shows the pendant and the server, and holds the settings: server address,
   token and the private-network switch.
 - **Diagnostics** (Device → Developer mode) record link quality, queue and upload health every
-  10 seconds while Nytka records, and keep the last 7 days. **Export diagnostics** shares them as a
+  10 seconds while Nytka records, and keep the last 7 days. A sample also holds the pendant's signal
+  strength (`rssi`, dBm) and the status of the last link loss (`lastDisconnectStatus`; 147 is a link that went
+  silent). **Export diagnostics** shares them as a
   CSV file through Android's share sheet. **Send diagnostics to my server** is off by default; on, it
   uploads the samples to your server every minute (needs server 0.2.0 or later).
   The app's own log events (tags such as `OmiPendant`, `CaptureController`) are kept and uploaded with
@@ -287,6 +289,8 @@ store and the server supports it, it shows the pendant's ring (read, write, capa
 the last transfer status, the measured rate, the loss of live audio during a sync, the frames dropped
 for a mute, the records dropped for a bad stamp, the pendant's clock skew and the number of clock
 segments. It has a fake pendant that replays a bundled text-to-speech recording,
+a **Request high-priority connection** switch (off by default; capture restarts, and each connection then asks
+Android for a 11.25 to 15 ms interval, to compare how often the link drops with and without it),
 a button that saves the next 60 seconds of frames as a test fixture, and **Copy debug report** for
 bug reports, which never includes the token. A saved fixture holds the voices of whoever spoke: keep
 it private. Its **Server** section holds three screens.

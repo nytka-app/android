@@ -116,6 +116,8 @@ class DiagnosticsRecorder(
             clockSkewS = storage?.skewS,
             segments = storage?.segments ?: 0,
             parkedChunks = queue.parkedChunks,
+            rssi = capture.stats.rssi,
+            lastDisconnectStatus = capture.stats.lastDisconnectStatus,
         )
     }
 

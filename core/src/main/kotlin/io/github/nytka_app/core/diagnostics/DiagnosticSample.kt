@@ -45,4 +45,7 @@ data class DiagnosticSample(
     val clockSkewS: Long? = null,
     val segments: Long = 0,
     val parkedChunks: Int = 0,
+    // The link (v0.13): signal strength in dBm and the status of the last link loss, to set drops against signal.
+    val rssi: Int? = null,
+    val lastDisconnectStatus: Int? = null,
 )

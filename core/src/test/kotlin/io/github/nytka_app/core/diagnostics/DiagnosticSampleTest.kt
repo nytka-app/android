@@ -2,6 +2,7 @@ package io.github.nytka_app.core.diagnostics
 
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -45,6 +46,18 @@ class DiagnosticSampleTest {
 
         assertEquals(counted, json.decodeFromString(DiagnosticSample.serializer(), text))
         assertTrue(text.contains("\"ringWriteSeq\":5000"))
+    }
+
+    @Test
+    fun `the link fields round trip and stay out of the JSON while unknown`() {
+        val linked = sample(1).copy(rssi = -71, lastDisconnectStatus = 147)
+
+        val text = json.encodeToString(DiagnosticSample.serializer(), linked)
+
+        assertEquals(linked, json.decodeFromString(DiagnosticSample.serializer(), text))
+        assertTrue(text.contains("\"rssi\":-71"))
+        assertTrue(text.contains("\"lastDisconnectStatus\":147"))
+        assertFalse(json.encodeToString(DiagnosticSample.serializer(), sample(1)).contains("rssi"))
     }
 
     @Test

@@ -58,6 +58,7 @@
     <string name="webhooks">Webhooks</string>
     <string name="testing_section">Testing</string>
     <string name="fake_pendant_label">Fake pendant (replays a bundled recording)</string>
+    <string name="high_priority_connection_label">Request high-priority connection</string>
     <string name="save_next_60_seconds">Save the next 60 seconds of frames</string>
     <string name="copy_debug_report">Copy debug report</string>
     <string name="diagnostics">Diagnostics</string>

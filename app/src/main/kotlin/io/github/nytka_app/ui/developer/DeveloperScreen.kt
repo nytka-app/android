@@ -128,6 +128,16 @@ fun DeveloperScreen(
                         Switch(checked = state.fakePendant, onCheckedChange = viewModel::setFakePendant)
                         Text(stringResource(R.string.fake_pendant_label))
                     }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Switch(
+                            checked = state.highPriorityConnection,
+                            onCheckedChange = viewModel::setHighPriorityConnection,
+                        )
+                        Text(stringResource(R.string.high_priority_connection_label))
+                    }
                     FilledTonalButton(
                         onClick = viewModel::recordFixture,
                     ) { Text(stringResource(R.string.save_next_60_seconds)) }

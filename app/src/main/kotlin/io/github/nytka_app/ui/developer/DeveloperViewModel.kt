@@ -39,6 +39,7 @@ data class DeveloperUiState(
     val lastUpload: String? = null,
     val serverStatus: String = "Not checked",
     val fakePendant: Boolean = false,
+    val highPriorityConnection: Boolean = false,
     val fixture: String? = null,
     val disconnectedMinutes: Int = 5,
     val unreachableMinutes: Int = 15,
@@ -96,6 +97,7 @@ class DeveloperViewModel
                     lastUpload = upload.lastResult,
                     serverStatus = screen.serverStatus,
                     fakePendant = current.fakePendant,
+                    highPriorityConnection = current.highPriorityConnection,
                     fixture = screen.fixture,
                     disconnectedMinutes = current.alertDisconnectedMinutes,
                     unreachableMinutes = current.alertUnreachableMinutes,
@@ -136,6 +138,14 @@ class DeveloperViewModel
         fun setFakePendant(on: Boolean) {
             viewModelScope.launch {
                 settings.update { it.copy(fakePendant = on) }
+                actions.restartCapture()
+            }
+        }
+
+        /** Takes effect on the next connection, so capture restarts. */
+        fun setHighPriorityConnection(on: Boolean) {
+            viewModelScope.launch {
+                settings.update { it.copy(highPriorityConnection = on) }
                 actions.restartCapture()
             }
         }

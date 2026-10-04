@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import kotlinx.coroutines.sync.Mutex
@@ -45,6 +46,8 @@ class OmiPendant(
     /** Monotonic clock for the watchdog; [now] is wall-clock time and feeds the frames' capture times. */
     private val elapsed: () -> Long = SystemClock::elapsedRealtime,
     private val logger: PendantLogger = PendantLogger.Android,
+    /** True asks Android for a high-priority connection after each setUp (a developer switch, for A/B tests). */
+    private val highPriority: Boolean = false,
 ) : Pendant {
     /** Last resort: nothing launched here may take the process down or strand the link, so it reconnects. */
     private val scope =
@@ -120,6 +123,10 @@ class OmiPendant(
     private var session: Job? = null
     private var settingsLoad: Job? = null
     private val resubscribeFailures = FailureStreak(MAX_RESUBSCRIBE_FAILURES)
+    private val busy = BusyClient()
+
+    /** A setUp left with a stuck client reconnects once; a second one in a row carries on degraded. */
+    private val stuckSetUps = FailureStreak(MAX_STUCK_SETUPS)
     private val watchdog = LinkWatchdog()
     private val resume = ResumeDetector()
 
@@ -222,16 +229,22 @@ class OmiPendant(
                 receiver: Context,
                 intent: Intent,
             ) {
-                if (intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR) !=
-                    BluetoothAdapter.STATE_ON
-                ) {
-                    return
+                val state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR)
+                val action = adapterAction(state)
+                if (action == AdapterAction.None) return
+                synchronized(link) {
+                    if (address == null) return
+                    close()
+                    mutableConnection.value = PendantConnection.Connecting
+                    if (action == AdapterAction.Reopen) {
+                        info("adapter STATE_ON, opening a fresh client")
+                        openLocked()
+                    } else {
+                        val word = if (state == BluetoothAdapter.STATE_OFF) "STATE_OFF" else "STATE_TURNING_OFF"
+                        info("adapter $word, client dropped")
+                        connectTimeout.cancel() // STATE_ON opens the next client
+                    }
                 }
-                if (address == null) return
-                info("adapter STATE_ON, opening a fresh client")
-                close()
-                mutableConnection.value = PendantConnection.Connecting
-                open()
             }
         }
 
@@ -260,6 +273,8 @@ class OmiPendant(
         omiStorage.linkLost()
         omiSettings.linkLost()
         releaseGatt()
+        busy.reset()
+        mutableStats.update { it.copy(rssi = null) }
         synchronized(assembler) { assembler.reset() }
     }
 
@@ -313,6 +328,7 @@ class OmiPendant(
         subscribe(current, OmiUuids.BUTTON, true)
         subscribe(current, OmiUuids.BATTERY_LEVEL, true)
         mutableBattery.value = OmiParsing.battery(read(current, OmiUuids.BATTERY_LEVEL)) ?: mutableBattery.value
+        if (!carryOnWithClient()) return recoverLink()
         // Audio is the caller's intent and survives the link. A setAudio during setUp only recorded the intent,
         // so subscribe here too if it arrived after the early subscription, before Connected is published.
         audioLock.withLock {
@@ -324,8 +340,33 @@ class OmiPendant(
         settingsLoad?.cancel()
         settingsLoad = scope.launch { omiSettings.load() }
         info("setUp: connected")
+        requestPriority(current)
         lastAnyNotificationAtMs = elapsed() // the link just answered our reads: the liveness clock starts here
         watch(current)
+    }
+
+    /**
+     * False when a setUp request went unanswered, so the client refuses the rest, and the setUp before did not end
+     * the same way: the caller reconnects. A second one in a row carries on without what the client refused.
+     */
+    private fun carryOnWithClient(): Boolean {
+        if (!busy.stuck) {
+            stuckSetUps.succeeded()
+            return true
+        }
+        if (stuckSetUps.failed()) {
+            warn("setUp: a request went unanswered again, carrying on without what it refused")
+            return true
+        }
+        warn("setUp: a request went unanswered and the client refuses the rest, reconnecting")
+        return false
+    }
+
+    /** Only behind the developer switch: Android keeps its balanced priority otherwise. */
+    private fun requestPriority(current: BluetoothGatt) {
+        if (!highPriority) return
+        val asked = guarded(false) { current.requestConnectionPriority(BluetoothGatt.CONNECTION_PRIORITY_HIGH) }
+        info("setUp: high-priority connection ${if (asked) "requested" else "refused"}")
     }
 
     /** Subscribes to audio when the caller wants it; the caller holds [audioLock]. */
@@ -370,10 +411,13 @@ class OmiPendant(
      * quiet room. A resubscribe is rare and slow, and a reconnect needs a link that had a pulse and says nothing.
      */
     private suspend fun watch(current: BluetoothGatt) {
+        var ticks = 0L
         while (true) {
             delay(WATCHDOG_TICK_MS)
             // Bluetooth is turning off or off: the adapter-state path reopens the link, a resubscribe would only fail.
             if (!adapterOn()) continue
+            // Not a gated request: it works on a stuck client too, and its answer comes in onReadRemoteRssi.
+            if (++ticks % RSSI_EVERY_TICKS == 0L) guarded(false) { current.readRemoteRssi() }
             audioLock.withLock {
                 if (!audioIntent.wanted) return@withLock // muted: silence is intended
                 when (val action = watchdog.check(elapsed(), lastAudioAtMs, lastAnyNotificationAtMs)) {
@@ -417,15 +461,16 @@ class OmiPendant(
                 if (frame != null) {
                     if (mutableFrames.tryEmit(frame)) emittedFrames++ else overflowFrames++
                 }
-                mutableStats.value =
+                mutableStats.update {
                     synchronized(assembler) {
-                        LinkStats(
+                        it.copy(
                             notifications = assembler.notifications,
                             lostNotifications = assembler.lostNotifications,
                             droppedFrames = assembler.droppedFrames + overflowFrames,
                             frames = emittedFrames,
                         )
                     }
+                }
             }
 
             OmiUuids.BUTTON -> OmiParsing.button(value)?.let { mutableButtons.tryEmit(it) }
@@ -494,17 +539,19 @@ class OmiPendant(
         operations.withLock {
             val op = PendingOperation(kind, characteristic)
             pending = op
-            val result =
-                if (guarded(
-                        false,
-                        start,
-                    )
-                ) {
-                    withTimeoutOrNull(OPERATION_TIMEOUT_MS) { op.done.await() }
-                } else {
-                    null
-                }
+            val started = guarded(false, start)
+            val result = if (started) withTimeoutOrNull(OPERATION_TIMEOUT_MS) { op.done.await() } else null
             pending = null
+            if (started && !op.done.isCompleted) {
+                busy.timedOut(kind)
+                val name =
+                    characteristic
+                        ?.toString()
+                        ?.take(UUID_HEAD)
+                        ?.let { " $it" }
+                        .orEmpty()
+                warn("$kind$name timed out after ${OPERATION_TIMEOUT_MS}ms")
+            }
             result
         }
 
@@ -522,9 +569,10 @@ class OmiPendant(
         characteristic: UUID?,
         value: ByteArray?,
     ) {
-        if (pending?.complete(kind, characteristic, value) == false) {
-            warn("ignored a late $kind callback")
-        }
+        val op = pending
+        if (op?.complete(kind, characteristic, value) == true) return
+        if (busy.lateCallback(kind)) info("late $kind callback, the client takes requests again")
+        if (op != null) warn("ignored a late $kind callback")
     }
 
     @Suppress("DEPRECATION")
@@ -608,6 +656,7 @@ class OmiPendant(
                             BluetoothProfile.STATE_CONNECTED -> {
                                 mtu = null
                                 mtuStatus = null
+                                busy.reset() // a connection change clears Android's busy flag too
                                 watchdog.linkUp()
                                 connectTimeout.cancel() // connected: setUp's own operation timeouts take over
                                 session?.cancel()
@@ -615,6 +664,7 @@ class OmiPendant(
                             }
 
                             BluetoothProfile.STATE_DISCONNECTED -> {
+                                mutableStats.update { it.copy(lastDisconnectStatus = status) }
                                 close()
                                 if (address != null) {
                                     mutableConnection.value = PendantConnection.Connecting
@@ -704,6 +754,15 @@ class OmiPendant(
                 if (status == BluetoothGatt.GATT_SUCCESS) byteArrayOf() else null,
             )
 
+            override fun onReadRemoteRssi(
+                current: BluetoothGatt,
+                rssi: Int,
+                status: Int,
+            ) {
+                if (status != BluetoothGatt.GATT_SUCCESS || synchronized(link) { current !== gatt }) return
+                mutableStats.update { it.copy(rssi = rssi) }
+            }
+
             override fun onCharacteristicChanged(
                 current: BluetoothGatt,
                 characteristic: BluetoothGattCharacteristic,
@@ -726,6 +785,8 @@ class OmiPendant(
         const val MTU = 247
         const val MS_PER_S = 1_000L
         const val MAX_RESUBSCRIBE_FAILURES = 3
+        const val MAX_STUCK_SETUPS = 2
+        const val RSSI_EVERY_TICKS = 10L
         const val UUID_HEAD = 8
         const val SUBSCRIBE_ATTEMPTS = 2
         const val OPERATION_TIMEOUT_MS = 5_000L

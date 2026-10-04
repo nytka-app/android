@@ -26,6 +26,8 @@ data class Settings(
     val firmwareCheckedAt: Long = 0,
     /** The tag of the newest firmware release the last check found, such as `Omi_CV1_v3.0.21`. */
     val firmwareLatest: String? = null,
+    /** Developer switch: ask Android for a high-priority connection after each setUp; off by default. */
+    val highPriorityConnection: Boolean = false,
 ) {
     /** What the uploader watches: a change here may end a pause. */
     val connectionKey: Triple<String, String, Boolean> get() = Triple(serverUrl, token, privateNetwork)
@@ -36,5 +38,6 @@ data class Settings(
             "consentGiven=$consentGiven, onboarded=$onboarded, firstRunStep=$firstRunStep, " +
             "developerMode=$developerMode, fakePendant=$fakePendant, " +
             "alerts=$alertDisconnectedMinutes/$alertUnreachableMinutes/$alertBatteryPercent, " +
-            "diagnosticsUpload=$diagnosticsUpload, muteWindows=${muteSchedule.windows.size}, firmwareCheck=$firmwareCheck)"
+            "diagnosticsUpload=$diagnosticsUpload, muteWindows=${muteSchedule.windows.size}, " +
+            "firmwareCheck=$firmwareCheck, highPriorityConnection=$highPriorityConnection)"
 }
