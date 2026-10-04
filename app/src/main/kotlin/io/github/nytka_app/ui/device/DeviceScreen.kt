@@ -108,9 +108,9 @@ fun DeviceScreen(
         item { ServerSection(state, status, viewModel::checkServer) }
         item { SettingsSection(state, viewModel::save) }
         item {
-            Section("People") {
-                Text("Name the voices Nytka hears, and tidy up the people it knows.")
-                OutlinedButton(onClick = onOpenPeople) { Text("People") }
+            Section(stringResource(R.string.people)) {
+                Text(stringResource(R.string.people_description))
+                OutlinedButton(onClick = onOpenPeople) { Text(stringResource(R.string.people)) }
             }
         }
         if (state.serverVoice == true) {
@@ -133,7 +133,11 @@ fun DeviceScreen(
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                if (state.developerMode) OutlinedButton(onClick = onOpenDeveloper) { Text("Developer mode") }
+                if (state.developerMode) {
+                    OutlinedButton(
+                        onClick = onOpenDeveloper,
+                    ) { Text(stringResource(R.string.developer_mode)) }
+                }
                 Text(
                     "An independent project for the Omi pendant; not affiliated with Based Hardware.",
                     style = MaterialTheme.typography.bodySmall,
@@ -155,15 +159,19 @@ fun DeviceScreen(
     if (confirmForget) {
         AlertDialog(
             onDismissRequest = { confirmForget = false },
-            title = { Text("Forget this pendant?") },
-            text = { Text("Capture stops, and the pendant has to be paired again. Queued audio still uploads.") },
+            title = { Text(stringResource(R.string.forget_pendant_title)) },
+            text = { Text(stringResource(R.string.forget_pendant_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmForget = false
                     viewModel.forgetPendant()
-                }) { Text("Forget") }
+                }) { Text(stringResource(R.string.forget)) }
             },
-            dismissButton = { TextButton(onClick = { confirmForget = false }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(
+                    onClick = { confirmForget = false },
+                ) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 }
@@ -182,22 +190,22 @@ private fun PendantSection(
     Section("Pendant") {
         val connection = status.capture.connection
         val info = (connection as? PendantConnection.Connected)?.info
-        Text(state.pendantName ?: "No pendant paired")
+        Text(state.pendantName ?: stringResource(R.string.no_pendant_paired))
         Text(
             when (connection) {
-                is PendantConnection.Connected -> "Connected"
-                is PendantConnection.Connecting -> "Connecting…"
+                is PendantConnection.Connected -> stringResource(R.string.connected)
+                is PendantConnection.Connecting -> stringResource(R.string.connecting)
                 is PendantConnection.Refused -> connection.reason
-                PendantConnection.Disconnected -> "Not connected"
+                PendantConnection.Disconnected -> stringResource(R.string.disconnected)
             },
         )
-        status.capture.battery?.let { Text("Battery $it%") }
-        info?.firmware?.let { Text("Firmware $it") }
+        status.capture.battery?.let { Text(stringResource(R.string.battery_percent_format, it)) }
+        info?.firmware?.let { Text(stringResource(R.string.firmware_format, it)) }
         state.firmwareNotice?.let { FirmwareNoticeText(it) }
         pairError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (state.pendantAddress == null) {
-                PairButton(onPaired = onPaired, onError = onPairError)
+                PairButton(label = stringResource(R.string.pair_pendant), onPaired = onPaired, onError = onPairError)
             } else {
                 FilledTonalButton(
                     onClick = { onMute(!status.muted) },
@@ -208,12 +216,10 @@ private fun PendantSection(
         if (state.pendantAddress != null) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Switch(checked = state.firmwareCheck, onCheckedChange = onFirmwareCheck)
-                Text("Check for new pendant firmware")
+                Text(stringResource(R.string.firmware_check_label))
             }
             Text(
-                "At most once a day, while this screen shows a connected Omi pendant, Nytka asks GitHub for " +
-                    "Omi's newest firmware release. GitHub sees your IP address, as any website would; nothing " +
-                    "about you, the pendant or your server is sent. Nytka only tells you: it never installs firmware.",
+                stringResource(R.string.firmware_check_explanation),
                 style = MaterialTheme.typography.bodySmall,
             )
         }
@@ -225,10 +231,12 @@ private fun FirmwareNoticeText(notice: FirmwareNotice) {
     val uri = LocalUriHandler.current
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(
-            "Firmware ${notice.latest} is available (this pendant has ${notice.current}).",
+            stringResource(R.string.firmware_available_format, notice.latest, notice.current),
             color = MaterialTheme.colorScheme.primary,
         )
-        TextButton(onClick = { uri.openUri(notice.instructionsUrl) }) { Text("How to update") }
+        TextButton(
+            onClick = { uri.openUri(notice.instructionsUrl) },
+        ) { Text(stringResource(R.string.firmware_how_to_update)) }
     }
 }
 

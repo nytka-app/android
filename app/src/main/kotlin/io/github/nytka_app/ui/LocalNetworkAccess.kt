@@ -14,9 +14,11 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import io.github.nytka_app.R
 import io.github.nytka_app.capture.DeviceActions
 import io.github.nytka_app.capture.localNetworkAllowed
 import io.github.nytka_app.capture.startAppSettings
@@ -69,11 +71,11 @@ fun LocalNetworkHint(
             if (it == PermissionAnswer.Granted) onAllowed()
         }
     Text(
-        "If this server is on your local network, Android blocks it until you allow Nearby devices for Nytka.",
+        stringResource(R.string.local_network_blocked_message),
         color = MaterialTheme.colorScheme.error,
     )
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        OutlinedButton(onClick = allow) { Text("Allow") }
-        OutlinedButton(onClick = { context.startAppSettings() }) { Text("Open settings") }
+        OutlinedButton(onClick = allow) { Text(stringResource(R.string.action_allow)) }
+        OutlinedButton(onClick = { context.startAppSettings() }) { Text(stringResource(R.string.open_settings)) }
     }
 }

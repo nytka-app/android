@@ -1,14 +1,172 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- App -->
     <string name="app_name">Nytka</string>
+
+    <!-- Common -->
+    <string name="action_back">Назад</string>
+    <string name="action_search">Пошук</string>
+    <string name="action_more">Ще</string>
+    <string name="action_retry">Повторити</string>
+    <string name="action_save">Зберегти</string>
+    <string name="action_cancel">Скасувати</string>
+    <string name="action_create">Створити</string>
+    <string name="action_done">Готово</string>
+    <string name="action_delete">Видалити</string>
+    <string name="action_rename">Перейменувати</string>
+    <string name="action_copy">Копіювати</string>
+    <string name="action_allow">Дозволити</string>
+    <string name="open_settings">Відкрити налаштування</string>
+    <string name="action_show_more">Показати більше</string>
+    <string name="hide_done_tasks">Приховати виконані завдання</string>
+    <string name="show_done_tasks">Показати виконані завдання</string>
+    <string name="nothing_done_yet">Поки що нічого не виконано</string>
+    <string name="set">Задати</string>
+    <string name="not_set">Не задано</string>
+    <string name="testing">Перевірка…</string>
+    <string name="test_connection">Перевірити з\'єднання</string>
+    <string name="continue_action">Продовжити</string>
+    <string name="i_understand">Я розумію</string>
+    <string name="regenerate_summary">Створити підсумок ще раз</string>
+    <string name="raw_transcription">Повний текст</string>
+    <string name="summary">Підсумок</string>
+    <string name="tasks">Завдання</string>
+    <string name="has_bookmarks_content_description">Є закладки</string>
+
+    <!-- Server notices -->
+    <string name="server_needs_update">Цей сервер потребує оновлення</string>
+    <string name="app_needs_admin_token">Застосунку потрібен адміністративний токен</string>
+    <string name="item_no_longer_exists">Цього елемента більше немає</string>
+
+    <!-- Developer -->
+    <string name="developer_mode">Режим розробника</string>
+    <string name="developer_mode_title">Режим розробника</string>
+    <string name="bluetooth">Bluetooth</string>
+    <string name="packets_per_second_format">Пакети: %.1f на секунду</string>
+    <string name="lost_percent_format">Втрачено: %.2f%% (менше 1%% — це нормально)</string>
+    <string name="frames_dropped">Втрачено кадрів: %d</string>
+    <string name="frames_this_session">Кадрів у цій сесії: %d</string>
+    <string name="queue_and_upload">Черга та вивантаження</string>
+    <string name="queue_mb_format">Черга: %.1f МБ</string>
+    <string name="sealed_chunks_and_unsealed_format">Запечатані частини: %d, кадри ще не запечатані: %d</string>
+    <string name="chunks_dropped_at_cap">Відкинуто частин на межі черги: %d</string>
+    <string name="uploaded_this_run">Вивантажено за цей запуск: %d</string>
+    <string name="last_upload_none">Останнє вивантаження: відсутнє</string>
+    <string name="server">Сервер</string>
+    <string name="check_status">Перевірити стан</string>
+    <string name="server_settings">Налаштування сервера</string>
+    <string name="access_tokens">Токени доступу</string>
+    <string name="webhooks">Вебхуки</string>
+    <string name="testing_section">Перевірка</string>
+    <string name="fake_pendant_label">Фейковий кулон (відтворює вбудований запис)</string>
+    <string name="save_next_60_seconds">Зберегти наступні 60 секунд кадрів</string>
+    <string name="copy_debug_report">Копіювати звіт про налагодження</string>
+    <string name="diagnostics">Діагностика</string>
+    <string name="diagnostics_samples_format">%d вимірів зберігається 7 днів, по одному кожні 10 секунд, поки триває запис</string>
+    <string name="export_diagnostics">Експортувати діагностику</string>
+
+    <!-- Server settings -->
+    <string name="server_settings_title">Налаштування сервера</string>
+    <string name="saved_server_values">Збережено. Сервер використає нові значення з наступного запуску</string>
+    <string name="set_by_server_env">Задано оточенням сервера</string>
+    <string name="default_with_empty">За замовчуванням: %s. Порожнє значення поверне його</string>
+
+    <!-- Tokens -->
+    <string name="access_tokens_title">Токени доступу</string>
+    <string name="create_token">Створити токен</string>
+    <string name="revoke">Скасувати</string>
+    <string name="name">Назва</string>
+    <string name="token_name_label">Назва</string>
+
+    <!-- Webhooks -->
+    <string name="webhooks_title">Вебхуки</string>
+
+    <!-- Conversations -->
+    <string name="conversations_title">Розмови</string>
+    <string name="no_conversations_yet">Розмов ще немає. Мовлення з\'являється тут за кілька хвилин після того, як його сказали</string>
+    <string name="summary_failed">Не вдалося створити підсумок</string>
+    <string name="summarizing">Створення підсумку</string>
+    <string name="time_range_and_length_format">%s · %s</string>
+    <string name="bookmarks_count_format">%d закладок</string>
+    <string name="back_content_description">Назад</string>
+    <string name="more_content_description">Ще</string>
+    <string name="search_content_description">Пошук</string>
+    <string name="has_bookmarks">Є закладки</string>
+
+    <!-- Conversation screen -->
+    <string name="summary_card_title">Підсумок</string>
+    <string name="tasks_card_title">Завдання</string>
+    <string name="task_save_failed">Не вдалося зберегти завдання</string>
+    <string name="summary_not_made_now">Зараз підсумок створити неможливо: розмова ще триває або на сервері не налаштовано мовну модель</string>
+    <string name="me">Я</string>
+
+    <!-- Search -->
+    <string name="search_title">Пошук</string>
+    <string name="search_hint">Шукати в розмовах і спогадах</string>
+    <string name="nothing_found">Нічого не знайдено</string>
+
+    <!-- First run -->
+    <string name="set_up_nytka">Налаштування Nytka</string>
+    <string name="step_of_format">Крок %1$d з %2$d</string>
+    <string name="server_step_description">Адреса та токен вашого сервера Nytka з його файлу .env</string>
+    <string name="server_url_hint">Адреса сервера, наприклад https://nytka.example.com</string>
+    <string name="token_hint">Токен</string>
+    <string name="private_network_label">Приватна мережа (дозволити звичайний HTTP)</string>
+    <string name="private_network_warning">Звичайний HTTP надсилає аудіо без шифрування. Використовуйте його лише у VPN або власній мережі, якій довіряєте</string>
+    <string name="permissions_description">Nytka потрібен дозвіл на пристрої поблизу, щоб зв\'язатися з кулоном, і дозвіл на сповіщення, щоб показувати, що триває запис. Він ніколи не використовує мікрофон телефона</string>
+    <string name="permissions_denied_nearby">Без дозволу на пристрої поблизу Nytka не може зв\'язатися з кулоном. Натисніть «Дозволити», щоб запит повторили</string>
+    <string name="permissions_blocked_nearby">Без дозволу на пристрої поблизу Nytka не може зв\'язатися з кулоном. Якщо Android більше не запитує, увімкніть його в системних налаштуваннях Nytka, потім поверніться й натисніть «Дозволити»</string>
+
+    <!-- Tasks -->
+    <string name="tasks_tab_empty">Немає відкритих завдань. Завдання, які мовна модель знаходить у ваших розмовах, з\'являються тут</string>
+
+    <!-- Device -->
+    <string name="device_title">Пристрій</string>
+    <string name="pendant">Кулон</string>
+    <string name="no_pendant_paired">Кулон не спарено</string>
+    <string name="connected">Підключено</string>
+    <string name="connecting">Підключення…</string>
+    <string name="disconnected">Не підключено</string>
+    <string name="battery_percent_format">Батарея %d%%</string>
+    <string name="firmware_format">Прошивка %s</string>
+    <string name="pair_pendant">Спарити кулон</string>
+    <string name="forget">Забути</string>
+    <string name="forget_pendant_title">Забути цей кулон?</string>
+    <string name="forget_pendant_message">Запис припиниться, а кулон доведеться спарити знову. Аудіо в черзі все одно вивантажиться</string>
+    <string name="mute">Без звуку</string>
+    <string name="people">Люди</string>
+    <string name="people_description">Дайте імена голосам, які чує Nytka, і приберіть тих, кого вона знає</string>
+    <string name="about">Про застосунок</string>
+    <string name="taps_to_developer_format">Ще %d натискань до режиму розробника</string>
+    <string name="about_affiliation">Незалежний проєкт для кулона Omi; не пов\'язаний із Based Hardware</string>
+    <string name="pairing_chooser_no_pendant">Список вибору не повернув жодного кулона</string>
+    <string name="delete_conversation_title">Видалити цю розмову?</string>
+    <string name="delete_conversation_message">Її текст і аудіо буде видалено з вашого сервера. Це не можна скасувати</string>
+    <string name="local_network_blocked_message">Якщо цей сервер у вашій локальній мережі, Android заблокує його, доки ви не ввімкнете «Пристрої поблизу» для Nytka</string>
+    <string name="people_title">Люди</string>
+    <string name="people_section">Люди</string>
+    <string name="unnamed_voices_section">Голоси без імен</string>
+    <string name="no_people_yet">Імен ще немає. Торкніться голосу нижче або спікера в розмові</string>
+    <string name="no_unnamed_voices">Немає голосів без імен</string>
+
+    <!-- Firmware notice -->
+    <string name="firmware_check_label">Перевіряти нову прошивку кулона</string>
+    <string name="firmware_check_explanation">Не частіше ніж раз на день, поки цей екран показує підключений кулон Omi, Nytka запитує в GitHub найновіший реліз прошивки Omi. GitHub бачить вашу IP-адресу, як і будь-який вебсайт; нічого про вас, кулон чи ваш сервер не надсилається. Nytka лише повідомляє: вона ніколи не встановлює прошивку.</string>
+    <string name="firmware_available_format">Доступна прошивка %1$s (на цьому кулоні %2$s).</string>
+    <string name="firmware_how_to_update">Як оновити</string>
+
+    <!-- Segment marks -->
+    <string name="segment_mark_me">Це я</string>
+    <string name="segment_mark_not_me">Це не я</string>
+    <string name="segment_mark_clear">Очистити</string>
+    <string name="segment_source_marked">позначено</string>
+    <string name="segment_source_voice">голос</string>
+    <string name="segment_source_provider">сервіс транскрипції</string>
 
     <!-- Your voice -->
     <string name="voice_title">Ваш голос</string>
     <string name="voice_entry_summary">Навчіть Nytka вашого голосу, щоб вона позначала ваші репліки як ваші.</string>
     <string name="voice_entry_button">Ваш голос</string>
-    <string name="action_back">Назад</string>
-    <string name="action_retry">Повторити</string>
-    <string name="action_cancel">Скасувати</string>
     <string name="voice_loading">Читаю дані сервера…</string>
     <string name="voice_not_enrolled">Голос ще не записано. Доки ви цього не зробите, Nytka використовує позначки сервісу транскрипції.</string>
     <string name="voice_enrolled_at">Записано %s</string>

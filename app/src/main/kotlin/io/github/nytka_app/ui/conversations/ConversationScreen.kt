@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -60,6 +61,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import io.github.nytka_app.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,31 +92,36 @@ fun ConversationScreen(
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
-                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
+                    }
                 },
                 actions = {
                     IconButton(
                         onClick = { menuOpen = true },
-                    ) { Icon(Icons.Filled.MoreVert, contentDescription = "More") }
+                    ) { Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.action_more)) }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        DropdownMenuItem(text = { Text("Rename") }, onClick = {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.action_rename)) }, onClick = {
                             menuOpen = false
                             renaming = true
                         })
                         DropdownMenuItem(
-                            text = { Text("Regenerate summary") },
+                            text = { Text(stringResource(R.string.regenerate_summary)) },
                             enabled = !state.open,
                             onClick = {
                                 menuOpen = false
                                 viewModel.regenerate()
                             },
                         )
-                        DropdownMenuItem(text = { Text("Delete") }, onClick = {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.action_delete)) }, onClick = {
                             menuOpen = false
                             confirmDelete = true
                         })
                         if (developerMode) {
-                            DropdownMenuItem(text = { Text("Raw transcription") }, onClick = {
+                            DropdownMenuItem(text = { Text(stringResource(R.string.raw_transcription)) }, onClick = {
                                 menuOpen = false
                                 viewModel.loadRaw()
                             })
@@ -132,18 +139,23 @@ fun ConversationScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item { Text("${state.timeRange} · ${state.length}", style = MaterialTheme.typography.titleMedium) }
+            item {
+                Text(
+                    stringResource(R.string.time_range_and_length_format, state.timeRange, state.length),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
             state.playback?.let { playback ->
                 item { PlayBar(playback, onToggle = viewModel::togglePlay, onSeek = viewModel::seekTo) }
             }
             state.chip?.let { chip -> item { AiChip(chip) } }
             state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
             state.summary?.let { summary ->
-                item { InfoCard("Summary") { Text(summary) } }
+                item { InfoCard(stringResource(R.string.summary_card_title)) { Text(summary) } }
             }
             if (state.tasks.isNotEmpty()) {
                 item {
-                    InfoCard("Tasks") {
+                    InfoCard(stringResource(R.string.tasks_card_title)) {
                         state.tasks.forEach { task ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Checkbox(task.done, onCheckedChange = { viewModel.setTaskDone(task.id, it) })
@@ -196,15 +208,19 @@ fun ConversationScreen(
     if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete this conversation?") },
-            text = { Text("Its transcript and audio are deleted from your server. This cannot be undone.") },
+            title = { Text(stringResource(R.string.delete_conversation_title)) },
+            text = { Text(stringResource(R.string.delete_conversation_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false
                     viewModel.delete()
-                }) { Text("Delete") }
+                }) { Text(stringResource(R.string.action_delete)) }
             },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+            dismissButton = {
+                TextButton(
+                    onClick = { confirmDelete = false },
+                ) { Text(stringResource(R.string.action_cancel)) }
+            },
         )
     }
 }
@@ -288,8 +304,15 @@ private fun SpeakerLabel(
             modifier = if (voiceId != null) Modifier.clickable { onName(voiceId to label) } else Modifier,
         )
         paragraph.sourceNote?.let {
+            val note =
+                when (it) {
+                    "marked" -> stringResource(R.string.segment_source_marked)
+                    "voice" -> stringResource(R.string.segment_source_voice)
+                    "provider" -> stringResource(R.string.segment_source_provider)
+                    else -> it
+                }
             Text(
-                " · $it",
+                " · $note",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -332,16 +355,16 @@ private fun ParagraphItem(
                         }),
                 )
                 DropdownMenu(expanded = markMenu, onDismissRequest = { markMenu = false }) {
-                    DropdownMenuItem(text = { Text("This is me") }, onClick = {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.segment_mark_me)) }, onClick = {
                         markMenu = false
                         onMark(paragraph.segmentId, true)
                     })
-                    DropdownMenuItem(text = { Text("This is not me") }, onClick = {
+                    DropdownMenuItem(text = { Text(stringResource(R.string.segment_mark_not_me)) }, onClick = {
                         markMenu = false
                         onMark(paragraph.segmentId, false)
                     })
                     if (paragraph.marked) {
-                        DropdownMenuItem(text = { Text("Clear") }, onClick = {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.segment_mark_clear)) }, onClick = {
                             markMenu = false
                             onMark(paragraph.segmentId, null)
                         })
@@ -436,8 +459,13 @@ internal fun NameVoiceDialog(
                 singleLine = true,
             )
         },
-        confirmButton = { TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank()) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = {
+            TextButton(
+                onClick = { onSave(text) },
+                enabled = text.isNotBlank(),
+            ) { Text(stringResource(R.string.action_save)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 

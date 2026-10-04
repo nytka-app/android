@@ -26,10 +26,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nytka_app.R
 import io.github.nytka_app.core.api.ServerSetting
 
 /** The server's settings, grouped by key prefix. Developer mode, admin token only. */
@@ -43,14 +45,23 @@ fun ServerSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Server settings") },
+                title = { Text(stringResource(R.string.server_settings_title)) },
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
-                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
+                    }
                 },
                 actions = {
-                    TextButton(onClick = viewModel::save, enabled = state.anyChanged && !state.saving) { Text("Save") }
+                    TextButton(onClick = viewModel::save, enabled = state.anyChanged && !state.saving) {
+                        Text(
+                            stringResource(R.string.action_save),
+                        )
+                    }
                 },
             )
         },
@@ -67,11 +78,15 @@ fun ServerSettingsScreen(
                 item {
                     Column {
                         Text(error, color = MaterialTheme.colorScheme.error)
-                        if (state.fields.isEmpty()) TextButton(onClick = viewModel::load) { Text("Retry") }
+                        if (state.fields.isEmpty()) {
+                            TextButton(
+                                onClick = viewModel::load,
+                            ) { Text(stringResource(R.string.action_retry)) }
+                        }
                     }
                 }
             }
-            if (state.saved) item { Text("Saved. The server uses the new values from its next job.") }
+            if (state.saved) item { Text(stringResource(R.string.saved_server_values)) }
             state.groups.forEach { (prefix, fields) ->
                 item(key = "group-$prefix") { Text(prefix, style = MaterialTheme.typography.titleMedium) }
                 fields.forEach { field ->
@@ -94,16 +109,21 @@ private fun SettingRow(
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(setting.key)
-                    Text("Set by the server's environment", style = MaterialTheme.typography.bodySmall)
+                    Text(stringResource(R.string.set_by_server_env), style = MaterialTheme.typography.bodySmall)
                 }
-                Text(if (setting.isSet) "Set" else "Not set")
+                Text(if (setting.isSet) stringResource(R.string.set) else stringResource(R.string.not_set))
             }
 
         setting.type == ServerSetting.TYPE_BOOL ->
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(setting.key)
-                    if (locked) Text("Set by the server's environment", style = MaterialTheme.typography.bodySmall)
+                    if (locked) {
+                        Text(
+                            stringResource(R.string.set_by_server_env),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                 }
                 Switch(
                     checked = field.text.equals("true", ignoreCase = true),
@@ -132,8 +152,8 @@ private fun SettingHint(field: SettingField) {
     val setting = field.setting
     when {
         field.errors.isNotEmpty() -> Text(field.errors.joinToString(" "))
-        setting.locked -> Text("Set by the server's environment")
-        !setting.default.isNullOrEmpty() -> Text("Default: ${setting.default}. Empty restores it.")
+        setting.locked -> Text(stringResource(R.string.set_by_server_env))
+        !setting.default.isNullOrEmpty() -> Text(stringResource(R.string.default_with_empty, setting.default ?: ""))
     }
 }
 
