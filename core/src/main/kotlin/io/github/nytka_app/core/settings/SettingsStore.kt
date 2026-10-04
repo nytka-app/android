@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
 import kotlinx.coroutines.Dispatchers
@@ -48,9 +49,13 @@ class SettingsStore(
             preferences[ALERT_BATTERY] = next.alertBatteryPercent
             preferences[DIAGNOSTICS_UPLOAD] = next.diagnosticsUpload
             preferences[MUTE_SCHEDULE] = next.muteSchedule.encode()
+            preferences[FIRMWARE_CHECK] = next.firmwareCheck
+            preferences[FIRMWARE_CHECKED_AT] = next.firmwareCheckedAt
+            next.firmwareLatest?.let { preferences[FIRMWARE_LATEST] = it } ?: preferences.remove(FIRMWARE_LATEST)
         }
     }
 
+    @Suppress("CyclomaticComplexMethod") // one default per stored field, nothing branches
     private fun read(preferences: Preferences) =
         Settings(
             serverUrl = preferences[SERVER_URL] ?: "",
@@ -69,6 +74,9 @@ class SettingsStore(
             alertBatteryPercent = preferences[ALERT_BATTERY] ?: Settings().alertBatteryPercent,
             diagnosticsUpload = preferences[DIAGNOSTICS_UPLOAD] ?: false,
             muteSchedule = MuteSchedule.decode(preferences[MUTE_SCHEDULE]),
+            firmwareCheck = preferences[FIRMWARE_CHECK] ?: true,
+            firmwareCheckedAt = preferences[FIRMWARE_CHECKED_AT] ?: 0,
+            firmwareLatest = preferences[FIRMWARE_LATEST],
         )
 
     /** Stored by name, so reordering the steps moves no one; a name no longer known starts over. */
@@ -92,6 +100,9 @@ class SettingsStore(
         private val ALERT_BATTERY = intPreferencesKey("alert_battery_percent")
         private val DIAGNOSTICS_UPLOAD = booleanPreferencesKey("diagnostics_upload")
         private val MUTE_SCHEDULE = stringPreferencesKey("mute_schedule")
+        private val FIRMWARE_CHECK = booleanPreferencesKey("firmware_check")
+        private val FIRMWARE_CHECKED_AT = longPreferencesKey("firmware_checked_at")
+        private val FIRMWARE_LATEST = stringPreferencesKey("firmware_latest")
 
         fun create(
             context: Context,

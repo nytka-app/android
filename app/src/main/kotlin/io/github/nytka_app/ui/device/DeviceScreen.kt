@@ -28,12 +28,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.capture.PairedPendant
+import io.github.nytka_app.firmware.FirmwareNotice
 import io.github.nytka_app.pendant.PendantConnection
 import io.github.nytka_app.ui.LocalNetworkHint
 import io.github.nytka_app.ui.LocalNetworkPrompt
@@ -55,6 +57,10 @@ fun DeviceScreen(
     // A later question is a new one: show it again.
     LaunchedEffect(state.backlogPackets == null) { if (state.backlogPackets == null) backlogDismissed = false }
 
+    val pendantInfo = (status.capture.connection as? PendantConnection.Connected)?.info
+    // Also runs again when the switch changes: the checker reads the setting.
+    LaunchedEffect(pendantInfo, state.firmwareCheck) { viewModel.pendantSeen(pendantInfo) }
+
     LocalNetworkPrompt(state.askLocalNetwork, viewModel::localNetworkAnswered)
     LazyColumn(
         Modifier.fillMaxSize(),
@@ -70,6 +76,7 @@ fun DeviceScreen(
                 onPairError = { pairError = it },
                 onMute = onMute,
                 onForget = { confirmForget = true },
+                onFirmwareCheck = viewModel::setFirmwareCheck,
             )
         }
         state.storage?.let { card ->
@@ -159,6 +166,7 @@ private fun PendantSection(
     onPairError: (String) -> Unit,
     onMute: (Boolean) -> Unit,
     onForget: () -> Unit,
+    onFirmwareCheck: (Boolean) -> Unit,
 ) {
     Section("Pendant") {
         val connection = status.capture.connection
@@ -174,6 +182,7 @@ private fun PendantSection(
         )
         status.capture.battery?.let { Text("Battery $it%") }
         info?.firmware?.let { Text("Firmware $it") }
+        state.firmwareNotice?.let { FirmwareNoticeText(it) }
         pairError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (state.pendantAddress == null) {
@@ -185,6 +194,30 @@ private fun PendantSection(
                 OutlinedButton(onClick = { onForget() }) { Text("Forget") }
             }
         }
+        if (state.pendantAddress != null) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Switch(checked = state.firmwareCheck, onCheckedChange = onFirmwareCheck)
+                Text("Check for new pendant firmware")
+            }
+            Text(
+                "At most once a day, while this screen shows a connected Omi pendant, Nytka asks GitHub for " +
+                    "Omi's newest firmware release. GitHub sees your IP address, as any website would; nothing " +
+                    "about you, the pendant or your server is sent. Nytka only tells you: it never installs firmware.",
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+    }
+}
+
+@Composable
+private fun FirmwareNoticeText(notice: FirmwareNotice) {
+    val uri = LocalUriHandler.current
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            "Firmware ${notice.latest} is available (this pendant has ${notice.current}).",
+            color = MaterialTheme.colorScheme.primary,
+        )
+        TextButton(onClick = { uri.openUri(notice.instructionsUrl) }) { Text("How to update") }
     }
 }
 

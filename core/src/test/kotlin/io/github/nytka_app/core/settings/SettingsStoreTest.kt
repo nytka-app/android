@@ -64,6 +64,9 @@ class SettingsStoreTest {
                     alertUnreachableMinutes = 2,
                     alertBatteryPercent = 30,
                     diagnosticsUpload = true,
+                    firmwareCheck = false,
+                    firmwareCheckedAt = 1_760_000_000_000,
+                    firmwareLatest = "Omi_CV1_v3.0.21",
                     muteSchedule =
                         MuteSchedule(
                             listOf(
