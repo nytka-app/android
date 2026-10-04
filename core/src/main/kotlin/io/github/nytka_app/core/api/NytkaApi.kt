@@ -133,6 +133,16 @@ class NytkaApi(
                 }.toString(),
         ) { }
 
+    override suspend fun markSegment(
+        segmentId: Long,
+        isUser: Boolean?,
+    ): ApiResult<Segment> =
+        request(
+            "PATCH",
+            "api/v1/segments/$segmentId",
+            body = buildJsonObject { put("isUser", isUser?.let(::JsonPrimitive) ?: JsonNull) }.toString(),
+        ) { json.decodeFromString(it) }
+
     override suspend fun enrichConversation(id: String): ApiResult<Unit> =
         request("POST", "api/v1/conversations/$id/enrich") { }
 

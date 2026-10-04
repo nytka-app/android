@@ -1,8 +1,11 @@
 package io.github.nytka_app.ui.conversations
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -31,6 +34,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -44,6 +48,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,6 +74,7 @@ fun ConversationScreen(
     var confirmDelete by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
     var naming by remember { mutableStateOf<Pair<String, String>?>(null) }
+    val snackbar = rememberNoteHost(state.note, viewModel::noteShown)
     LaunchedEffect(state.deleted) { if (state.deleted) onDeleted() }
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.pause() }
     // A summary in the making shows up on its own, while the screen is in front.
@@ -116,6 +123,7 @@ fun ConversationScreen(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         LazyColumn(
             Modifier
@@ -155,6 +163,7 @@ fun ConversationScreen(
                 onName = { naming = it },
                 onSave = viewModel::setBookmarkNote,
                 onPlay = viewModel::playFrom,
+                onMark = viewModel::markSegment,
             )
             state.raw?.let { raw ->
                 item { Text(raw, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall) }
@@ -207,8 +216,9 @@ private fun LazyListScope.transcript(
     onName: (Pair<String, String>) -> Unit,
     onSave: (String, String) -> Unit,
     onPlay: (Int) -> Unit,
+    onMark: (Long, Boolean?) -> Unit,
 ) = itemsIndexed(paragraphs) { i, paragraph ->
-    ParagraphItem(paragraph, onName, onSave, onPlay = if (canPlay) ({ onPlay(i) }) else null)
+    ParagraphItem(paragraph, onName, onSave, onMark, onPlay = if (canPlay) ({ onPlay(i) }) else null)
 }
 
 /** Play or pause, the position and length, and a slider. A drag seeks when it ends, not on every move. */
@@ -270,24 +280,34 @@ private fun SpeakerLabel(
 ) {
     val voiceId = paragraph.voiceId
     val label = paragraph.speaker.orEmpty()
-    Text(
-        label,
-        style = MaterialTheme.typography.labelLarge,
-        color = speakerColor(paragraph.speakerColor),
-        modifier =
-            Modifier
-                .padding(top = 8.dp)
-                .then(if (voiceId != null) Modifier.clickable { onName(voiceId to label) } else Modifier),
-    )
+    Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelLarge,
+            color = speakerColor(paragraph.speakerColor),
+            modifier = if (voiceId != null) Modifier.clickable { onName(voiceId to label) } else Modifier,
+        )
+        paragraph.sourceNote?.let {
+            Text(
+                " · $it",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ParagraphItem(
     paragraph: Paragraph,
     onName: (Pair<String, String>) -> Unit,
     onSave: (String, String) -> Unit,
+    onMark: (Long, Boolean?) -> Unit,
     onPlay: (() -> Unit)?,
 ) {
+    var markMenu by remember { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
     Column {
         if (paragraph.showSpeaker) {
             SpeakerLabel(paragraph, onName = onName)
@@ -302,7 +322,32 @@ private fun ParagraphItem(
                         .width(56.dp)
                         .then(if (onPlay != null) Modifier.clickable(onClick = onPlay) else Modifier),
             )
-            Text(paragraph.text)
+            Box {
+                Text(
+                    paragraph.text,
+                    modifier =
+                        Modifier.combinedClickable(onClick = {}, onLongClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            markMenu = true
+                        }),
+                )
+                DropdownMenu(expanded = markMenu, onDismissRequest = { markMenu = false }) {
+                    DropdownMenuItem(text = { Text("This is me") }, onClick = {
+                        markMenu = false
+                        onMark(paragraph.segmentId, true)
+                    })
+                    DropdownMenuItem(text = { Text("This is not me") }, onClick = {
+                        markMenu = false
+                        onMark(paragraph.segmentId, false)
+                    })
+                    if (paragraph.marked) {
+                        DropdownMenuItem(text = { Text("Clear") }, onClick = {
+                            markMenu = false
+                            onMark(paragraph.segmentId, null)
+                        })
+                    }
+                }
+            }
         }
         paragraph.bookmarks.forEach { mark -> BookmarkLine(mark, onSave) }
     }
