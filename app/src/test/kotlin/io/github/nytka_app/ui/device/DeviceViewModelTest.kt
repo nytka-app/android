@@ -278,6 +278,17 @@ class DeviceViewModelTest {
     }
 
     @Test
+    fun `your voice shows only when the server lists voice`() {
+        assertEquals(false, viewModel().state.value.serverVoice)
+
+        info = ApiResult.Ok(ServerInfo("0.12.0", 1, features = listOf(ServerInfo.FEATURE_VOICE)))
+        assertEquals(true, viewModel().state.value.serverVoice)
+
+        info = ApiResult.Failure(FailureKind.Network, "failed to connect")
+        assertNull(viewModel().state.value.serverVoice)
+    }
+
+    @Test
     fun `the next check clears the mark`() {
         info = ApiResult.Failure(FailureKind.Network, "failed to connect")
         val viewModel = viewModel()

@@ -64,6 +64,8 @@ data class DeviceUiState(
     val backlogPackets: Long? = null,
     /** Whether /info lists `offline-sync`; null until it answers and after a failed check. Only true shows the card. */
     val serverSync: Boolean? = null,
+    /** Whether /info lists `voice` (the server has the speaker model); only true shows "Your voice". */
+    val serverVoice: Boolean? = null,
     val muteSchedule: MuteSchedule = MuteSchedule(),
     /** The line under the mute editor: whether the server has the schedule; null until the first answer. */
     val muteServer: MuteServerState? = null,
@@ -186,6 +188,7 @@ class DeviceViewModel
                             apiMismatch = result.value.apiVersion != NytkaApi.API_VERSION,
                             serverUnreachable = false,
                             serverSync = result.value.has(ServerInfo.FEATURE_OFFLINE_SYNC),
+                            serverVoice = result.value.has(ServerInfo.FEATURE_VOICE),
                         )
                     }
 
@@ -196,6 +199,7 @@ class DeviceViewModel
                             apiVersion = null,
                             apiMismatch = false,
                             serverSync = null,
+                            serverVoice = null,
                             serverUnreachable = result.kind == FailureKind.Network,
                         )
                     }

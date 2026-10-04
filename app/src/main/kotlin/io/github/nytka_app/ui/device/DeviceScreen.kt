@@ -29,11 +29,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nytka_app.R
 import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.firmware.FirmwareNotice
 import io.github.nytka_app.pendant.PendantConnection
@@ -48,6 +50,7 @@ fun DeviceScreen(
     onMute: (Boolean) -> Unit,
     onOpenDeveloper: () -> Unit,
     onOpenPeople: () -> Unit,
+    onOpenVoice: () -> Unit,
     viewModel: DeviceViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -108,6 +111,14 @@ fun DeviceScreen(
             Section("People") {
                 Text("Name the voices Nytka hears, and tidy up the people it knows.")
                 OutlinedButton(onClick = onOpenPeople) { Text("People") }
+            }
+        }
+        if (state.serverVoice == true) {
+            item {
+                Section(stringResource(R.string.voice_title)) {
+                    Text(stringResource(R.string.voice_entry_summary))
+                    OutlinedButton(onClick = onOpenVoice) { Text(stringResource(R.string.voice_entry_button)) }
+                }
             }
         }
         item {

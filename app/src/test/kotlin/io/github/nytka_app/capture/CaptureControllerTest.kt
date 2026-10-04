@@ -140,6 +140,28 @@ class CaptureControllerTest {
         }
 
     @Test
+    fun `diverted frames never reach the queue, and the session goes on without a hole afterwards`() =
+        runTest {
+            val rig = rig()
+            val diverted = mutableListOf<Long>()
+            rig.controller.start("fake")
+            runCurrent()
+            advanceTimeBy(40)
+            val before = rig.sink.frames.size
+
+            rig.controller.diversion = { diverted += it.capturedAtMs }
+            advanceTimeBy(100)
+            val during = rig.sink.frames.size
+            rig.controller.diversion = null
+            advanceTimeBy(40)
+
+            assertEquals(before, during)
+            assertEquals(5, diverted.size)
+            assertEquals((0L until rig.sink.frames.size).toList(), rig.sink.frames.map { it.second })
+            assertTrue(rig.sink.frames.size > during)
+        }
+
+    @Test
     fun `seals every 30 seconds`() =
         runTest {
             val rig = rig()
