@@ -136,7 +136,15 @@ class DiagnosticsRecorderTest {
                     running = true,
                     connection = PendantConnection.Connected(PendantInfo("Omi")),
                     battery = 82,
-                    stats = LinkStats(notifications = 123, lostNotifications = 4, droppedFrames = 3, frames = 100),
+                    stats =
+                        LinkStats(
+                            notifications = 123,
+                            lostNotifications = 4,
+                            droppedFrames = 3,
+                            frames = 100,
+                            rssi = -71,
+                            lastDisconnectStatus = 147,
+                        ),
                     session = "session-1",
                     framesQueued = 98,
                 )
@@ -174,6 +182,8 @@ class DiagnosticsRecorderTest {
                     lastResult = "202",
                     appVersion = "0.2.0",
                     device = "Pixel 8 / Android 16",
+                    rssi = -71,
+                    lastDisconnectStatus = 147,
                 ),
                 sink.samples.single(),
             )

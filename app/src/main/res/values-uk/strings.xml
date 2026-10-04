@@ -59,6 +59,7 @@
     <string name="webhooks">Вебхуки</string>
     <string name="testing_section">Перевірка</string>
     <string name="fake_pendant_label">Фейковий кулон (відтворює вбудований запис)</string>
+    <string name="high_priority_connection_label">Запитувати з’єднання з високим пріоритетом</string>
     <string name="save_next_60_seconds">Зберегти наступні 60 секунд кадрів</string>
     <string name="copy_debug_report">Копіювати звіт про налагодження</string>
     <string name="diagnostics">Діагностика</string>

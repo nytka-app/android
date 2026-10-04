@@ -1,5 +1,6 @@
 package io.github.nytka_app.pendant
 
+import android.bluetooth.BluetoothAdapter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
@@ -353,5 +354,54 @@ class ReconnectTest {
         assertNull(resume.arrived(5_000)) // a subscription that outlived the app: nothing to compare with yet
         assertNull(resume.arrived(5_020))
         assertEquals(4_000L, resume.arrived(9_020))
+    }
+
+    @Test
+    fun `a read or write that timed out leaves the client stuck until a late callback frees it`() {
+        val busy = BusyClient()
+        assertFalse(busy.stuck)
+        busy.timedOut(OperationKind.Read)
+        assertTrue(busy.stuck) // every later read and write fails at once, as Android refuses them
+        assertFalse(busy.lateCallback(OperationKind.Mtu)) // not a gated callback: still stuck
+        assertTrue(busy.stuck)
+        assertTrue(busy.lateCallback(OperationKind.Read))
+        assertFalse(busy.stuck)
+        assertFalse(busy.lateCallback(OperationKind.Read)) // nothing left to free
+    }
+
+    @Test
+    fun `MTU and service discovery timeouts do not stick the client`() {
+        val busy = BusyClient()
+        busy.timedOut(OperationKind.Mtu)
+        busy.timedOut(OperationKind.Services)
+        assertFalse(busy.stuck)
+        busy.timedOut(OperationKind.DescriptorWrite)
+        assertTrue(busy.stuck)
+    }
+
+    @Test
+    fun `a new connection or a closed client starts unstuck`() {
+        val busy = BusyClient()
+        busy.timedOut(OperationKind.Write)
+        busy.reset()
+        assertFalse(busy.stuck)
+    }
+
+    @Test
+    fun `a stuck setUp reconnects once and carries on the second time in a row`() {
+        val stuckSetUps = FailureStreak(2) // what OmiPendant keeps
+        assertFalse(stuckSetUps.failed()) // first: reconnect
+        assertTrue(stuckSetUps.failed()) // second in a row: carry on degraded
+        stuckSetUps.succeeded() // a clean setUp
+        assertFalse(stuckSetUps.failed())
+    }
+
+    @Test
+    fun `the adapter coming on reopens, going off drops the client, anything else is ignored`() {
+        assertEquals(AdapterAction.Reopen, adapterAction(BluetoothAdapter.STATE_ON))
+        assertEquals(AdapterAction.Drop, adapterAction(BluetoothAdapter.STATE_TURNING_OFF))
+        assertEquals(AdapterAction.Drop, adapterAction(BluetoothAdapter.STATE_OFF))
+        assertEquals(AdapterAction.None, adapterAction(BluetoothAdapter.STATE_TURNING_ON))
+        assertEquals(AdapterAction.None, adapterAction(BluetoothAdapter.ERROR))
     }
 }

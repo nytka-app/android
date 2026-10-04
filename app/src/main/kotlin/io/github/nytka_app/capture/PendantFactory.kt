@@ -20,6 +20,7 @@ class PendantFactory
         fun create(
             scope: CoroutineScope,
             fake: Boolean,
+            highPriority: Boolean = false,
         ): Pendant =
             if (fake) {
                 FakePendant(
@@ -27,7 +28,7 @@ class PendantFactory
                     scope,
                 )
             } else {
-                OmiPendant(context, scope, logger = PendantLogger(log::log))
+                OmiPendant(context, scope, logger = PendantLogger(log::log), highPriority = highPriority)
             }
 
         /** The bundled synthetic recording (Task 8), frame payloads in order. */

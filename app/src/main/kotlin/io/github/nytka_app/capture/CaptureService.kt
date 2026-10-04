@@ -159,7 +159,7 @@ class CaptureService : LifecycleService() {
         }
         logRun = appLog.start()
         power.start()
-        val pendant = pendants.create(scope, current.fakePendant)
+        val pendant = pendants.create(scope, current.fakePendant, current.highPriorityConnection)
         val capture =
             CaptureController(
                 pendant,

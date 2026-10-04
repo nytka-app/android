@@ -58,6 +58,10 @@ data class LinkStats(
     val lostNotifications: Long = 0,
     val droppedFrames: Long = 0,
     val frames: Long = 0,
+    /** Signal strength in dBm, read every 10 s while connected; null while unknown or disconnected. */
+    val rssi: Int? = null,
+    /** The status of the last link loss Android reported, null before the first; 147 is a link that went silent. */
+    val lastDisconnectStatus: Int? = null,
 ) {
     /** Share of audio notifications that never arrived; spec "done when" 2 wants it under 1%. */
     val lossFraction: Double

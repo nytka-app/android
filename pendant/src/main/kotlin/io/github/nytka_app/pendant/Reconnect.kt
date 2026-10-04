@@ -1,5 +1,6 @@
 package io.github.nytka_app.pendant
 
+import android.bluetooth.BluetoothAdapter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -67,6 +68,51 @@ internal inline fun <T> gattCall(
     } catch (e: RuntimeException) {
         onError(e)
         fallback
+    }
+
+/**
+ * Whether the GATT client still takes reads and writes. Android's `BluetoothGatt` refuses every one of them at once
+ * while an earlier one has had no callback (`mDeviceBusy`, cleared only by that callback or a connection change), so
+ * after a request the app gave up on, each later one fails within milliseconds until a late callback frees it.
+ * MTU and service discovery are not gated that way.
+ */
+internal class BusyClient {
+    @Volatile
+    var stuck = false
+        private set
+
+    fun timedOut(kind: OperationKind) {
+        if (kind in GATED) stuck = true
+    }
+
+    /** A callback nobody waited for; true when it freed a stuck client. */
+    fun lateCallback(kind: OperationKind): Boolean {
+        if (kind !in GATED || !stuck) return false
+        stuck = false
+        return true
+    }
+
+    fun reset() {
+        stuck = false
+    }
+
+    private companion object {
+        val GATED = setOf(OperationKind.Read, OperationKind.Write, OperationKind.DescriptorWrite)
+    }
+}
+
+/** What a Bluetooth adapter state means for the link; see [adapterAction]. */
+internal enum class AdapterAction { Reopen, Drop, None }
+
+/**
+ * The adapter came on: every client died with the old stack, so open a fresh one. It is going off: the client is
+ * dead already, so drop it rather than show a link as connected while no call on it can work.
+ */
+internal fun adapterAction(state: Int): AdapterAction =
+    when (state) {
+        BluetoothAdapter.STATE_ON -> AdapterAction.Reopen
+        BluetoothAdapter.STATE_TURNING_OFF, BluetoothAdapter.STATE_OFF -> AdapterAction.Drop
+        else -> AdapterAction.None
     }
 
 /** Runs [attempt] up to [times] times until one succeeds; [onFailed] hears each failure, counting from 1. */

@@ -67,6 +67,7 @@ class SettingsStoreTest {
                     firmwareCheck = false,
                     firmwareCheckedAt = 1_760_000_000_000,
                     firmwareLatest = "Omi_CV1_v3.0.21",
+                    highPriorityConnection = true,
                     muteSchedule =
                         MuteSchedule(
                             listOf(

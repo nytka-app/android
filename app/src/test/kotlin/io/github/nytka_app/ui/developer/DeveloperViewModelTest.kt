@@ -91,6 +91,17 @@ class DeveloperViewModelTest {
     }
 
     @Test
+    fun `the high-priority switch is off by default and restarts capture`() {
+        val viewModel = viewModel()
+        assertEquals(false, viewModel.state.value.highPriorityConnection)
+
+        viewModel.setHighPriorityConnection(true)
+
+        assertEquals(true, settings.state.value.highPriorityConnection)
+        assertEquals(listOf("restart"), actions.calls)
+    }
+
+    @Test
     fun `the fake pendant switch restarts capture`() {
         viewModel().setFakePendant(true)
 
