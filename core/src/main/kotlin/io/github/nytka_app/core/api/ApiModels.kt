@@ -15,6 +15,7 @@ data class ServerInfo(
 
     companion object {
         const val FEATURE_OFFLINE_SYNC = "offline-sync"
+        const val FEATURE_VOICE = "voice"
 
         const val SCOPE_ADMIN = "admin"
         const val SCOPE_READ = "read"

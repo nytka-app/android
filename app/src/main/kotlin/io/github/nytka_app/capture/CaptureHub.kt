@@ -1,6 +1,7 @@
 package io.github.nytka_app.capture
 
 import io.github.nytka_app.core.settings.SettingsSource
+import io.github.nytka_app.pendant.AudioFrame
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -42,8 +43,27 @@ class CaptureHub
         @OptIn(ExperimentalCoroutinesApi::class)
         val captured: Flow<CapturedFrame> = controller.flatMapLatest { it?.captured ?: emptyFlow() }
 
+        /** Voice enrollment's taker of live frames; kept here so a service that restarts meanwhile diverts too. */
+        @Volatile
+        private var diversion: ((AudioFrame) -> Unit)? = null
+
         fun attach(controller: CaptureController) {
+            controller.diversion = diversion
             this.controller.value = controller
+        }
+
+        /** Live frames go to [sink] instead of the upload queue; false, diverting nothing, without capture. */
+        fun divert(sink: (AudioFrame) -> Unit): Boolean {
+            val running = controller.value ?: return false
+            diversion = sink
+            running.diversion = sink
+            return true
+        }
+
+        /** Live frames go to the queue again. */
+        fun undivert() {
+            diversion = null
+            controller.value?.diversion = null
         }
 
         fun attachSync(controller: StorageSyncController) {

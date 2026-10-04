@@ -91,7 +91,8 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   conversation it came from (a memory you add yourself has none). **+** adds one and ⋮ edits or
   deletes one. A memory you delete does not come back from later conversations.
 - **Ask.** A placeholder that says "Arrives in a later version".
-- **Device.** The pendant, its storage and settings, the server, the settings and the version.
+- **Device.** The pendant, its storage and settings, the server, the settings, People,
+  [Your voice](#your-voice) and the version.
 
 **Search** opens from the magnifier above the conversation list. It looks through transcripts,
 titles, summaries and memories, in Ukrainian and English, while you type: from one letter or digit,
@@ -180,6 +181,33 @@ uninstall it again).
 - **What GitHub learns.** Your IP address, like any website you open. No account, token, cookie,
   pendant data, audio, or server address leaves the phone for this. Switch it off with **Check for
   new pendant firmware** on the Device tab (on by default); then Nytka never contacts GitHub.
+
+## Your voice
+
+With server 0.12 or later and its speaker model (`/api/v1/info` lists `voice`), the **Device** tab
+has a **Your voice** card. It teaches the server your voice once, so it marks the lines you said as
+yours whatever the transcription service says. It needs an admin token.
+
+Choose the languages you speak (Ukrainian, Russian, English) and tap **Enroll**. The screen shows
+three short sentences per language: read them aloud with the pendant on, somewhere quiet, for at
+least 30 seconds in all (with one language, read them twice). A meter shows the pendant's level and
+a counter the seconds against the server's 120-second limit; recording stops by itself at the limit.
+**Send** gives the reading to the server, which answers with how much speech it used. It refuses a
+reading with less than 20 seconds of speech, one too short to make 3 samples, or one whose samples
+do not sound like one voice (another speaker or noise), and the screen says which and what to do.
+
+The reading comes from the pendant, never the phone's microphone, because the server matches pendant
+audio later. While you read, the pendant's live audio goes only to the enrollment and is not queued
+for upload, so the reading never becomes a conversation; capture goes back to normal as soon as you
+send, cancel, reach the limit or leave the screen. The audio of the reading is not kept on the phone,
+and the server keeps only the voiceprint.
+
+Once enrolled, the card shows when, from how many samples, and how many of your segments the
+voiceprint learned from since. **Re-enroll** starts over, **Add more** blends a new reading in (for
+example another language), **Forget what it learned** goes back to the enrolled voiceprint, and
+**Forget my voice** (asked first) deletes the voiceprint, every segment fingerprint and the labels
+made from them; your own marks stay. See the
+[server README](https://github.com/nytka-app/server#your-voice).
 
 ## Everyday use
 

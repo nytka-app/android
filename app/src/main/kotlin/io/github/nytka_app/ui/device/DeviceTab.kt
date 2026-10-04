@@ -10,8 +10,12 @@ import io.github.nytka_app.ui.developer.server.ServerSettingsScreen
 import io.github.nytka_app.ui.developer.server.TokensScreen
 import io.github.nytka_app.ui.developer.server.WebhooksScreen
 import io.github.nytka_app.ui.people.PeopleScreen
+import io.github.nytka_app.ui.voice.VoiceScreen
 
-/** The Device tab: the device screen, and developer mode opened from its About card, with its server screens. */
+/**
+ * The Device tab: the device screen, People, Your voice, and developer mode opened from its About card, with its
+ * server screens.
+ */
 @Composable
 fun DeviceTab(
     status: StatusUiState,
@@ -25,9 +29,11 @@ fun DeviceTab(
                 onMute,
                 onOpenDeveloper = { navController.navigate("developer") },
                 onOpenPeople = { navController.navigate("people") },
+                onOpenVoice = { navController.navigate("voice") },
             )
         }
         composable("people") { PeopleScreen(onBack = { navController.popBackStack() }) }
+        composable("voice") { VoiceScreen(onBack = { navController.popBackStack() }) }
         composable("developer") {
             DeveloperScreen(
                 onBack = { navController.popBackStack() },
