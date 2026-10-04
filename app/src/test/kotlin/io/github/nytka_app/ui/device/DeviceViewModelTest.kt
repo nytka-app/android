@@ -17,6 +17,9 @@ import io.github.nytka_app.core.api.ServerSettingsClient
 import io.github.nytka_app.core.settings.MuteSchedule
 import io.github.nytka_app.core.settings.MuteWindow
 import io.github.nytka_app.core.settings.Settings
+import io.github.nytka_app.firmware.FirmwareNotice
+import io.github.nytka_app.pendant.FirmwareVersion
+import io.github.nytka_app.pendant.PendantInfo
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -69,6 +72,7 @@ class DeviceViewModelTest {
 
     private val server = FakeServerSettings()
     private var phoneZone = "Europe/Kyiv"
+    private var notice: FirmwareNotice? = null
     private val weekdays =
         MuteSchedule(
             listOf(MuteWindow(DayOfWeek.entries.take(5).toSet(), LocalTime.of(9, 30), LocalTime.of(10, 0))),
@@ -79,7 +83,7 @@ class DeviceViewModelTest {
         DeviceViewModel(settings, {
             infoCalls++
             info
-        }, actions, sync, server, { phoneZone }, pendantSettings)
+        }, actions, sync, server, { phoneZone }, pendantSettings, { notice })
 
     private fun saveServerOnTheLocalNetwork() {
         settings.state.value = settings.state.value.copy(serverUrl = "http://192.168.1.10:8080/", privateNetwork = true)
@@ -574,5 +578,28 @@ class DeviceViewModelTest {
         assertNull(ledWarning(1))
         assertTrue(gainWarning(0)!!.contains("silence"))
         assertNull(gainWarning(1))
+    }
+
+    @Test
+    fun `a connected pendant with a newer firmware shows the notice, and none clears it`() {
+        notice = FirmwareNotice(FirmwareVersion(3, 0, 20), FirmwareVersion(3, 0, 21))
+        val viewModel = viewModel()
+
+        viewModel.pendantSeen(PendantInfo("Omi", model = "Omi CV 1", firmware = "3.0.20"))
+        assertEquals(notice, viewModel.state.value.firmwareNotice)
+
+        viewModel.pendantSeen(null)
+        assertNull(viewModel.state.value.firmwareNotice)
+    }
+
+    @Test
+    fun `the firmware check is on by default and the switch changes the setting`() {
+        val viewModel = viewModel()
+        assertTrue(viewModel.state.value.firmwareCheck)
+
+        viewModel.setFirmwareCheck(false)
+
+        assertFalse(settings.state.value.firmwareCheck)
+        assertFalse(viewModel.state.value.firmwareCheck)
     }
 }

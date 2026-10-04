@@ -15,9 +15,9 @@ Robolectric, MockWebServer, Turbine · ktlint, detekt.
 
 | Module | Holds |
 |---|---|
-| `:pendant` | `Pendant`, `FrameAssembler`, `OmiPendant` (Bluetooth), the storage service (`OmiStorage`, `RingProtocol`, `RingRecords`), the settings service (`OmiSettings`: LED brightness, mic gain), `FakePendant` with `FakeRing`; no UI |
+| `:pendant` | `Pendant`, `FrameAssembler`, `OmiPendant` (Bluetooth), the storage service (`OmiStorage`, `RingProtocol`, `RingRecords`), the settings service (`OmiSettings`: LED brightness, mic gain), `FirmwareVersion`, `FirmwareStream`, `FakePendant` with `FakeRing`; no UI |
 | `:core` | chunk format, `FrameQueue` (Room), capture times and the mute filter (`ring/`), settings, `NytkaApi` and its clients, `Uploader`; tested on the JVM |
-| `:app` | Hilt wiring, `CaptureController`, `StorageSyncController`, `PendantSettingsController` and the services, alerts, Compose screens |
+| `:app` | Hilt wiring, `CaptureController`, `StorageSyncController`, `PendantSettingsController`, `firmware/` (release check) and the services, alerts, Compose screens |
 
 ## Commands
 
@@ -72,6 +72,17 @@ The firmware saves each write to flash, so `PendantSettingsController` writes ea
 per 2 s, after the slider is released. Gain 0 is mute and levels 1 to 8 are -20, -10, 0, +6, +10, +20,
 +30, +40 dB. `OmiSettings` writes only after `19b10021` reports bit 7 (LED) or bit 8 (gain). Nothing
 about them goes to the server.
+
+## Firmware notice
+
+`Pendant` info gives model (`0x2A24`) and firmware (`0x2A26`); `FirmwareStream` (`:pendant`) maps
+"Omi CV 1" + major 3 to the tag prefix `Omi_CV1_v` of `BasedHardware/omi` releases, and nothing else
+(DK2, DK1, EVT and Glass have other tags; unmapped pendants get no check). `GithubFirmwareReleases`
+lists tags (`git/matching-refs`, since the release list is mostly desktop builds), takes the highest
+by number, and needs a published non-pre-release. `FirmwareUpdateChecker` runs it at most once per 24 h,
+only if `Settings.firmwareCheck` (default on), when the Device tab shows a connected pendant. It sends
+no token or identifier; this is the only call to a host that is not the user's server. Never download
+or flash firmware.
 
 ## Conventions
 

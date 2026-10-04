@@ -162,6 +162,25 @@ slider, because the pendant saves it to its flash memory and keeps it after a re
 the current values on every connection and stores nothing on the server. A failed write shows a
 message and puts the slider back.
 
+## Pendant firmware notice
+
+The **Pendant** card on the **Device** tab shows the firmware the connected pendant reports. Nytka
+also tells you when Omi has published a newer one: the card then says "Firmware 3.0.21 is available
+(this pendant has 3.0.20)" with a **How to update** link to Omi's own instructions. Nytka only tells
+you. It never downloads or installs firmware; the official Omi app does that (install it, update,
+uninstall it again).
+
+- **When it asks.** At most once every 24 hours, and only while the Device tab shows a connected
+  pendant, Nytka asks GitHub for the newest release of `BasedHardware/omi` in the pendant's firmware
+  stream (three or four requests, no token). Offline, it tries again an hour later at the earliest.
+- **Which pendants.** Only the consumer pendant, which reports the model "Omi CV 1" and a 3.x
+  firmware, and whose releases are tagged `Omi_CV1_v<version>`. Omi's other hardware (DevKit 1 and 2,
+  EVT, Glass) has its own tags and is not checked; a pendant that reports anything else gets no
+  notice, because a wrong guess would send you to the wrong firmware. Pre-releases are ignored.
+- **What GitHub learns.** Your IP address, like any website you open. No account, token, cookie,
+  pendant data, audio, or server address leaves the phone for this. Switch it off with **Check for
+  new pendant firmware** on the Device tab (on by default); then Nytka never contacts GitHub.
+
 ## Everyday use
 
 - **Mute** with a double tap on the pendant: one long buzz means muted, two short buzzes mean
@@ -218,10 +237,11 @@ message and puts the slider back.
 
 Audio waiting to upload, in the app's private storage, until the server has it; the settings; the
 token, encrypted with a key that never leaves the Android Keystore; how far the pendant's storage
-has been read; and a log of when you muted and unmuted (times and on or off, nothing else). Android
+has been read; the time and result of the last firmware check; and a log of when you muted and unmuted (times and on or off, nothing else). Android
 backups and phone-to-phone transfers skip all of it, so a new phone starts with first run. The
 pendant keeps the audio it stored until your server has it. The app talks to your server and nothing
-else: no analytics, no crash reporting, no Omi cloud.
+else, apart from the once-a-day [firmware notice](#pendant-firmware-notice) (GitHub, switchable): no
+analytics, no crash reporting, no Omi cloud.
 
 Diagnostics samples hold counters and short status words: no audio, no words, no server address, no
 token. They stay on the phone for 7 days and leave it only when you export them or switch on *Send
