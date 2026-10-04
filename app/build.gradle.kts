@@ -28,6 +28,13 @@ android {
         versionCode = versionCodeOf(appVersion)
     }
 
+    // The signing-block blob that AGP adds by default is an opaque binary to F-Droid's scanner and
+    // IzzyOnDroid, and it breaks byte-for-byte reproducible builds.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     flavorDimensions += "store"
     productFlavors {
         create("oss") { dimension = "store" }

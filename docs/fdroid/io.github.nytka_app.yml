@@ -1,0 +1,46 @@
+# Draft metadata for fdroiddata (https://gitlab.com/fdroid/fdroiddata), file metadata/io.github.nytka_app.yml.
+# Not used by this repository's build. The owner copies it into a fork of fdroiddata and opens the
+# merge request; see docs/fdroid/README.md for the steps and the open risks.
+#
+# Linted with: fdroid lint io.github.nytka_app && fdroid build -v -l io.github.nytka_app
+
+Categories:
+  - Connectivity
+License: Apache-2.0
+AuthorName: Egoushka
+WebSite: https://github.com/nytka-app/android
+SourceCode: https://github.com/nytka-app/android
+IssueTracker: https://github.com/nytka-app/android/issues
+Changelog: https://github.com/nytka-app/android/blob/main/CHANGELOG.md
+
+# Title, summary, description and changelog come from fastlane/metadata/android/en-US in this repository.
+
+RepoType: git
+Repo: https://github.com/nytka-app/android.git
+
+Builds:
+  - versionName: 0.10.0
+    versionCode: 1000
+    commit: v0.10.0
+    subdir: app
+    sudo:
+      - apt-get update
+      - apt-get install -y openjdk-21-jdk-headless
+      - update-java-alternatives -a
+    gradle:
+      - oss
+
+# Reproducible build: F-Droid builds the unsigned oss release, compares it with the APK that
+# GitHub Releases holds (signed by the project's key) and publishes the project's signed APK.
+# Enable after a local `fdroid build` matched the release APK byte for byte, and fill in the
+# SHA-256 of the signing certificate (apksigner verify --print-certs nytka-0.10.0.apk).
+#Binaries: https://github.com/nytka-app/android/releases/download/v%v/nytka-%v.apk
+#AllowedAPKSigningKeys: <sha256 of the release certificate, lower case, no colons>
+
+# versionCode is computed in app/build.gradle.kts (versionCodeOf(appVersion)), which fdroid's
+# parser cannot read: until it is a literal, add a Builds entry per release by hand and keep
+# AutoUpdateMode off.
+AutoUpdateMode: None
+UpdateCheckMode: Tags ^v[0-9.]+$
+CurrentVersion: 0.10.0
+CurrentVersionCode: 1000

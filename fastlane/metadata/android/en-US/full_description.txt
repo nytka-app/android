@@ -1,0 +1,18 @@
+Nytka is the phone half of a self-hosted replacement for Omi's cloud. It takes the audio of your Omi AI pendant over Bluetooth, keeps it safe in a queue on the phone and uploads it to a Nytka server that you run yourself. The server transcribes it with a provider you choose and writes titles, summaries, tasks and memories with a language model you choose. Nothing goes through Omi's cloud, and the app has no analytics, no account and no ads.
+
+<b>What it does</b>
+• Records through the pendant and uploads in chunks; nothing is deleted until your server has accepted it.
+• Copies the audio the pendant stored while the phone was away (pendant firmware 3.0.20 or later).
+• Shows conversations by day with titles, summaries, tasks and a transcript with speaker names, plus memories, bookmarks, full-text search and an Ask tab that answers from your history with numbered sources.
+• Plays back the audio your server kept, edits the server's settings, tokens and webhooks, and sets the pendant's LED brightness and microphone gain.
+• Mute switch and mute schedule: audio the pendant recorded while you were muted is dropped, not uploaded.
+
+<b>What you need</b>
+• An Omi pendant on consumer firmware 3.0.x.
+• A Nytka server that the phone can reach over HTTPS, with an admin token. The server is free software too: https://github.com/nytka-app/server explains how to set it up with Docker Compose.
+• Android 12 or later.
+
+<b>Privacy</b>
+The app talks only to the server address you enter and to the pendant. It never uses the phone's microphone or location, and it keeps no audio, transcript text or token in its logs. Recording other people without their consent is illegal in some places; you are responsible for following the law.
+
+Nytka is not affiliated with Based Hardware or Omi.
