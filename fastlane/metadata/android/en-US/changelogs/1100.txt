@@ -1,0 +1,1 @@
+Firmware notice: the Device tab shows when Omi has published newer firmware for your pendant, with a link to the update steps. Checked at most once a day; you can turn it off in Settings.
