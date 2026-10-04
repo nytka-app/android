@@ -15,6 +15,7 @@ import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.Segment
 import io.github.nytka_app.ui.tasks.FakeTasks
 import io.github.nytka_app.ui.tasks.FakeTasks.Companion.task
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -84,7 +85,10 @@ class ConversationViewModelTest {
         assertEquals("Today", state.title)
         assertEquals("08:00–08:10", state.timeRange)
         assertEquals("10 min", state.length)
-        assertEquals(listOf(Paragraph("08:00", "Hello."), Paragraph("08:03", "Bye.")), state.paragraphs)
+        assertEquals(
+            listOf(Paragraph("08:00", "Hello.", segmentId = 1), Paragraph("08:03", "Bye.", segmentId = 2)),
+            state.paragraphs,
+        )
     }
 
     @Test
@@ -161,6 +165,141 @@ class ConversationViewModelTest {
         assertEquals(listOf(null, "4", "5", null), paragraphs.map { it.voiceId })
     }
 
+    private fun ConversationViewModel.line(): Paragraph {
+        val all = state.value.paragraphs
+        return all.single()
+    }
+
+    private fun markable(vararg segments: Segment): ConversationViewModel {
+        api.detail = ApiResult.Ok(detail(segments = segments.toList()))
+        return viewModel()
+    }
+
+    @Test
+    fun `a mark shows at once, before the server answers, and keeps the server's answer`() {
+        val gate = CompletableDeferred<ApiResult<Segment>>()
+        api.markAnswer = { _, _ -> gate.await() }
+        val viewModel = markable(segment(1, "SPEAKER_0").copy(isUser = false, isUserSource = "voice"))
+
+        viewModel.markSegment(1, true)
+
+        val shown =
+            viewModel.line()
+        assertEquals("Me", shown.speaker)
+        assertEquals("marked", shown.sourceNote)
+        assertTrue(shown.marked)
+        assertEquals(listOf<Pair<Long, Boolean?>>(1L to true), api.marked)
+
+        gate.complete(ApiResult.Ok(segment(1, "SPEAKER_0").copy(isUser = true, isUserSource = "manual")))
+
+        assertEquals(
+            "Me",
+            viewModel.line().speaker,
+        )
+        assertNull(viewModel.state.value.note)
+    }
+
+    @Test
+    fun `a refused mark is taken back and says so`() {
+        val gate = CompletableDeferred<ApiResult<Segment>>()
+        api.markAnswer = { _, _ -> gate.await() }
+        val viewModel = markable(segment(1, "SPEAKER_0").copy(isUser = false, isUserSource = "voice"))
+
+        viewModel.markSegment(1, true)
+        gate.complete(ApiResult.Failure(FailureKind.Network, "No connection."))
+
+        val back =
+            viewModel.line()
+        assertEquals("SPEAKER_0", back.speaker)
+        assertEquals(false, back.isUser)
+        assertFalse(back.marked)
+        assertEquals("The mark could not be saved.", viewModel.state.value.note)
+
+        viewModel.noteShown()
+        assertNull(viewModel.state.value.note)
+    }
+
+    @Test
+    fun `a mark without an admin token explains`() {
+        api.markAnswer = { _, _ -> ApiResult.Failure(FailureKind.Forbidden, "The token is not allowed to do this.") }
+        val viewModel = markable(segment(1, "SPEAKER_0"))
+
+        viewModel.markSegment(1, false)
+
+        assertEquals("The app needs an admin token.", viewModel.state.value.note)
+        assertNull(
+            viewModel.line().isUser,
+        )
+    }
+
+    @Test
+    fun `clearing waits for the server and shows the label it answers with`() {
+        val gate = CompletableDeferred<ApiResult<Segment>>()
+        api.markAnswer = { _, _ -> gate.await() }
+        val viewModel = markable(segment(1, "SPEAKER_0").copy(isUser = true, isUserSource = "manual"))
+
+        viewModel.markSegment(1, null)
+
+        assertTrue(
+            viewModel.line().marked,
+        )
+        assertEquals(listOf<Pair<Long, Boolean?>>(1L to null), api.marked)
+
+        gate.complete(ApiResult.Ok(segment(1, "SPEAKER_0").copy(isUser = false, isUserSource = "voice")))
+
+        val cleared =
+            viewModel.line()
+        assertFalse(cleared.marked)
+        assertEquals("SPEAKER_0", cleared.speaker)
+    }
+
+    @Test
+    fun `a refused clear keeps the mark`() {
+        api.markAnswer = { _, _ -> ApiResult.Failure(FailureKind.Network, "No connection.") }
+        val viewModel = markable(segment(1, "SPEAKER_0").copy(isUser = true, isUserSource = "manual"))
+
+        viewModel.markSegment(1, null)
+
+        assertTrue(
+            viewModel.line().marked,
+        )
+        assertEquals("The mark could not be saved.", viewModel.state.value.note)
+    }
+
+    @Test
+    fun `a mark keeps the bookmarks of the paragraph`() {
+        api.markAnswer = { _, _ -> ApiResult.Ok(segment(1, "SPEAKER_0").copy(isUser = true, isUserSource = "manual")) }
+        withBookmarks("2026-09-29T08:01:02Z", segments = listOf(segment(1, "SPEAKER_0")))
+        val marked = viewModel()
+
+        marked.markSegment(1, true)
+
+        assertEquals(
+            listOf(BookmarkMark("b0")),
+            marked.line().bookmarks,
+        )
+        assertEquals(
+            "Me",
+            marked.line().speaker,
+        )
+    }
+
+    @Test
+    fun `the source shows where a line is the wearer's, and always for a manual mark`() {
+        val paragraphs =
+            markable(
+                segment(1, "A").copy(isUser = true, isUserSource = "voice"),
+                segment(2, "A").copy(isUser = true, isUserSource = "provider"),
+                segment(3, "A").copy(isUser = false, isUserSource = "voice"),
+                segment(4, "A").copy(isUser = false, isUserSource = "manual"),
+                segment(5, "A").copy(isUser = null, isUserSource = null),
+            ).state.value.paragraphs
+
+        assertEquals(listOf("voice", "provider", null, "marked", null), paragraphs.map { it.sourceNote })
+        // Each change of source starts a new run, so the marker has a label to sit on.
+        assertEquals(listOf(true, true, true, true, true), paragraphs.map { it.showSpeaker })
+    }
+
     @Test
     fun `naming a voice sends it and reads the transcript again`() {
         api.detail =
@@ -181,9 +320,7 @@ class ConversationViewModelTest {
         assertEquals(listOf("4" to "Anna"), api.named)
         assertEquals(
             "Anna",
-            viewModel.state.value.paragraphs
-                .single()
-                .speaker,
+            viewModel.line().speaker,
         )
     }
 

@@ -21,6 +21,15 @@ interface ConversationsClient {
         name: String,
     ): ApiResult<Unit>
 
+    /**
+     * The wearer's own mark on a segment: true is "this is me", false "this is not me", null clears the mark. Answers
+     * the segment as the conversation shows it; a server before 0.12 answers [FailureKind.NotFound].
+     */
+    suspend fun markSegment(
+        segmentId: Long,
+        isUser: Boolean?,
+    ): ApiResult<Segment>
+
     /** Queues a new summary run; [FailureKind.Conflict] while the conversation is open or no model is set up. */
     suspend fun enrichConversation(id: String): ApiResult<Unit>
 

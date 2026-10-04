@@ -81,6 +81,10 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   bar sits above the transcript: play or pause, the position and length, and a slider. Tap the time
   beside a paragraph to play from there. Pauses between speech are not stored, so they are skipped.
   Playback stops when you leave the screen or the app.
+  Touch and hold a paragraph to say whose it is: **This is me**, **This is not me**, or **Clear**
+  (only where you marked it). Your mark beats the server's guess and shows as "Me · marked"; a line
+  the server's voice match or the provider calls yours shows "Me · voice" or "Me · provider". Needs
+  server 0.12.0 and an admin token.
   Titles, summaries and tasks come from a language model on your server: without one, a row shows the
   start of the transcript instead.
 - **Tasks.** What your conversations left you to do, newest first, with the conversation's title and
