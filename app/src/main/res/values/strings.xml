@@ -378,4 +378,11 @@
     <string name="tags_in_use">Tags in use</string>
     <string name="tag_invalid">Use letters, digits, - or _ (up to 32)</string>
     <string name="tag_too_many">This item has 20 tags.</string>
+    <!-- Tags: filter -->
+    <string name="tag_filter_action">Tag</string>
+    <string name="tag_filter_title">Filter by tag</string>
+    <string name="tag_filter_none">No tags to filter by.</string>
+    <string name="tag_filter_chip_format">Tag: %1$s</string>
+    <string name="tag_filter_clear_format">Clear tag filter %1$s</string>
+    <string name="tag_filter_empty_format">Nothing tagged %1$s</string>
 </resources>

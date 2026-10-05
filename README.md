@@ -168,6 +168,13 @@ says "Use letters, digits, - or _ (up to 32)"; a 21st tag says "This item has 20
 shows the chips without **+ Tag** or **✕**. Tag names are personal: they are never written to a log or
 the debug report, and the phone keeps no copy.
 
+**Filter.** On a server with the `tags` feature, Conversations and People have a **Tag** action (in the
+row above the list on Conversations, in the top bar on People). It opens the tags in use that some
+conversation (or person) carries, most used first, with how many; type to narrow them, tap one. A chip
+"Tag: work" under it shows the filter and its **✕** clears it. The list pages as the full one does, and
+an empty one says "Nothing tagged work". The filter survives rotation and lasts until you clear it or
+leave the app; it is not saved on the phone. People leaves out the unnamed voices while it is on.
+
 ## Offline sync
 
 While the phone is out of range, the pendant stores what it hears on its own card. When the phone

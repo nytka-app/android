@@ -374,4 +374,11 @@
     <string name="tags_in_use">Теги, що вже вживаються</string>
     <string name="tag_invalid">Використовуйте літери, цифри, - або _ (до 32 символів)</string>
     <string name="tag_too_many">Тут уже 20 тегів.</string>
+    <!-- Tags: filter -->
+    <string name="tag_filter_action">Тег</string>
+    <string name="tag_filter_title">Фільтр за тегом</string>
+    <string name="tag_filter_none">Немає тегів для фільтра.</string>
+    <string name="tag_filter_chip_format">Тег: %1$s</string>
+    <string name="tag_filter_clear_format">Прибрати фільтр за тегом %1$s</string>
+    <string name="tag_filter_empty_format">Немає нічого з тегом %1$s</string>
 </resources>

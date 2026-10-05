@@ -13,6 +13,8 @@ import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.StatusClient
 import io.github.nytka_app.core.api.TagsClient
+import io.github.nytka_app.ui.tags.ListEmpty
+import io.github.nytka_app.ui.tags.listEmpty
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,7 +55,9 @@ data class ConversationsUiState(
     val endReached: Boolean = false,
     /** The tag the list is filtered by; kept in saved state, so it survives rotation but not a launch. */
     val tag: String? = null,
-)
+) {
+    val empty: ListEmpty get() = listEmpty(days.isEmpty(), loading, error != null, tag)
+}
 
 @HiltViewModel
 class ConversationsViewModel
@@ -76,6 +80,10 @@ class ConversationsViewModel
         private val mutableState = MutableStateFlow(ConversationsUiState(tag = tag))
         val state: StateFlow<ConversationsUiState> = mutableState.asStateFlow()
         private val mutableNotice = MutableStateFlow<String?>(null)
+        private val mutableTagFilter = MutableStateFlow(false)
+
+        /** The server lists the `tags` feature: the screen offers the tag action. */
+        val tagFilter: StateFlow<Boolean> = mutableTagFilter.asStateFlow()
 
         /** What the status card says about transcription on the server; null while nothing is wrong or known. */
         val notice: StateFlow<String?> = mutableNotice.asStateFlow()
@@ -87,6 +95,12 @@ class ConversationsViewModel
         fun refresh() {
             load(reset = true)
             viewModelScope.launch { refreshNotice() }
+            viewModelScope.launch { refreshTagFilter() }
+        }
+
+        /** A failed read of `/info` changes nothing: the action stays as it was. */
+        private suspend fun refreshTagFilter() {
+            (info.info() as? ApiResult.Ok)?.let { mutableTagFilter.value = it.value.has(ServerInfo.FEATURE_TAGS) }
         }
 
         /**
