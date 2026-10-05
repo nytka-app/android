@@ -20,6 +20,7 @@ import io.github.nytka_app.ui.conversations.ConversationsTab
 import io.github.nytka_app.ui.device.DeviceTab
 import io.github.nytka_app.ui.firstrun.FirstRunScreen
 import io.github.nytka_app.ui.memories.MemoriesTab
+import io.github.nytka_app.ui.people.PeopleTab
 import io.github.nytka_app.ui.tasks.TasksTab
 import io.github.nytka_app.ui.theme.NytkaTheme
 
@@ -46,12 +47,13 @@ class MainActivity : ComponentActivity() {
                                     actions = { StatusChip(status) },
                                 )
                             },
-                            conversations = { openRequests ->
+                            conversations = { openRequests, _ ->
                                 ConversationsTab(status, statusViewModel::setMuted, openRequests)
                             },
-                            tasks = { onOpenConversation -> TasksTab(onOpenConversation) },
-                            memories = { onOpenConversation -> MemoriesTab(onOpenConversation) },
-                            ask = { onOpenConversation -> AskTab(onOpenConversation) },
+                            tasks = { onOpenConversation, _ -> TasksTab(onOpenConversation) },
+                            memories = { onOpenConversation, _ -> MemoriesTab(onOpenConversation) },
+                            people = { PeopleTab() },
+                            ask = { onOpenConversation, _ -> AskTab(onOpenConversation) },
                             device = { DeviceTab(status, statusViewModel::setMuted) },
                         )
                     }

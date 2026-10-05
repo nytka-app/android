@@ -94,8 +94,14 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
 - **Memories.** Lasting facts about you that the server took from your conversations, each with the
   conversation it came from (a memory you add yourself has none). **+** adds one and ⋮ edits or
   deletes one. A memory you delete does not come back from later conversations.
+- **People.** Everyone Nytka knows, most recently heard first and never-heard last, each with when
+  they were last heard and how many facts the server holds about them. A server that does not send
+  those two fields yet gets the list sorted by name with the number of lines each person said. Below
+  it, **Unnamed voices**: tap one to name it. Where the server has no person page, tap a person for
+  **Rename**, **Merge into another person** and **Delete** (with or without the stored voice model).
+  Pull down to refresh. Needs server 0.7.0 or later; the list is not kept on the phone.
 - **Ask.** A placeholder that says "Arrives in a later version".
-- **Device.** The pendant, its storage and settings, the server, the settings, People,
+- **Device.** The pendant, its storage and settings, the server, the settings,
   [Your voice](#your-voice) and the version.
 
 **Search** opens from the magnifier above the conversation list. It looks through transcripts,

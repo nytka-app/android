@@ -136,7 +136,7 @@
     <string name="forget_pendant_message">Запис припиниться, а кулон доведеться спарити знову. Аудіо в черзі все одно вивантажиться</string>
     <string name="mute">Без звуку</string>
     <string name="people">Люди</string>
-    <string name="people_description">Дайте імена голосам, які чує Nytka, і приберіть тих, кого вона знає</string>
+    <string name="people_description">Люди мають власну вкладку</string>
     <string name="about">Про застосунок</string>
     <string name="taps_to_developer_format">Ще %d натискань до режиму розробника</string>
     <string name="about_affiliation">Незалежний проєкт для кулона Omi; не пов\'язаний із Based Hardware</string>
@@ -227,6 +227,49 @@
     <string name="voice_nothing_recorded">Нічого не записано. Перевірте, що кулон підключено й мікрофон увімкнено.</string>
     <string name="voice_forgotten">Ваш голос забуто.</string>
     <string name="voice_reset_done">Повернено голос, який ви записали.</string>
+
+    <!-- People: tab and list -->
+    <string name="tab_conversations">Розмови</string>
+    <string name="tab_tasks">Завдання</string>
+    <string name="tab_memories">Спогади</string>
+    <string name="tab_people">Люди</string>
+    <string name="tab_ask">Запитати</string>
+    <string name="tab_device">Пристрій</string>
+    <string name="action_close">Закрити</string>
+    <string name="last_seen_today_format">Сьогодні %1$s</string>
+    <string name="last_seen_yesterday">Учора</string>
+    <string name="people_last_heard_format">Чули: %1$s</string>
+    <string name="people_never_heard">Ще не чули</string>
+    <string name="people_last_heard_unknown">невідомо</string>
+    <string name="unnamed_voice_line_format">%1$s · востаннє чули: %2$s</string>
+    <plurals name="people_fact_count">
+        <item quantity="one">%d факт</item>
+        <item quantity="few">%d факти</item>
+        <item quantity="many">%d фактів</item>
+        <item quantity="other">%d факту</item>
+    </plurals>
+    <plurals name="people_line_count">
+        <item quantity="one">%d репліка</item>
+        <item quantity="few">%d репліки</item>
+        <item quantity="many">%d реплік</item>
+        <item quantity="other">%d репліки</item>
+    </plurals>
+    <string name="people_unknown_voice">Невідомий голос</string>
+    <string name="people_name_label">Ім\'я</string>
+    <string name="people_merge_action">Об\'єднати з іншою людиною</string>
+    <string name="people_merge_title_format">Об\'єднати %1$s з</string>
+    <string name="people_merge_nobody">Немає з ким об\'єднувати.</string>
+    <string name="people_delete_title_format">Видалити %1$s?</string>
+    <string name="people_delete_text">Їхні репліки залишаться, але знову покажуть невідомий голос. Якщо видалити ще й модель голосу, збережений відбиток зникне зі служби транскрипції, і голос більше не розпізнаватиметься. Це не можна скасувати.</string>
+    <string name="people_delete_and_forget">Видалити разом із моделлю голосу</string>
+    <string name="people_delete_keep_model">Видалити, модель голосу залишити</string>
+    <string name="people_renamed_format">Нове ім\'я: %1$s.</string>
+    <string name="people_voice_named_format">Голосу дано ім\'я %1$s.</string>
+    <string name="people_merged_format">%1$s об\'єднано з %2$s.</string>
+    <string name="people_deleted_format">%1$s видалено.</string>
+    <string name="people_deleted_voice_model_format">%1$s видалено разом із моделлю голосу.</string>
+    <string name="people_deleted_voice_model_stays_format">%1$s видалено, але модель голосу не вдалося прибрати.</string>
+    <string name="people_name_taken_format">Когось уже звуть %1$s.</string>
     <!-- People: consent chime -->
     <string name="consent_chime_title">Сигнал про запис</string>
     <string name="consent_chime_label">Сигнал під час запису</string>
