@@ -53,6 +53,10 @@ class SettingsStore(
             preferences[FIRMWARE_CHECKED_AT] = next.firmwareCheckedAt
             next.firmwareLatest?.let { preferences[FIRMWARE_LATEST] = it } ?: preferences.remove(FIRMWARE_LATEST)
             preferences[HIGH_PRIORITY_CONNECTION] = next.highPriorityConnection
+            preferences[BRIEF_NOTIFICATIONS] = next.briefNotifications
+            preferences[NOTIFIED_BRIEFS] = next.notifiedBriefs.joinToString(",")
+            preferences[CONSENT_CHIME] = next.consentChime
+            preferences[CONSENT_CHIME_MINUTES] = next.consentChimeMinutes
         }
     }
 
@@ -79,6 +83,10 @@ class SettingsStore(
             firmwareCheckedAt = preferences[FIRMWARE_CHECKED_AT] ?: 0,
             firmwareLatest = preferences[FIRMWARE_LATEST],
             highPriorityConnection = preferences[HIGH_PRIORITY_CONNECTION] ?: false,
+            briefNotifications = preferences[BRIEF_NOTIFICATIONS] ?: false,
+            notifiedBriefs = preferences[NOTIFIED_BRIEFS].orEmpty().split(',').filter { it.isNotEmpty() },
+            consentChime = preferences[CONSENT_CHIME] ?: false,
+            consentChimeMinutes = preferences[CONSENT_CHIME_MINUTES] ?: Settings().consentChimeMinutes,
         )
 
     /** Stored by name, so reordering the steps moves no one; a name no longer known starts over. */
@@ -106,6 +114,10 @@ class SettingsStore(
         private val FIRMWARE_CHECKED_AT = longPreferencesKey("firmware_checked_at")
         private val FIRMWARE_LATEST = stringPreferencesKey("firmware_latest")
         private val HIGH_PRIORITY_CONNECTION = booleanPreferencesKey("high_priority_connection")
+        private val BRIEF_NOTIFICATIONS = booleanPreferencesKey("brief_notifications")
+        private val NOTIFIED_BRIEFS = stringPreferencesKey("notified_briefs")
+        private val CONSENT_CHIME = booleanPreferencesKey("consent_chime")
+        private val CONSENT_CHIME_MINUTES = intPreferencesKey("consent_chime_minutes")
 
         fun create(
             context: Context,

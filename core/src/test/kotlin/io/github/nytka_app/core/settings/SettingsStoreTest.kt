@@ -68,6 +68,10 @@ class SettingsStoreTest {
                     firmwareCheckedAt = 1_760_000_000_000,
                     firmwareLatest = "Omi_CV1_v3.0.21",
                     highPriorityConnection = true,
+                    briefNotifications = true,
+                    notifiedBriefs = listOf("b1", "b2"),
+                    consentChime = true,
+                    consentChimeMinutes = 30,
                     muteSchedule =
                         MuteSchedule(
                             listOf(
@@ -105,8 +109,35 @@ class SettingsStoreTest {
         }
 
     @Test
+    fun `people settings default to off with a 15 minute chime`() {
+        val defaults = Settings()
+
+        assertFalse(defaults.briefNotifications)
+        assertEquals(emptyList<String>(), defaults.notifiedBriefs)
+        assertFalse(defaults.consentChime)
+        assertEquals(15, defaults.consentChimeMinutes)
+    }
+
+    @Test
+    fun `posted brief ids keep their order and an empty list reads back empty`() =
+        runTest {
+            val store = store()
+
+            store.update { it.copy(notifiedBriefs = listOf("b2", "b1")) }
+            assertEquals(listOf("b2", "b1"), store.current().notifiedBriefs)
+
+            store.update { it.copy(notifiedBriefs = emptyList()) }
+            assertEquals(emptyList<String>(), store.current().notifiedBriefs)
+        }
+
+    @Test
     fun `toString never shows the token`() {
         assertFalse(Settings(token = "secret-token-value").toString().contains("secret"))
+    }
+
+    @Test
+    fun `toString holds no brief id`() {
+        assertFalse(Settings(notifiedBriefs = listOf("brief-id-1")).toString().contains("brief-id-1"))
     }
 
     @Test

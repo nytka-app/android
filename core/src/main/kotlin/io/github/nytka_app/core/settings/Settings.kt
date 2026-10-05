@@ -28,6 +28,13 @@ data class Settings(
     val firmwareLatest: String? = null,
     /** Developer switch: ask Android for a high-priority connection after each setUp; off by default. */
     val highPriorityConnection: Boolean = false,
+    /** Post a notification for each meeting brief the server makes; off until switched on. */
+    val briefNotifications: Boolean = false,
+    /** Ids of the briefs already posted, so one posts once; kept to those still listed, at most 50. */
+    val notifiedBriefs: List<String> = emptyList(),
+    /** Play a short chime every [consentChimeMinutes] while the pendant records; off until switched on. */
+    val consentChime: Boolean = false,
+    val consentChimeMinutes: Int = 15,
 ) {
     /** What the uploader watches: a change here may end a pause. */
     val connectionKey: Triple<String, String, Boolean> get() = Triple(serverUrl, token, privateNetwork)
