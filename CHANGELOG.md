@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.16.0](https://github.com/nytka-app/android/compare/v0.15.0...v0.16.0) (2026-10-05)
+
+
+### Features
+
+* proposed tags in conversations, person pages and the review inbox (A-T5) ([#77](https://github.com/nytka-app/android/issues/77)) ([35e614f](https://github.com/nytka-app/android/commit/35e614f3ad0a44c0ba7f4d1ab66b4a85e1169c8e))
+* roles in name suggestions and people not named yet (A-T6) ([#79](https://github.com/nytka-app/android/issues/79)) ([274c7cb](https://github.com/nytka-app/android/commit/274c7cb5ca3f433bc099d4ab88ee9e917d26631d))
+* tag filter on Conversations and People (A-T4) ([#76](https://github.com/nytka-app/android/issues/76)) ([955c562](https://github.com/nytka-app/android/commit/955c56202e8324dac1ec330fc18e0c5db2e486e1))
+
 ## [0.15.0](https://github.com/nytka-app/android/compare/v0.14.0...v0.15.0) (2026-10-05)
 
 
