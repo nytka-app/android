@@ -2,6 +2,7 @@ package io.github.nytka_app.ui.people
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -14,9 +15,11 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
+@ReadOnlyComposable
 internal fun linesText(count: Int) = pluralStringResource(R.plurals.people_line_count, count, count)
 
 @Composable
+@ReadOnlyComposable
 internal fun personLine(
     person: Person,
     hasSummaries: Boolean,
@@ -31,12 +34,14 @@ internal fun personLine(
 }
 
 @Composable
+@ReadOnlyComposable
 internal fun voiceLine(voice: UnnamedVoice): String {
     val heard = lastSeenText(voice.lastSeenAt.ifEmpty { null }) ?: stringResource(R.string.people_last_heard_unknown)
     return stringResource(R.string.unnamed_voice_line_format, linesText(voice.segments), heard)
 }
 
 @Composable
+@ReadOnlyComposable
 internal fun lastSeenText(text: String?): String? {
     val zone = ZoneId.systemDefault()
     val seen = LastSeen.of(text, LocalDate.now(zone), zone) ?: return null
@@ -82,5 +87,6 @@ private fun failureText(
     }
 
 @Composable
+@ReadOnlyComposable
 internal fun voiceTitle(voice: UnnamedVoice): String =
     voice.label?.takeIf { it.isNotBlank() } ?: stringResource(R.string.people_unknown_voice)
