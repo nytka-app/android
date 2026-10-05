@@ -19,6 +19,9 @@ data class PersonPage(
     val conversations: List<PersonConversation> = emptyList(),
     val facts: List<PersonFact> = emptyList(),
     val openTasks: List<NytkaTask> = emptyList(),
+    val tags: List<String> = emptyList(),
+    /** False for a person known only by a role. */
+    val named: Boolean = true,
 )
 
 /** A conversation the person spoke in. */
@@ -74,6 +77,12 @@ data class NameSuggestion(
     val personId: String? = null,
     val confidence: Double = 0.0,
     val evidence: SuggestionEvidence? = null,
+    /**
+     * A role the voice has ("repairman"). With [named] false the suggestion has no name yet and [name] holds the
+     * role in display form, so an older app reads it sensibly.
+     */
+    val role: String? = null,
+    val named: Boolean = true,
 )
 
 /** The stretch of capture a card's clip covers; the app asks for the audio, not for these times. */
@@ -120,6 +129,10 @@ data class ReviewProposal(
     val confidence: Double? = null,
     val similarity: Double? = null,
     val isUser: Boolean? = null,
+    /** Kind `tag`: the proposed tag. Kind `name`: [role] and [named] as on [NameSuggestion]. */
+    val tag: String? = null,
+    val role: String? = null,
+    val named: Boolean = true,
 )
 
 /** One thing waiting for an answer. [id] is a guid, or a segment number for a `label`. */
