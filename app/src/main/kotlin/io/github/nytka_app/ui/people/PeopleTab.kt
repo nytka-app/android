@@ -7,10 +7,10 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import io.github.nytka_app.ui.people.review.ReviewScreen
 import androidx.navigation.navArgument
 import io.github.nytka_app.R
 import io.github.nytka_app.ui.developer.server.ServerSettingsScreen
+import io.github.nytka_app.ui.people.review.ReviewScreen
 import kotlinx.coroutines.flow.Flow
 
 /**
