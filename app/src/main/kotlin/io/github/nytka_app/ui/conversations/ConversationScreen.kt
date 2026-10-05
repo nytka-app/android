@@ -69,6 +69,7 @@ fun ConversationScreen(
     developerMode: Boolean,
     onBack: () -> Unit,
     onDeleted: () -> Unit,
+    onOpenPerson: (String) -> Unit,
     viewModel: ConversationViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -78,6 +79,7 @@ fun ConversationScreen(
     var naming by remember { mutableStateOf<Pair<String, String>?>(null) }
     val snackbar = rememberNoteHost(state.note, viewModel::noteShown)
     LaunchedEffect(state.deleted) { if (state.deleted) onDeleted() }
+    SuggestionNoticeEffect(state.suggestionNotice, snackbar, viewModel::suggestionNoticeShown)
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.pause() }
     // A summary in the making shows up on its own, while the screen is in front.
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -150,6 +152,7 @@ fun ConversationScreen(
             }
             state.chip?.let { chip -> item { AiChip(chip) } }
             state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
+            suggestion(state.banner, viewModel::acceptSuggestion, viewModel::rejectSuggestion)
             state.summary?.let { summary ->
                 item { InfoCard(stringResource(R.string.summary_card_title)) { Text(summary) } }
             }
@@ -173,6 +176,7 @@ fun ConversationScreen(
                 state.paragraphs,
                 canPlay = state.playback != null,
                 onName = { naming = it },
+                onOpenPerson = onOpenPerson,
                 onSave = viewModel::setBookmarkNote,
                 onPlay = viewModel::playFrom,
                 onMark = viewModel::markSegment,
@@ -230,11 +234,12 @@ private fun LazyListScope.transcript(
     paragraphs: List<Paragraph>,
     canPlay: Boolean,
     onName: (Pair<String, String>) -> Unit,
+    onOpenPerson: (String) -> Unit,
     onSave: (String, String) -> Unit,
     onPlay: (Int) -> Unit,
     onMark: (Long, Boolean?) -> Unit,
 ) = itemsIndexed(paragraphs) { i, paragraph ->
-    ParagraphItem(paragraph, onName, onSave, onMark, onPlay = if (canPlay) ({ onPlay(i) }) else null)
+    ParagraphItem(paragraph, onName, onOpenPerson, onSave, onMark, onPlay = if (canPlay) ({ onPlay(i) }) else null)
 }
 
 /** Play or pause, the position and length, and a slider. A drag seeks when it ends, not on every move. */
@@ -288,20 +293,34 @@ private fun InfoCard(
     }
 }
 
-/** The speaker above a run. A voice that can be named opens the dialog with its id and label. */
+/**
+ * The speaker above a run. A named person opens their page; a voice that can be named opens the dialog with its id
+ * and label.
+ */
 @Composable
 private fun SpeakerLabel(
     paragraph: Paragraph,
     onName: (Pair<String, String>) -> Unit,
+    onOpenPerson: (String) -> Unit,
 ) {
     val voiceId = paragraph.voiceId
+    val personId = paragraph.personId
     val label = paragraph.speaker.orEmpty()
     Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(
             label,
             style = MaterialTheme.typography.labelLarge,
             color = speakerColor(paragraph.speakerColor),
-            modifier = if (voiceId != null) Modifier.clickable { onName(voiceId to label) } else Modifier,
+            modifier =
+                when {
+                    personId != null ->
+                        Modifier.clickable(
+                            onClickLabel = stringResource(R.string.open_person),
+                        ) { onOpenPerson(personId) }
+
+                    voiceId != null -> Modifier.clickable { onName(voiceId to label) }
+                    else -> Modifier
+                },
         )
         paragraph.sourceNote?.let {
             val note =
@@ -325,6 +344,7 @@ private fun SpeakerLabel(
 private fun ParagraphItem(
     paragraph: Paragraph,
     onName: (Pair<String, String>) -> Unit,
+    onOpenPerson: (String) -> Unit,
     onSave: (String, String) -> Unit,
     onMark: (Long, Boolean?) -> Unit,
     onPlay: (() -> Unit)?,
@@ -333,7 +353,7 @@ private fun ParagraphItem(
     val haptic = LocalHapticFeedback.current
     Column {
         if (paragraph.showSpeaker) {
-            SpeakerLabel(paragraph, onName = onName)
+            SpeakerLabel(paragraph, onName = onName, onOpenPerson = onOpenPerson)
         }
         Row {
             Text(

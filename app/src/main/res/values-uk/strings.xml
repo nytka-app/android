@@ -323,4 +323,12 @@
     <string name="person_delete_text">Їхні репліки залишаться, але знову покажуть невідомий голос. Власну модель голосу Nytka видаляє в будь-якому разі. Якщо забути голос, сервіс транскрибування теж видалить модель, яку зберігає. Це не можна скасувати.</string>
     <string name="person_delete_forget">Видалити й забути голос</string>
     <string name="person_delete_only">Видалити</string>
+
+    <!-- People: name suggestions in conversations (A-P6) -->
+    <string name="suggestion_banner_format">%1$s, імовірно, %2$s</string>
+    <string name="suggestion_unknown_voice">Голос</string>
+    <string name="suggestion_accept">Прийняти</string>
+    <string name="suggestion_reject_format">Не %1$s</string>
+    <string name="suggestion_failed">Не вдалося зберегти відповідь.</string>
+    <string name="open_person">Відкрити цю людину</string>
 </resources>

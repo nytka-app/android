@@ -12,6 +12,8 @@ import io.github.nytka_app.core.api.BookmarksClient
 import io.github.nytka_app.core.api.ConversationDetail
 import io.github.nytka_app.core.api.ConversationsClient
 import io.github.nytka_app.core.api.FailureKind
+import io.github.nytka_app.core.api.NameSuggestion
+import io.github.nytka_app.core.api.ReviewClient
 import io.github.nytka_app.core.api.Segment
 import io.github.nytka_app.core.api.TasksClient
 import io.github.nytka_app.ui.ITEM_GONE
@@ -42,6 +44,8 @@ data class Paragraph(
     val showSpeaker: Boolean = false,
     val speakerColor: Int = 0,
     val voiceId: String? = null,
+    /** The person the line is attributed to, so the label can open them; null for the wearer and unnamed voices. */
+    val personId: String? = null,
     /** The segment's id, for the wearer's mark. */
     val segmentId: Long = 0,
     /** Whether the segment's text is the wearer's, as the server last said or as the wearer just marked it. */
@@ -58,6 +62,21 @@ data class BookmarkMark(
     val id: String,
     val note: String? = null,
 )
+
+/**
+ * The most confident pending name for this conversation. [label] is what the evidence line is called now, null where
+ * the screen says "A voice"; [evidence] is that line's text. [busy] is true while an answer is on its way.
+ */
+data class SuggestionBannerState(
+    val id: String,
+    val name: String,
+    val label: String? = null,
+    val evidence: String? = null,
+    val busy: Boolean = false,
+)
+
+/** What a failed answer to the banner comes to; the screen words it. */
+enum class SuggestionNotice { Failed, NeedsAdmin }
 
 data class TaskLine(
     val id: String,
@@ -93,11 +112,14 @@ data class ConversationUiState(
     val loading: Boolean = true,
     val error: String? = null,
     val deleted: Boolean = false,
+    val banner: SuggestionBannerState? = null,
+    val suggestionNotice: SuggestionNotice? = null,
     val raw: String? = null,
     /** A message for a snackbar, until [ConversationViewModel.noteShown]. */
     val note: String? = null,
 )
 
+@Suppress("TooManyFunctions") // one screen, one function per action
 @HiltViewModel
 class ConversationViewModel
     @Inject
@@ -106,6 +128,7 @@ class ConversationViewModel
         private val api: ConversationsClient,
         private val tasks: TasksClient,
         private val bookmarks: BookmarksClient,
+        private val review: ReviewClient,
         private val audio: AudioClient,
         private val player: AudioPlayer,
         private val clock: Clock,
@@ -116,11 +139,14 @@ class ConversationViewModel
         private var index: AudioIndex? = null
         private var segmentStarts: List<Instant> = emptyList()
         private var segments: List<Segment> = emptyList()
+        private var suggestions: List<NameSuggestion> = emptyList()
+        private var answering = false
         private val prepareLock = Mutex()
         private var prepared = false
 
         init {
             viewModelScope.launch { loadAudio() }
+            viewModelScope.launch { loadSuggestions() }
             viewModelScope.launch {
                 when (val result = api.conversation(id)) {
                     is ApiResult.Ok -> mutableState.value = show(result.value)
@@ -223,6 +249,82 @@ class ConversationViewModel
             }
         }
 
+        /**
+         * The server lists pending suggestions for every conversation (at most 200, no filter), so this keeps those of
+         * this one. Any failure, an older server included, leaves no banner and no notice.
+         */
+        private suspend fun loadSuggestions() {
+            suggestions =
+                (review.suggestions() as? ApiResult.Ok)?.value.orEmpty().filter { it.conversationId == id }
+            mutableState.update { it.copy(banner = bannerOf()) }
+        }
+
+        private fun bannerOf(): SuggestionBannerState? {
+            val best = suggestions.maxByOrNull { it.confidence } ?: return null
+            val line = best.evidence?.let { e -> segments.firstOrNull { it.id == e.segmentId } }
+            return SuggestionBannerState(
+                id = best.id,
+                name = best.name,
+                label = line?.let(::labelOf),
+                evidence = best.evidence?.text?.takeIf(String::isNotBlank),
+                busy = answering,
+            )
+        }
+
+        /** Names the suggested voice; the conversation is read again, since labels change. */
+        fun acceptSuggestion() = answerSuggestion(accept = true)
+
+        /** The name is never suggested again for that voice. */
+        fun rejectSuggestion() = answerSuggestion(accept = false)
+
+        private fun answerSuggestion(accept: Boolean) {
+            val banner = mutableState.value.banner ?: return
+            if (answering) return
+            setAnswering(true)
+            viewModelScope.launch {
+                try {
+                    when (val result = review.answerSuggestion(banner.id, accept)) {
+                        is ApiResult.Ok -> done(banner, reload = accept)
+                        is ApiResult.Failure ->
+                            when (result.kind) {
+                                // Already answered, or gone with its conversation or person: the lists are stale.
+                                FailureKind.Conflict, FailureKind.NotFound -> done(banner, reload = true)
+                                else -> {
+                                    val notice =
+                                        if (result.kind == FailureKind.Forbidden) {
+                                            SuggestionNotice.NeedsAdmin
+                                        } else {
+                                            SuggestionNotice.Failed
+                                        }
+                                    mutableState.update { it.copy(suggestionNotice = notice) }
+                                }
+                            }
+                    }
+                } finally {
+                    setAnswering(false)
+                }
+            }
+        }
+
+        private suspend fun done(
+            answered: SuggestionBannerState,
+            reload: Boolean,
+        ) {
+            suggestions = suggestions.filterNot { it.id == answered.id }
+            mutableState.update { it.copy(banner = bannerOf()) }
+            if (reload) {
+                (api.conversation(id) as? ApiResult.Ok)?.let { mutableState.value = show(it.value) }
+                loadSuggestions()
+            }
+        }
+
+        private fun setAnswering(value: Boolean) {
+            answering = value
+            mutableState.update { it.copy(banner = it.banner?.copy(busy = value)) }
+        }
+
+        fun suggestionNoticeShown() = mutableState.update { it.copy(suggestionNotice = null) }
+
         fun noteShown() = mutableState.update { it.copy(note = null) }
 
         /**
@@ -254,6 +356,7 @@ class ConversationViewModel
             mutableState.update { state ->
                 val old = state.paragraphs
                 state.copy(
+                    banner = bannerOf(),
                     paragraphs =
                         paragraphsOf(segments).mapIndexed {
                             i,
@@ -376,6 +479,7 @@ class ConversationViewModel
                     if (paragraphs.isEmpty()) detail.bookmarks.map { BookmarkMark(it.id, it.note) } else emptyList(),
                 open = detail.status == "open",
                 playback = mutableState.value.playback,
+                banner = bannerOf(),
                 loading = false,
             )
         }
@@ -385,8 +489,7 @@ class ConversationViewModel
             val colors = LinkedHashMap<String, Int>()
             var previous: Pair<String?, String?>? = null
             return list.map {
-                val speaker =
-                    if (it.isUser == true) ME else (it.personName ?: it.speaker)?.takeIf(String::isNotBlank)
+                val speaker = labelOf(it)
                 val note = sourceNote(it)
                 val color = speaker?.let { name -> colors.getOrPut(name) { colors.size % SPEAKER_COLORS } } ?: 0
                 Paragraph(
@@ -397,6 +500,7 @@ class ConversationViewModel
                     showSpeaker = speaker != null && (speaker to note) != previous,
                     speakerColor = color,
                     voiceId = it.speakerId.takeIf { _ -> it.isUser != true },
+                    personId = it.personId.takeIf { _ -> it.isUser != true },
                     segmentId = it.id,
                     isUser = it.isUser,
                     sourceNote = note,
@@ -404,6 +508,9 @@ class ConversationViewModel
                 ).also { previous = speaker to note }
             }
         }
+
+        private fun labelOf(segment: Segment): String? =
+            if (segment.isUser == true) ME else (segment.personName ?: segment.speaker)?.takeIf(String::isNotBlank)
 
         /** A manual mark always shows; the voice and the provider say so only where they pick the wearer. */
         private fun sourceNote(segment: Segment): String? =

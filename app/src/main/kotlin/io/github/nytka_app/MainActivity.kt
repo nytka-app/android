@@ -47,8 +47,8 @@ class MainActivity : ComponentActivity() {
                                     actions = { StatusChip(status) },
                                 )
                             },
-                            conversations = { openRequests, _ ->
-                                ConversationsTab(status, statusViewModel::setMuted, openRequests)
+                            conversations = { openRequests, onOpenPerson ->
+                                ConversationsTab(status, statusViewModel::setMuted, openRequests, onOpenPerson)
                             },
                             tasks = { onOpenConversation, _ -> TasksTab(onOpenConversation) },
                             memories = { onOpenConversation, _ -> MemoriesTab(onOpenConversation) },

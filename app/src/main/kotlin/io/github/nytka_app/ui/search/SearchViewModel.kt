@@ -35,7 +35,7 @@ data class SnippetSpan(
 
 /**
  * [title] is null for a memory, whose text is the snippet. [openId] is the conversation a tap opens, null for a
- * memory without a source.
+ * memory without a source. [personId] is set for a person hit, which opens that person instead.
  */
 data class HitRow(
     val key: String,
@@ -43,6 +43,7 @@ data class HitRow(
     val snippet: List<SnippetSpan>,
     val date: String,
     val openId: String?,
+    val personId: String? = null,
 )
 
 data class SearchUiState(
@@ -135,6 +136,18 @@ class SearchViewModel
         }
 
         private fun row(hit: Hit): HitRow {
+            if (hit.kind == "person") {
+                // A person's snippet may be empty; the name then stands as the text.
+                val spans = markSpans(hit.snippet).ifEmpty { listOf(SnippetSpan(hit.title.orEmpty(), bold = true)) }
+                return HitRow(
+                    key = "person-${hit.id}",
+                    title = hit.title.takeIf { hit.snippet.isNotBlank() },
+                    snippet = spans,
+                    date = MemoryFormatting.day(hit.at, clock).orEmpty(),
+                    openId = null,
+                    personId = hit.id,
+                )
+            }
             val isMemory = hit.kind == "memory"
             return HitRow(
                 key = "${hit.kind}-${hit.id}",

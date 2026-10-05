@@ -156,6 +156,50 @@ class SearchViewModelTest {
         }
 
     @Test
+    fun `a person hit opens that person, not a conversation`() =
+        runTest {
+            api.pages +=
+                ApiResult.Ok(
+                    SearchPage(
+                        listOf(
+                            hit("person", "p1", conversationId = "c9", title = "Olena"),
+                            hit("conversation", "c1"),
+                        ),
+                    ),
+                )
+            val viewModel = newViewModel()
+
+            viewModel.setQuery("olena")
+            advanceUntilIdle()
+
+            val rows = viewModel.state.value.rows
+            assertEquals("p1", rows[0].personId)
+            assertNull(rows[0].openId)
+            assertEquals("Olena", rows[0].title)
+            assertNull(rows[1].personId)
+            assertEquals("c1", rows[1].openId)
+        }
+
+    @Test
+    fun `a person hit without a snippet shows the name as its text`() =
+        runTest {
+            api.pages +=
+                ApiResult.Ok(
+                    SearchPage(listOf(Hit("person", "p1", 1.0, "Olena", "", "2026-09-28T10:00:00Z"))),
+                )
+            val viewModel = newViewModel()
+
+            viewModel.setQuery("olena")
+            advanceUntilIdle()
+
+            val row =
+                viewModel.state.value.rows
+                    .single()
+            assertNull(row.title)
+            assertEquals(listOf(SnippetSpan("Olena", true)), row.snippet)
+        }
+
+    @Test
     fun `marks split into bold spans and the rest stays plain`() {
         assertEquals(
             listOf(SnippetSpan("a ", false), SnippetSpan("b", true), SnippetSpan(" c <b>", false)),

@@ -53,11 +53,21 @@ class ConversationViewModelTest {
     private val tasks = FakeTasks(listOf(task("t1"), task("t2", done = true)))
     private val bookmarks = FakeBookmarks()
 
+    private val review = FakeReview()
     private val audio = FakeAudio()
     private val player = FakePlayer()
 
     private fun viewModel() =
-        ConversationViewModel(SavedStateHandle(mapOf("id" to "c1")), api, tasks, bookmarks, audio, player, clock)
+        ConversationViewModel(
+            SavedStateHandle(mapOf("id" to "c1")),
+            api,
+            tasks,
+            bookmarks,
+            review,
+            audio,
+            player,
+            clock,
+        )
 
     private fun detail(
         status: String = "closed",

@@ -47,11 +47,15 @@ import io.github.nytka_app.R
  */
 const val SEARCH_ENABLED = true
 
-/** Full-text search over conversations and memories. A hit opens through [onOpenConversation]. */
+/**
+ * Full-text search over conversations, memories and people. A hit opens through [onOpenConversation] or
+ * [onOpenPerson].
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(
     onOpenConversation: (String) -> Unit,
+    onOpenPerson: (String) -> Unit,
     onBack: () -> Unit,
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
@@ -126,7 +130,12 @@ fun SearchScreen(
                         )
                     },
                     supportingContent = { Text(row.date) },
-                    modifier = row.openId?.let { id -> Modifier.clickable { onOpenConversation(id) } } ?: Modifier,
+                    modifier =
+                        when {
+                            row.personId != null -> Modifier.clickable { onOpenPerson(row.personId) }
+                            row.openId != null -> Modifier.clickable { onOpenConversation(row.openId) }
+                            else -> Modifier
+                        },
                 )
             }
             if (state.rows.isNotEmpty() && !state.endReached) {
