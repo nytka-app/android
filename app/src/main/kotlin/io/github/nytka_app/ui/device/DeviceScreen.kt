@@ -116,6 +116,14 @@ fun DeviceScreen(
         item { ServerSection(state, status, viewModel::checkServer) }
         item { SettingsSection(state, viewModel::save) }
         item {
+            BriefsSection(
+                state,
+                onSwitch = viewModel::setBriefNotifications,
+                onPermission = viewModel::briefPermissionAnswered,
+                onOpenSettings = viewModel::openAppSettings,
+            )
+        }
+        item {
             Section(stringResource(R.string.people)) {
                 Text(stringResource(R.string.people_description))
                 OutlinedButton(onClick = onOpenPeople) { Text(stringResource(R.string.people)) }

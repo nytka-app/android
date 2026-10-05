@@ -213,6 +213,25 @@ example another language), **Forget what it learned** goes back to the enrolled 
 made from them; your own marks stay. See the
 [server README](https://github.com/nytka-app/server#your-voice).
 
+## Meeting briefs
+
+With a server that has a calendar feed (`Nytka__Calendar__IcsUrl`, see the
+[server README](https://github.com/nytka-app/server#calendar-briefs)), the server writes a short
+brief before a meeting with someone you named: who they are to you, what to remember, what is still
+open. Switch on **Meeting briefs** in the Device tab (off by default) and Nytka posts it as a
+notification. On Android 13 and later it asks to show notifications first; if you refuse twice, the
+switch offers **Open settings**. Under the switch, "Your server has no calendar feed" means the feed
+is not set, and "This server needs an update" means the server predates it.
+
+- **When.** Nytka asks your server every 15 minutes, with a network, and posts each brief once, for
+  meetings not over. The server makes a brief 30 minutes before the meeting by default
+  (`Nytka__Calendar__BriefMinutes`), so it arrives 15 to 30 minutes before; with 5 it may arrive
+  after the start.
+- **The lock screen** shows only "A meeting brief is ready": no title, name or fact. Unlock to read
+  it. The notification channel is called "Meeting briefs".
+- **A failed check** (no network, an older server) posts nothing and waits for the next one.
+- Nothing about a brief goes into the app's logs or the debug report.
+
 ## Everyday use
 
 - **Mute** with a double tap on the pendant: one long buzz means muted, two short buzzes mean
@@ -276,7 +295,7 @@ made from them; your own marks stay. See the
 
 Audio waiting to upload, in the app's private storage, until the server has it; the settings; the
 token, encrypted with a key that never leaves the Android Keystore; how far the pendant's storage
-has been read; the time and result of the last firmware check; and a log of when you muted and unmuted (times and on or off, nothing else). Android
+has been read; the time and result of the last firmware check; the ids (not the text) of the meeting briefs already posted, at most 50; and a log of when you muted and unmuted (times and on or off, nothing else). Android
 backups and phone-to-phone transfers skip all of it, so a new phone starts with first run. The
 pendant keeps the audio it stored until your server has it. The app talks to your server and nothing
 else, apart from the once-a-day [firmware notice](#pendant-firmware-notice) (GitHub, switchable): no

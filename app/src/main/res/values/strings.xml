@@ -242,4 +242,16 @@
     <string name="consent_chime_label">Chime while recording</string>
     <string name="consent_chime_interval_format">Every %d minutes</string>
     <string name="consent_chime_explanation">A short sound from the phone tells people nearby that the pendant is recording. It does not use the microphone. It follows the notification volume, so you will not hear it when the phone is on silent or Do Not Disturb blocks notifications.</string>
+
+    <!-- People: meeting briefs (A-P8) -->
+    <string name="briefs_title">Meeting briefs</string>
+    <string name="briefs_label">Notify me of meeting briefs</string>
+    <string name="briefs_explanation">When your calendar has a meeting with someone you named, your server writes a short brief. Nytka checks every 15 minutes and posts a notification. The lock screen shows no names or facts.</string>
+    <string name="briefs_no_feed">Your server has no calendar feed</string>
+    <string name="briefs_permission_denied">Without notifications Nytka cannot show a brief. Switch on again to be asked</string>
+    <string name="briefs_permission_blocked">Without notifications Nytka cannot show a brief. If Android does not ask again, allow notifications in the system settings for Nytka, then switch on again</string>
+    <string name="brief_channel_name">Meeting briefs</string>
+    <string name="brief_title">Brief: %1$s</string>
+    <string name="brief_starts_at">Starts at %1$s</string>
+    <string name="brief_public_title">A meeting brief is ready</string>
 </resources>

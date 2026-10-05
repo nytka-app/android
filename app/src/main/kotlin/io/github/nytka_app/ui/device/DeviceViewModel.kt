@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.nytka_app.BuildConfig
+import io.github.nytka_app.briefs.BriefScheduler
 import io.github.nytka_app.capture.DeviceActions
 import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.capture.PendantSettingsControls
@@ -24,6 +25,8 @@ import io.github.nytka_app.core.settings.SettingsSource
 import io.github.nytka_app.firmware.FirmwareNotice
 import io.github.nytka_app.firmware.FirmwareNotices
 import io.github.nytka_app.pendant.PendantInfo
+import io.github.nytka_app.ui.PermissionAnswer
+import io.github.nytka_app.ui.after
 import io.github.nytka_app.ui.firstrun.READ_TOKEN_REFUSED
 import io.github.nytka_app.ui.mustAskForLocalNetwork
 import kotlinx.coroutines.Job
@@ -78,7 +81,21 @@ data class DeviceUiState(
     val firmwareNotice: FirmwareNotice? = null,
     val consentChime: Boolean = false,
     val consentChimeMinutes: Int = 15,
+    /** Whether meeting briefs post notifications (a setting, off by default). */
+    val briefNotifications: Boolean = false,
+    /** How the user answered the notification prompt when switching briefs on; null until asked. */
+    val briefPermission: PermissionAnswer? = null,
+    /** The line under the brief switch; null when the server has a calendar feed or has not answered. */
+    val calendarLine: CalendarLine? = null,
 )
+
+enum class CalendarLine {
+    /** `GET /settings` shows `calendar.icsUrl` not set. */
+    NoFeed,
+
+    /** The key is missing: the server is older than the calendar feed. */
+    NeedsUpdate,
+}
 
 sealed interface MuteServerState {
     data object Applied : MuteServerState
@@ -93,6 +110,7 @@ fun interface PhoneZone {
     fun id(): String
 }
 
+@Suppress("TooManyFunctions") // one screen, one function per control
 @HiltViewModel
 class DeviceViewModel
     @Inject
@@ -105,6 +123,7 @@ class DeviceViewModel
         private val phoneZone: PhoneZone,
         private val pendantSettings: PendantSettingsControls,
         private val firmware: FirmwareNotices,
+        private val briefs: BriefScheduler,
     ) : ViewModel() {
         private val local = MutableStateFlow(DeviceUiState())
 
@@ -133,6 +152,7 @@ class DeviceViewModel
                     firmwareCheck = current.firmwareCheck,
                     consentChime = current.consentChime,
                     consentChimeMinutes = current.consentChimeMinutes,
+                    briefNotifications = current.briefNotifications,
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, DeviceUiState())
 
@@ -143,6 +163,7 @@ class DeviceViewModel
         fun checkServer() {
             local.update { it.copy(serverState = "Checking…") }
             syncMuteWithServer()
+            loadCalendarLine()
             viewModelScope.launch {
                 val saved = settings.current()
                 val base = (ServerUrl.check(saved.serverUrl, saved.privateNetwork) as? UrlCheck.Ok)?.base
@@ -351,6 +372,49 @@ class DeviceViewModel
             }
         }
 
+        private fun loadCalendarLine() {
+            viewModelScope.launch {
+                val line =
+                    when (val result = serverSettings.settings()) {
+                        is ApiResult.Ok ->
+                            result.value.firstOrNull { it.key == CALENDAR_KEY }.let {
+                                when {
+                                    it == null -> CalendarLine.NeedsUpdate
+                                    it.isSet -> null
+                                    else -> CalendarLine.NoFeed
+                                }
+                            }
+
+                        is ApiResult.Failure ->
+                            CalendarLine.NeedsUpdate.takeIf {
+                                result.kind == FailureKind.NotFound || result.kind == FailureKind.Unsupported
+                            }
+                    }
+                local.update { it.copy(calendarLine = line) }
+            }
+        }
+
+        /** Off cancels the job. On saves the setting and schedules it, after the screen has asked for permission. */
+        fun setBriefNotifications(on: Boolean) {
+            viewModelScope.launch {
+                settings.update { it.copy(briefNotifications = on) }
+                local.update { it.copy(briefPermission = null) }
+                if (on) briefs.schedule() else briefs.cancel()
+            }
+        }
+
+        /** The answer to Android's notification prompt, asked when the switch went on without the permission. */
+        fun briefPermissionAnswered(answer: PermissionAnswer) {
+            if (answer == PermissionAnswer.Granted) {
+                setBriefNotifications(true)
+            } else {
+                local.update { it.copy(briefPermission = answer.after(it.briefPermission)) }
+            }
+        }
+
+        /** For a permission Android no longer asks for: the app info page is where it can be allowed. */
+        fun openAppSettings() = actions.openAppSettings()
+
         fun syncNow() = sync.syncNow()
 
         fun stopSync() = sync.stopSync()
@@ -393,6 +457,7 @@ class DeviceViewModel
             const val TAPS_TO_DEVELOPER = 7
             const val MUTE_KEY = "mute.windows"
             const val ZONE_KEY = "user.timeZone"
+            const val CALENDAR_KEY = "calendar.icsUrl"
 
             private fun isUtc(zone: String) =
                 zone.isBlank() || zone.uppercase() in setOf("UTC", "ETC/UTC", "Z", "GMT", "ETC/GMT")

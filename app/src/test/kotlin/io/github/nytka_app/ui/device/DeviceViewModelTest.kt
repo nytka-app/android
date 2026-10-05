@@ -5,6 +5,7 @@ import io.github.nytka_app.FakePendantSettingsControls
 import io.github.nytka_app.FakeSettings
 import io.github.nytka_app.FakeSyncControls
 import io.github.nytka_app.MainDispatcherRule
+import io.github.nytka_app.briefs.BriefScheduler
 import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.capture.PendantSettingsState
 import io.github.nytka_app.capture.StorageSyncStatus
@@ -20,6 +21,7 @@ import io.github.nytka_app.core.settings.Settings
 import io.github.nytka_app.firmware.FirmwareNotice
 import io.github.nytka_app.pendant.FirmwareVersion
 import io.github.nytka_app.pendant.PendantInfo
+import io.github.nytka_app.ui.PermissionAnswer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -71,6 +73,20 @@ class DeviceViewModelTest {
     }
 
     private val server = FakeServerSettings()
+
+    private class FakeBriefScheduler : BriefScheduler {
+        val calls = mutableListOf<String>()
+
+        override fun schedule() {
+            calls += "schedule"
+        }
+
+        override fun cancel() {
+            calls += "cancel"
+        }
+    }
+
+    private val briefs = FakeBriefScheduler()
     private var phoneZone = "Europe/Kyiv"
     private var notice: FirmwareNotice? = null
     private val weekdays =
@@ -83,7 +99,7 @@ class DeviceViewModelTest {
         DeviceViewModel(settings, {
             infoCalls++
             info
-        }, actions, sync, server, { phoneZone }, pendantSettings, { notice })
+        }, actions, sync, server, { phoneZone }, pendantSettings, { notice }, briefs)
 
     private fun saveServerOnTheLocalNetwork() {
         settings.state.value = settings.state.value.copy(serverUrl = "http://192.168.1.10:8080/", privateNetwork = true)
@@ -629,5 +645,76 @@ class DeviceViewModelTest {
         assertEquals(5, settings.state.value.consentChimeMinutes)
         viewModel.setConsentChimeMinutes(500)
         assertEquals(60, settings.state.value.consentChimeMinutes)
+    }
+
+    @Test
+    fun `switching briefs on saves the setting and schedules the job, off cancels it`() {
+        val viewModel = viewModel()
+
+        viewModel.setBriefNotifications(true)
+        assertTrue(settings.state.value.briefNotifications)
+        assertTrue(viewModel.state.value.briefNotifications)
+        assertEquals(listOf("schedule"), briefs.calls)
+
+        viewModel.setBriefNotifications(false)
+        assertFalse(settings.state.value.briefNotifications)
+        assertEquals(listOf("schedule", "cancel"), briefs.calls)
+    }
+
+    @Test
+    fun `a refused notification prompt leaves the switch off, and a second refusal offers the settings`() {
+        val viewModel = viewModel()
+
+        viewModel.briefPermissionAnswered(PermissionAnswer.Denied)
+        assertEquals(PermissionAnswer.Denied, viewModel.state.value.briefPermission)
+        viewModel.briefPermissionAnswered(PermissionAnswer.Denied)
+        assertEquals(PermissionAnswer.Blocked, viewModel.state.value.briefPermission)
+
+        assertFalse(settings.state.value.briefNotifications)
+        assertEquals(emptyList<String>(), briefs.calls)
+
+        viewModel.openAppSettings()
+        assertTrue("open settings" in actions.calls)
+    }
+
+    @Test
+    fun `a granted notification prompt switches briefs on and clears the refusal`() {
+        val viewModel = viewModel()
+        viewModel.briefPermissionAnswered(PermissionAnswer.Denied)
+
+        viewModel.briefPermissionAnswered(PermissionAnswer.Granted)
+
+        assertTrue(settings.state.value.briefNotifications)
+        assertNull(viewModel.state.value.briefPermission)
+        assertEquals(listOf("schedule"), briefs.calls)
+    }
+
+    @Test
+    fun `the calendar line says no feed when calendar icsUrl is not set`() {
+        server.catalog += ServerSetting("calendar.icsUrl", "secret", null, isSet = false)
+
+        assertEquals(CalendarLine.NoFeed, viewModel().state.value.calendarLine)
+    }
+
+    @Test
+    fun `the calendar line is empty when calendar icsUrl is set`() {
+        server.catalog += ServerSetting("calendar.icsUrl", "secret", null, isSet = true)
+
+        assertNull(viewModel().state.value.calendarLine)
+    }
+
+    @Test
+    fun `the calendar line says the server needs an update when the key is missing or the catalog is`() {
+        assertEquals(CalendarLine.NeedsUpdate, viewModel().state.value.calendarLine)
+
+        server.failure = ApiResult.Failure(FailureKind.NotFound, "no")
+        assertEquals(CalendarLine.NeedsUpdate, viewModel().state.value.calendarLine)
+    }
+
+    @Test
+    fun `the calendar line stays empty when the server cannot be reached`() {
+        server.failure = ApiResult.Failure(FailureKind.Network, "down")
+
+        assertNull(viewModel().state.value.calendarLine)
     }
 }
