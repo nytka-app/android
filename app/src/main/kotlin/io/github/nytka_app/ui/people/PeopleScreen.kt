@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -45,10 +46,16 @@ import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.ui.conversations.MAX_NAME
 import io.github.nytka_app.ui.conversations.NameVoiceDialog
 import io.github.nytka_app.ui.people.cards.CardsEffects
+import io.github.nytka_app.ui.people.cards.CardsUiState
 import io.github.nytka_app.ui.people.cards.CardsViewModel
+import io.github.nytka_app.ui.people.cards.ClipState
 import io.github.nytka_app.ui.people.cards.cardsSection
 import io.github.nytka_app.ui.people.review.ReviewInboxAction
+import io.github.nytka_app.ui.tags.ListEmpty
+import io.github.nytka_app.ui.tags.TagFilterAction
 import io.github.nytka_app.ui.tags.TagRow
+import io.github.nytka_app.ui.tags.tagFilterChipItem
+import io.github.nytka_app.ui.tags.tagFilterEmptyText
 
 /**
  * The People tab's list: the people Nytka knows and the voices it heard but nobody named. [onOpenPerson] opens
@@ -85,6 +92,7 @@ fun PeopleScreen(
             TopAppBar(
                 title = { Text(stringResource(R.string.people_title)) },
                 actions = {
+                    if (state.tagFilter) TagFilterAction(count = { it.people }, onPick = viewModel::showTag)
                     ReviewInboxAction(onOpenReview)
                     SettingsMenu(onOpenSettings)
                 },
@@ -104,6 +112,11 @@ fun PeopleScreen(
                     .padding(padding),
         ) {
             LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
+                tagFilterChipItem(
+                    state.tag,
+                    onClear = viewModel::clearTag,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
                 state.error?.let { error ->
                     item {
                         Column(Modifier.padding(horizontal = 16.dp)) {
@@ -112,36 +125,7 @@ fun PeopleScreen(
                         }
                     }
                 }
-                if (state.error == null) {
-                    cardsSection(cards.cards, clip, cards.busy, state.people, cardsViewModel, viewModel::refresh)
-                    item { SectionTitle(stringResource(R.string.people_section)) }
-                    if (state.people.isEmpty() && !state.loading) {
-                        item { Empty(stringResource(R.string.no_people_yet)) }
-                    }
-                    items(state.people, key = { "p" + it.id }) { person ->
-                        ListItem(
-                            headlineContent = { Text(person.name) },
-                            supportingContent = {
-                                Column {
-                                    Text(personLine(person, state.hasSummaries))
-                                    TagRow(person.tags, Modifier.padding(top = 4.dp))
-                                }
-                            },
-                            modifier = Modifier.clickable { viewModel.tap(person, onOpenPerson) },
-                        )
-                    }
-                    item { SectionTitle(stringResource(R.string.unnamed_voices_section)) }
-                    if (state.voices.isEmpty() && !state.loading) {
-                        item { Empty(stringResource(R.string.no_unnamed_voices)) }
-                    }
-                    items(state.voices, key = { "v" + it.speakerId }) { voice ->
-                        ListItem(
-                            headlineContent = { Text(voiceTitle(voice)) },
-                            supportingContent = { Text(voiceLine(voice)) },
-                            modifier = Modifier.clickable { viewModel.openVoice(voice) },
-                        )
-                    }
-                }
+                if (state.error == null) peopleContent(state, cards, clip, viewModel, cardsViewModel, onOpenPerson)
             }
         }
     }
@@ -170,6 +154,51 @@ fun PeopleScreen(
                 onDismiss = viewModel::dismissDialog,
                 onSave = { viewModel.nameVoice(dialog.voice, it) },
             )
+    }
+}
+
+private fun LazyListScope.peopleContent(
+    state: PeopleUiState,
+    cards: CardsUiState,
+    clip: ClipState,
+    viewModel: PeopleViewModel,
+    cardsViewModel: CardsViewModel,
+    onOpenPerson: ((String) -> Unit)?,
+) {
+    // Cards and unnamed voices are about the whole list; a tag filter leaves only the people.
+    if (state.tag == null) {
+        cardsSection(cards.cards, clip, cards.busy, state.people, cardsViewModel, viewModel::refresh)
+    }
+    item { SectionTitle(stringResource(R.string.people_section)) }
+    when (state.empty) {
+        ListEmpty.Empty -> item { Empty(stringResource(R.string.no_people_yet)) }
+        ListEmpty.EmptyForTag -> item { Empty(tagFilterEmptyText(state.tag.orEmpty())) }
+        ListEmpty.NotEmpty -> Unit
+    }
+    items(state.people, key = { "p" + it.id }) { person ->
+        ListItem(
+            headlineContent = { Text(person.name) },
+            supportingContent = {
+                Column {
+                    Text(personLine(person, state.hasSummaries))
+                    TagRow(person.tags, Modifier.padding(top = 4.dp))
+                }
+            },
+            modifier = Modifier.clickable { viewModel.tap(person, onOpenPerson) },
+        )
+    }
+    if (state.tag == null) {
+        item { SectionTitle(stringResource(R.string.unnamed_voices_section)) }
+        if (state.voices.isEmpty() && !state.loading) {
+            item { Empty(stringResource(R.string.no_unnamed_voices)) }
+        }
+        items(state.voices, key = { "v" + it.speakerId }) { voice ->
+            ListItem(
+                headlineContent = { Text(voiceTitle(voice)) },
+                supportingContent = { Text(voiceLine(voice)) },
+                modifier = Modifier.clickable { viewModel.openVoice(voice) },
+            )
+        }
     }
 }
 

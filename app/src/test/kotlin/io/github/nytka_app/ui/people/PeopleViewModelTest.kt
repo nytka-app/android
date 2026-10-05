@@ -12,7 +12,9 @@ import io.github.nytka_app.core.api.Tag
 import io.github.nytka_app.core.api.TagSuggestion
 import io.github.nytka_app.core.api.TagsClient
 import io.github.nytka_app.core.api.UnnamedVoice
+import io.github.nytka_app.ui.tags.ListEmpty
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -422,5 +424,56 @@ class PeopleViewModelTest {
 
         assertEquals(updateNeeded, viewModel.state.value.error)
         assertEquals("repairman", viewModel.state.value.tag)
+    }
+
+    @Test
+    fun `the tag action shows only on a server with the tags feature`() {
+        assertFalse(newViewModel().state.value.tagFilter)
+
+        info = withTags
+        assertTrue(newViewModel().state.value.tagFilter)
+
+        info = failure(FailureKind.Network)
+        assertFalse(newViewModel().state.value.tagFilter)
+        assertTrue(tagLists.requested.isEmpty())
+    }
+
+    @Test
+    fun `a filtered list with nobody in it is EmptyForTag`() {
+        api.people = ApiResult.Ok(listOf(anna))
+        tagLists.people = ApiResult.Ok(emptyList())
+        info = withTags
+        val viewModel = newViewModel()
+
+        viewModel.showTag("repairman")
+
+        assertEquals(ListEmpty.EmptyForTag, viewModel.state.value.empty)
+        assertTrue(viewModel.state.value.tagFilter)
+    }
+
+    @Test
+    fun `an empty full list is Empty, and a list with people or an error is not`() {
+        api.people = ApiResult.Ok(emptyList())
+        assertEquals(ListEmpty.Empty, newViewModel().state.value.empty)
+
+        api.people = ApiResult.Ok(listOf(anna))
+        assertEquals(ListEmpty.NotEmpty, newViewModel().state.value.empty)
+
+        api.people = failure(FailureKind.Network)
+        assertEquals(ListEmpty.NotEmpty, newViewModel().state.value.empty)
+    }
+
+    @Test
+    fun `clearing an empty filter leaves EmptyForTag`() {
+        api.people = ApiResult.Ok(listOf(anna))
+        tagLists.people = ApiResult.Ok(emptyList())
+        info = withTags
+        val viewModel = newViewModel()
+        viewModel.showTag("repairman")
+
+        viewModel.clearTag()
+
+        assertEquals(ListEmpty.NotEmpty, viewModel.state.value.empty)
+        assertNull(viewModel.state.value.tag)
     }
 }

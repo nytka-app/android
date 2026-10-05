@@ -13,6 +13,8 @@ import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.TagsClient
 import io.github.nytka_app.core.api.UnnamedVoice
 import io.github.nytka_app.ui.conversations.Formatting
+import io.github.nytka_app.ui.tags.ListEmpty
+import io.github.nytka_app.ui.tags.listEmpty
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -99,7 +101,11 @@ data class PeopleUiState(
     val note: PeopleNotice? = null,
     /** The tag the list is filtered by; kept in saved state, so it survives rotation but not a launch. */
     val tag: String? = null,
-)
+    /** `/info` lists `tags`: the screen offers the tag action. */
+    val tagFilter: Boolean = false,
+) {
+    val empty: ListEmpty get() = listEmpty(people.isEmpty(), loading, error != null, tag)
+}
 
 @HiltViewModel
 class PeopleViewModel
@@ -150,7 +156,8 @@ class PeopleViewModel
                 val filter = mutableState.value.tag
                 val people = if (filter == null) api.people() else tags.people(filter)
                 val voices = if (filter == null) api.voices() else ApiResult.Ok(emptyList())
-                val personPages = (info.info() as? ApiResult.Ok)?.value?.has(ServerInfo.FEATURE_PEOPLE) == true
+                val features = (info.info() as? ApiResult.Ok)?.value
+                val personPages = features?.has(ServerInfo.FEATURE_PEOPLE) == true
                 val failure = (people as? ApiResult.Failure) ?: (voices as? ApiResult.Failure)
                 mutableState.update { current ->
                     // The filter changed while this read was out: a newer refresh brings the right list.
@@ -164,6 +171,7 @@ class PeopleViewModel
                             people = sorted(list),
                             voices = (voices as ApiResult.Ok).value,
                             personPages = personPages,
+                            tagFilter = features?.has(ServerInfo.FEATURE_TAGS) == true,
                             hasSummaries = list.any { it.lastSeenAt != null || it.factCount != null },
                             loading = false,
                         )

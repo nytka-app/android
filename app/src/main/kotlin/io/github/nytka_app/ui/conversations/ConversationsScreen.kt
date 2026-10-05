@@ -25,6 +25,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -42,7 +43,11 @@ import io.github.nytka_app.ui.StatusCard
 import io.github.nytka_app.ui.StatusUiState
 import io.github.nytka_app.ui.search.SEARCH_ENABLED
 import io.github.nytka_app.ui.search.SearchScreen
+import io.github.nytka_app.ui.tags.ListEmpty
+import io.github.nytka_app.ui.tags.TagFilterAction
 import io.github.nytka_app.ui.tags.TagRow
+import io.github.nytka_app.ui.tags.tagFilterChipItem
+import io.github.nytka_app.ui.tags.tagFilterEmptyText
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -127,6 +132,7 @@ fun ConversationsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
+    val tagFilter by viewModel.tagFilter.collectAsStateWithLifecycle()
     LaunchedEffect(deleted) { deleted?.let(viewModel::forget) }
     LaunchedEffect(tagRequest) {
         tagRequest?.let {
@@ -145,7 +151,16 @@ fun ConversationsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            if (SEARCH_ENABLED) item { SearchButton(onSearch) }
+            if (SEARCH_ENABLED || tagFilter) {
+                item {
+                    TopActions(
+                        tagFilter,
+                        onPickTag = viewModel::showTag,
+                        onSearch = onSearch.takeIf { SEARCH_ENABLED },
+                    )
+                }
+            }
+            tagFilterChipItem(state.tag, onClear = viewModel::clearTag)
             item { StatusCard(status, onMute, notice) }
             state.error?.let { error ->
                 item {
@@ -201,19 +216,33 @@ fun ConversationsScreen(
             if (state.days.isNotEmpty() && !state.endReached) {
                 item(key = "more") { LaunchedEffect(state.days.sumOf { it.rows.size }) { viewModel.loadMore() } }
             }
-            if (state.days.isEmpty() && !state.loading && state.error == null) {
-                item { Text(stringResource(R.string.no_conversations_yet)) }
+            when (state.empty) {
+                ListEmpty.Empty -> item { Text(stringResource(R.string.no_conversations_yet)) }
+                ListEmpty.EmptyForTag -> item { Text(tagFilterEmptyText(state.tag.orEmpty())) }
+                ListEmpty.NotEmpty -> Unit
             }
         }
     }
 }
 
+/** The tab has no top bar: its actions sit in a row above the list. */
 @Composable
-private fun SearchButton(onClick: () -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-        IconButton(
-            onClick = onClick,
-        ) { Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.action_search)) }
+private fun TopActions(
+    tagFilter: Boolean,
+    onPickTag: (String) -> Unit,
+    onSearch: (() -> Unit)?,
+) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (tagFilter) TagFilterAction(count = { it.conversations }, onPick = onPickTag)
+        if (onSearch != null) {
+            IconButton(
+                onClick = onSearch,
+            ) { Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.action_search)) }
+        }
     }
 }
 
