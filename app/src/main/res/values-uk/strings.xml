@@ -331,4 +331,17 @@
     <string name="suggestion_reject_format">Не %1$s</string>
     <string name="suggestion_failed">Не вдалося зберегти відповідь.</string>
     <string name="open_person">Відкрити цю людину</string>
+    <!-- People: review inbox (A-P5) -->
+    <string name="review_title">Перевірка</string>
+    <string name="review_inbox_content_description">Вхідні на перевірку</string>
+    <string name="review_empty">Ніщо не чекає на вашу відповідь.</string>
+    <string name="review_someone">хтось</string>
+    <string name="review_name_question_format">Це %1$s?</string>
+    <string name="review_label_yours">Це ви сказали?</string>
+    <string name="review_label_other">Це хтось інший?</string>
+    <string name="review_similarity_format">збіг %1$d%%</string>
+    <string name="review_yes">Так</string>
+    <string name="review_no">Ні</string>
+    <string name="review_not_them">Не він</string>
+    <string name="review_already_answered">На це вже відповіли.</string>
 </resources>

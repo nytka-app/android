@@ -117,6 +117,11 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   model it holds (Nytka's own voice model of the person goes with any delete). Adding a fact that
   exists, or taking a name someone has, says so under the field. A server without the page says it
   needs an update. Facts and notes need an admin token to change.
+  **Review inbox**: when the server lists the `review` feature and something waits, an inbox icon with
+  a count sits in the top bar. It lists name suggestions ("Is this Olena?" with the line that carries
+  the name), voice matches (with the similarity) and lines Nytka is unsure are yours ("Did you say
+  this?"), each with **Yes** and **No**. Nothing is applied until you tap; the row goes at once and
+  comes back if the server refuses. Tap a row to open its conversation. Needs an admin token.
 - **Ask.** A placeholder that says "Arrives in a later version".
 - **Device.** The pendant, its storage and settings, the server, the settings,
   [Your voice](#your-voice) and the version.
