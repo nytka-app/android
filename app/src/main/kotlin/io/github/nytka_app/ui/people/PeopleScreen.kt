@@ -38,10 +38,10 @@ import io.github.nytka_app.R
 import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.ui.conversations.MAX_NAME
 import io.github.nytka_app.ui.conversations.NameVoiceDialog
-import io.github.nytka_app.ui.people.review.ReviewInboxAction
 import io.github.nytka_app.ui.people.cards.CardsEffects
 import io.github.nytka_app.ui.people.cards.CardsViewModel
 import io.github.nytka_app.ui.people.cards.cardsSection
+import io.github.nytka_app.ui.people.review.ReviewInboxAction
 
 /**
  * The People tab's list: the people Nytka knows and the voices it heard but nobody named. [onOpenPerson] opens
