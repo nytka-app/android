@@ -338,6 +338,26 @@
     <string name="suggestion_unknown_voice">Голос</string>
     <string name="suggestion_accept">Прийняти</string>
     <string name="suggestion_reject_format">Не %1$s</string>
+    <string name="accept_all_format">Прийняти всі %1$d</string>
+    <plurals name="accept_all_description">
+        <item quantity="one">Прийняти %1$d пропозицію для %2$s</item>
+        <item quantity="few">Прийняти всі %1$d пропозиції для %2$s</item>
+        <item quantity="many">Прийняти всі %1$d пропозицій для %2$s</item>
+        <item quantity="other">Прийняти всі %1$d пропозиції для %2$s</item>
+    </plurals>
+    <plurals name="accept_all_added">
+        <item quantity="one">%2$s: додано %1$d голос.</item>
+        <item quantity="few">%2$s: додано %1$d голоси.</item>
+        <item quantity="many">%2$s: додано %1$d голосів.</item>
+        <item quantity="other">%2$s: додано %1$d голосу.</item>
+    </plurals>
+    <plurals name="accept_all_skipped">
+        <item quantity="one">Пропущено: %1$d.</item>
+        <item quantity="few">Пропущено: %1$d.</item>
+        <item quantity="many">Пропущено: %1$d.</item>
+        <item quantity="other">Пропущено: %1$d.</item>
+    </plurals>
+    <string name="accept_all_disagree">Ці пропозиції суперечать одна одній. Прийміть їх по одній.</string>
     <string name="suggestion_failed">Не вдалося зберегти відповідь.</string>
     <string name="open_person">Відкрити цю людину</string>
     <!-- People: review inbox (A-P5) -->

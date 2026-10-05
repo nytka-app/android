@@ -2,12 +2,14 @@ package io.github.nytka_app.ui.conversations
 
 import androidx.lifecycle.SavedStateHandle
 import io.github.nytka_app.MainDispatcherRule
+import io.github.nytka_app.core.api.AcceptedByName
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.ConversationDetail
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.Segment
 import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.ui.conversations.FakeReview.Companion.suggestion
+import io.github.nytka_app.ui.people.AcceptAllNotice
 import io.github.nytka_app.ui.people.RoleNotice
 import io.github.nytka_app.ui.people.SuggestionWording
 import io.github.nytka_app.ui.tags.FakeTags
@@ -342,5 +344,154 @@ class ConversationSuggestionsTest {
 
         assertEquals(SuggestionWording.RoleOnly("repairman"), state.banner?.wording)
         assertEquals(listOf("work"), state.tagProposals.map { it.name })
+    }
+
+    @Test
+    fun `a name shared by several pending suggestions offers to accept all of them`() {
+        review.pending = ApiResult.Ok(listOf(suggestion("s1", name = "Аня", sameName = 16)))
+
+        assertEquals(
+            16,
+            viewModel()
+                .state.value.banner
+                ?.acceptAllCount,
+        )
+    }
+
+    @Test
+    fun `without sameName, or with one, the banner offers no accept all`() {
+        review.pending = ApiResult.Ok(listOf(suggestion("s1")))
+        assertEquals(
+            0,
+            viewModel()
+                .state.value.banner
+                ?.acceptAllCount,
+        )
+
+        review.pending = ApiResult.Ok(listOf(suggestion("s1", sameName = 1)))
+        assertEquals(
+            0,
+            viewModel()
+                .state.value.banner
+                ?.acceptAllCount,
+        )
+    }
+
+    @Test
+    fun `a role alone offers no accept all`() {
+        withRoles()
+        review.pending =
+            ApiResult.Ok(listOf(suggestion("s1", name = "Repairman", role = "repairman", named = false, sameName = 3)))
+
+        assertEquals(
+            0,
+            viewModel()
+                .state.value.banner
+                ?.acceptAllCount,
+        )
+    }
+
+    @Test
+    fun `accept all posts the name on the tap, drops the rows of the name in any case and reads again`() {
+        withSegments(voice)
+        review.pending =
+            ApiResult.Ok(
+                listOf(
+                    suggestion("s1", name = "Аня", confidence = 0.9, sameName = 3),
+                    suggestion("s2", name = "аня", confidence = 0.5, sameName = 3),
+                    suggestion("s3", name = "Іван", confidence = 0.4),
+                ),
+            )
+        review.acceptAll = ApiResult.Ok(AcceptedByName("p1", 2, 1))
+        val model = viewModel()
+        assertTrue(review.acceptedAll.isEmpty())
+        val listed = review.listed
+
+        model.acceptAllByName()
+
+        assertEquals(listOf("Аня"), review.acceptedAll)
+        assertEquals(AcceptAllNotice.Added("Аня", 2, 1), model.state.value.acceptAllNotice)
+        assertEquals(
+            "s3",
+            model.state.value.banner
+                ?.id,
+        )
+        assertEquals(listed + 1, review.listed)
+        assertFalse(
+            model.state.value.banner!!
+                .busy,
+        )
+    }
+
+    @Test
+    fun `accept all that disagrees keeps the rows and says so`() {
+        review.pending = ApiResult.Ok(listOf(suggestion("s1", name = "Аня", sameName = 2)))
+        review.acceptAll = ApiResult.Failure(FailureKind.Conflict, "Conflict.")
+        val model = viewModel()
+        val listed = review.listed
+
+        model.acceptAllByName()
+
+        assertEquals(AcceptAllNotice.Disagree, model.state.value.acceptAllNotice)
+        assertEquals(
+            "s1",
+            model.state.value.banner
+                ?.id,
+        )
+        assertEquals(listed, review.listed)
+    }
+
+    @Test
+    fun `a 404 for suggestions that were answered elsewhere reads again and says nothing`() {
+        review.pending = ApiResult.Ok(listOf(suggestion("s1", name = "Аня", sameName = 2)))
+        val model = viewModel()
+        review.pending = ApiResult.Ok(emptyList())
+        review.acceptAll = ApiResult.Failure(FailureKind.NotFound, "Not found.")
+
+        model.acceptAllByName()
+
+        assertNull(model.state.value.banner)
+        assertNull(model.state.value.acceptAllNotice)
+    }
+
+    @Test
+    fun `a 404 while the rows are still pending means an old server, so the button goes for the session`() {
+        review.pending = ApiResult.Ok(listOf(suggestion("s1", name = "Аня", sameName = 2)))
+        review.acceptAll = ApiResult.Failure(FailureKind.NotFound, "Not found.")
+        val model = viewModel()
+
+        model.acceptAllByName()
+
+        assertEquals(AcceptAllNotice.NeedsUpdate, model.state.value.acceptAllNotice)
+        assertEquals(
+            0,
+            model.state.value.banner
+                ?.acceptAllCount,
+        )
+        assertEquals(
+            "s1",
+            model.state.value.banner
+                ?.id,
+        )
+    }
+
+    @Test
+    fun `accept all that is refused or fails keeps the rows with a notice`() {
+        review.pending = ApiResult.Ok(listOf(suggestion("s1", name = "Аня", sameName = 2)))
+        review.acceptAll = ApiResult.Failure(FailureKind.Forbidden, "Forbidden.")
+        val model = viewModel()
+
+        model.acceptAllByName()
+        assertEquals(AcceptAllNotice.NeedsAdmin, model.state.value.acceptAllNotice)
+
+        review.acceptAll = ApiResult.Failure(FailureKind.Network, "No connection.")
+        model.acceptAllNoticeShown()
+        model.acceptAllByName()
+        assertEquals(AcceptAllNotice.Failed, model.state.value.acceptAllNotice)
+        assertEquals(
+            2,
+            model.state.value.banner
+                ?.acceptAllCount,
+        )
     }
 }

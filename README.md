@@ -90,6 +90,12 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   Accept names the voice, so every line of it shows the name; Not Olena keeps the name from being
   suggested again for that voice. Nothing is applied until you tap. Tap a person's name above a run
   to open their page in the People tab. Needs server 0.14.0 and an admin token.
+  When the same name is suggested for several voices (the server sends `sameName`, 0.21.0 and later), a
+  third button **Accept all 16** accepts every pending suggestion of that name at once, in the banner and
+  in the inbox, and says "Added 16 voices to Olena", with "2 skipped" when some no longer applied. It
+  sits beside Accept and never runs by itself. If the pending ones disagree, nothing changes and the app
+  says to accept them one by one. A server without the route answers 404: the app says it needs an
+  update and hides the button until the screen is opened again.
   On a server that lists `roles` the suggestion may be a role: someone known by what they do before you
   know their name. A role alone reads "A voice may be the repairman" with **Add as repairman** and **Not
   that**; a name and a role read "A voice may be Mykola, the repairman". The role is shown as the server

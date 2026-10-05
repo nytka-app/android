@@ -14,10 +14,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.people.AcceptAllButton
+import io.github.nytka_app.ui.people.AcceptAllNotice
+import io.github.nytka_app.ui.people.acceptAllNoticeText
 import io.github.nytka_app.ui.people.acceptText
 import io.github.nytka_app.ui.people.rejectText
 import io.github.nytka_app.ui.people.title
@@ -29,6 +33,7 @@ fun SuggestionBanner(
     onAccept: () -> Unit,
     onReject: () -> Unit,
     modifier: Modifier = Modifier,
+    onAcceptAll: () -> Unit = {},
 ) {
     ElevatedCard(modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -51,8 +56,26 @@ fun SuggestionBanner(
                 TextButton(onClick = onAccept, enabled = !banner.busy) {
                     Text(banner.wording.acceptText())
                 }
+                if (banner.acceptAllCount > 1) {
+                    AcceptAllButton(banner.acceptAllCount, banner.name, enabled = !banner.busy, onClick = onAcceptAll)
+                }
             }
         }
+    }
+}
+
+/** Shows the sentence for an "accept all" once in [host], then calls [shown]. */
+@Composable
+fun AcceptAllNoticeEffect(
+    notice: AcceptAllNotice?,
+    host: SnackbarHostState,
+    shown: () -> Unit,
+) {
+    val context = LocalContext.current
+    LaunchedEffect(notice) {
+        notice ?: return@LaunchedEffect
+        host.showSnackbar(acceptAllNoticeText(context, notice))
+        shown()
     }
 }
 
@@ -77,7 +100,8 @@ fun LazyListScope.suggestion(
     banner: SuggestionBannerState?,
     onAccept: () -> Unit,
     onReject: () -> Unit,
+    onAcceptAll: () -> Unit,
 ) {
     banner ?: return
-    item(key = "suggestion") { SuggestionBanner(banner, onAccept, onReject) }
+    item(key = "suggestion") { SuggestionBanner(banner, onAccept, onReject, onAcceptAll = onAcceptAll) }
 }

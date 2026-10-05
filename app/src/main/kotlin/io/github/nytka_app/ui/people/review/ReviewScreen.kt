@@ -45,7 +45,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.ReviewItem
+import io.github.nytka_app.ui.people.AcceptAllButton
 import io.github.nytka_app.ui.people.SuggestionWording
+import io.github.nytka_app.ui.people.addedAllText
 import io.github.nytka_app.ui.people.lastSeenText
 import io.github.nytka_app.ui.people.question
 
@@ -132,10 +134,13 @@ fun ReviewScreen(
                         item,
                         state.tagPeople[item.id],
                         state.roles,
+                        if (state.acceptAllAvailable) state.sameNames[item.id] ?: 1 else 1,
+                        !state.busy,
                         onOpenConversation,
                         onOpenPerson,
                         viewModel::accept,
                         viewModel::reject,
+                        viewModel::acceptAll,
                     )
                     HorizontalDivider()
                 }
@@ -149,12 +154,15 @@ private fun ReviewRowView(
     item: ReviewItem,
     personName: String?,
     roles: Boolean,
+    sameName: Int,
+    acceptAllEnabled: Boolean,
     onOpenConversation: (String) -> Unit,
     onOpenPerson: (String) -> Unit,
     onAccept: (ReviewItem) -> Unit,
     onReject: (ReviewItem) -> Unit,
+    onAcceptAll: (ReviewItem) -> Unit,
 ) {
-    val row = ReviewRow.of(item, roles) ?: return
+    val row = ReviewRow.of(item, roles, sameName) ?: return
     val question = reviewQuestion(row, personName)
     // A person's tag opens the person; every other row its conversation.
     val opens: (() -> Unit)? =
@@ -185,6 +193,9 @@ private fun ReviewRowView(
                 Text(
                     stringResource(if (row is ReviewRow.VoiceMatch) R.string.review_not_them else R.string.review_no),
                 )
+            }
+            if (row is ReviewRow.NameSuggestion && row.named && row.sameName > 1) {
+                row.name?.let { AcceptAllButton(row.sameName, it, acceptAllEnabled, { onAcceptAll(item) }) }
             }
         }
     }
@@ -223,6 +234,8 @@ internal fun reviewNoticeText(
         ReviewNotice.AlreadyAnswered -> context.getString(R.string.review_already_answered)
         ReviewNotice.TagLimit -> context.getString(R.string.tag_too_many)
         is ReviewNotice.MergedInto -> context.getString(R.string.role_merged_format, notice.name)
+        is ReviewNotice.AddedAll -> addedAllText(context, notice.name, notice.accepted, notice.skipped)
+        ReviewNotice.AcceptAllDisagree -> context.getString(R.string.accept_all_disagree)
         is ReviewNotice.Failed ->
             when {
                 notice.kind == FailureKind.NotFound && notice.item -> context.getString(R.string.item_no_longer_exists)

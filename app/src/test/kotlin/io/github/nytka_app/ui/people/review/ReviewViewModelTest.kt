@@ -1,6 +1,7 @@
 package io.github.nytka_app.ui.people.review
 
 import io.github.nytka_app.MainDispatcherRule
+import io.github.nytka_app.core.api.AcceptedByName
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.InfoClient
@@ -47,7 +48,17 @@ class ReviewViewModelTest {
                 if (it is ApiResult.Failure) it else ApiResult.Ok(accepted)
             }
 
-        override suspend fun suggestions(): ApiResult<List<NameSuggestion>> = ApiResult.Ok(emptyList())
+        /** The pending suggestions, which carry `sameName`. */
+        var pending: ApiResult<List<NameSuggestion>> = ApiResult.Ok(emptyList())
+        var acceptAll: ApiResult<AcceptedByName> = ApiResult.Ok(AcceptedByName("p1", 2, 0))
+        val acceptedAll = mutableListOf<String>()
+
+        override suspend fun suggestions(): ApiResult<List<NameSuggestion>> = pending
+
+        override suspend fun acceptAllByName(name: String): ApiResult<AcceptedByName> {
+            acceptedAll += name
+            return acceptAll
+        }
 
         override suspend fun answerSuggestion(
             id: String,
@@ -362,5 +373,118 @@ class ReviewViewModelTest {
         api.accepted = "other"
         viewModel.reject(voice)
         assertNull(viewModel.state.value.note)
+    }
+
+    private val anya1 = name.copy(id = "a1", proposal = ReviewProposal(name = "Аня"))
+    private val anya2 = name.copy(id = "a2", proposal = ReviewProposal(name = "аня"))
+    private val ivan = name.copy(id = "i1", proposal = ReviewProposal(name = "Іван"))
+
+    private fun sameName(vararg pairs: Pair<String, Int>) =
+        ApiResult.Ok(pairs.map { (id, n) -> NameSuggestion(id = id, name = "x", sameName = n) })
+
+    @Test
+    fun `a name row gets its sameName from the suggestions, others and an absent field get none`() {
+        api.list = ApiResult.Ok(listOf(anya1, ivan, voice))
+        api.pending = sameName("a1" to 16, "i1" to 1)
+
+        val state = newViewModel().state.value
+
+        assertEquals(mapOf("a1" to 16), state.sameNames)
+        assertEquals(ReviewRow.NameSuggestion("Аня", sameName = 16), ReviewRow.of(anya1, sameName = 16))
+        assertEquals(ReviewRow.NameSuggestion("Аня"), ReviewRow.of(anya1))
+    }
+
+    @Test
+    fun `a failed suggestions read leaves the rows as they are`() {
+        api.list = ApiResult.Ok(listOf(anya1))
+        api.pending = failure(FailureKind.NotFound)
+
+        val state = newViewModel().state.value
+
+        assertTrue(state.sameNames.isEmpty())
+        assertEquals(listOf(anya1), state.items)
+    }
+
+    @Test
+    fun `accept all drops every row of the name and says how many, nothing before the tap`() {
+        api.list = ApiResult.Ok(listOf(anya1, ivan, anya2))
+        api.pending = sameName("a1" to 2, "a2" to 2)
+        api.acceptAll = ApiResult.Ok(AcceptedByName("p1", 2, 1))
+        val viewModel = newViewModel()
+        assertTrue(api.acceptedAll.isEmpty())
+        api.list = ApiResult.Ok(listOf(ivan))
+
+        viewModel.acceptAll(anya1)
+
+        assertEquals(listOf("Аня"), api.acceptedAll)
+        assertEquals(listOf(ivan), viewModel.state.value.items)
+        assertEquals(ReviewNotice.AddedAll("Аня", 2, 1), viewModel.state.value.note)
+        assertFalse(viewModel.state.value.busy)
+    }
+
+    @Test
+    fun `accept all that disagrees keeps every row`() {
+        api.list = ApiResult.Ok(listOf(anya1, anya2))
+        api.pending = sameName("a1" to 2, "a2" to 2)
+        api.acceptAll = failure(FailureKind.Conflict)
+        val viewModel = newViewModel()
+
+        viewModel.acceptAll(anya1)
+
+        assertEquals(listOf(anya1, anya2), viewModel.state.value.items)
+        assertEquals(ReviewNotice.AcceptAllDisagree, viewModel.state.value.note)
+        assertEquals(1, api.listCalls)
+    }
+
+    @Test
+    fun `a 404 for rows answered elsewhere reads the list again and says they were answered`() {
+        api.list = ApiResult.Ok(listOf(anya1, anya2))
+        api.pending = sameName("a1" to 2, "a2" to 2)
+        api.acceptAll = failure(FailureKind.NotFound)
+        val viewModel = newViewModel()
+        api.list = ApiResult.Ok(emptyList())
+
+        viewModel.acceptAll(anya1)
+
+        assertTrue(
+            viewModel.state.value.items
+                .isEmpty(),
+        )
+        assertEquals(ReviewNotice.AlreadyAnswered, viewModel.state.value.note)
+        assertTrue(viewModel.state.value.acceptAllAvailable)
+    }
+
+    @Test
+    fun `a 404 while the rows are still pending means an old server, so the button goes`() {
+        api.list = ApiResult.Ok(listOf(anya1, anya2))
+        api.pending = sameName("a1" to 2, "a2" to 2)
+        api.acceptAll = failure(FailureKind.NotFound)
+        val viewModel = newViewModel()
+
+        viewModel.acceptAll(anya1)
+
+        assertEquals(listOf(anya1, anya2), viewModel.state.value.items)
+        assertEquals(
+            ReviewNotice.Failed(FailureKind.NotFound, "The server answered.", item = false),
+            viewModel.state.value.note,
+        )
+        assertFalse(viewModel.state.value.acceptAllAvailable)
+    }
+
+    @Test
+    fun `accept all refused for a token or by the network keeps the rows with a notice`() {
+        api.list = ApiResult.Ok(listOf(anya1, anya2))
+        api.pending = sameName("a1" to 2, "a2" to 2)
+        api.acceptAll = failure(FailureKind.Forbidden)
+        val viewModel = newViewModel()
+
+        viewModel.acceptAll(anya1)
+
+        assertEquals(listOf(anya1, anya2), viewModel.state.value.items)
+        assertEquals(
+            ReviewNotice.Failed(FailureKind.Forbidden, "The server answered.", item = false),
+            viewModel.state.value.note,
+        )
+        assertTrue(viewModel.state.value.acceptAllAvailable)
     }
 }

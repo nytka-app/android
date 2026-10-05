@@ -1,6 +1,8 @@
 package io.github.nytka_app.core.api
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 @Serializable
 private data class ReviewList(
@@ -15,6 +17,13 @@ private data class SuggestionList(
 @Serializable
 private data class PersonRef(
     val id: String? = null,
+)
+
+@Serializable
+private data class AcceptedByNameBody(
+    val person: PersonRef? = null,
+    val accepted: Int = 0,
+    val skipped: Int = 0,
 )
 
 /**
@@ -47,6 +56,13 @@ interface ReviewClient {
      */
     suspend fun acceptSuggestion(id: String): ApiResult<String?> =
         answerSuggestion(id, accept = true).let { if (it is ApiResult.Failure) it else ApiResult.Ok(null) }
+
+    /**
+     * Accepts every pending suggestion of [name] (admin, server 0.21 and later), all or nothing. [FailureKind.NotFound]
+     * when none is pending, or on a server without the route; [FailureKind.Conflict] when they disagree or the name is
+     * that of a person known only by a role.
+     */
+    suspend fun acceptAllByName(name: String): ApiResult<AcceptedByName>
 
     /** As [acceptSuggestion] for the inbox item [kind] and [id]. */
     suspend fun acceptReview(
@@ -82,6 +98,16 @@ class ReviewApi(
 
     override suspend fun acceptSuggestion(id: String): ApiResult<String?> =
         api.request("POST", "api/v1/people/suggestions/$id/accept") { personId(it) }
+
+    override suspend fun acceptAllByName(name: String): ApiResult<AcceptedByName> =
+        api.request(
+            "POST",
+            "api/v1/people/suggestions/accept-by-name",
+            body = buildJsonObject { put("name", name) }.toString(),
+        ) {
+            val body = api.json.decodeFromString<AcceptedByNameBody>(it)
+            AcceptedByName(body.person?.id, body.accepted, body.skipped)
+        }
 
     override suspend fun acceptReview(
         kind: String,

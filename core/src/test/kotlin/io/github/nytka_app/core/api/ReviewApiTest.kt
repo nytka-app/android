@@ -215,4 +215,51 @@ class ReviewApiTest {
             assertEquals(true, suggestions[1].named)
             assertEquals(false, ok(api.review(10)).single().proposal.named)
         }
+
+    @Test
+    fun `a suggestion carries sameName, 1 where the server sends none`() =
+        runTest {
+            answer(200, """{"items":[{"id":"n1","name":"Аня","sameName":16},{"id":"n2","name":"Олена"}]}""")
+
+            val items = ok(api.suggestions())
+
+            assertEquals(16, items[0].sameName)
+            assertEquals(1, items[1].sameName)
+        }
+
+    @Test
+    fun `accepting every suggestion of a name posts the name and reads the person and counts`() =
+        runTest {
+            answer(200, """{"person":{"id":"p1","name":"Аня","named":true},"accepted":16,"skipped":2,"extra":1}""")
+
+            val result = ok(api.acceptAllByName("Аня"))
+
+            assertEquals(AcceptedByName("p1", 16, 2), result)
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertEquals("/api/v1/people/suggestions/accept-by-name", request.url.encodedPath)
+            assertEquals("""{"name":"Аня"}""", request.body?.utf8())
+        }
+
+    @Test
+    fun `a body without a person or counts still decodes`() =
+        runTest {
+            answer(200, "{}")
+
+            assertEquals(AcceptedByName(null, 0, 0), ok(api.acceptAllByName("Аня")))
+        }
+
+    @Test
+    fun `accepting by name maps the statuses`() =
+        runTest {
+            answer(404)
+            answer(409)
+            answer(403)
+            answer(400, """{"errors":{"name":["Required."]}}""")
+
+            assertEquals(FailureKind.NotFound, kind(api.acceptAllByName("Аня")))
+            assertEquals(FailureKind.Conflict, kind(api.acceptAllByName("Аня")))
+            assertEquals(FailureKind.Forbidden, kind(api.acceptAllByName("Аня")))
+            assertEquals(FailureKind.Invalid, kind(api.acceptAllByName(" ")))
+        }
 }

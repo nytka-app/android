@@ -21,8 +21,10 @@ import io.github.nytka_app.core.api.TagsClient
 import io.github.nytka_app.core.api.TasksClient
 import io.github.nytka_app.ui.ITEM_GONE
 import io.github.nytka_app.ui.itemNotice
+import io.github.nytka_app.ui.people.AcceptAllNotice
 import io.github.nytka_app.ui.people.RoleNotice
 import io.github.nytka_app.ui.people.SuggestionWording
+import io.github.nytka_app.ui.people.acceptAllFailure
 import io.github.nytka_app.ui.people.merged
 import io.github.nytka_app.ui.tags.ProposalOutcome
 import io.github.nytka_app.ui.tags.TagAccess
@@ -92,6 +94,8 @@ data class SuggestionBannerState(
     val named: Boolean = true,
     /** The person the suggestion points at, to tell a merge on accept. */
     val personId: String? = null,
+    /** Pending suggestions that share this name, when it can be accepted at once; 0 offers no such action. */
+    val acceptAllCount: Int = 0,
 ) {
     val wording: SuggestionWording get() = SuggestionWording.of(name, role, named)
 }
@@ -135,6 +139,7 @@ data class ConversationUiState(
     val deleted: Boolean = false,
     val banner: SuggestionBannerState? = null,
     val suggestionNotice: SuggestionNotice? = null,
+    val acceptAllNotice: AcceptAllNotice? = null,
     val roleNotice: RoleNotice? = null,
     val raw: String? = null,
     /** A message for a snackbar, until [ConversationViewModel.noteShown]. */
@@ -170,6 +175,9 @@ class ConversationViewModel
         private var segmentStarts: List<Instant> = emptyList()
         private var segments: List<Segment> = emptyList()
         private var suggestions: List<NameSuggestion> = emptyList()
+
+        /** The route answered 404 while its rows were still pending: an older server, so no button this time. */
+        private var acceptAllMissing = false
         private var answering = false
         private val proposals = TagProposalBook(tagsClient) { it.conversationId == id && it.personId == null }
         private var roles = false
@@ -304,6 +312,7 @@ class ConversationViewModel
                 role = best.role.takeIf { roles },
                 named = best.named,
                 personId = best.personId,
+                acceptAllCount = if (best.named && !acceptAllMissing) best.sameName.takeIf { it > 1 } ?: 0 else 0,
             )
         }
 
@@ -360,6 +369,59 @@ class ConversationViewModel
                 loadSuggestions()
             }
         }
+
+        /** Accepts every pending suggestion of the banner's name. Only a tap gets here. */
+        fun acceptAllByName() {
+            val banner = mutableState.value.banner ?: return
+            if (answering || banner.acceptAllCount == 0) return
+            setAnswering(true)
+            viewModelScope.launch {
+                try {
+                    when (val result = review.acceptAllByName(banner.name)) {
+                        is ApiResult.Ok -> {
+                            suggestions = suggestions.filterNot { sameName(it, banner.name) }
+                            mutableState.update { it.copy(banner = bannerOf()) }
+                            (api.conversation(id) as? ApiResult.Ok)?.let { mutableState.value = show(it.value) }
+                            loadSuggestions()
+                            val (_, accepted, skipped) = result.value
+                            mutableState.update {
+                                it.copy(acceptAllNotice = AcceptAllNotice.Added(banner.name, accepted, skipped))
+                            }
+                        }
+
+                        is ApiResult.Failure -> acceptAllFailed(banner, result.kind)
+                    }
+                } finally {
+                    setAnswering(false)
+                }
+            }
+        }
+
+        /**
+         * A `404` is either "answered elsewhere" or a server without the route; the list read again tells which: rows
+         * still pending mean the route is missing.
+         */
+        private suspend fun acceptAllFailed(
+            banner: SuggestionBannerState,
+            kind: FailureKind,
+        ) {
+            if (kind != FailureKind.NotFound) {
+                if (kind == FailureKind.Unsupported) acceptAllMissing = true
+                mutableState.update { it.copy(acceptAllNotice = acceptAllFailure(kind)) }
+                return
+            }
+            loadSuggestions()
+            if (suggestions.none { sameName(it, banner.name) }) return
+            acceptAllMissing = true
+            mutableState.update { it.copy(banner = bannerOf(), acceptAllNotice = AcceptAllNotice.NeedsUpdate) }
+        }
+
+        private fun sameName(
+            suggestion: NameSuggestion,
+            name: String,
+        ) = suggestion.name.lowercase() == name.lowercase()
+
+        fun acceptAllNoticeShown() = mutableState.update { it.copy(acceptAllNotice = null) }
 
         fun roleNoticeShown() = mutableState.update { it.copy(roleNotice = null) }
 
