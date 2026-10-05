@@ -129,10 +129,10 @@ class ConversationViewModelTest {
     @Test
     fun `the chip follows the ai status`() {
         api.detail = ApiResult.Ok(detail(aiStatus = "pending"))
-        assertEquals("Summarizing", viewModel().state.value.chip)
+        assertEquals(SummaryChip.Summarizing, viewModel().state.value.chip)
 
         api.detail = ApiResult.Ok(detail(aiStatus = "failed"))
-        assertEquals("Summary failed", viewModel().state.value.chip)
+        assertEquals(SummaryChip.Failed, viewModel().state.value.chip)
     }
 
     @Test
@@ -408,7 +408,7 @@ class ConversationViewModelTest {
         viewModel.regenerate()
 
         assertEquals(listOf("c1"), api.enriched)
-        assertEquals("Summarizing", viewModel.state.value.chip)
+        assertEquals(SummaryChip.Summarizing, viewModel.state.value.chip)
     }
 
     @Test

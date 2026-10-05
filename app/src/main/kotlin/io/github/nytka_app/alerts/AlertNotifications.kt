@@ -43,7 +43,7 @@ object AlertNotifications {
             NotificationCompat
                 .Builder(context, Notifier.ALERTS_CHANNEL)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentTitle("Nytka")
+                .setContentTitle(context.getString(R.string.app_name))
                 .setContentText(text(alert, inputs))
                 .setStyle(NotificationCompat.BigTextStyle().bigText(text(alert, inputs)))
                 .setContentIntent(open)

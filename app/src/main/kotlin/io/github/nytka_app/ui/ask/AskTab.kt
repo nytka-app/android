@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
@@ -35,6 +36,7 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.github.nytka_app.R
 
 /**
  * The Ask tab: a question about your history, answered with numbered sources. A source, or its `[n]` in the answer,
@@ -58,7 +60,7 @@ fun AskTab(
                 OutlinedTextField(
                     value = state.question,
                     onValueChange = viewModel::setQuestion,
-                    label = { Text("Ask about your conversations") },
+                    label = { Text(stringResource(R.string.ask_hint)) },
                     modifier = Modifier.weight(1f),
                     maxLines = 4,
                 )
@@ -70,7 +72,7 @@ fun AskTab(
                     )
                 } else {
                     IconButton(onClick = viewModel::ask, enabled = state.canAsk) {
-                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Ask")
+                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.action_ask))
                     }
                 }
             }
@@ -81,7 +83,7 @@ fun AskTab(
         state.result?.let { result ->
             item { Text(answerText(result.parts, linkColor, onOpenConversation)) }
             if (result.sources.isNotEmpty()) {
-                item { Text("Sources", style = MaterialTheme.typography.titleSmall) }
+                item { Text(stringResource(R.string.sources), style = MaterialTheme.typography.titleSmall) }
                 items(result.sources, key = { it.n }) { row ->
                     ListItem(
                         overlineContent = { Text(listOfNotNull("[${row.n}]", row.title).joinToString(" ")) },

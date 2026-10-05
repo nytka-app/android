@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- App -->
-    <string name="app_name">Nytka</string>
 
     <!-- Common -->
     <string name="action_back">Назад</string>
@@ -48,7 +47,7 @@
     <string name="frames_this_session">Кадрів у цій сесії: %d</string>
     <string name="queue_and_upload">Черга та вивантаження</string>
     <string name="queue_mb_format">Черга: %.1f МБ</string>
-    <string name="sealed_chunks_and_unsealed_format">Запечатані частини: %d, кадри ще не запечатані: %d</string>
+    <string name="sealed_chunks_and_unsealed_format">Запечатані частини: %1$d, кадри ще не запечатані: %2$d</string>
     <string name="chunks_dropped_at_cap">Відкинуто частин на межі черги: %d</string>
     <string name="uploaded_this_run">Вивантажено за цей запуск: %d</string>
     <string name="last_upload_none">Останнє вивантаження: відсутнє</string>
@@ -87,8 +86,13 @@
     <string name="no_conversations_yet">Розмов ще немає. Мовлення з\'являється тут за кілька хвилин після того, як його сказали</string>
     <string name="summary_failed">Не вдалося створити підсумок</string>
     <string name="summarizing">Створення підсумку</string>
-    <string name="time_range_and_length_format">%s · %s</string>
-    <string name="bookmarks_count_format">%d закладок</string>
+    <string name="time_range_and_length_format">%1$s · %2$s</string>
+    <plurals name="bookmarks_count_format">
+        <item quantity="one">%d закладка</item>
+        <item quantity="few">%d закладки</item>
+        <item quantity="many">%d закладок</item>
+        <item quantity="other">%d закладки</item>
+    </plurals>
     <string name="back_content_description">Назад</string>
     <string name="more_content_description">Ще</string>
     <string name="search_content_description">Пошук</string>
@@ -138,7 +142,12 @@
     <string name="people">Люди</string>
     <string name="people_description">Люди мають власну вкладку</string>
     <string name="about">Про застосунок</string>
-    <string name="taps_to_developer_format">Ще %d натискань до режиму розробника</string>
+    <plurals name="taps_to_developer_format">
+        <item quantity="one">Ще %d натискання до режиму розробника</item>
+        <item quantity="few">Ще %d натискання до режиму розробника</item>
+        <item quantity="many">Ще %d натискань до режиму розробника</item>
+        <item quantity="other">Ще %d натискання до режиму розробника</item>
+    </plurals>
     <string name="about_affiliation">Незалежний проєкт для кулона Omi; не пов\'язаний із Based Hardware</string>
     <string name="pairing_chooser_no_pendant">Список вибору не повернув жодного кулона</string>
     <string name="delete_conversation_title">Видалити цю розмову?</string>
@@ -398,4 +407,148 @@
     <string name="name_not_known">Ім\'я ще невідоме</string>
     <string name="action_add_name">Додати ім\'я</string>
     <string name="role_merged_format">Об\'єднано з %1$s: це ім\'я вже було в списку.</string>
+
+    <!-- More common -->
+    <string name="action_add">Додати</string>
+    <string name="action_edit">Редагувати</string>
+    <string name="action_remove">Прибрати</string>
+    <string name="action_stop">Зупинити</string>
+    <string name="action_discard">Відкинути</string>
+    <string name="action_discard_ellipsis">Відкинути…</string>
+    <string name="action_import">Імпортувати</string>
+    <string name="action_ok">Гаразд</string>
+    <string name="action_ask">Запитати</string>
+    <string name="action_bookmark">Додати закладку</string>
+    <string name="unknown">Невідомо</string>
+    <string name="never">ніколи</string>
+    <string name="unmute">Зі звуком</string>
+    <string name="settings">Налаштування</string>
+    <string name="arrives_in_later_version">З\'явиться в одній із наступних версій</string>
+
+    <!-- Status and tabs -->
+    <string name="muted">Звук вимкнено</string>
+    <string name="recording">Триває запис</string>
+    <string name="not_recording">Запис не триває</string>
+    <string name="capture_off">Вимкнено</string>
+    <string name="capture_waiting">Очікування</string>
+    <string name="pendant_battery_format">Батарея кулона: %s</string>
+    <string name="server_line_format">Сервер: %s</string>
+    <string name="queued_chunks_format">Частин у черзі: %d</string>
+    <string name="recording_channel">Запис</string>
+    <string name="alerts_channel">Сповіщення</string>
+
+    <!-- Webhooks screen -->
+    <string name="webhook_title">Вебхук</string>
+    <string name="add_webhook">Додати вебхук</string>
+    <string name="webhook_summary_format">%1$s · %2$s</string>
+    <string name="no_webhooks_yet">Вебхуків ще немає. Вебхук повідомляє інший інструмент, коли з\'являється нова розмова, завдання чи спогад</string>
+    <string name="all_events">Усі події</string>
+    <string name="webhook_last_delivery_format">остання: %s</string>
+    <string name="webhook_no_deliveries">доставок немає</string>
+    <string name="send_test">Надіслати тест</string>
+    <string name="deliveries">Доставки</string>
+    <string name="webhook_delivery_format">%1$s · %2$s</string>
+    <string name="no_deliveries_yet">Доставок ще немає</string>
+    <string name="delete_webhook_title">Видалити цей вебхук?</string>
+    <string name="delete_webhook_message">Його журнал доставок буде видалено разом із ним. Це не можна скасувати</string>
+    <string name="webhook_url_label">URL</string>
+    <string name="webhook_description_label">Опис (необов\'язково)</string>
+    <string name="signing_secret_title">Секрет підпису</string>
+    <string name="signing_secret_message_format">Скопіюйте його зараз. Його більше не буде показано, і він підписує все, що отримує %s</string>
+
+    <!-- Tokens screen -->
+    <string name="revoke_token_title_format">Скасувати «%s»?</string>
+    <string name="revoke_token_message">Усе, що використовує цей токен, одразу перестане працювати. Це не можна скасувати</string>
+    <string name="token_scope_format">Область: %s</string>
+    <string name="token_scope_hint_format">Область: %1$s, закінчується на %2$s</string>
+    <string name="token_created_format">Створено %s</string>
+    <string name="token_last_used_format">Востаннє використано %s</string>
+    <string name="token_revoked_format">Скасовано %s</string>
+    <string name="token_scope_read">Читання: розмови та завдання, а також MCP для агентів</string>
+    <string name="token_scope_admin">Адміністратор: усе, зокрема цей застосунок</string>
+    <string name="token_title_format">Токен «%s»</string>
+    <string name="token_copy_now_message">Скопіюйте його зараз. Сервер не зможе показати його вдруге</string>
+
+    <!-- Developer extras -->
+    <string name="send_diagnostics_to_server">Надсилати діагностику на мій сервер</string>
+    <string name="turn_off_developer_mode">Вимкнути режим розробника</string>
+    <string name="alert_thresholds">Пороги сповіщень</string>
+    <string name="pendant_disconnected_minutes">Кулон відключено, хвилин</string>
+    <string name="server_unreachable_minutes">Сервер недоступний, хвилин</string>
+    <string name="battery_percent_label">Батарея, відсотків</string>
+    <string name="save_thresholds">Зберегти пороги</string>
+
+    <!-- First run extras -->
+    <string name="pairing_step_description">Увімкніть кулон, тримайте його поруч із телефоном і виберіть його у списку, що відкриється</string>
+    <string name="set_up_later">Налаштувати пізніше</string>
+
+    <!-- Tasks extras -->
+    <string name="delete_task_title">Видалити це завдання?</string>
+    <string name="edit_task_title">Редагувати завдання</string>
+    <string name="task_label">Завдання</string>
+
+    <!-- Memories tab -->
+    <string name="no_memories_yet">Спогадів ще немає. Спогади — це сталі факти про вас, наприклад де ви працюєте чи що любите. Вони беруться з підсумованих розмов, або ви можете додати власний</string>
+    <string name="add_memory">Додати спогад</string>
+    <string name="delete_memory_title">Видалити цей спогад?</string>
+    <string name="delete_memory_message">Сервер більше не виводитиме цього з ваших розмов</string>
+    <string name="memory_options">Дії зі спогадом</string>
+    <string name="edit_memory_title">Редагувати спогад</string>
+    <string name="memory_label">Факт про вас</string>
+
+    <!-- Pendant storage -->
+    <string name="pendant_storage">Пам\'ять кулона</string>
+    <string name="sync_now">Синхронізувати зараз</string>
+    <string name="import_or_discard">Імпортувати чи відкинути…</string>
+    <string name="discard_audio_title">Відкинути збережене аудіо?</string>
+    <string name="discard_audio_message_format">Приблизно %s аудіо буде звільнено на кулоні без читання. Відновити його неможливо</string>
+    <string name="import_audio_title">Імпортувати збережене аудіо?</string>
+    <string name="import_audio_message_format">На кулоні є приблизно %s аудіо, записаного, коли телефона не було поруч. Імпорт читає все й вивантажує на ваш сервер, це займає певний час</string>
+
+    <!-- Device extras -->
+    <string name="no_server_set">Сервер не задано</string>
+    <string name="api_version_format">Версія API %d</string>
+    <string name="api_mismatch_format">Цей сервер працює з API версії %1$d, а цей застосунок — з %2$d. Оновіть той, що старіший</string>
+    <string name="check_again">Перевірити ще раз</string>
+    <string name="server_url_label">Адреса сервера</string>
+    <string name="token_keep_hint">Токен (залиште порожнім, щоб зберегти)</string>
+    <string name="allow_plain_http_title">Дозволити звичайний HTTP?</string>
+    <string name="allow_plain_http_message">Без HTTPS ваше аудіо та тексти передаються мережею без шифрування. Вмикайте це лише для сервера, до якого ви звертаєтеся через VPN або власну мережу, якій довіряєте</string>
+    <string name="app_version_format">Nytka %s</string>
+
+    <!-- Mute schedule -->
+    <string name="mute_schedule">Розклад без звуку</string>
+    <string name="mute_schedule_description">У ці проміжки нічого не записується, ніби ви вимкнули звук. Проміжок може тривати за північ</string>
+    <string name="add_window">Додати проміжок</string>
+    <string name="mute_applied_on_server">Також застосовано на вашому сервері</string>
+    <string name="mute_server_failed_format">Сервер не оновлено: %s Повторимо під час наступного збереження або запуску застосунку</string>
+    <string name="time_zone_hint_format">Часовий пояс вашого сервера — UTC або не задано, а цей телефон перебуває в %1$s. Задайте серверу %1$s, інакше проміжки діятимуть там у неправильні години</string>
+    <string name="set_server_time_zone_format">Задати серверу часовий пояс %s</string>
+    <string name="window_from_format">З %s</string>
+    <string name="window_to_format">До %s</string>
+    <string name="window_inactive_hint">Виберіть принаймні один день і різний час початку та кінця</string>
+
+    <!-- Pendant settings -->
+    <string name="pendant_settings">Налаштування кулона</string>
+    <string name="led_brightness">Яскравість світлодіода</string>
+    <string name="microphone_gain">Підсилення мікрофона</string>
+    <string name="pendant_settings_note">Кулон зберігає це у власній пам\'яті; на ваш сервер нічого не надсилається</string>
+
+    <!-- Conversation extras -->
+    <string name="bookmark_content_description">Закладка</string>
+    <string name="add_a_note">Додати нотатку</string>
+    <string name="bookmark_note_title">Нотатка до закладки</string>
+    <string name="note_label">Нотатка</string>
+    <string name="bookmark_note_hint">Залиште порожнім, щоб прибрати нотатку</string>
+    <string name="who_is_this_title">Хто це?</string>
+    <string name="speaker_name_hint">Те саме ім\'я в іншого голосу об\'єднує їх в одну людину</string>
+    <string name="title_label">Заголовок</string>
+    <string name="title_hint">Залиште порожнім, щоб використати створений заголовок</string>
+    <string name="play">Відтворити</string>
+    <string name="pause">Пауза</string>
+    <string name="audio_play_failed">Не вдалося відтворити аудіо</string>
+
+    <!-- Ask tab -->
+    <string name="ask_hint">Запитайте про свої розмови</string>
+    <string name="sources">Джерела</string>
 </resources>

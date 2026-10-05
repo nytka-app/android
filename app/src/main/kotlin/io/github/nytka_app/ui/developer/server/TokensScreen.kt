@@ -125,8 +125,8 @@ fun TokensScreen(
     revoking?.let { token ->
         AlertDialog(
             onDismissRequest = { revoking = null },
-            title = { Text("Revoke \"${token.name}\"?") },
-            text = { Text("Anything that uses this token stops working at once. This cannot be undone.") },
+            title = { Text(stringResource(R.string.revoke_token_title_format, token.name)) },
+            text = { Text(stringResource(R.string.revoke_token_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     revoking = null
@@ -150,14 +150,29 @@ private fun TokenCard(
     ElevatedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(token.name, style = MaterialTheme.typography.titleMedium)
-            Text("Scope ${token.scope}" + if (token.hint.isNotEmpty()) ", ends in ${token.hint}" else "")
-            Text("Created ${whenText(token.createdAt)}", style = MaterialTheme.typography.bodySmall)
             Text(
-                "Last used ${token.lastUsedAt?.let(::whenText) ?: "never"}",
+                if (token.hint.isNotEmpty()) {
+                    stringResource(R.string.token_scope_hint_format, token.scope, token.hint)
+                } else {
+                    stringResource(R.string.token_scope_format, token.scope)
+                },
+            )
+            Text(
+                stringResource(R.string.token_created_format, whenText(token.createdAt)),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            Text(
+                stringResource(
+                    R.string.token_last_used_format,
+                    token.lastUsedAt?.let { whenText(it) } ?: stringResource(R.string.never),
+                ),
                 style = MaterialTheme.typography.bodySmall,
             )
             if (token.revokedAt != null) {
-                Text("Revoked ${whenText(token.revokedAt)}", color = MaterialTheme.colorScheme.error)
+                Text(
+                    stringResource(R.string.token_revoked_format, whenText(token.revokedAt)),
+                    color = MaterialTheme.colorScheme.error,
+                )
             } else {
                 OutlinedButton(onClick = onRevoke) { Text(stringResource(R.string.revoke)) }
             }
@@ -186,8 +201,8 @@ private fun CreateDialog(
                     isError = error != null,
                     supportingText = { error?.let { Text(it) } },
                 )
-                ScopeChoice("read", "Read: conversations and tasks, and MCP for agents", scope) { scope = it }
-                ScopeChoice("admin", "Admin: everything, including this app", scope) { scope = it }
+                ScopeChoice("read", stringResource(R.string.token_scope_read), scope) { scope = it }
+                ScopeChoice("admin", stringResource(R.string.token_scope_admin), scope) { scope = it }
             }
         },
         confirmButton = {
@@ -223,14 +238,14 @@ private fun CreatedDialog(
     val scope = rememberCoroutineScope()
     AlertDialog(
         onDismissRequest = {},
-        title = { Text("Token \"$name\"") },
+        title = { Text(stringResource(R.string.token_title_format, name)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Copy it now. The server cannot show it again.")
+                Text(stringResource(R.string.token_copy_now_message))
                 Text(token, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
             }
         },
-        confirmButton = { TextButton(onClick = onDone) { Text("Done") } },
+        confirmButton = { TextButton(onClick = onDone) { Text(stringResource(R.string.action_done)) } },
         dismissButton = {
             TextButton(onClick = {
                 scope.launch {
@@ -252,7 +267,8 @@ private const val MAX_NAME = 64
 
 private val whenFormat = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.ENGLISH)
 
+@Composable
 private fun whenText(instant: String?): String =
     instant
         ?.let { Formatting.parse(it)?.let { at -> whenFormat.format(at.atZone(ZoneId.systemDefault())) } }
-        ?: "unknown"
+        ?: stringResource(R.string.unknown)

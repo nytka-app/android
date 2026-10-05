@@ -9,7 +9,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import io.github.nytka_app.R
 import io.github.nytka_app.capture.StorageSyncStatus
 import io.github.nytka_app.capture.SyncState
 import io.github.nytka_app.ui.device.serverUnsupported
@@ -50,7 +52,7 @@ fun storageDetails(status: StorageSyncStatus): StorageSection? {
 fun StorageSectionCard(section: StorageSection) {
     ElevatedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Pendant storage", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.pendant_storage), style = MaterialTheme.typography.titleMedium)
             section.lines.forEach { Text(it) }
         }
     }

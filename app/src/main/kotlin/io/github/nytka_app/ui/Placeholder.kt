@@ -14,12 +14,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import io.github.nytka_app.R
 
 /** What a tab or screen shows until the version that builds it arrives. */
 @Composable
 fun Placeholder(modifier: Modifier = Modifier) {
     Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Arrives in a later version")
+        Text(stringResource(R.string.arrives_in_later_version))
     }
 }
 
@@ -37,7 +39,12 @@ fun PlaceholderScreen(
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
-                    ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back") }
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.action_back),
+                        )
+                    }
                 },
             )
         },

@@ -16,8 +16,16 @@ object Notifier {
     fun createChannels(context: Context) {
         context.getSystemService(NotificationManager::class.java).createNotificationChannels(
             listOf(
-                NotificationChannel(RECORDING_CHANNEL, "Recording", NotificationManager.IMPORTANCE_LOW),
-                NotificationChannel(ALERTS_CHANNEL, "Alerts", NotificationManager.IMPORTANCE_DEFAULT),
+                NotificationChannel(
+                    RECORDING_CHANNEL,
+                    context.getString(R.string.recording_channel),
+                    NotificationManager.IMPORTANCE_LOW,
+                ),
+                NotificationChannel(
+                    ALERTS_CHANNEL,
+                    context.getString(R.string.alerts_channel),
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                ),
                 NotificationChannel(
                     BRIEFS_CHANNEL,
                     context.getString(R.string.brief_channel_name),

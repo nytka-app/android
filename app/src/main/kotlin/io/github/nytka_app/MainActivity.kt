@@ -8,6 +8,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
@@ -43,7 +44,7 @@ class MainActivity : ComponentActivity() {
                         NytkaNavHost(
                             topBar = {
                                 CenterAlignedTopAppBar(
-                                    title = { Text("Nytka") },
+                                    title = { Text(stringResource(R.string.app_name)) },
                                     actions = { StatusChip(status) },
                                 )
                             },

@@ -159,7 +159,7 @@ private fun DeleteDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Delete this task?") },
+        title = { Text(stringResource(R.string.delete_task_title)) },
         text = { Text(text) },
         confirmButton = { TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
@@ -214,12 +214,12 @@ private fun EditDialog(
     var text by rememberSaveable { mutableStateOf(initial) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit task") },
+        title = { Text(stringResource(R.string.edit_task_title)) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it.take(MAX_TEXT) },
-                label = { Text("Task") },
+                label = { Text(stringResource(R.string.task_label)) },
             )
         },
         confirmButton = {

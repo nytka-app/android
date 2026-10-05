@@ -10,8 +10,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
+import io.github.nytka_app.R
 import io.github.nytka_app.capture.CaptureStatus
 import io.github.nytka_app.pendant.PendantConnection
 import io.github.nytka_app.pendant.PendantInfo
@@ -23,12 +25,14 @@ private val RecordingRed = Color(0xFFD32F2F)
 @Composable
 fun StatusChip(state: StatusUiState) {
     val label =
-        when {
-            !state.capture.running -> "Off"
-            state.muted -> "Muted"
-            state.capture.recording -> "Recording"
-            else -> "Waiting"
-        }
+        stringResource(
+            when {
+                !state.capture.running -> R.string.capture_off
+                state.muted -> R.string.muted
+                state.capture.recording -> R.string.recording
+                else -> R.string.capture_waiting
+            },
+        )
     val dot = if (state.capture.recording) RecordingRed else MaterialTheme.colorScheme.outline
     AssistChip(
         onClick = {},

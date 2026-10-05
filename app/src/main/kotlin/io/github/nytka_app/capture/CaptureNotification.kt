@@ -81,14 +81,14 @@ object CaptureNotification {
         return NotificationCompat
             .Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle("Nytka")
+            .setContentTitle(context.getString(R.string.app_name))
             .setContentText(text(status, usage, sync))
             .setContentIntent(open)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-            .addAction(0, if (status.muted) "Unmute" else "Mute", toggle)
-            .addAction(0, "Bookmark", bookmark)
+            .addAction(0, context.getString(if (status.muted) R.string.unmute else R.string.mute), toggle)
+            .addAction(0, context.getString(R.string.action_bookmark), bookmark)
             .build()
     }
 }

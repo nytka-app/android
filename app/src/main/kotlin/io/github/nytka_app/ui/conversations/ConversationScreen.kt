@@ -263,7 +263,9 @@ private fun PlayBar(
     ElevatedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onToggle) { Text(if (playback.playing) "Pause" else "Play") }
+                TextButton(onClick = onToggle) {
+                    Text(stringResource(if (playback.playing) R.string.pause else R.string.play))
+                }
                 Slider(
                     value = shown.coerceIn(0f, playback.durationMs.toFloat()),
                     onValueChange = { dragging = it },
@@ -277,7 +279,7 @@ private fun PlayBar(
             }
             Text(
                 if (playback.failed) {
-                    "The audio could not be played."
+                    stringResource(R.string.audio_play_failed)
                 } else {
                     "${Formatting.position(shown.toLong())} / ${Formatting.position(playback.durationMs)}"
                 },
@@ -432,12 +434,12 @@ private fun BookmarkLine(
     ) {
         Icon(
             Icons.Filled.Star,
-            contentDescription = "Bookmark",
+            contentDescription = stringResource(R.string.bookmark_content_description),
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(18.dp),
         )
         Text(
-            mark.note ?: "Add a note",
+            mark.note ?: stringResource(R.string.add_a_note),
             style = MaterialTheme.typography.bodySmall,
             color = if (mark.note == null) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
         )
@@ -454,17 +456,17 @@ private fun BookmarkNoteDialog(
     var text by rememberSaveable { mutableStateOf(initial) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Bookmark note") },
+        title = { Text(stringResource(R.string.bookmark_note_title)) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it.take(ConversationViewModel.MAX_BOOKMARK_NOTE) },
-                label = { Text("Note") },
-                supportingText = { Text("Leave it empty to remove the note.") },
+                label = { Text(stringResource(R.string.note_label)) },
+                supportingText = { Text(stringResource(R.string.bookmark_note_hint)) },
             )
         },
-        confirmButton = { TextButton(onClick = { onSave(text) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onSave(text) }) { Text(stringResource(R.string.action_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -478,13 +480,13 @@ internal fun NameVoiceDialog(
     var text by rememberSaveable { mutableStateOf(initial) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Who is this?") },
+        title = { Text(stringResource(R.string.who_is_this_title)) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it.take(MAX_NAME) },
-                label = { Text("Name") },
-                supportingText = { Text("The same name on another voice joins them into one person.") },
+                label = { Text(stringResource(R.string.name)) },
+                supportingText = { Text(stringResource(R.string.speaker_name_hint)) },
                 singleLine = true,
             )
         },
@@ -510,18 +512,18 @@ private fun RenameDialog(
     var text by rememberSaveable { mutableStateOf(initial) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename") },
+        title = { Text(stringResource(R.string.action_rename)) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it.take(MAX_TITLE) },
-                label = { Text("Title") },
-                supportingText = { Text("Leave it empty to use the generated title.") },
+                label = { Text(stringResource(R.string.title_label)) },
+                supportingText = { Text(stringResource(R.string.title_hint)) },
                 singleLine = true,
             )
         },
-        confirmButton = { TextButton(onClick = { onSave(text) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onSave(text) }) { Text(stringResource(R.string.action_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
