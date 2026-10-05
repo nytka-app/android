@@ -53,6 +53,7 @@ fun ConversationsTab(
     status: StatusUiState,
     onMute: (Boolean) -> Unit,
     openRequests: Flow<String>,
+    onOpenPerson: (String) -> Unit,
 ) {
     val navController = rememberNavController()
     LaunchedEffect(navController, openRequests) {
@@ -74,6 +75,7 @@ fun ConversationsTab(
             ConversationScreen(
                 developerMode = status.developerMode,
                 onBack = { navController.popBackStack() },
+                onOpenPerson = onOpenPerson,
                 onDeleted = {
                     navController.previousBackStackEntry?.savedStateHandle?.set(
                         DELETED,
@@ -87,6 +89,7 @@ fun ConversationsTab(
             composable("search") {
                 SearchScreen(
                     onOpenConversation = { navController.navigate("conversation/$it") },
+                    onOpenPerson = onOpenPerson,
                     onBack = { navController.popBackStack() },
                 )
             }

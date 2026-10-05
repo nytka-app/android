@@ -327,4 +327,12 @@
     <string name="person_delete_text">Their lines stay, but show an unknown voice again. Nytka\'s own voice model of them is deleted either way. Forgetting the voice also asks the transcription service to drop the voice model it holds. This cannot be undone.</string>
     <string name="person_delete_forget">Delete and forget voice</string>
     <string name="person_delete_only">Delete</string>
+
+    <!-- People: name suggestions in conversations (A-P6) -->
+    <string name="suggestion_banner_format">%1$s may be %2$s</string>
+    <string name="suggestion_unknown_voice">A voice</string>
+    <string name="suggestion_accept">Accept</string>
+    <string name="suggestion_reject_format">Not %1$s</string>
+    <string name="suggestion_failed">The answer could not be saved.</string>
+    <string name="open_person">Open this person</string>
 </resources>

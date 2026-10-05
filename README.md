@@ -85,6 +85,11 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   (only where you marked it). Your mark beats the server's guess and shows as "Me · marked"; a line
   the server's voice match or the provider calls yours shows "Me · voice" or "Me · provider". Needs
   server 0.12.0 and an admin token.
+  When the server has a name suggestion for a voice in the conversation ("A voice may be Olena"), a
+  banner above the transcript shows the line that carries it with **Accept** and **Not Olena**.
+  Accept names the voice, so every line of it shows the name; Not Olena keeps the name from being
+  suggested again for that voice. Nothing is applied until you tap. Tap a person's name above a run
+  to open their page in the People tab. Needs server 0.14.0 and an admin token.
   Titles, summaries and tasks come from a language model on your server: without one, a row shows the
   start of the transcript instead.
 - **Tasks.** What your conversations left you to do, newest first, with the conversation's title and
@@ -118,7 +123,8 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
 
 **Search** opens from the magnifier above the conversation list. It looks through transcripts,
 titles, summaries and memories, in Ukrainian and English, while you type: from one letter or digit,
-after a short pause. **All**, **Conversations** and **Memories** narrow it. A hit shows the title or
+after a short pause. **All**, **Conversations** and **Memories** narrow it; **All** also finds people by name
+(a server with the People tab), and a person opens their page in the People tab. A hit shows the title or
 the memory and a snippet with the matches in bold, and opens its conversation when it has one. Every
 word must match, exactly or as the start of a word. Endings of Ukrainian words need the server's optional dictionary:
 see the [server README](https://github.com/nytka-app/server#ukrainian-search-optional).
