@@ -110,6 +110,7 @@ fun interface PhoneZone {
     fun id(): String
 }
 
+@Suppress("TooManyFunctions") // one screen, one function per control
 @HiltViewModel
 class DeviceViewModel
     @Inject
