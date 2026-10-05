@@ -28,7 +28,7 @@ internal fun personLine(
     val parts =
         listOfNotNull(
             lastSeenText(person.lastSeenAt)?.let { stringResource(R.string.people_last_heard_format, it) },
-            person.facts?.let { pluralStringResource(R.plurals.people_fact_count, it, it) },
+            person.factCount?.let { pluralStringResource(R.plurals.people_fact_count, it, it) },
         )
     return parts.ifEmpty { listOf(stringResource(R.string.people_never_heard)) }.joinToString(" · ")
 }
@@ -90,3 +90,51 @@ private fun failureText(
 @ReadOnlyComposable
 internal fun voiceTitle(voice: UnnamedVoice): String =
     voice.label?.takeIf { it.isNotBlank() } ?: stringResource(R.string.people_unknown_voice)
+
+internal fun personNoticeText(
+    context: Context,
+    notice: PersonNotice,
+): String =
+    when (notice) {
+        PersonNotice.NeedsUpdate -> context.getString(R.string.server_needs_update)
+        PersonNotice.Gone -> context.getString(R.string.item_no_longer_exists)
+        PersonNotice.FactExists -> context.getString(R.string.person_fact_exists)
+        PersonNotice.NoteSaved -> context.getString(R.string.person_note_saved)
+        is PersonNotice.NameTaken -> context.getString(R.string.people_name_taken_format, notice.name)
+        is PersonNotice.Renamed -> context.getString(R.string.people_renamed_format, notice.name)
+        is PersonNotice.Merged -> context.getString(R.string.people_merged_format, notice.from, notice.into)
+        is PersonNotice.Deleted -> context.getString(R.string.people_deleted_format, notice.name)
+        is PersonNotice.DeletedWithVoiceModel ->
+            context.getString(R.string.people_deleted_voice_model_format, notice.name)
+
+        is PersonNotice.DeletedVoiceModelStays ->
+            context.getString(R.string.people_deleted_voice_model_stays_format, notice.name)
+
+        is PersonNotice.Failed -> personFailureText(context, notice)
+    }
+
+private fun personFailureText(
+    context: Context,
+    failure: PersonNotice.Failed,
+): String =
+    when {
+        failure.kind == FailureKind.NotFound && failure.item -> context.getString(R.string.item_no_longer_exists)
+        failure.kind == FailureKind.NotFound || failure.kind == FailureKind.Unsupported ->
+            context.getString(R.string.server_needs_update)
+
+        failure.kind == FailureKind.Forbidden -> context.getString(R.string.app_needs_admin_token)
+        else -> failure.message
+    }
+
+/** Why a fact exists, as a word: the person's own line, a line about them, a mention, or your own entry. */
+@Composable
+@ReadOnlyComposable
+internal fun basisText(basis: String?): String =
+    stringResource(
+        when (basis) {
+            "said" -> R.string.person_basis_said
+            "about" -> R.string.person_basis_about
+            "mentioned" -> R.string.person_basis_mentioned
+            else -> R.string.person_basis_user
+        },
+    )

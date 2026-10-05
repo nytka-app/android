@@ -287,4 +287,40 @@
     <string name="brief_title">Підсумок: %1$s</string>
     <string name="brief_starts_at">Початок о %1$s</string>
     <string name="brief_public_title">Підсумок зустрічі готовий</string>
+
+    <!-- People: person page -->
+    <string name="person_voice_model_none">Моделі голосу ще немає</string>
+    <plurals name="person_voice_model">
+        <item quantity="one">Модель голосу: є, із %d репліки</item>
+        <item quantity="few">Модель голосу: є, із %d реплік</item>
+        <item quantity="many">Модель голосу: є, із %d реплік</item>
+        <item quantity="other">Модель голосу: є, із %d репліки</item>
+    </plurals>
+    <string name="person_note_title">Нотатка</string>
+    <string name="person_note_label">Ваша нотатка</string>
+    <string name="person_note_hint">Пишете лише ви. Модель на вашому сервері її не читає і не змінює.</string>
+    <string name="person_note_counter_format">%1$d з %2$d</string>
+    <string name="person_note_saved">Нотатку збережено.</string>
+    <string name="person_facts_title">Факти</string>
+    <string name="person_no_facts">Фактів ще немає</string>
+    <string name="person_fact_add">Додати факт</string>
+    <string name="person_fact_edit">Змінити факт</string>
+    <string name="person_fact_label">Факт</string>
+    <string name="person_fact_exists">Цей факт про них уже є</string>
+    <string name="person_fact_delete_title">Видалити цей факт?</string>
+    <string name="person_fact_delete_text">З наступних розмов він не повернеться.</string>
+    <string name="person_fact_more">Дії з фактом</string>
+    <string name="person_basis_said">Сказали самі</string>
+    <string name="person_basis_about">Сказано про них</string>
+    <string name="person_basis_mentioned">Згадано</string>
+    <string name="person_basis_user">Додано вами</string>
+    <string name="person_tasks_title">Відкриті завдання</string>
+    <string name="person_no_tasks">Їм нічого не винні</string>
+    <string name="person_conversations_title">Розмови</string>
+    <string name="person_no_conversations">Розмов ще немає</string>
+    <string name="person_conversation_untitled">Розмова без назви</string>
+    <string name="person_merge_action">Об\'єднати з…</string>
+    <string name="person_delete_text">Їхні репліки залишаться, але знову покажуть невідомий голос. Власну модель голосу Nytka видаляє в будь-якому разі. Якщо забути голос, сервіс транскрибування теж видалить модель, яку зберігає. Це не можна скасувати.</string>
+    <string name="person_delete_forget">Видалити й забути голос</string>
+    <string name="person_delete_only">Видалити</string>
 </resources>

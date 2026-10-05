@@ -293,4 +293,38 @@
     <string name="brief_title">Brief: %1$s</string>
     <string name="brief_starts_at">Starts at %1$s</string>
     <string name="brief_public_title">A meeting brief is ready</string>
+
+    <!-- People: person page -->
+    <string name="person_voice_model_none">No voice model yet</string>
+    <plurals name="person_voice_model">
+        <item quantity="one">Voice model: yes, from %d line</item>
+        <item quantity="other">Voice model: yes, from %d lines</item>
+    </plurals>
+    <string name="person_note_title">Note</string>
+    <string name="person_note_label">Your note</string>
+    <string name="person_note_hint">Only you write this. The model on your server never reads or changes it.</string>
+    <string name="person_note_counter_format">%1$d of %2$d</string>
+    <string name="person_note_saved">Note saved.</string>
+    <string name="person_facts_title">Facts</string>
+    <string name="person_no_facts">No facts yet</string>
+    <string name="person_fact_add">Add a fact</string>
+    <string name="person_fact_edit">Edit fact</string>
+    <string name="person_fact_label">Fact</string>
+    <string name="person_fact_exists">They already have this fact</string>
+    <string name="person_fact_delete_title">Delete this fact?</string>
+    <string name="person_fact_delete_text">It does not come back from later conversations.</string>
+    <string name="person_fact_more">More about this fact</string>
+    <string name="person_basis_said">They said</string>
+    <string name="person_basis_about">Said about them</string>
+    <string name="person_basis_mentioned">Mentioned</string>
+    <string name="person_basis_user">Added by you</string>
+    <string name="person_tasks_title">Open tasks</string>
+    <string name="person_no_tasks">Nothing is owed to them</string>
+    <string name="person_conversations_title">Conversations</string>
+    <string name="person_no_conversations">No conversations yet</string>
+    <string name="person_conversation_untitled">Untitled conversation</string>
+    <string name="person_merge_action">Merge into…</string>
+    <string name="person_delete_text">Their lines stay, but show an unknown voice again. Nytka\'s own voice model of them is deleted either way. Forgetting the voice also asks the transcription service to drop the voice model it holds. This cannot be undone.</string>
+    <string name="person_delete_forget">Delete and forget voice</string>
+    <string name="person_delete_only">Delete</string>
 </resources>
