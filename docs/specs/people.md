@@ -221,7 +221,7 @@ like any other: nothing is cached or queued on the phone, an edit that fails sta
 message. The brief job requires a network; the chime needs none.
 
 **Accessibility.** Text buttons, not icon-only actions, on cards and inbox rows; icons have content
-descriptions; the play button says "Play clip" or "Pause clip"; touch targets at least 48 dp; the basis
+descriptions; the play button says "Play clip" or "Stop clip"; touch targets at least 48 dp; the basis
 is a word, not a color; snackbars for results; the badge count is in the inbox icon's description.
 
 **Privacy.**

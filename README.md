@@ -122,6 +122,12 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   the name), voice matches (with the similarity) and lines Nytka is unsure are yours ("Did you say
   this?"), each with **Yes** and **No**. Nothing is applied until you tap; the row goes at once and
   comes back if the server refuses. Tap a row to open its conversation. Needs an admin token.
+  **Who is this?** cards sit above the list when your server groups voices (it needs
+  `people.voiceMatching` on and keeps audio for at least a day). A card shows the conversation, up to
+  three lines and a clip of at most 10 seconds, played from your server with your token and never
+  stored on the phone. On a group, type a name or pick someone you know and tap **Save**, or tap
+  **Skip** (hidden for 7 days) or **Not a person**. On a match ("Is this Olena?") tap **Yes**,
+  **Not them** or **Skip**. Nothing is named until you tap. Needs an admin token.
 - **Ask.** A placeholder that says "Arrives in a later version".
 - **Device.** The pendant, its storage and settings, the server, the settings,
   [Your voice](#your-voice) and the version.
