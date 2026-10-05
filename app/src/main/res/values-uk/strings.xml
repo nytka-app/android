@@ -355,4 +355,14 @@
     <string name="cards_skip">Пропустити</string>
     <string name="cards_clip_gone">Запис цієї картки вже видалено.</string>
     <string name="cards_clip_failed">Не вдалося відтворити фрагмент.</string>
+    <!-- People: settings (A-P7) -->
+    <string name="people_settings_title">Налаштування людей</string>
+    <string name="people_voice_matching_duty">Записувати людей без їхньої згоди в деяких місцях незаконно. Групування голосів зберігає модель голосу кожного, кого ви назвали; вмикайте його лише там, де це дозволено.</string>
+    <string name="voice_models_title">Моделі голосів у Nytka</string>
+    <string name="voice_models_explanation">Nytka зберігає на вашому сервері групи голосів і відбиток голосу кожної названої людини. Ця дія видаляє їх усі. Моделі голосів, які тримає служба транскрипції, вона не чіпає; щоб прибрати таку модель, видаліть людину й оберіть видалення моделі голосу.</string>
+    <string name="voice_models_delete">Видалити всі групи голосів і відбитки</string>
+    <string name="voice_models_confirm_title">Видалити всі групи голосів і відбитки?</string>
+    <string name="voice_models_confirm_text">Ваш сервер видалить кожну групу голосів, кожен відбиток названої людини й кожен збіг голосу, що чекає в черзі перевірки. Люди, імена й репліки залишаться, але Nytka не розпізнаватиме нікого за голосом, доки ви знову не ввімкнете зіставлення голосів і не назвете голоси. Це не можна скасувати.</string>
+    <string name="voice_models_confirm">Видалити все</string>
+    <string name="voice_models_deleted">Усі групи голосів і відбитки видалено.</string>
 </resources>

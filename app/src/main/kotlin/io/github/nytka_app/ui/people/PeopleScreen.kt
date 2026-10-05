@@ -7,8 +7,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -52,6 +58,7 @@ import io.github.nytka_app.ui.people.review.ReviewInboxAction
 fun PeopleScreen(
     onOpenPerson: ((String) -> Unit)? = null,
     onOpenReview: () -> Unit = {},
+    onOpenSettings: (() -> Unit)? = null,
     viewModel: PeopleViewModel = hiltViewModel(),
     cardsViewModel: CardsViewModel = hiltViewModel(),
 ) {
@@ -73,7 +80,10 @@ fun PeopleScreen(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.people_title)) },
-                actions = { ReviewInboxAction(onOpenReview) },
+                actions = {
+                    ReviewInboxAction(onOpenReview)
+                    SettingsMenu(onOpenSettings)
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
@@ -151,6 +161,24 @@ fun PeopleScreen(
                 onDismiss = viewModel::dismissDialog,
                 onSave = { viewModel.nameVoice(dialog.voice, it) },
             )
+    }
+}
+
+@Composable
+private fun SettingsMenu(onOpenSettings: (() -> Unit)?) {
+    if (onOpenSettings == null) return
+    var open by remember { mutableStateOf(false) }
+    IconButton(onClick = { open = true }) {
+        Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.action_more))
+    }
+    DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.people_settings_title)) },
+            onClick = {
+                open = false
+                onOpenSettings()
+            },
+        )
     }
 }
 

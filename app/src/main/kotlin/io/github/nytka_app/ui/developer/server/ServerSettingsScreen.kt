@@ -34,18 +34,23 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.ServerSetting
 
-/** The server's settings, grouped by key prefix. Developer mode, admin token only. */
+/**
+ * The server's settings, grouped by key prefix. Admin token only. Under Developer mode it lists every key; the
+ * People tab limits it to the `people` prefix and adds a [footer].
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ServerSettingsScreen(
     onBack: () -> Unit,
+    title: String = stringResource(R.string.server_settings_title),
+    footer: (@Composable () -> Unit)? = null,
     viewModel: ServerSettingsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.server_settings_title)) },
+                title = { Text(title) },
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
@@ -93,6 +98,7 @@ fun ServerSettingsScreen(
                     item(key = field.setting.key) { SettingRow(field, viewModel::edit) }
                 }
             }
+            footer?.let { item(key = "footer") { it() } }
         }
     }
 }
@@ -122,6 +128,19 @@ private fun SettingRow(
                         Text(
                             stringResource(R.string.set_by_server_env),
                             style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    if (setting.key == VOICE_MATCHING_KEY) {
+                        Text(
+                            stringResource(R.string.people_voice_matching_duty),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                    if (field.errors.isNotEmpty()) {
+                        Text(
+                            field.errors.joinToString(" "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
                         )
                     }
                 }
@@ -156,6 +175,9 @@ private fun SettingHint(field: SettingField) {
         !setting.default.isNullOrEmpty() -> Text(stringResource(R.string.default_with_empty, setting.default ?: ""))
     }
 }
+
+/** The setting whose switch carries the legal-duty sentence. */
+private const val VOICE_MATCHING_KEY = "people.voiceMatching"
 
 private fun keyboardFor(type: String): KeyboardType =
     when (type) {
