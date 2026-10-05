@@ -21,6 +21,9 @@ import io.github.nytka_app.core.api.TagsClient
 import io.github.nytka_app.core.api.TasksClient
 import io.github.nytka_app.ui.ITEM_GONE
 import io.github.nytka_app.ui.itemNotice
+import io.github.nytka_app.ui.people.RoleNotice
+import io.github.nytka_app.ui.people.SuggestionWording
+import io.github.nytka_app.ui.people.merged
 import io.github.nytka_app.ui.tags.ProposalOutcome
 import io.github.nytka_app.ui.tags.TagAccess
 import io.github.nytka_app.ui.tags.TagNotice
@@ -84,7 +87,14 @@ data class SuggestionBannerState(
     val label: String? = null,
     val evidence: String? = null,
     val busy: Boolean = false,
-)
+    /** Set only on a server with `roles`; with [named] false [name] is the role in display form. */
+    val role: String? = null,
+    val named: Boolean = true,
+    /** The person the suggestion points at, to tell a merge on accept. */
+    val personId: String? = null,
+) {
+    val wording: SuggestionWording get() = SuggestionWording.of(name, role, named)
+}
 
 /** What a failed answer to the banner comes to; the screen words it. */
 enum class SuggestionNotice { Failed, NeedsAdmin }
@@ -125,6 +135,7 @@ data class ConversationUiState(
     val deleted: Boolean = false,
     val banner: SuggestionBannerState? = null,
     val suggestionNotice: SuggestionNotice? = null,
+    val roleNotice: RoleNotice? = null,
     val raw: String? = null,
     /** A message for a snackbar, until [ConversationViewModel.noteShown]. */
     val note: String? = null,
@@ -161,6 +172,7 @@ class ConversationViewModel
         private var suggestions: List<NameSuggestion> = emptyList()
         private var answering = false
         private val proposals = TagProposalBook(tagsClient) { it.conversationId == id && it.personId == null }
+        private var roles = false
         private val prepareLock = Mutex()
         private var prepared = false
 
@@ -289,6 +301,9 @@ class ConversationViewModel
                 label = line?.let(::labelOf),
                 evidence = best.evidence?.text?.takeIf(String::isNotBlank),
                 busy = answering,
+                role = best.role.takeIf { roles },
+                named = best.named,
+                personId = best.personId,
             )
         }
 
@@ -304,8 +319,15 @@ class ConversationViewModel
             setAnswering(true)
             viewModelScope.launch {
                 try {
-                    when (val result = review.answerSuggestion(banner.id, accept)) {
-                        is ApiResult.Ok -> done(banner, reload = accept)
+                    val result =
+                        if (accept) review.acceptSuggestion(banner.id) else review.answerSuggestion(banner.id, false)
+                    when (result) {
+                        is ApiResult.Ok -> {
+                            val joined = merged(banner.personId, result.value as? String)
+                            done(banner, reload = accept)
+                            // After the reload, which builds the state afresh.
+                            if (joined) mutableState.update { it.copy(roleNotice = RoleNotice.MergedInto(banner.name)) }
+                        }
                         is ApiResult.Failure ->
                             when (result.kind) {
                                 // Already answered, or gone with its conversation or person: the lists are stale.
@@ -339,6 +361,8 @@ class ConversationViewModel
             }
         }
 
+        fun roleNoticeShown() = mutableState.update { it.copy(roleNotice = null) }
+
         private fun setAnswering(value: Boolean) {
             answering = value
             mutableState.update { it.copy(banner = it.banner?.copy(busy = value)) }
@@ -350,7 +374,8 @@ class ConversationViewModel
          */
         private suspend fun loadTagAccess() {
             val server = (info.info() as? ApiResult.Ok)?.value
-            mutableState.update { it.copy(tagAccess = server?.tagAccess() ?: TagAccess.None) }
+            roles = server?.has(ServerInfo.FEATURE_ROLES) == true
+            mutableState.update { it.copy(tagAccess = server?.tagAccess() ?: TagAccess.None, banner = bannerOf()) }
             if (server?.has(ServerInfo.FEATURE_TAG_SUGGESTIONS) == true) {
                 proposals.load()
                 showProposals()

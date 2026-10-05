@@ -392,4 +392,14 @@
     <string name="review_tag_conversation_format">Tag this conversation %1$s?</string>
     <string name="review_tag_person_format">Tag %1$s %2$s?</string>
     <string name="review_this_person">this person</string>
+    <!-- Tags: roles -->
+    <string name="role_suggestion_role_format">%1$s may be the %2$s</string>
+    <string name="role_suggestion_name_role_format">%1$s may be %2$s, the %3$s</string>
+    <string name="role_accept_format">Add as %1$s</string>
+    <string name="role_reject">Not that</string>
+    <string name="review_role_question_format">Is this the %1$s?</string>
+    <string name="review_name_role_question_format">Is this %1$s, the %2$s?</string>
+    <string name="name_not_known">Name not known yet</string>
+    <string name="action_add_name">Add name</string>
+    <string name="role_merged_format">Merged with %1$s: that name was already in the list.</string>
 </resources>

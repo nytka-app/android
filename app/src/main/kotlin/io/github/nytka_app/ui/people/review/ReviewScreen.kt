@@ -45,7 +45,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.ReviewItem
+import io.github.nytka_app.ui.people.SuggestionWording
 import io.github.nytka_app.ui.people.lastSeenText
+import io.github.nytka_app.ui.people.question
 
 /** The People screen's inbox icon: hidden while the server has no review list or nothing waits. */
 @Composable
@@ -129,6 +131,7 @@ fun ReviewScreen(
                     ReviewRowView(
                         item,
                         state.tagPeople[item.id],
+                        state.roles,
                         onOpenConversation,
                         onOpenPerson,
                         viewModel::accept,
@@ -145,12 +148,13 @@ fun ReviewScreen(
 private fun ReviewRowView(
     item: ReviewItem,
     personName: String?,
+    roles: Boolean,
     onOpenConversation: (String) -> Unit,
     onOpenPerson: (String) -> Unit,
     onAccept: (ReviewItem) -> Unit,
     onReject: (ReviewItem) -> Unit,
 ) {
-    val row = ReviewRow.of(item) ?: return
+    val row = ReviewRow.of(item, roles) ?: return
     val question = reviewQuestion(row, personName)
     // A person's tag opens the person; every other row its conversation.
     val opens: (() -> Unit)? =
@@ -193,7 +197,7 @@ private fun reviewQuestion(
 ): String {
     val someone = stringResource(R.string.review_someone)
     return when (row) {
-        is ReviewRow.NameSuggestion -> stringResource(R.string.review_name_question_format, row.name ?: someone)
+        is ReviewRow.NameSuggestion -> SuggestionWording.of(row.name ?: someone, row.role, row.named).question()
         is ReviewRow.VoiceMatch -> stringResource(R.string.review_name_question_format, row.name ?: someone)
         is ReviewRow.Label ->
             stringResource(if (row.isUser) R.string.review_label_yours else R.string.review_label_other)
@@ -218,6 +222,7 @@ internal fun reviewNoticeText(
     when (notice) {
         ReviewNotice.AlreadyAnswered -> context.getString(R.string.review_already_answered)
         ReviewNotice.TagLimit -> context.getString(R.string.tag_too_many)
+        is ReviewNotice.MergedInto -> context.getString(R.string.role_merged_format, notice.name)
         is ReviewNotice.Failed ->
             when {
                 notice.kind == FailureKind.NotFound && notice.item -> context.getString(R.string.item_no_longer_exists)

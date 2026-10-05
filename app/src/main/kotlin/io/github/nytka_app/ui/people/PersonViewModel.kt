@@ -107,6 +107,8 @@ data class PersonHeader(
     val lastSeenAt: String?,
     val hasVoiceprint: Boolean,
     val voiceprintSamples: Int,
+    /** False for a person known only by a role: the page says so and offers "Add name". */
+    val named: Boolean = true,
 )
 
 data class PersonUiState(
@@ -187,7 +189,7 @@ class PersonViewModel
             current: PersonUiState,
             page: PersonPage,
         ) = current.copy(
-            header = PersonHeader(page.name, page.lastSeenAt, page.hasVoiceprint, page.voiceprintSamples),
+            header = PersonHeader(page.name, page.lastSeenAt, page.hasVoiceprint, page.voiceprintSamples, page.named),
             note = page.note.orEmpty(),
             noteDraft = page.note.orEmpty(),
             facts = page.facts,
@@ -411,7 +413,7 @@ class PersonViewModel
                     is ApiResult.Ok ->
                         mutableState.update {
                             it.copy(
-                                header = it.header?.copy(name = result.value.name),
+                                header = it.header?.copy(name = result.value.name, named = result.value.named),
                                 dialog = null,
                                 notice = PersonNotice.Renamed(result.value.name),
                             )

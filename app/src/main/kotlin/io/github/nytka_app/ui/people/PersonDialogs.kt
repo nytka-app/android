@@ -56,11 +56,12 @@ internal fun RenameDialog(
     error: PersonNotice?,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
+    named: Boolean = true,
 ) {
     var text by rememberSaveable { mutableStateOf(initial) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.action_rename)) },
+        title = { Text(renameLabel(named)) },
         text = {
             OutlinedTextField(
                 value = text,

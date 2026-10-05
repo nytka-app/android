@@ -6,9 +6,13 @@ import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.ConversationDetail
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.Segment
+import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.ui.conversations.FakeReview.Companion.suggestion
+import io.github.nytka_app.ui.people.RoleNotice
+import io.github.nytka_app.ui.people.SuggestionWording
 import io.github.nytka_app.ui.tags.FakeTags
 import io.github.nytka_app.ui.tags.fakeInfo
+import io.github.nytka_app.ui.tags.proposal
 import io.github.nytka_app.ui.tasks.FakeTasks
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -28,6 +32,7 @@ class ConversationSuggestionsTest {
     private val clock = Clock.fixed(Instant.parse("2026-09-29T12:00:00Z"), ZoneOffset.UTC)
     private val api = FakeConversations()
     private val review = FakeReview()
+    private val tags = FakeTags()
 
     private fun viewModel() =
         ConversationViewModel(
@@ -39,9 +44,11 @@ class ConversationSuggestionsTest {
             FakeAudio(),
             FakePlayer(),
             clock,
-            fakeInfo(),
-            FakeTags(),
+            info,
+            tags,
         )
+
+    private var info = fakeInfo()
 
     private fun detail(segments: List<Segment>) =
         ConversationDetail(
@@ -232,5 +239,108 @@ class ConversationSuggestionsTest {
         val paragraphs = viewModel().state.value.paragraphs
 
         assertEquals(listOf<String?>("p1", null, null), paragraphs.map { it.personId })
+    }
+
+    private fun withRoles() {
+        info = fakeInfo(ServerInfo.FEATURE_ROLES)
+    }
+
+    @Test
+    fun `a role without a name reads as the role alone`() {
+        withRoles()
+        withSegments(voice)
+        review.pending = ApiResult.Ok(listOf(suggestion("s1", name = "Repairman", role = "repairman", named = false)))
+
+        val banner = viewModel().state.value.banner
+
+        assertEquals(SuggestionWording.RoleOnly("repairman"), banner?.wording)
+    }
+
+    @Test
+    fun `a name with a role shows both`() {
+        withRoles()
+        review.pending = ApiResult.Ok(listOf(suggestion("s1", name = "Mykola", role = "repairman")))
+
+        assertEquals(
+            SuggestionWording.NameAndRole("Mykola", "repairman"),
+            viewModel()
+                .state.value.banner
+                ?.wording,
+        )
+    }
+
+    @Test
+    fun `neither field, as an older server sends it, reads as the name`() {
+        withRoles()
+        review.pending = ApiResult.Ok(listOf(suggestion("s1", name = "Olena")))
+
+        assertEquals(
+            SuggestionWording.Name("Olena"),
+            viewModel()
+                .state.value.banner
+                ?.wording,
+        )
+    }
+
+    @Test
+    fun `without the roles feature the role is ignored`() {
+        review.pending = ApiResult.Ok(listOf(suggestion("s1", name = "Repairman", role = "repairman", named = false)))
+
+        assertEquals(
+            SuggestionWording.Name("Repairman"),
+            viewModel()
+                .state.value.banner
+                ?.wording,
+        )
+    }
+
+    @Test
+    fun `accepting a role-only suggestion sends the accept once, on the tap`() {
+        withRoles()
+        review.pending = ApiResult.Ok(listOf(suggestion("s1", name = "Repairman", role = "repairman", named = false)))
+        val vm = viewModel()
+        assertTrue(review.answered.isEmpty())
+
+        vm.acceptSuggestion()
+
+        assertEquals(listOf("s1" to true), review.answered)
+        assertNull(vm.state.value.roleNotice)
+    }
+
+    @Test
+    fun `accepting a name that merged the person into another says so`() {
+        withRoles()
+        review.pending = ApiResult.Ok(listOf(suggestion("s1", name = "Mykola", personId = "p-role")))
+        review.acceptedPerson = "p-mykola"
+        val vm = viewModel()
+
+        vm.acceptSuggestion()
+
+        assertEquals(RoleNotice.MergedInto("Mykola"), vm.state.value.roleNotice)
+        vm.roleNoticeShown()
+        assertNull(vm.state.value.roleNotice)
+    }
+
+    @Test
+    fun `accepting a name that kept the same person says nothing`() {
+        review.pending = ApiResult.Ok(listOf(suggestion("s1", name = "Mykola", personId = "p-role")))
+        review.acceptedPerson = "p-role"
+        val vm = viewModel()
+
+        vm.acceptSuggestion()
+
+        assertNull(vm.state.value.roleNotice)
+    }
+
+    @Test
+    fun `a role banner and the suggested tags row show together`() {
+        info = fakeInfo(ServerInfo.FEATURE_ROLES, ServerInfo.FEATURE_TAGS, ServerInfo.FEATURE_TAG_SUGGESTIONS)
+        review.pending = ApiResult.Ok(listOf(suggestion("s1", name = "Repairman", role = "repairman", named = false)))
+        tags.pending = ApiResult.Ok(listOf(proposal("t1", "work")))
+
+        val state = viewModel().state.value
+
+        assertEquals(SuggestionWording.RoleOnly("repairman"), state.banner?.wording)
+        assertEquals(listOf("work"), state.tagProposals.map { it.name })
     }
 }

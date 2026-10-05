@@ -10,6 +10,7 @@ import io.github.nytka_app.core.api.ReviewClient
 import io.github.nytka_app.core.api.ReviewItem
 import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.TagsClient
+import io.github.nytka_app.ui.people.merged
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,9 +21,14 @@ import kotlin.math.roundToInt
 
 /** What a row asks; the screen words it. A kind this app does not know has no row, so it is never answered blind. */
 sealed interface ReviewRow {
-    /** A pending name suggestion; [name] is null when the server sent none. */
+    /**
+     * A pending name suggestion; [name] is null when the server sent none. [role] is set only where `roles` is
+     * listed.
+     */
     data class NameSuggestion(
         val name: String?,
+        val role: String? = null,
+        val named: Boolean = true,
     ) : ReviewRow
 
     /** A voice match; [percent] is the similarity, when the server sent it. */
@@ -43,9 +49,18 @@ sealed interface ReviewRow {
     ) : ReviewRow
 
     companion object {
-        fun of(item: ReviewItem): ReviewRow? =
+        fun of(
+            item: ReviewItem,
+            roles: Boolean = false,
+        ): ReviewRow? =
             when (item.kind) {
-                ReviewItem.KIND_NAME -> NameSuggestion(item.proposal.name)
+                ReviewItem.KIND_NAME ->
+                    if (roles) {
+                        NameSuggestion(item.proposal.name, item.proposal.role, item.proposal.named)
+                    } else {
+                        NameSuggestion(item.proposal.name)
+                    }
+
                 ReviewItem.KIND_VOICE ->
                     VoiceMatch(item.proposal.name, item.proposal.similarity?.let { (it * 100).roundToInt() })
 
@@ -74,6 +89,11 @@ sealed interface ReviewNotice {
 
     /** A `409` on accepting a tag the item has no room for: the proposal stays in the list. */
     data object TagLimit : ReviewNotice
+
+    /** The server joined the person known by a role to the person who already had [name]. */
+    data class MergedInto(
+        val name: String,
+    ) : ReviewNotice
 }
 
 data class ReviewUiState(
@@ -83,6 +103,8 @@ data class ReviewUiState(
     val loading: Boolean = false,
     /** `/info` lists `review` and the list answered: the People screen shows its icon. */
     val available: Boolean = false,
+    /** `/info` lists `roles`: name rows may carry one. */
+    val roles: Boolean = false,
     val error: ReviewNotice? = null,
     /** The result of the last answer, for a snackbar. */
     val note: ReviewNotice? = null,
@@ -139,6 +161,7 @@ class ReviewViewModel
                             tagPeople = people,
                             loading = false,
                             available = true,
+                            roles = features.has(ServerInfo.FEATURE_ROLES),
                         )
                     }
                 }
@@ -188,9 +211,16 @@ class ReviewViewModel
             pending += key(item)
             mutableState.update { it.copy(items = it.items - item) }
             viewModelScope.launch {
-                val result = api.answer(item.kind, item.id, accept)
+                val result = if (accept) api.acceptReview(item.kind, item.id) else api.answer(item.kind, item.id, false)
                 pending -= key(item)
-                if (result !is ApiResult.Failure) return@launch
+                if (result !is ApiResult.Failure) {
+                    val person = (result as? ApiResult.Ok)?.value as? String
+                    val name = item.proposal.name
+                    if (name != null && merged(item.proposal.personId, person)) {
+                        mutableState.update { it.copy(note = ReviewNotice.MergedInto(name)) }
+                    }
+                    return@launch
+                }
                 when (result.kind) {
                     FailureKind.Conflict ->
                         if (accept &&

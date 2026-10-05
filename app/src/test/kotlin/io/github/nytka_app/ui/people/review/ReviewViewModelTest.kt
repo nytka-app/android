@@ -36,6 +36,17 @@ class ReviewViewModelTest {
             accept: Boolean,
         ) = answer.also { answers += Triple(kind, id, accept) }
 
+        /** The person id an accept answers. */
+        var accepted: String? = null
+
+        override suspend fun acceptReview(
+            kind: String,
+            id: String,
+        ): ApiResult<String?> =
+            answer(kind, id, accept = true).let {
+                if (it is ApiResult.Failure) it else ApiResult.Ok(accepted)
+            }
+
         override suspend fun suggestions(): ApiResult<List<NameSuggestion>> = ApiResult.Ok(emptyList())
 
         override suspend fun answerSuggestion(
@@ -299,5 +310,57 @@ class ReviewViewModelTest {
             ReviewNotice.Failed(FailureKind.Network, "The server answered.", item = false),
             viewModel.state.value.note,
         )
+    }
+
+    private val roleOnly =
+        name.copy(proposal = ReviewProposal(name = "Repairman", role = "repairman", named = false))
+    private val nameAndRole = name.copy(proposal = ReviewProposal(name = "Mykola", role = "repairman"))
+
+    @Test
+    fun `a role is a row of its own only with the roles feature`() {
+        assertEquals(
+            ReviewRow.NameSuggestion("Repairman", "repairman", named = false),
+            ReviewRow.of(roleOnly, roles = true),
+        )
+        assertEquals(ReviewRow.NameSuggestion("Mykola", "repairman"), ReviewRow.of(nameAndRole, roles = true))
+        assertEquals(ReviewRow.NameSuggestion("Repairman"), ReviewRow.of(roleOnly, roles = false))
+        assertEquals(ReviewRow.NameSuggestion("Olena"), ReviewRow.of(name, roles = true))
+    }
+
+    @Test
+    fun `the state knows whether the server lists roles`() {
+        api.list = ApiResult.Ok(listOf(roleOnly))
+        assertFalse(newViewModel().state.value.roles)
+
+        info = ApiResult.Ok(ServerInfo("0.18.0", 1, features = listOf("review", "roles")))
+        assertTrue(newViewModel().state.value.roles)
+    }
+
+    @Test
+    fun `accepting a name that merged into another person says so`() {
+        val person = name.copy(proposal = ReviewProposal(name = "Mykola", personId = "p-role"))
+        api.list = ApiResult.Ok(listOf(person, label))
+        api.accepted = "p-mykola"
+        val viewModel = newViewModel()
+
+        viewModel.accept(person)
+
+        assertEquals(ReviewNotice.MergedInto("Mykola"), viewModel.state.value.note)
+        assertEquals(listOf(label), viewModel.state.value.items)
+    }
+
+    @Test
+    fun `accepting a name that kept its person, and rejecting, say nothing`() {
+        val person = name.copy(proposal = ReviewProposal(name = "Mykola", personId = "p1"))
+        api.list = ApiResult.Ok(listOf(person, voice))
+        api.accepted = "p1"
+        val viewModel = newViewModel()
+
+        viewModel.accept(person)
+        assertNull(viewModel.state.value.note)
+
+        api.accepted = "other"
+        viewModel.reject(voice)
+        assertNull(viewModel.state.value.note)
     }
 }

@@ -171,4 +171,48 @@ class ReviewApiTest {
             assertEquals("/api/v1/people/suggestions/n1/accept", accept.url.encodedPath)
             assertEquals("/api/v1/people/suggestions/n1/reject", server.takeRequest().url.encodedPath)
         }
+
+    @Test
+    fun `accepting answers the id of the person it ended with, null when the body has none`() =
+        runTest {
+            answer(200, """{"id":"p2","name":"Mykola","named":true}""")
+            answer(200, """{"tags":["work"]}""")
+            answer(204)
+            answer(200, """{"id":"p3"}""")
+            answer(409)
+
+            assertEquals("p2", ok(api.acceptSuggestion("n1")))
+            assertNull(ok(api.acceptReview("tag", "t1")))
+            assertNull(ok(api.acceptReview("label", "42")))
+            assertEquals("p3", ok(api.acceptReview("name", "n2")))
+            assertEquals(FailureKind.Conflict, kind(api.acceptSuggestion("n3")))
+
+            assertEquals("/api/v1/people/suggestions/n1/accept", server.takeRequest().url.encodedPath)
+            assertEquals("/api/v1/review/tag/t1/accept", server.takeRequest().url.encodedPath)
+            assertEquals("/api/v1/review/label/42/accept", server.takeRequest().url.encodedPath)
+            assertEquals("/api/v1/review/name/n2/accept", server.takeRequest().url.encodedPath)
+        }
+
+    @Test
+    fun `a role-only suggestion and review item decode role and named`() =
+        runTest {
+            answer(
+                200,
+                """{"items":[
+                {"id":"n1","name":"Repairman","role":"repairman","named":false},
+                {"id":"n2","name":"Mykola"}]}""",
+            )
+            answer(
+                200,
+                """{"items":[{"kind":"name","id":"n1",
+                "proposal":{"name":"Repairman","role":"repairman","named":false}}]}""",
+            )
+
+            val suggestions = ok(api.suggestions())
+            assertEquals("repairman", suggestions[0].role)
+            assertEquals(false, suggestions[0].named)
+            assertNull(suggestions[1].role)
+            assertEquals(true, suggestions[1].named)
+            assertEquals(false, ok(api.review(10)).single().proposal.named)
+        }
 }

@@ -62,6 +62,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.people.RoleNoticeEffect
 import io.github.nytka_app.ui.tags.TagNoticeEffect
 import io.github.nytka_app.ui.tags.tagChipsItem
 import io.github.nytka_app.ui.tags.tagProposalsItem
@@ -84,6 +85,7 @@ fun ConversationScreen(
     val snackbar = rememberNoteHost(state.note, viewModel::noteShown)
     LaunchedEffect(state.deleted) { if (state.deleted) onDeleted() }
     SuggestionNoticeEffect(state.suggestionNotice, snackbar, viewModel::suggestionNoticeShown)
+    RoleNoticeEffect(state.roleNotice, snackbar, viewModel::roleNoticeShown)
     TagNoticeEffect(state.tagNotice, snackbar, viewModel::tagNoticeShown)
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.pause() }
     // A summary in the making shows up on its own, while the screen is in front.

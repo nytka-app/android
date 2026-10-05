@@ -180,6 +180,7 @@ private fun LazyListScope.peopleContent(
             headlineContent = { Text(person.name) },
             supportingContent = {
                 Column {
+                    NameNotKnown(person.named)
                     Text(personLine(person, state.hasSummaries))
                     TagRow(person.tags, Modifier.padding(top = 4.dp))
                 }
@@ -260,7 +261,7 @@ private fun ActionsDialog(
         title = { Text(person.name) },
         text = {
             Column {
-                TextButton(onClick = { viewModel.startRename(person) }) { Text(stringResource(R.string.action_rename)) }
+                TextButton(onClick = { viewModel.startRename(person) }) { Text(renameLabel(person.named)) }
                 TextButton(onClick = { viewModel.startMerge(person) }) {
                     Text(stringResource(R.string.people_merge_action))
                 }
@@ -281,10 +282,10 @@ private fun RenameDialog(
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
 ) {
-    var text by rememberSaveable { mutableStateOf(dialog.person.name) }
+    var text by rememberSaveable { mutableStateOf(if (dialog.person.named) dialog.person.name else "") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.action_rename)) },
+        title = { Text(renameLabel(dialog.person.named)) },
         text = {
             OutlinedTextField(
                 value = text,

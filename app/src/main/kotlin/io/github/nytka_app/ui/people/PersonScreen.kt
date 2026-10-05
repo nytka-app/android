@@ -87,7 +87,7 @@ fun PersonScreen(
                         )
                     }
                 },
-                actions = { if (state.header != null) PersonMenu(viewModel) },
+                actions = { state.header?.let { PersonMenu(viewModel, it.named) } },
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
@@ -166,7 +166,12 @@ fun PersonScreen(
 
         is PersonDialog.Rename ->
             RenameDialog(
-                initial = state.header?.name.orEmpty(),
+                named = state.header?.named != false,
+                initial =
+                    state.header
+                        ?.takeIf { it.named }
+                        ?.name
+                        .orEmpty(),
                 error = dialog.error,
                 onDismiss = viewModel::dismissDialog,
                 onSave = viewModel::rename,
@@ -201,14 +206,17 @@ fun PersonScreen(
 }
 
 @Composable
-private fun PersonMenu(viewModel: PersonViewModel) {
+private fun PersonMenu(
+    viewModel: PersonViewModel,
+    named: Boolean,
+) {
     var open by remember { mutableStateOf(false) }
     IconButton(onClick = { open = true }) {
         Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.action_more))
     }
     DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
         DropdownMenuItem(
-            text = { Text(stringResource(R.string.action_rename)) },
+            text = { Text(renameLabel(named)) },
             onClick = {
                 open = false
                 viewModel.show(PersonDialog.Rename())
@@ -234,6 +242,13 @@ private fun PersonMenu(viewModel: PersonViewModel) {
 @Composable
 private fun Header(header: PersonHeader) {
     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        if (!header.named) {
+            Text(
+                stringResource(R.string.name_not_known),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
         Text(
             lastSeenText(header.lastSeenAt)?.let { stringResource(R.string.people_last_heard_format, it) }
                 ?: stringResource(R.string.people_never_heard),

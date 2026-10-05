@@ -14,6 +14,9 @@ class FakeReview : ReviewClient {
     val answered = mutableListOf<Pair<String, Boolean>>()
     var listed = 0
 
+    /** The person id `acceptSuggestion` answers; null as for a body without one. */
+    var acceptedPerson: String? = null
+
     override suspend fun review(limit: Int): ApiResult<List<ReviewItem>> = error("Not used.")
 
     override suspend fun answer(
@@ -37,6 +40,9 @@ class FakeReview : ReviewClient {
         return result
     }
 
+    override suspend fun acceptSuggestion(id: String): ApiResult<String?> =
+        answerSuggestion(id, accept = true).let { if (it is ApiResult.Failure) it else ApiResult.Ok(acceptedPerson) }
+
     companion object {
         fun suggestion(
             id: String,
@@ -44,6 +50,9 @@ class FakeReview : ReviewClient {
             name: String = "Olena",
             confidence: Double = 0.8,
             segmentId: Long = 1,
+            role: String? = null,
+            named: Boolean = true,
+            personId: String? = null,
         ) = NameSuggestion(
             id = id,
             conversationId = conversationId,
@@ -51,6 +60,9 @@ class FakeReview : ReviewClient {
             speakerId = "sp1",
             name = name,
             confidence = confidence,
+            role = role,
+            named = named,
+            personId = personId,
             evidence = SuggestionEvidence(segmentId, "2026-09-29T08:00:05Z", "I'm $name."),
         )
     }
