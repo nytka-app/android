@@ -232,4 +232,16 @@
     <string name="consent_chime_label">Сигнал під час запису</string>
     <string name="consent_chime_interval_format">Кожні %d хв</string>
     <string name="consent_chime_explanation">Короткий звук із телефона повідомляє людям поруч, що кулон записує. Мікрофон не використовується. Гучність така, як у сповіщень, тож у беззвучному режимі або коли «Не турбувати» блокує сповіщення, ви його не почуєте.</string>
+
+    <!-- People: meeting briefs (A-P8) -->
+    <string name="briefs_title">Підсумки зустрічей</string>
+    <string name="briefs_label">Сповіщати про підсумки зустрічей</string>
+    <string name="briefs_explanation">Коли в календарі є зустріч із кимось, кого ви назвали, сервер пише короткий підсумок. Nytka перевіряє кожні 15 хвилин і показує сповіщення. На екрані блокування немає імен і фактів.</string>
+    <string name="briefs_no_feed">На вашому сервері немає календаря</string>
+    <string name="briefs_permission_denied">Без сповіщень Nytka не може показати підсумок. Увімкніть ще раз, щоб Android запитав знову</string>
+    <string name="briefs_permission_blocked">Без сповіщень Nytka не може показати підсумок. Якщо Android більше не питає, дозвольте сповіщення в системних налаштуваннях Nytka й увімкніть ще раз</string>
+    <string name="brief_channel_name">Підсумки зустрічей</string>
+    <string name="brief_title">Підсумок: %1$s</string>
+    <string name="brief_starts_at">Початок о %1$s</string>
+    <string name="brief_public_title">Підсумок зустрічі готовий</string>
 </resources>
