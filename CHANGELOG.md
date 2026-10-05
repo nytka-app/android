@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.15.0](https://github.com/nytka-app/android/compare/v0.14.0...v0.15.0) (2026-10-05)
+
+
+### Features
+
+* open the filtered list from a tag (A-T3) ([#74](https://github.com/nytka-app/android/issues/74)) ([7d969d8](https://github.com/nytka-app/android/commit/7d969d866478f5f5f1da7f7ded8c56b196211470))
+* tag chips with add and remove (A-T2) ([#75](https://github.com/nytka-app/android/issues/75)) ([a261464](https://github.com/nytka-app/android/commit/a2614648e65fccabf07833029fa6d9b11b14a592))
+* tags client and models (A-T1) ([#72](https://github.com/nytka-app/android/issues/72)) ([51693ed](https://github.com/nytka-app/android/commit/51693ed27df41ee86c48a6857a0fff4c57f281b5))
+
 ## [0.14.0](https://github.com/nytka-app/android/compare/v0.13.0...v0.14.0) (2026-10-05)
 
 
