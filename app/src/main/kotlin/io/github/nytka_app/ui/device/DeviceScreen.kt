@@ -104,6 +104,14 @@ fun DeviceScreen(
                 viewModel::setServerTimeZone,
             )
         }
+        item {
+            ConsentChimeSection(
+                state.consentChime,
+                state.consentChimeMinutes,
+                viewModel::setConsentChime,
+                viewModel::setConsentChimeMinutes,
+            )
+        }
         item { ServerSection(state, status, viewModel::checkServer) }
         item { SettingsSection(state, viewModel::save) }
         item {

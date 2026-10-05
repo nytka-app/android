@@ -47,6 +47,11 @@ class CaptureHub
         @Volatile
         private var diversion: ((AudioFrame) -> Unit)? = null
 
+        private val mutableDiverting = MutableStateFlow(false)
+
+        /** True while voice enrollment reads live frames: the consent chime stays silent then. */
+        val diverting: StateFlow<Boolean> = mutableDiverting.asStateFlow()
+
         fun attach(controller: CaptureController) {
             controller.diversion = diversion
             this.controller.value = controller
@@ -57,6 +62,7 @@ class CaptureHub
             val running = controller.value ?: return false
             diversion = sink
             running.diversion = sink
+            mutableDiverting.value = true
             return true
         }
 
@@ -64,6 +70,7 @@ class CaptureHub
         fun undivert() {
             diversion = null
             controller.value?.diversion = null
+            mutableDiverting.value = false
         }
 
         fun attachSync(controller: StorageSyncController) {

@@ -276,4 +276,9 @@
     <string name="people_deleted_voice_model_format">Deleted %1$s and their voice model.</string>
     <string name="people_deleted_voice_model_stays_format">Deleted %1$s, but the voice model could not be removed.</string>
     <string name="people_name_taken_format">Someone is already called %1$s.</string>
+    <!-- People: consent chime -->
+    <string name="consent_chime_title">Consent chime</string>
+    <string name="consent_chime_label">Chime while recording</string>
+    <string name="consent_chime_interval_format">Every %d minutes</string>
+    <string name="consent_chime_explanation">A short sound from the phone tells people nearby that the pendant is recording. It does not use the microphone. It follows the notification volume, so you will not hear it when the phone is on silent or Do Not Disturb blocks notifications.</string>
 </resources>

@@ -270,4 +270,9 @@
     <string name="people_deleted_voice_model_format">%1$s видалено разом із моделлю голосу.</string>
     <string name="people_deleted_voice_model_stays_format">%1$s видалено, але модель голосу не вдалося прибрати.</string>
     <string name="people_name_taken_format">Когось уже звуть %1$s.</string>
+    <!-- People: consent chime -->
+    <string name="consent_chime_title">Сигнал про запис</string>
+    <string name="consent_chime_label">Сигнал під час запису</string>
+    <string name="consent_chime_interval_format">Кожні %d хв</string>
+    <string name="consent_chime_explanation">Короткий звук із телефона повідомляє людям поруч, що кулон записує. Мікрофон не використовується. Гучність така, як у сповіщень, тож у беззвучному режимі або коли «Не турбувати» блокує сповіщення, ви його не почуєте.</string>
 </resources>
