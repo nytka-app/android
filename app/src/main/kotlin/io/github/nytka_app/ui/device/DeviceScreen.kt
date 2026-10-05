@@ -38,8 +38,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.capture.PairedPendant
-import io.github.nytka_app.firmware.FirmwareNotice
 import io.github.nytka_app.core.api.NytkaApi
+import io.github.nytka_app.firmware.FirmwareNotice
 import io.github.nytka_app.pendant.PendantConnection
 import io.github.nytka_app.ui.LocalNetworkHint
 import io.github.nytka_app.ui.LocalNetworkPrompt

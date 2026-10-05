@@ -418,6 +418,7 @@
     <string name="action_discard_ellipsis">Discard…</string>
     <string name="action_import">Import</string>
     <string name="action_ok">OK</string>
+    <string name="action_ask">Ask</string>
     <string name="action_bookmark">Bookmark</string>
     <string name="unknown">Unknown</string>
     <string name="never">never</string>

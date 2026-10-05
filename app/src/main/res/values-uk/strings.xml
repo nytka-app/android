@@ -417,6 +417,7 @@
     <string name="action_discard_ellipsis">Відкинути…</string>
     <string name="action_import">Імпортувати</string>
     <string name="action_ok">Гаразд</string>
+    <string name="action_ask">Запитати</string>
     <string name="action_bookmark">Додати закладку</string>
     <string name="unknown">Невідомо</string>
     <string name="never">ніколи</string>
