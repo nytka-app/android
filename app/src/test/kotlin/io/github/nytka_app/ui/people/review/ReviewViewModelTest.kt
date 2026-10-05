@@ -9,6 +9,8 @@ import io.github.nytka_app.core.api.ReviewClient
 import io.github.nytka_app.core.api.ReviewItem
 import io.github.nytka_app.core.api.ReviewProposal
 import io.github.nytka_app.core.api.ServerInfo
+import io.github.nytka_app.ui.tags.FakeTags
+import io.github.nytka_app.ui.tags.proposal
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -59,7 +61,9 @@ class ReviewViewModelTest {
     private val label =
         ReviewItem("label", "42", "c3", "Call", "2026-10-03T10:00:00Z", "Yes", ReviewProposal(isUser = true))
 
-    private fun newViewModel() = ReviewViewModel(api, InfoClient { info })
+    private val tags = FakeTags()
+
+    private fun newViewModel() = ReviewViewModel(api, InfoClient { info }, tags)
 
     private fun failure(kind: FailureKind) = ApiResult.Failure(kind, "The server answered.")
 
@@ -178,5 +182,122 @@ class ReviewViewModelTest {
         viewModel.refresh()
         assertTrue(viewModel.state.value.available)
         assertEquals(listOf(name), viewModel.state.value.items)
+    }
+
+    private val withTags = ApiResult.Ok(ServerInfo("0.18.0", 1, features = listOf("review", "tag-suggestions")))
+    private val conversationTag =
+        ReviewItem("tag", "t1", "c1", "Call", "2026-10-05T11:00:00Z", "A summary", ReviewProposal(tag = "work"))
+    private val personTag =
+        ReviewItem(
+            "tag",
+            "t2",
+            "c2",
+            "Visit",
+            "2026-10-05T12:00:00Z",
+            "A summary",
+            ReviewProposal(personId = "p1", tag = "plumber"),
+        )
+
+    @Test
+    fun `a tag item maps to its row`() {
+        assertEquals(ReviewRow.Tag("work", null), ReviewRow.of(conversationTag))
+        assertEquals(ReviewRow.Tag("plumber", "p1"), ReviewRow.of(personTag))
+        assertNull(ReviewRow.of(conversationTag.copy(proposal = ReviewProposal())))
+    }
+
+    @Test
+    fun `tag items show with tag-suggestions and a person's carries the name`() {
+        info = withTags
+        api.list = ApiResult.Ok(listOf(conversationTag, personTag, name))
+        tags.pending = ApiResult.Ok(listOf(proposal("t2", "plumber", "c2", "p1", "Anna")))
+        val state = newViewModel().state.value
+        assertEquals(listOf(conversationTag, personTag, name), state.items)
+        assertEquals(mapOf("t2" to "Anna"), state.tagPeople)
+    }
+
+    @Test
+    fun `without tag-suggestions tag items are hidden and no proposal list is read`() {
+        api.list = ApiResult.Ok(listOf(conversationTag, personTag, name))
+        val state = newViewModel().state.value
+        assertEquals(listOf(name), state.items)
+        assertEquals(0, tags.listed)
+    }
+
+    @Test
+    fun `the proposal list is read only for a person's tag`() {
+        info = withTags
+        api.list = ApiResult.Ok(listOf(conversationTag))
+        newViewModel()
+        assertEquals(0, tags.listed)
+    }
+
+    @Test
+    fun `a failed proposal list leaves the person row without a name`() {
+        info = withTags
+        api.list = ApiResult.Ok(listOf(personTag))
+        tags.pending = failure(FailureKind.Network)
+        val state = newViewModel().state.value
+        assertEquals(listOf(personTag), state.items)
+        assertTrue(state.tagPeople.isEmpty())
+    }
+
+    @Test
+    fun `accepting a tag goes through the review route and drops the row`() {
+        info = withTags
+        api.list = ApiResult.Ok(listOf(conversationTag, name))
+        val viewModel = newViewModel()
+        viewModel.accept(conversationTag)
+        assertEquals(listOf(Triple("tag", "t1", true)), api.answers)
+        assertEquals(listOf(name), viewModel.state.value.items)
+    }
+
+    @Test
+    fun `a conflict on accepting a tag that is no longer pending drops it`() {
+        info = withTags
+        api.list = ApiResult.Ok(listOf(conversationTag))
+        val viewModel = newViewModel()
+        api.answer = failure(FailureKind.Conflict)
+        api.list = ApiResult.Ok(emptyList())
+        viewModel.accept(conversationTag)
+        assertTrue(
+            viewModel.state.value.items
+                .isEmpty(),
+        )
+        assertEquals(ReviewNotice.AlreadyAnswered, viewModel.state.value.note)
+    }
+
+    @Test
+    fun `a conflict on accepting a tag for a full item keeps the row with the limit notice`() {
+        info = withTags
+        api.list = ApiResult.Ok(listOf(conversationTag))
+        val viewModel = newViewModel()
+        api.answer = failure(FailureKind.Conflict)
+        viewModel.accept(conversationTag)
+        assertEquals(listOf(conversationTag), viewModel.state.value.items)
+        assertEquals(ReviewNotice.TagLimit, viewModel.state.value.note)
+    }
+
+    @Test
+    fun `a conflict on rejecting a tag drops it`() {
+        info = withTags
+        api.list = ApiResult.Ok(listOf(conversationTag))
+        val viewModel = newViewModel()
+        api.answer = failure(FailureKind.Conflict)
+        viewModel.reject(conversationTag)
+        assertEquals(ReviewNotice.AlreadyAnswered, viewModel.state.value.note)
+    }
+
+    @Test
+    fun `a failed answer to a tag puts the row back`() {
+        info = withTags
+        api.list = ApiResult.Ok(listOf(conversationTag, name))
+        val viewModel = newViewModel()
+        api.answer = failure(FailureKind.Network)
+        viewModel.accept(conversationTag)
+        assertEquals(listOf(conversationTag, name), viewModel.state.value.items)
+        assertEquals(
+            ReviewNotice.Failed(FailureKind.Network, "The server answered.", item = false),
+            viewModel.state.value.note,
+        )
     }
 }

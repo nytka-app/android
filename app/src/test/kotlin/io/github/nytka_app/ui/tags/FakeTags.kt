@@ -2,6 +2,7 @@ package io.github.nytka_app.ui.tags
 
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.ConversationPage
+import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.core.api.ServerInfo
@@ -27,6 +28,16 @@ class FakeTags : TagsClient {
     var gate: CompletableDeferred<Unit>? = null
 
     val calls get() = queries.size + writes.size
+
+    /** The pending proposals. An answer removes one, except a `409` set to [stayPending] (the item is full). */
+    var pending: ApiResult<List<TagSuggestion>> = ApiResult.Ok(emptyList())
+    var suggestionAnswer: ApiResult<Unit> = ApiResult.Ok(Unit)
+    var stayPending = false
+
+    /** Holds back the next answer to a proposal until it completes. */
+    var suggestionGate: CompletableDeferred<Unit>? = null
+    var listed = 0
+    val answered = mutableListOf<Pair<String, Boolean>>()
 
     override suspend fun tags(q: String?): ApiResult<List<Tag>> {
         queries += q
@@ -72,10 +83,35 @@ class FakeTags : TagsClient {
 
     override suspend fun people(tag: String): ApiResult<List<Person>> = error("Not used by the chips.")
 
-    override suspend fun suggestions(): ApiResult<List<TagSuggestion>> = error("Not used by the chips.")
+    override suspend fun suggestions(): ApiResult<List<TagSuggestion>> = pending.also { listed++ }
 
     override suspend fun answerSuggestion(
         id: String,
         accept: Boolean,
-    ): ApiResult<Unit> = error("Not used by the chips.")
+    ): ApiResult<Unit> {
+        answered += id to accept
+        suggestionGate?.await()
+        val result = suggestionAnswer
+        val answeredByServer =
+            result is ApiResult.Ok ||
+                (
+                    (result as? ApiResult.Failure)?.kind in listOf(FailureKind.Conflict, FailureKind.NotFound) &&
+                        !stayPending
+                )
+        if (answeredByServer) {
+            (pending as? ApiResult.Ok)?.let { p ->
+                pending =
+                    ApiResult.Ok(p.value.filterNot { it.id == id })
+            }
+        }
+        return result
+    }
 }
+
+fun proposal(
+    id: String,
+    name: String = "work",
+    conversationId: String = "c1",
+    personId: String? = null,
+    personName: String? = null,
+) = TagSuggestion(id, conversationId, personId, personName, name, "2026-10-05T10:00:00Z")

@@ -70,6 +70,7 @@ fun ReviewInboxAction(
 fun ReviewScreen(
     onBack: () -> Unit,
     onOpenConversation: (String) -> Unit,
+    onOpenPerson: (String) -> Unit,
     viewModel: ReviewViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -125,7 +126,14 @@ fun ReviewScreen(
                     }
                 }
                 items(state.items, key = { it.kind + "/" + it.id }) { item ->
-                    ReviewRowView(item, onOpenConversation, viewModel::accept, viewModel::reject)
+                    ReviewRowView(
+                        item,
+                        state.tagPeople[item.id],
+                        onOpenConversation,
+                        onOpenPerson,
+                        viewModel::accept,
+                        viewModel::reject,
+                    )
                     HorizontalDivider()
                 }
             }
@@ -136,18 +144,20 @@ fun ReviewScreen(
 @Composable
 private fun ReviewRowView(
     item: ReviewItem,
+    personName: String?,
     onOpenConversation: (String) -> Unit,
+    onOpenPerson: (String) -> Unit,
     onAccept: (ReviewItem) -> Unit,
     onReject: (ReviewItem) -> Unit,
 ) {
     val row = ReviewRow.of(item) ?: return
-    val someone = stringResource(R.string.review_someone)
-    val question =
-        when (row) {
-            is ReviewRow.NameSuggestion -> stringResource(R.string.review_name_question_format, row.name ?: someone)
-            is ReviewRow.VoiceMatch -> stringResource(R.string.review_name_question_format, row.name ?: someone)
-            is ReviewRow.Label ->
-                stringResource(if (row.isUser) R.string.review_label_yours else R.string.review_label_other)
+    val question = reviewQuestion(row, personName)
+    // A person's tag opens the person; every other row its conversation.
+    val opens: (() -> Unit)? =
+        when {
+            row is ReviewRow.Tag && row.personId != null -> ({ onOpenPerson(row.personId) })
+            item.conversationId.isNotEmpty() -> ({ onOpenConversation(item.conversationId) })
+            else -> null
         }
     val details =
         listOfNotNull(
@@ -158,7 +168,7 @@ private fun ReviewRowView(
     Column(
         Modifier
             .fillMaxWidth()
-            .clickable(enabled = item.conversationId.isNotEmpty()) { onOpenConversation(item.conversationId) }
+            .clickable(enabled = opens != null) { opens?.invoke() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
@@ -176,12 +186,38 @@ private fun ReviewRowView(
     }
 }
 
+@Composable
+private fun reviewQuestion(
+    row: ReviewRow,
+    personName: String?,
+): String {
+    val someone = stringResource(R.string.review_someone)
+    return when (row) {
+        is ReviewRow.NameSuggestion -> stringResource(R.string.review_name_question_format, row.name ?: someone)
+        is ReviewRow.VoiceMatch -> stringResource(R.string.review_name_question_format, row.name ?: someone)
+        is ReviewRow.Label ->
+            stringResource(if (row.isUser) R.string.review_label_yours else R.string.review_label_other)
+
+        is ReviewRow.Tag ->
+            if (row.personId == null) {
+                stringResource(R.string.review_tag_conversation_format, row.tag)
+            } else {
+                stringResource(
+                    R.string.review_tag_person_format,
+                    personName ?: stringResource(R.string.review_this_person),
+                    row.tag,
+                )
+            }
+    }
+}
+
 internal fun reviewNoticeText(
     context: Context,
     notice: ReviewNotice,
 ): String =
     when (notice) {
         ReviewNotice.AlreadyAnswered -> context.getString(R.string.review_already_answered)
+        ReviewNotice.TagLimit -> context.getString(R.string.tag_too_many)
         is ReviewNotice.Failed ->
             when {
                 notice.kind == FailureKind.NotFound && notice.item -> context.getString(R.string.item_no_longer_exists)

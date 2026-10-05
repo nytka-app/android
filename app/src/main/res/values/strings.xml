@@ -385,4 +385,11 @@
     <string name="tag_filter_chip_format">Tag: %1$s</string>
     <string name="tag_filter_clear_format">Clear tag filter %1$s</string>
     <string name="tag_filter_empty_format">Nothing tagged %1$s</string>
+    <!-- Tags: proposals -->
+    <string name="tags_suggested">Suggested tags</string>
+    <string name="tag_proposal_accept_format">Add %1$s</string>
+    <string name="tag_proposal_reject_format">Not this: %1$s</string>
+    <string name="review_tag_conversation_format">Tag this conversation %1$s?</string>
+    <string name="review_tag_person_format">Tag %1$s %2$s?</string>
+    <string name="review_this_person">this person</string>
 </resources>

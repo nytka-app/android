@@ -48,6 +48,7 @@ import io.github.nytka_app.R
 import io.github.nytka_app.core.api.PersonFact
 import io.github.nytka_app.ui.tags.TagNoticeEffect
 import io.github.nytka_app.ui.tags.tagChipsItem
+import io.github.nytka_app.ui.tags.tagProposalsItem
 
 /**
  * One person: header, your note, facts, open tasks and recent conversations. A pushed screen, so it has a back
@@ -118,6 +119,7 @@ fun PersonScreen(
                         Modifier.padding(horizontal = 16.dp),
                         onOpenTag,
                     )
+                    tagProposalsItem(state.tagProposals, viewModel::acceptTagProposal, viewModel::rejectTagProposal)
                     item { NoteSection(state, viewModel) }
                     factsSection(state, viewModel, onOpenConversation)
                     tasksSection(state, onOpenConversation)

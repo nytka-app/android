@@ -122,6 +122,9 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   the name), voice matches (with the similarity) and lines Nytka is unsure are yours ("Did you say
   this?"), each with **Yes** and **No**. Nothing is applied until you tap; the row goes at once and
   comes back if the server refuses. Tap a row to open its conversation. Needs an admin token.
+  A server that lists `tag-suggestions` adds proposed tags to the inbox ("Tag this conversation
+  work?", "Tag Anna repairman?"), each with **Yes** and **No**; a person's tag opens that person. A tag
+  that the item has no room for (20 tags) stays in the list with "This item has 20 tags."
   **Who is this?** cards sit above the list when your server groups voices (it needs
   `people.voiceMatching` on and keeps audio for at least a day). A card shows the conversation, up to
   three lines and a clip of at most 10 seconds, played from your server with your token and never
@@ -174,6 +177,14 @@ conversation (or person) carries, most used first, with how many; type to narrow
 "Tag: work" under it shows the filter and its **✕** clears it. The list pages as the full one does, and
 an empty one says "Nothing tagged work". The filter survives rotation and lasts until you clear it or
 leave the app; it is not saved on the phone. People leaves out the unnamed voices while it is on.
+
+**Proposed tags.** A server that lists `tag-suggestions` may propose tags it read in a
+summary. On a conversation, a "Suggested tags" row under the header shows each as a chip with **✓** (add
+it) and **✕** (not this one, never proposed again for that conversation); the person page shows the same
+row for tags proposed for that person once the server proposes them. Nothing is added until you tap: the
+chip appears at once on **✓**, a refusal keeps the proposal and says why ("This item has 20 tags." when the
+item is full), and one the server no longer holds (answered elsewhere) drops and the page reads again.
+A failure of the list shows no row. A server without the feature shows none and the app does not ask it.
 
 ## Offline sync
 
