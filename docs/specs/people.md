@@ -85,8 +85,8 @@ this tab; Device keeps a one-line pointer.
 - **Voices not named yet** as today (tap to name).
 - Pull to refresh. The list is read on every visit; nothing is cached on the phone.
 
-`GET /api/v1/people` has no `lastSeenAt` and no fact count today (only MCP `list_people` has them, see
-Conflicts 1). The app reads both as optional fields; without them it sorts by name and shows the
+`GET /api/v1/people` sends `lastSeenAt` and `factCount` from the server release after 0.14.0 (server
+PR 81; Conflicts 1). The app reads both as optional fields; without them it sorts by name and shows the
 segment count instead.
 
 ### Person page
@@ -243,13 +243,13 @@ models emit typed results (`PersonNotice`, `CardNotice`, ...) that the screen tu
 
 ## Conflicts between the server API and the app
 
-1. **The list lacks last seen and fact count.** `GET /api/v1/people` returns `PersonRow` (`id, name,
-   note, createdAt, voices, segments`); `PeopleStore.SummariesAsync` computes `lastSeenAt` and `facts`
-   but only MCP `list_people` uses it. Asked of the server: add both fields to `GET /api/v1/people`
-   (additive). Until then the app sorts by name and shows segment counts; N+1 calls to
-   `/people/{id}` were rejected.
-2. **Feature flags do not mark releases.** See "Older servers". Asked of the server: list `review` and
-   `briefs` under `features` so the app can hide entries instead of probing.
+1. **The list lacked last seen and fact count.** Resolved on the server (PR 81, in the release after
+   0.14.0): `GET /api/v1/people` now carries `lastSeenAt` and `factCount`, computed by the same
+   `PeopleStore.SummariesAsync` as MCP `list_people`. The app keeps the by-name, segment-count
+   fallback for older servers.
+2. **Feature flags do not mark releases.** See "Older servers". Resolved on the server (PR 81): `review`
+   and `briefs` are listed under `features` from the same release. The app gates the review inbox on
+   `review` and probes the brief switch through `GET /settings`; `briefs` is not read.
 3. **No calendar flag.** The brief switch reads `calendar.icsUrl` from `GET /settings` (admin) to say
    whether a feed is set.
 4. **Server field messages are English.** A `400` on a setting (such as "Enroll your voice first.")
@@ -259,8 +259,8 @@ models emit typed results (`PersonNotice`, `CardNotice`, ...) that the screen tu
 6. **Two forgets.** `DELETE /people/{id}?forget=true` asks the transcription service, while Nytka's own
    voiceprint goes with any delete and `DELETE /people/voiceprints` drops all of them. The app offers
    the per-person options, and People settings has one confirmed button for the all-voiceprints call (A-P7).
-7. **Six tabs.** The vision (server `docs/vision.md`, "five tabs") and `AppTabTest` say five. The owner
-   chose a People tab; the vision line and the test change with it.
+7. **Six tabs.** The vision and `AppTabTest` said five. The owner chose a People tab; both now say six
+   (server PR 82, app A-P2).
 8. **Search already returns people.** A new server answers "All" with `person` hits that open nothing in
    today's app. A-P6 opens them as person pages.
 

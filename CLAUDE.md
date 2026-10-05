@@ -90,12 +90,17 @@ or flash firmware.
 - Hand-written fakes, no mocking library (`FakePendant`, `FakeRing`, `FakeSettings`,
   `FakeDeviceActions`, `FakeSyncControls`). View models take interfaces (`SettingsSource`,
   `InfoClient`, `ConversationsClient`, `TasksClient`, `MemoriesClient`, `SearchClient`,
-  `ServerSettingsClient`, `TokensClient`, `WebhooksClient`, `DeviceActions`, `SyncControls`), so their
-  tests need no Android.
+  `ServerSettingsClient`, `TokensClient`, `WebhooksClient`, `PeopleClient`, `PersonPageClient`,
+  `ReviewClient`, `CardsClient`, `BriefsClient`, `VoiceprintsClient`, `DeviceActions`, `SyncControls`),
+  so their tests need no Android.
 - A server call is a client interface in `:core` (`core/api`) with its Hilt module in
   `app/di/<Area>Module.kt`; `AppModule.kt` stays as it is. Screens turn a `404` or `405` on a list or
   create call into "This server needs an update", a `404` on one item into "This item no longer
   exists" and a `403` into "The app needs an admin token." (`ui/ServerNotices.kt`).
+- A screen the server may lack checks `/api/v1/info` `features` first (`ServerInfo.FEATURE_*`: `people`,
+  `voice-groups`, `review`, `offline-sync`, `voice`) and hides itself on an older server. A flag marks
+  a feature, not a release, so a missing route still answers `404`: show "This server needs an update",
+  never "This item no longer exists".
 - Room schemas under `core/schemas/` are committed. A schema change bumps the database version (now
   5) and adds a migration, never a destructive fallback: the queue holds audio nobody can record
   again.
