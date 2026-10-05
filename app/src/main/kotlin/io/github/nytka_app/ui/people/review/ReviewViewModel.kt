@@ -1,0 +1,180 @@
+package io.github.nytka_app.ui.people.review
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.nytka_app.core.api.ApiResult
+import io.github.nytka_app.core.api.FailureKind
+import io.github.nytka_app.core.api.InfoClient
+import io.github.nytka_app.core.api.ReviewClient
+import io.github.nytka_app.core.api.ReviewItem
+import io.github.nytka_app.core.api.ServerInfo
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+import kotlin.math.roundToInt
+
+/** What a row asks; the screen words it. A kind this app does not know has no row, so it is never answered blind. */
+sealed interface ReviewRow {
+    /** A pending name suggestion; [name] is null when the server sent none. */
+    data class NameSuggestion(
+        val name: String?,
+    ) : ReviewRow
+
+    /** A voice match; [percent] is the similarity, when the server sent it. */
+    data class VoiceMatch(
+        val name: String?,
+        val percent: Int?,
+    ) : ReviewRow
+
+    /** Nytka thinks this line is yours ([isUser]) or someone else's. */
+    data class Label(
+        val isUser: Boolean,
+    ) : ReviewRow
+
+    companion object {
+        fun of(item: ReviewItem): ReviewRow? =
+            when (item.kind) {
+                ReviewItem.KIND_NAME -> NameSuggestion(item.proposal.name)
+                ReviewItem.KIND_VOICE ->
+                    VoiceMatch(item.proposal.name, item.proposal.similarity?.let { (it * 100).roundToInt() })
+
+                ReviewItem.KIND_LABEL -> Label(item.proposal.isUser == true)
+                else -> null
+            }
+    }
+}
+
+/** What the last read or answer came to; never carries the server's own text except a failure's fixed sentence. */
+sealed interface ReviewNotice {
+    /** [item] is a call on one listed item, where a 404 means it is gone and not that the server is old. */
+    data class Failed(
+        val kind: FailureKind,
+        val message: String,
+        val item: Boolean,
+    ) : ReviewNotice
+
+    /** A `409`: someone answered it already. */
+    data object AlreadyAnswered : ReviewNotice
+}
+
+data class ReviewUiState(
+    val items: List<ReviewItem> = emptyList(),
+    val loading: Boolean = false,
+    /** `/info` lists `review` and the list answered: the People screen shows its icon. */
+    val available: Boolean = false,
+    val error: ReviewNotice? = null,
+    /** The result of the last answer, for a snackbar. */
+    val note: ReviewNotice? = null,
+) {
+    val count: Int get() = items.size
+}
+
+@HiltViewModel
+class ReviewViewModel
+    @Inject
+    constructor(
+        private val api: ReviewClient,
+        private val info: InfoClient,
+    ) : ViewModel() {
+        private val mutableState = MutableStateFlow(ReviewUiState())
+        val state: StateFlow<ReviewUiState> = mutableState.asStateFlow()
+
+        /** Items whose answer is on its way: a read in between must not bring them back. */
+        private val pending = mutableSetOf<String>()
+
+        init {
+            refresh()
+        }
+
+        fun refresh() {
+            mutableState.update { it.copy(loading = true, error = null) }
+            viewModelScope.launch {
+                val features =
+                    when (val result = info.info()) {
+                        is ApiResult.Ok -> result.value
+                        is ApiResult.Failure -> return@launch unavailable(result)
+                    }
+                if (!features.has(ServerInfo.FEATURE_REVIEW)) {
+                    return@launch unavailable(ApiResult.Failure(FailureKind.NotFound, ""))
+                }
+                when (val result = api.review(LIMIT)) {
+                    is ApiResult.Ok ->
+                        mutableState.update {
+                            it.copy(
+                                items =
+                                    result.value.filter { item ->
+                                        ReviewRow.of(item) != null &&
+                                            key(item) !in pending
+                                    },
+                                loading = false,
+                                available = true,
+                            )
+                        }
+
+                    is ApiResult.Failure -> unavailable(result)
+                }
+            }
+        }
+
+        /** A route the server lacks hides the icon; any other failure keeps what the screen had. */
+        private fun unavailable(failure: ApiResult.Failure) {
+            val missing = failure.kind == FailureKind.NotFound || failure.kind == FailureKind.Unsupported
+            mutableState.update {
+                it.copy(
+                    loading = false,
+                    available = it.available && !missing,
+                    error = ReviewNotice.Failed(failure.kind, failure.message, item = false),
+                )
+            }
+        }
+
+        fun accept(item: ReviewItem) = answer(item, accept = true)
+
+        fun reject(item: ReviewItem) = answer(item, accept = false)
+
+        fun noteShown() = mutableState.update { it.copy(note = null) }
+
+        /** Only a tap gets here. The row goes at once; a refusal puts it back where it was. */
+        private fun answer(
+            item: ReviewItem,
+            accept: Boolean,
+        ) {
+            val index = state.value.items.indexOf(item)
+            if (index < 0) return
+            pending += key(item)
+            mutableState.update { it.copy(items = it.items - item) }
+            viewModelScope.launch {
+                val result = api.answer(item.kind, item.id, accept)
+                pending -= key(item)
+                if (result !is ApiResult.Failure) return@launch
+                when (result.kind) {
+                    FailureKind.Conflict -> gone(ReviewNotice.AlreadyAnswered)
+                    FailureKind.NotFound -> gone(ReviewNotice.Failed(result.kind, result.message, item = true))
+                    else ->
+                        mutableState.update {
+                            val items = it.items.toMutableList()
+                            items.add(index.coerceAtMost(items.size), item)
+                            it.copy(
+                                items = items,
+                                note = ReviewNotice.Failed(result.kind, result.message, item = false),
+                            )
+                        }
+                }
+            }
+        }
+
+        private fun gone(note: ReviewNotice) {
+            mutableState.update { it.copy(note = note) }
+            refresh()
+        }
+
+        private fun key(item: ReviewItem) = item.kind + "/" + item.id
+
+        companion object {
+            const val LIMIT = 200
+        }
+    }

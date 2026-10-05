@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import io.github.nytka_app.ui.people.review.ReviewScreen
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -22,9 +23,17 @@ fun PeopleTab(
         openRequests.collect { id -> navController.navigate("person/$id") { popUpTo("list") } }
     }
     NavHost(navController, startDestination = "list") {
-        composable("list") { PeopleScreen(onOpenPerson = { navController.navigate("person/$it") }) }
+        composable("list") {
+            PeopleScreen(
+                onOpenPerson = { navController.navigate("person/$it") },
+                onOpenReview = { navController.navigate("review") },
+            )
+        }
         composable("person/{id}") {
             PersonScreen(onBack = { navController.popBackStack() }, onOpenConversation = onOpenConversation)
+        }
+        composable("review") {
+            ReviewScreen(onBack = navController::popBackStack, onOpenConversation = onOpenConversation)
         }
     }
 }

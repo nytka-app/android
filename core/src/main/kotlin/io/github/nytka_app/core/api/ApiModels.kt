@@ -18,6 +18,7 @@ data class ServerInfo(
         const val FEATURE_VOICE = "voice"
         const val FEATURE_PEOPLE = "people"
         const val FEATURE_VOICE_GROUPS = "voice-groups"
+        const val FEATURE_REVIEW = "review"
 
         const val SCOPE_ADMIN = "admin"
         const val SCOPE_READ = "read"

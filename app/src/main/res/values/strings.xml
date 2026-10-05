@@ -335,4 +335,17 @@
     <string name="suggestion_reject_format">Not %1$s</string>
     <string name="suggestion_failed">The answer could not be saved.</string>
     <string name="open_person">Open this person</string>
+    <!-- People: review inbox (A-P5) -->
+    <string name="review_title">Review</string>
+    <string name="review_inbox_content_description">Review inbox</string>
+    <string name="review_empty">Nothing is waiting for your answer.</string>
+    <string name="review_someone">someone</string>
+    <string name="review_name_question_format">Is this %1$s?</string>
+    <string name="review_label_yours">Did you say this?</string>
+    <string name="review_label_other">Is this someone else?</string>
+    <string name="review_similarity_format">%1$d%% match</string>
+    <string name="review_yes">Yes</string>
+    <string name="review_no">No</string>
+    <string name="review_not_them">Not them</string>
+    <string name="review_already_answered">This was already answered.</string>
 </resources>
