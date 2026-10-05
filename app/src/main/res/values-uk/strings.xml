@@ -227,4 +227,9 @@
     <string name="voice_nothing_recorded">Нічого не записано. Перевірте, що кулон підключено й мікрофон увімкнено.</string>
     <string name="voice_forgotten">Ваш голос забуто.</string>
     <string name="voice_reset_done">Повернено голос, який ви записали.</string>
+    <!-- People: consent chime -->
+    <string name="consent_chime_title">Сигнал про запис</string>
+    <string name="consent_chime_label">Сигнал під час запису</string>
+    <string name="consent_chime_interval_format">Кожні %d хв</string>
+    <string name="consent_chime_explanation">Короткий звук із телефона повідомляє людям поруч, що кулон записує. Мікрофон не використовується. Гучність така, як у сповіщень, тож у беззвучному режимі або коли «Не турбувати» блокує сповіщення, ви його не почуєте.</string>
 </resources>

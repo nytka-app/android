@@ -230,6 +230,11 @@ made from them; your own marks stay. See the
   full, the oldest live audio goes first.
 - **Alerts** come when the pendant has been away for 5 minutes, the server has been unreachable
   for 15 minutes, the pendant battery reaches 20%, or the queue is 80% full.
+- **Consent chime** (Device tab, off by default): while the pendant records, the phone plays a short
+  chime every 5 to 60 minutes (15 by default), at once when recording starts and not on each
+  reconnect, so people nearby know. It is silent while muted, disconnected or during voice
+  enrollment. It uses no microphone and no permission, and follows the notification volume: on
+  silent, or when Do Not Disturb blocks notifications, you will not hear it.
 - **Delete** a conversation from its ⋮ menu: its transcript, audio, tasks and memories go from your
   server.
 - **After a reboot**, recording starts once the phone has been unlocked and the pendant is in

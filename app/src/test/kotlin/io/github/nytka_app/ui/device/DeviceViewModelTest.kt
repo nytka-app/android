@@ -613,4 +613,21 @@ class DeviceViewModelTest {
         assertFalse(settings.state.value.firmwareCheck)
         assertFalse(viewModel.state.value.firmwareCheck)
     }
+
+    @Test
+    fun `the consent chime is off at 15 minutes by default and the setters change the settings`() {
+        val viewModel = viewModel()
+        assertFalse(viewModel.state.value.consentChime)
+        assertEquals(15, viewModel.state.value.consentChimeMinutes)
+
+        viewModel.setConsentChime(true)
+        viewModel.setConsentChimeMinutes(30)
+        assertTrue(settings.state.value.consentChime)
+        assertEquals(30, viewModel.state.value.consentChimeMinutes)
+
+        viewModel.setConsentChimeMinutes(1)
+        assertEquals(5, settings.state.value.consentChimeMinutes)
+        viewModel.setConsentChimeMinutes(500)
+        assertEquals(60, settings.state.value.consentChimeMinutes)
+    }
 }

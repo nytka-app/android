@@ -76,6 +76,8 @@ data class DeviceUiState(
     val firmwareCheck: Boolean = true,
     /** A newer firmware than the connected pendant runs; null when none is known. */
     val firmwareNotice: FirmwareNotice? = null,
+    val consentChime: Boolean = false,
+    val consentChimeMinutes: Int = 15,
 )
 
 sealed interface MuteServerState {
@@ -129,6 +131,8 @@ class DeviceViewModel
                     developerMode = current.developerMode,
                     muteSchedule = current.muteSchedule,
                     firmwareCheck = current.firmwareCheck,
+                    consentChime = current.consentChime,
+                    consentChimeMinutes = current.consentChimeMinutes,
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, DeviceUiState())
 
@@ -331,6 +335,20 @@ class DeviceViewModel
 
         fun setFirmwareCheck(on: Boolean) {
             viewModelScope.launch { settings.update { it.copy(firmwareCheck = on) } }
+        }
+
+        fun setConsentChime(on: Boolean) {
+            viewModelScope.launch { settings.update { it.copy(consentChime = on) } }
+        }
+
+        fun setConsentChimeMinutes(minutes: Int) {
+            viewModelScope.launch {
+                settings.update {
+                    it.copy(
+                        consentChimeMinutes = minutes.coerceIn(CHIME_MINUTES_MIN, CHIME_MINUTES_MAX),
+                    )
+                }
+            }
         }
 
         fun syncNow() = sync.syncNow()

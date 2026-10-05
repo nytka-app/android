@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.database.SQLException
 import android.os.Build
+import android.os.SystemClock
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleService
@@ -196,7 +197,7 @@ class CaptureService : LifecycleService() {
         scope.launch { bookmarkUploader.run() }
         recorder = startRecorder(capture, storageSync)
         scope.launch { diagnosticsUploader.run() }
-        monitorAlerts(capture)
+        watchCapture(capture)
         scope.launch { capture.status.sample(STATUS_SAMPLE_MS).collect(hub::publish) }
         scope.launch { storageSync.status.sample(STATUS_SAMPLE_MS).collect(hub::publishSync) }
         combine(capture.status, queue.usage, storageSync.status) { status, usage, syncStatus ->
@@ -209,6 +210,18 @@ class CaptureService : LifecycleService() {
                         .notify(CaptureNotification.ID, CaptureNotification.build(this, status, usage, syncStatus))
                 }
             }
+    }
+
+    private fun watchCapture(capture: CaptureController) {
+        monitorAlerts(capture)
+        ConsentChime(
+            capture.status,
+            hub.diverting,
+            settings.settings,
+            ToneChime(),
+            SystemClock::elapsedRealtime,
+            scope,
+        ).start()
     }
 
     private fun monitorAlerts(capture: CaptureController) =
