@@ -566,4 +566,9 @@
     <!-- Ask tab -->
     <string name="ask_hint">Ask about your conversations</string>
     <string name="sources">Sources</string>
+
+    <!-- Speech kind: phone context -->
+    <string name="phone_context_title">Phone context</string>
+    <string name="phone_context_label">Tell my server when this phone plays sound</string>
+    <string name="phone_context_explanation">Tell your server when this phone plays sound through its speaker or is in a call. Only times are sent, never what played.</string>
 </resources>

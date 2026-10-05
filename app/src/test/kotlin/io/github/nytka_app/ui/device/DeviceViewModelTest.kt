@@ -294,6 +294,23 @@ class DeviceViewModelTest {
     }
 
     @Test
+    fun `the phone context switch shows only when the server lists context-ranges, and is on by default`() {
+        assertEquals(false, viewModel().state.value.serverContext)
+        assertTrue(viewModel().state.value.phoneContext)
+
+        info = ApiResult.Ok(ServerInfo("0.30.0", 1, features = listOf(ServerInfo.FEATURE_CONTEXT_RANGES)))
+        val viewModel = viewModel()
+        assertEquals(true, viewModel.state.value.serverContext)
+
+        viewModel.setPhoneContext(false)
+        assertFalse(settings.state.value.phoneContext)
+        assertFalse(viewModel.state.value.phoneContext)
+
+        info = ApiResult.Failure(FailureKind.Network, "failed to connect")
+        assertNull(viewModel().state.value.serverContext)
+    }
+
+    @Test
     fun `your voice shows only when the server lists voice`() {
         assertEquals(false, viewModel().state.value.serverVoice)
 

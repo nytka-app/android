@@ -10,6 +10,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -72,6 +73,7 @@ class SettingsStoreTest {
                     notifiedBriefs = listOf("b1", "b2"),
                     consentChime = true,
                     consentChimeMinutes = 30,
+                    phoneContext = false,
                     muteSchedule =
                         MuteSchedule(
                             listOf(
@@ -116,6 +118,7 @@ class SettingsStoreTest {
         assertEquals(emptyList<String>(), defaults.notifiedBriefs)
         assertFalse(defaults.consentChime)
         assertEquals(15, defaults.consentChimeMinutes)
+        assertTrue(defaults.phoneContext)
     }
 
     @Test

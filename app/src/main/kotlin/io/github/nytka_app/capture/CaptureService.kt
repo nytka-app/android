@@ -19,15 +19,19 @@ import io.github.nytka_app.alerts.AlertInputs
 import io.github.nytka_app.alerts.AlertMonitor
 import io.github.nytka_app.alerts.AlertNotifications
 import io.github.nytka_app.alerts.Notifier
+import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.InfoClient
+import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.diagnostics.AppLog
 import io.github.nytka_app.core.diagnostics.DiagnosticsSink
 import io.github.nytka_app.core.diagnostics.DiagnosticsUploader
 import io.github.nytka_app.core.queue.BookmarkOutbox
+import io.github.nytka_app.core.queue.ContextOutbox
 import io.github.nytka_app.core.queue.FrameQueue
 import io.github.nytka_app.core.ring.CaptureTimes
 import io.github.nytka_app.core.settings.SettingsStore
 import io.github.nytka_app.core.upload.BookmarkUploader
+import io.github.nytka_app.core.upload.ContextUploader
 import io.github.nytka_app.core.upload.Uploader
 import io.github.nytka_app.di.ApplicationScope
 import kotlinx.coroutines.CoroutineScope
@@ -61,6 +65,12 @@ class CaptureService : LifecycleService() {
 
     @Inject
     lateinit var bookmarkUploader: BookmarkUploader
+
+    @Inject
+    lateinit var contextOutbox: ContextOutbox
+
+    @Inject
+    lateinit var contextUploader: ContextUploader
 
     @Inject
     lateinit var settings: SettingsStore
@@ -100,6 +110,7 @@ class CaptureService : LifecycleService() {
 
     /** Lazy: [appLog] is injected after construction, and onDestroy may stop it before begin started it. */
     private val power by lazy { PowerBroadcasts(this, appLog) }
+    private val phoneContext by lazy { PhoneContextRecorder(this, contextOutbox, applicationScope) }
     private var started = false
     private var pendingSyncAction: String? = null
     private var logRun = 0L
@@ -194,7 +205,7 @@ class CaptureService : LifecycleService() {
         capture.start(address)
         storageSync.start()
         scope.launch { uploader.run() }
-        scope.launch { bookmarkUploader.run() }
+        startSideUploads()
         recorder = startRecorder(capture, storageSync)
         scope.launch { diagnosticsUploader.run() }
         watchCapture(capture)
@@ -210,6 +221,28 @@ class CaptureService : LifecycleService() {
                         .notify(CaptureNotification.ID, CaptureNotification.build(this, status, usage, syncStatus))
                 }
             }
+    }
+
+    private fun startSideUploads() {
+        scope.launch { bookmarkUploader.run() }
+        scope.launch { contextUploader.run() }
+        scope.launch { recordPhoneContext() }
+    }
+
+    /** Records only while the switch is on and the server lists `context-ranges`; nothing is recorded otherwise. */
+    private suspend fun recordPhoneContext() {
+        while (true) {
+            val info = infoClient.info()
+            if (info is ApiResult.Ok) {
+                if (!info.value.has(ServerInfo.FEATURE_CONTEXT_RANGES)) return
+                break
+            }
+            delay(INFO_RETRY_MS)
+        }
+        settings.settings
+            .map { it.phoneContext }
+            .distinctUntilChanged()
+            .collect { if (it) phoneContext.start() else phoneContext.stop() }
     }
 
     private fun watchCapture(capture: CaptureController) {
@@ -259,6 +292,7 @@ class CaptureService : LifecycleService() {
 
     override fun onDestroy() {
         power.stop()
+        phoneContext.stop()
         val capture = controller
         val storageSync = sync
         val diagnosticsRecorder = recorder
@@ -289,6 +323,7 @@ class CaptureService : LifecycleService() {
         private const val TAG = "CaptureService"
         private const val STATUS_SAMPLE_MS = 250L
         private const val ALERT_CHECK_MS = 30_000L
+        private const val INFO_RETRY_MS = 60_000L
 
         fun start(
             context: Context,
