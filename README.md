@@ -128,6 +128,14 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   stored on the phone. On a group, type a name or pick someone you know and tap **Save**, or tap
   **Skip** (hidden for 7 days) or **Not a person**. On a match ("Is this Olena?") tap **Yes**,
   **Not them** or **Skip**. Nothing is named until you tap. Needs an admin token.
+  **⋮ → People settings** edits the server's `people` settings (`people.suggestNames`, `people.facts`,
+  `people.voiceMatching`, `people.voiceThreshold`) without developer mode; it needs an admin token.
+  Under `people.voiceMatching` it says that recording people without their consent is illegal in some
+  places, and the server's refusal (such as "Enroll your voice first.") shows under the switch in the
+  server's English. The same screen has **Delete all voice groups and voiceprints**, which asks first and
+  then removes every voice group, every voiceprint of a named person and every pending voice match from
+  your server. It does not reach the voice models the transcription service keeps: those go with
+  **Delete and remove voice model** on one person.
 - **Ask.** A placeholder that says "Arrives in a later version".
 - **Device.** The pendant, its storage and settings, the server, the settings,
   [Your voice](#your-voice) and the version.
@@ -359,7 +367,7 @@ it private. Its **Server** section holds three screens.
 locked: "Set by the server's environment". API keys show only **Set** or **Not set**, because they
 live in the server's environment and the app can neither read nor change them. **Save** sends only
 what you changed, all or nothing, and an emptied field restores the default. The server uses a new
-value from its next job, with no restart. What each setting does is in the
+value from its next job, with no restart. The `people` keys are also reachable from People → ⋮ → People settings. What each setting does is in the
 [server README](https://github.com/nytka-app/server#configuration).
 
 **Access tokens** lists the server's named tokens: name, scope, when it was made and last used, and

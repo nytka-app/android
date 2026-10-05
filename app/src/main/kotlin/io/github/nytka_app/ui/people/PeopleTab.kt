@@ -2,10 +2,15 @@ package io.github.nytka_app.ui.people
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import io.github.nytka_app.ui.people.review.ReviewScreen
+import androidx.navigation.navArgument
+import io.github.nytka_app.R
+import io.github.nytka_app.ui.developer.server.ServerSettingsScreen
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -27,6 +32,7 @@ fun PeopleTab(
             PeopleScreen(
                 onOpenPerson = { navController.navigate("person/$it") },
                 onOpenReview = { navController.navigate("review") },
+                onOpenSettings = { navController.navigate("settings?prefixes=people") },
             )
         }
         composable("person/{id}") {
@@ -34,6 +40,22 @@ fun PeopleTab(
         }
         composable("review") {
             ReviewScreen(onBack = navController::popBackStack, onOpenConversation = onOpenConversation)
+        }
+        composable(
+            "settings?prefixes={prefixes}",
+            arguments =
+                listOf(
+                    navArgument("prefixes") {
+                        type = NavType.StringType
+                        nullable = true
+                    },
+                ),
+        ) {
+            ServerSettingsScreen(
+                onBack = { navController.popBackStack() },
+                title = stringResource(R.string.people_settings_title),
+                footer = { VoiceModelsSection() },
+            )
         }
     }
 }

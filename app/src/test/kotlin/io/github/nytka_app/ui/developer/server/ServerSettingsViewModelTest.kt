@@ -1,5 +1,6 @@
 package io.github.nytka_app.ui.developer.server
 
+import androidx.lifecycle.SavedStateHandle
 import io.github.nytka_app.MainDispatcherRule
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
@@ -44,16 +45,22 @@ class ServerSettingsViewModelTest {
                 ServerSetting("llm.model", "string", "gpt-x", source = "db"),
                 ServerSetting("llm.outputLanguage", "language", null, default = "auto"),
                 ServerSetting("audio.retentionDays", "int", null, default = "14"),
+                ServerSetting("people.suggestNames", "bool", null, default = "true"),
+                ServerSetting("people.voiceMatching", "bool", null, default = "false"),
+                ServerSetting("people.voiceThreshold", "number", null, default = "0.7"),
             ),
         )
 
     private fun viewModel() = ServerSettingsViewModel(api)
 
+    private fun peopleViewModel() =
+        ServerSettingsViewModel(api, SavedStateHandle(mapOf(ServerSettingsViewModel.PREFIXES to "people")))
+
     @Test
     fun `the catalog is grouped by key prefix in the server's order`() {
         val groups = viewModel().state.value.groups
 
-        assertEquals(listOf("stt", "llm", "audio"), groups.map { it.first })
+        assertEquals(listOf("stt", "llm", "audio", "people"), groups.map { it.first })
         assertEquals(listOf("llm.model", "llm.outputLanguage"), groups[1].second.map { it.setting.key })
     }
 
@@ -181,5 +188,55 @@ class ServerSettingsViewModelTest {
                 .errors
                 .firstOrNull(),
         )
+    }
+
+    @Test
+    fun `a prefix filter keeps only the people keys`() {
+        val keys =
+            peopleViewModel()
+                .state.value.fields
+                .map { it.setting.key }
+
+        assertEquals(listOf("people.suggestNames", "people.voiceMatching", "people.voiceThreshold"), keys)
+    }
+
+    @Test
+    fun `with a filter save sends only the changed keys of the filter`() {
+        val viewModel = peopleViewModel()
+
+        viewModel.edit("people.suggestNames", "false")
+        viewModel.edit("llm.model", "ignored")
+        viewModel.save()
+
+        assertEquals(listOf(mapOf<String, String?>("people.suggestNames" to "false")), api.sent)
+        assertEquals(
+            listOf("people.suggestNames", "people.voiceMatching", "people.voiceThreshold"),
+            viewModel.state.value.fields
+                .map { it.setting.key },
+        )
+    }
+
+    @Test
+    fun `the servers 400 for voice matching lands under that field`() {
+        api.updateAnswer =
+            ApiResult.Failure(
+                FailureKind.Invalid,
+                "The server rejected the request.",
+                mapOf("people.voiceMatching" to listOf("Enroll your voice first.")),
+            )
+        val viewModel = peopleViewModel()
+
+        viewModel.edit("people.voiceMatching", "true")
+        viewModel.save()
+
+        val state = viewModel.state.value
+        assertEquals(
+            listOf("Enroll your voice first."),
+            state.fields
+                .first { it.setting.key == "people.voiceMatching" }
+                .errors,
+        )
+        assertEquals("Some values are not valid.", state.error)
+        assertFalse(state.saving)
     }
 }

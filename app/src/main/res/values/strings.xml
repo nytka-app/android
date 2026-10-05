@@ -359,4 +359,14 @@
     <string name="cards_skip">Skip</string>
     <string name="cards_clip_gone">The audio of this card is gone.</string>
     <string name="cards_clip_failed">The clip could not be played.</string>
+    <!-- People: settings (A-P7) -->
+    <string name="people_settings_title">People settings</string>
+    <string name="people_voice_matching_duty">Recording people without their consent is illegal in some places. Grouping voices keeps a voice model of each person you name; turn it on only where you may.</string>
+    <string name="voice_models_title">Voice models in Nytka</string>
+    <string name="voice_models_explanation">Nytka keeps voice groups and a voiceprint for each person you named, on your server. This deletes all of them. It does not touch the voice models the transcription service keeps; to remove one of those, delete the person and choose to remove the voice model.</string>
+    <string name="voice_models_delete">Delete all voice groups and voiceprints</string>
+    <string name="voice_models_confirm_title">Delete all voice groups and voiceprints?</string>
+    <string name="voice_models_confirm_text">Your server deletes every voice group, every voiceprint of a named person and every voice match waiting in the review inbox. People, names and lines stay, but Nytka no longer recognizes anyone by voice until you turn voice matching on and name voices again. This cannot be undone.</string>
+    <string name="voice_models_confirm">Delete all</string>
+    <string name="voice_models_deleted">Deleted every voice group and voiceprint.</string>
 </resources>

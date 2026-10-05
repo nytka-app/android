@@ -1,5 +1,6 @@
 package io.github.nytka_app.ui.developer.server
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -45,7 +46,17 @@ class ServerSettingsViewModel
     @Inject
     constructor(
         private val api: ServerSettingsClient,
+        savedState: SavedStateHandle = SavedStateHandle(),
     ) : ViewModel() {
+        /** Key prefixes to show (comma-separated argument `prefixes`); none means every setting. */
+        private val prefixes: Set<String> =
+            savedState
+                .get<String>(PREFIXES)
+                ?.split(',')
+                ?.filter { it.isNotBlank() }
+                ?.toSet()
+                .orEmpty()
+
         private val mutableState = MutableStateFlow(ServerSettingsUiState())
         val state: StateFlow<ServerSettingsUiState> = mutableState.asStateFlow()
 
@@ -58,7 +69,8 @@ class ServerSettingsViewModel
             viewModelScope.launch {
                 when (val result = api.settings()) {
                     is ApiResult.Ok ->
-                        mutableState.value = ServerSettingsUiState(fields = result.value.map(::field), loading = false)
+                        mutableState.value =
+                            ServerSettingsUiState(fields = fields(result.value), loading = false)
 
                     is ApiResult.Failure -> mutableState.update { it.copy(loading = false, error = result.notice()) }
                 }
@@ -99,7 +111,11 @@ class ServerSettingsViewModel
                 when (val result = api.update(changes)) {
                     is ApiResult.Ok ->
                         mutableState.value =
-                            ServerSettingsUiState(fields = result.value.map(::field), loading = false, saved = true)
+                            ServerSettingsUiState(
+                                fields = fields(result.value),
+                                loading = false,
+                                saved = true,
+                            )
 
                     is ApiResult.Failure -> mutableState.update { it.failed(result) }
                 }
@@ -128,8 +144,16 @@ class ServerSettingsViewModel
             )
         }
 
+        private fun fields(catalog: List<ServerSetting>) =
+            catalog.filter { prefixes.isEmpty() || it.key.substringBefore('.') in prefixes }.map(::field)
+
         private fun field(setting: ServerSetting): SettingField {
             val text = setting.value ?: setting.default.orEmpty()
             return SettingField(setting, original = text, text = text)
+        }
+
+        companion object {
+            /** The navigation argument that limits the screen to some key prefixes, such as `people`. */
+            const val PREFIXES = "prefixes"
         }
     }

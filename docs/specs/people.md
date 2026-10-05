@@ -159,7 +159,9 @@ TalkBack) that opens the person page.
   `people.voiceMatching` it shows: "Recording people without their consent is illegal in some places.
   Grouping voices keeps a voice model of each person you name; turn it on only where you may." The
   server's `400` ("Enroll your voice first.") shows under the switch as today; it is English, from the
-  server.
+  server. The screen ends with **Delete all voice groups and voiceprints** (`DELETE /people/voiceprints`,
+  admin): a confirm dialog says Nytka's own groups and voiceprints go, people, names and lines stay, and
+  the transcription service's models are untouched (that is the person-level "remove voice model").
 - **On the phone**, in the Device tab's settings: **Meeting briefs** (switch, off) and **Consent chime**
   (switch, off, with an interval of 5 to 60 minutes, default 15).
 
@@ -256,7 +258,7 @@ models emit typed results (`PersonNotice`, `CardNotice`, ...) that the screen tu
    and filters on the phone.
 6. **Two forgets.** `DELETE /people/{id}?forget=true` asks the transcription service, while Nytka's own
    voiceprint goes with any delete and `DELETE /people/voiceprints` drops all of them. The app offers
-   only the per-person options; "forget every voice model" stays a server call.
+   the per-person options, and People settings has one confirmed button for the all-voiceprints call (A-P7).
 7. **Six tabs.** The vision (server `docs/vision.md`, "five tabs") and `AppTabTest` say five. The owner
    chose a People tab; the vision line and the test change with it.
 8. **Search already returns people.** A new server answers "All" with `person` hits that open nothing in
@@ -267,7 +269,7 @@ models emit typed results (`PersonNotice`, `CardNotice`, ...) that the screen tu
 - Adding a person by hand, marking a single line as a person (`PATCH /segments/{id}` with `personId`),
   setting a task's person, `voiceThreshold` beyond the generic settings field.
 - A brief screen in the app, calendar settings (the ICS URL is environment-only on the server).
-- `DELETE /people/voiceprints` and the voice evaluation route.
+- The voice evaluation route.
 - Localizing older hard-coded English (view-model messages, notification channels of v0.1) beyond the
   tab labels A-P2 touches.
 - Any cache of people, facts or briefs on the phone.
