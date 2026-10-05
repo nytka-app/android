@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.14.0](https://github.com/nytka-app/android/compare/v0.13.0...v0.14.0) (2026-10-05)
+
+
+### Features
+
+* meeting-brief notifications (A-P8) ([#64](https://github.com/nytka-app/android/issues/64)) ([492f8b3](https://github.com/nytka-app/android/commit/492f8b3ff7811cc69a8cf4c561a5ba1ed0fc4613))
+* name suggestions in conversations and people in search (A-P6) ([#66](https://github.com/nytka-app/android/issues/66)) ([981cdce](https://github.com/nytka-app/android/commit/981cdce1b3ab7037e42fb042e448ad9d35c25e88))
+* optional consent chime while capturing (A-P9) ([#62](https://github.com/nytka-app/android/issues/62)) ([ccff6dd](https://github.com/nytka-app/android/commit/ccff6ddb71e48cc297ffc8127cef183c3da59764))
+* People API clients, models and settings (A-P1) ([#60](https://github.com/nytka-app/android/issues/60)) ([76ce842](https://github.com/nytka-app/android/commit/76ce842d24c51e8606a83dc6e675fd7355e3c839))
+* People settings (A-P7) ([#68](https://github.com/nytka-app/android/issues/68)) ([4ebc538](https://github.com/nytka-app/android/commit/4ebc538de8b749b34ca48ca752217ee7e7136473))
+* People tab and list (A-P2) ([#63](https://github.com/nytka-app/android/issues/63)) ([856f3b5](https://github.com/nytka-app/android/commit/856f3b56603c0140d27bee5f07cde60da4249c85))
+* person page (A-P3) ([#65](https://github.com/nytka-app/android/issues/65)) ([a72d38f](https://github.com/nytka-app/android/commit/a72d38f68031379c454dfed2aba6eb43298be389))
+* review inbox (A-P5) ([#69](https://github.com/nytka-app/android/issues/69)) ([6726204](https://github.com/nytka-app/android/commit/6726204220207ad963290413a3d19c8806f6f221))
+* Who is this cards with clip playback (A-P4) ([#67](https://github.com/nytka-app/android/issues/67)) ([16920ba](https://github.com/nytka-app/android/commit/16920baacdb2d41a2efd407ec27d8843857e22e9))
+
 ## [0.13.0](https://github.com/nytka-app/android/compare/v0.12.0...v0.13.0) (2026-10-04)
 
 
