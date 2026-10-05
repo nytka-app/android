@@ -27,14 +27,15 @@ import kotlinx.coroutines.flow.receiveAsFlow
  * The tab bar and one slot per tab. Any tab can open a conversation: [tasks], [memories] and [ask] receive
  * `onOpenConversation(id)`, which selects the Conversations tab and hands the id to [conversations] as
  * `openRequests`; that tab opens `conversation/{id}` in its own NavHost. Any tab can open a person the same way
- * through `onOpenPerson(id)` and [people]'s `openRequests`.
+ * through `onOpenPerson(id)` and [people]'s `openRequests`; the People tab opens a conversation through its
+ * own `onOpenConversation`.
  */
 @Composable
 fun NytkaNavHost(
     conversations: @Composable (openRequests: Flow<String>, onOpenPerson: (String) -> Unit) -> Unit,
     tasks: @Composable (onOpenConversation: (String) -> Unit, onOpenPerson: (String) -> Unit) -> Unit,
     memories: @Composable (onOpenConversation: (String) -> Unit, onOpenPerson: (String) -> Unit) -> Unit,
-    people: @Composable (openRequests: Flow<String>) -> Unit,
+    people: @Composable (openRequests: Flow<String>, onOpenConversation: (String) -> Unit) -> Unit,
     ask: @Composable (onOpenConversation: (String) -> Unit, onOpenPerson: (String) -> Unit) -> Unit,
     device: @Composable () -> Unit,
     topBar: @Composable () -> Unit = {},
@@ -84,7 +85,7 @@ fun NytkaNavHost(
             composable(AppTab.Conversations.route) { conversations(openRequests, onOpenPerson) }
             composable(AppTab.Tasks.route) { tasks(onOpenConversation, onOpenPerson) }
             composable(AppTab.Memories.route) { memories(onOpenConversation, onOpenPerson) }
-            composable(AppTab.People.route) { people(openPersonRequests) }
+            composable(AppTab.People.route) { people(openPersonRequests, onOpenConversation) }
             composable(AppTab.Ask.route) { ask(onOpenConversation, onOpenPerson) }
             composable(AppTab.Device.route) { device() }
         }

@@ -90,7 +90,7 @@ data class PeopleUiState(
     val error: PeopleNotice? = null,
     /** `/info` lists `people`: a row opens the person page, otherwise the actions dialog. */
     val personPages: Boolean = false,
-    /** The server sent `lastSeenAt` or `facts` for someone, so rows show them instead of the line count. */
+    /** The server sent `lastSeenAt` or `factCount` for someone, so rows show them instead of the line count. */
     val hasSummaries: Boolean = false,
     val dialog: PeopleDialog? = null,
     /** The result of the last action, for a snackbar. */
@@ -107,8 +107,15 @@ class PeopleViewModel
         private val mutableState = MutableStateFlow(PeopleUiState())
         val state: StateFlow<PeopleUiState> = mutableState.asStateFlow()
 
+        private var visited = false
+
         init {
             refresh()
+        }
+
+        /** Back on screen after a person page: rename, merge and delete there change this list. */
+        fun resumed() {
+            if (visited) refresh() else visited = true
         }
 
         fun refresh() {
@@ -127,7 +134,7 @@ class PeopleViewModel
                             people = sorted(list),
                             voices = (voices as ApiResult.Ok).value,
                             personPages = personPages,
-                            hasSummaries = list.any { it.lastSeenAt != null || it.facts != null },
+                            hasSummaries = list.any { it.lastSeenAt != null || it.factCount != null },
                             loading = false,
                         )
                     }

@@ -52,7 +52,12 @@ class MainActivity : ComponentActivity() {
                             },
                             tasks = { onOpenConversation, _ -> TasksTab(onOpenConversation) },
                             memories = { onOpenConversation, _ -> MemoriesTab(onOpenConversation) },
-                            people = { PeopleTab() },
+                            people = {
+                                openRequests,
+                                onOpenConversation,
+                                ->
+                                PeopleTab(openRequests, onOpenConversation)
+                            },
                             ask = { onOpenConversation, _ -> AskTab(onOpenConversation) },
                             device = { DeviceTab(status, statusViewModel::setMuted) },
                         )

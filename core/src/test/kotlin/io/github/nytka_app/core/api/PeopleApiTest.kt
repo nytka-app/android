@@ -51,6 +51,22 @@ class PeopleApiTest {
         }
 
     @Test
+    fun `people decodes last seen and the fact count the server sends`() =
+        runTest {
+            answer(
+                200,
+                """{"items":[{"id":"p1","name":"Anna","note":"Climber","segments":3,
+                "lastSeenAt":"2026-10-04T10:00:00Z","factCount":4}]}""",
+            )
+
+            val person = ok(api.people()).single()
+
+            assertEquals("2026-10-04T10:00:00Z", person.lastSeenAt)
+            assertEquals(4, person.factCount)
+            assertEquals("Climber", person.note)
+        }
+
+    @Test
     fun `voices decodes a label or none`() =
         runTest {
             answer(

@@ -100,6 +100,18 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   it, **Unnamed voices**: tap one to name it. Where the server has no person page, tap a person for
   **Rename**, **Merge into another person** and **Delete** (with or without the stored voice model).
   Pull down to refresh. Needs server 0.7.0 or later; the list is not kept on the phone.
+  Tap a person on a server with person pages (0.14.0 or later) to open their **person page**: when they
+  were last heard and whether a voice model exists, **your note** (up to 500 characters; only you write
+  it, the model never reads or changes it; empty it and save to remove it), their **facts** (newest
+  first, 50 at a time, **Show more** for older ones) each with why it is there ("They said", "Said about
+  them", "Mentioned" or "Added by you") and the conversation it came from, **Open tasks** owed to them
+  and their ten newest **Conversations**; tap a fact, task or conversation to open the conversation.
+  **Add a fact** adds one; the fact's ⋮ edits it or deletes it (asks first; a deleted fact does not come
+  back from later conversations). The page's ⋮ has **Rename**, **Merge into…** and **Delete**; Delete
+  asks whether to also **forget the voice**, which asks the transcription service to drop the voice
+  model it holds (Nytka's own voice model of the person goes with any delete). Adding a fact that
+  exists, or taking a name someone has, says so under the field. A server without the page says it
+  needs an update. Facts and notes need an admin token to change.
 - **Ask.** A placeholder that says "Arrives in a later version".
 - **Device.** The pendant, its storage and settings, the server, the settings,
   [Your voice](#your-voice) and the version.

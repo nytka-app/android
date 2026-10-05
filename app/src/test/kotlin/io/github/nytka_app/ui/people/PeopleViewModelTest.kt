@@ -235,9 +235,9 @@ class PeopleViewModelTest {
 
     @Test
     fun `with lastSeenAt the latest comes first, never heard last, ties by name`() {
-        val old = Person("p3", "Old", lastSeenAt = "2026-10-01T10:00:00Z", facts = 2)
-        val recent = Person("p4", "Zed", lastSeenAt = "2026-10-05T10:00:00Z", facts = 0)
-        val never = Person("p5", "Aaron", facts = 1)
+        val old = Person("p3", "Old", lastSeenAt = "2026-10-01T10:00:00Z", factCount = 2)
+        val recent = Person("p4", "Zed", lastSeenAt = "2026-10-05T10:00:00Z", factCount = 0)
+        val never = Person("p5", "Aaron", factCount = 1)
         api.people = ApiResult.Ok(listOf(never, old, bea, recent))
 
         val state = newViewModel().state.value
