@@ -85,6 +85,13 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   (only where you marked it). Your mark beats the server's guess and shows as "Me · marked"; a line
   the server's voice match or the provider calls yours shows "Me · voice" or "Me · provider". Needs
   server 0.12.0 and an admin token.
+  **Speech kind.** On a server that lists `speech-kind`, a line the server took for a TV, a video or a
+  call shows a chip: **Media** (muted text) or **Call**. While the server only watches, a guess shows as
+  an outlined **Media?** or **Call?**. Touch and hold a line for **Person here**, **Media**, **Call** or
+  **Clear kind**; it shows at once and comes back, with a note, if the server refuses. This works on
+  your own lines too. The ⋮ menu has **Other voices are media** and **Other voices are people**, which
+  mark every line that is not yours and read the conversation again. Needs an admin token; without the
+  feature there is no chip and no menu entry.
   When the server has a name suggestion for a voice in the conversation ("A voice may be Olena"), a
   banner above the transcript shows the line that carries it with **Accept** and **Not Olena**.
   Accept names the voice, so every line of it shows the name; Not Olena keeps the name from being

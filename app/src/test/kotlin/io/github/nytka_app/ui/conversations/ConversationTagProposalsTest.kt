@@ -66,6 +66,7 @@ class ConversationTagProposalsTest {
             clock,
             info,
             tags,
+            FakeSpeech(),
         )
 
     @Test

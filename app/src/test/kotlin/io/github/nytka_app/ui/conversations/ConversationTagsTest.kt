@@ -56,6 +56,7 @@ class ConversationTagsTest {
             clock,
             info,
             tags,
+            FakeSpeech(),
         )
 
     private fun failure(kind: FailureKind) = ApiResult.Failure(kind, "The server answered.")

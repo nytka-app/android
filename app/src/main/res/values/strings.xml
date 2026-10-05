@@ -566,4 +566,19 @@
     <!-- Ask tab -->
     <string name="ask_hint">Ask about your conversations</string>
     <string name="sources">Sources</string>
+
+    <!-- Speech kind: marks -->
+    <string name="speech_chip_media">Media</string>
+    <string name="speech_chip_media_guess">Media?</string>
+    <string name="speech_chip_call">Call</string>
+    <string name="speech_chip_call_guess">Call?</string>
+    <string name="speech_chip_media_probably">Probably media</string>
+    <string name="speech_chip_call_probably">Probably a call</string>
+    <string name="speech_mark_person">Person here</string>
+    <string name="speech_mark_media">Media</string>
+    <string name="speech_mark_call">Call</string>
+    <string name="speech_mark_clear">Clear kind</string>
+    <string name="speech_others_media">Other voices are media</string>
+    <string name="speech_others_people">Other voices are people</string>
+    <string name="speech_mark_failed">The kind could not be saved</string>
 </resources>

@@ -22,6 +22,7 @@ data class ServerInfo(
         const val FEATURE_TAGS = "tags"
         const val FEATURE_TAG_SUGGESTIONS = "tag-suggestions"
         const val FEATURE_ROLES = "roles"
+        const val FEATURE_SPEECH_KIND = "speech-kind"
 
         const val SCOPE_ADMIN = "admin"
         const val SCOPE_READ = "read"
@@ -70,6 +71,8 @@ data class ConversationSummary(
     val bookmarks: Int = 0,
     /** Sorted names; a server without the `tags` feature sends none. */
     val tags: List<String> = emptyList(),
+    /** The share of the conversation's speech that is media, 0 to 1; a server without `speech-kind` sends none. */
+    val mediaShare: Double = 0.0,
 )
 
 @Serializable
@@ -97,6 +100,14 @@ data class Segment(
     val personId: String? = null,
     /** The name given to the voice, or null. */
     val personName: String? = null,
+    /** "person", "media", "call" or "unsure"; null on a server without `speech-kind`, or when nothing decided. */
+    val speechKind: String? = null,
+    /** What the server would call the line while it is only watching (shadow mode), same words as [speechKind]. */
+    val speechGuess: String? = null,
+    val speechScore: Double? = null,
+    val speechSignals: List<String> = emptyList(),
+    /** True while the owner's own mark stands. */
+    val speechMarked: Boolean = false,
 )
 
 /** A task the model found. The `conversation*` fields spare a list a request per source. */
