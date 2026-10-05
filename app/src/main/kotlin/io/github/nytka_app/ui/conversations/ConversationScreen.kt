@@ -28,6 +28,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -88,6 +89,7 @@ fun ConversationScreen(
     AcceptAllNoticeEffect(state.acceptAllNotice, snackbar, viewModel::acceptAllNoticeShown)
     RoleNoticeEffect(state.roleNotice, snackbar, viewModel::roleNoticeShown)
     TagNoticeEffect(state.tagNotice, snackbar, viewModel::tagNoticeShown)
+    SpeechNoticeEffect(state.speechNotice, snackbar, viewModel::speechNoticeShown)
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.pause() }
     // A summary in the making shows up on its own, while the screen is in front.
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -130,6 +132,7 @@ fun ConversationScreen(
                             menuOpen = false
                             confirmDelete = true
                         })
+                        OtherVoicesItems(state.speechAccess, onMark = viewModel::markOthers) { menuOpen = false }
                         if (developerMode) {
                             DropdownMenuItem(text = { Text(stringResource(R.string.raw_transcription)) }, onClick = {
                                 menuOpen = false
@@ -195,6 +198,7 @@ fun ConversationScreen(
                 onSave = viewModel::setBookmarkNote,
                 onPlay = viewModel::playFrom,
                 onMark = viewModel::markSegment,
+                onKind = viewModel::markKind.takeIf { state.speechAccess },
             )
             state.raw?.let { raw ->
                 item { Text(raw, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall) }
@@ -253,8 +257,17 @@ private fun LazyListScope.transcript(
     onSave: (String, String) -> Unit,
     onPlay: (Int) -> Unit,
     onMark: (Long, Boolean?) -> Unit,
+    onKind: ((Long, String?) -> Unit)?,
 ) = itemsIndexed(paragraphs) { i, paragraph ->
-    ParagraphItem(paragraph, onName, onOpenPerson, onSave, onMark, onPlay = if (canPlay) ({ onPlay(i) }) else null)
+    ParagraphItem(
+        paragraph,
+        onName,
+        onOpenPerson,
+        onSave,
+        onMark,
+        onKind,
+        onPlay = if (canPlay) ({ onPlay(i) }) else null,
+    )
 }
 
 /** Play or pause, the position and length, and a slider. A drag seeks when it ends, not on every move. */
@@ -364,6 +377,7 @@ private fun ParagraphItem(
     onOpenPerson: (String) -> Unit,
     onSave: (String, String) -> Unit,
     onMark: (Long, Boolean?) -> Unit,
+    onKind: ((Long, String?) -> Unit)?,
     onPlay: (() -> Unit)?,
 ) {
     var markMenu by remember { mutableStateOf(false) }
@@ -382,29 +396,52 @@ private fun ParagraphItem(
                         .width(56.dp)
                         .then(if (onPlay != null) Modifier.clickable(onClick = onPlay) else Modifier),
             )
-            Box {
-                Text(
-                    paragraph.text,
-                    modifier =
-                        Modifier.combinedClickable(onClick = {}, onLongClick = {
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            markMenu = true
-                        }),
-                )
-                DropdownMenu(expanded = markMenu, onDismissRequest = { markMenu = false }) {
-                    DropdownMenuItem(text = { Text(stringResource(R.string.segment_mark_me)) }, onClick = {
-                        markMenu = false
-                        onMark(paragraph.segmentId, true)
-                    })
-                    DropdownMenuItem(text = { Text(stringResource(R.string.segment_mark_not_me)) }, onClick = {
-                        markMenu = false
-                        onMark(paragraph.segmentId, false)
-                    })
-                    if (paragraph.marked) {
-                        DropdownMenuItem(text = { Text(stringResource(R.string.segment_mark_clear)) }, onClick = {
+            Column {
+                paragraph.speech?.let { SpeechChip(it, Modifier.padding(bottom = 2.dp)) }
+                Box {
+                    Text(
+                        paragraph.text,
+                        color =
+                            if (paragraph.speech?.takeUnless { it.guess }?.tag == SpeechTag.Media) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                Color.Unspecified
+                            },
+                        modifier =
+                            Modifier.combinedClickable(onClick = {}, onLongClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                markMenu = true
+                            }),
+                    )
+                    DropdownMenu(expanded = markMenu, onDismissRequest = { markMenu = false }) {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.segment_mark_me)) }, onClick = {
                             markMenu = false
-                            onMark(paragraph.segmentId, null)
+                            onMark(paragraph.segmentId, true)
                         })
+                        DropdownMenuItem(text = { Text(stringResource(R.string.segment_mark_not_me)) }, onClick = {
+                            markMenu = false
+                            onMark(paragraph.segmentId, false)
+                        })
+                        if (paragraph.marked) {
+                            DropdownMenuItem(text = { Text(stringResource(R.string.segment_mark_clear)) }, onClick = {
+                                markMenu = false
+                                onMark(paragraph.segmentId, null)
+                            })
+                        }
+                        if (onKind != null) {
+                            HorizontalDivider()
+                            listOf(
+                                R.string.speech_mark_person to KIND_PERSON,
+                                R.string.speech_mark_media to KIND_MEDIA,
+                                R.string.speech_mark_call to KIND_CALL,
+                                R.string.speech_mark_clear to null,
+                            ).forEach { (label, kind) ->
+                                DropdownMenuItem(text = { Text(stringResource(label)) }, onClick = {
+                                    markMenu = false
+                                    onKind(paragraph.segmentId, kind)
+                                })
+                            }
+                        }
                     }
                 }
             }
@@ -546,3 +583,7 @@ private val LIGHT_SPEAKERS =
     listOf(0xFF1565C0, 0xFF2E7D32, 0xFFC62828, 0xFF6A1B9A, 0xFFEF6C00, 0xFF00838F).map { Color(it) }
 private val DARK_SPEAKERS =
     listOf(0xFF90CAF9, 0xFFA5D6A7, 0xFFEF9A9A, 0xFFCE93D8, 0xFFFFCC80, 0xFF80DEEA).map { Color(it) }
+
+private const val KIND_PERSON = "person"
+private const val KIND_MEDIA = "media"
+private const val KIND_CALL = "call"

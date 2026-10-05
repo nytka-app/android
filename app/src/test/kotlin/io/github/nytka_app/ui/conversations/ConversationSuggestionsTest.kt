@@ -48,6 +48,7 @@ class ConversationSuggestionsTest {
             clock,
             info,
             tags,
+            FakeSpeech(),
         )
 
     private var info = fakeInfo()

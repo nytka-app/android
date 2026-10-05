@@ -71,6 +71,7 @@ class ConversationViewModelTest {
             clock,
             fakeInfo(),
             FakeTags(),
+            FakeSpeech(),
         )
 
     private fun detail(

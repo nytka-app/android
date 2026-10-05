@@ -17,6 +17,7 @@ import io.github.nytka_app.core.api.NameSuggestion
 import io.github.nytka_app.core.api.ReviewClient
 import io.github.nytka_app.core.api.Segment
 import io.github.nytka_app.core.api.ServerInfo
+import io.github.nytka_app.core.api.SpeechClient
 import io.github.nytka_app.core.api.TagsClient
 import io.github.nytka_app.core.api.TasksClient
 import io.github.nytka_app.ui.ITEM_GONE
@@ -72,6 +73,8 @@ data class Paragraph(
     val marked: Boolean = false,
     /** The bookmarks whose time is nearest this paragraph. */
     val bookmarks: List<BookmarkMark> = emptyList(),
+    /** The speech-kind chip; null without the `speech-kind` feature and for people. */
+    val speech: SpeechLabel? = null,
 )
 
 data class BookmarkMark(
@@ -150,6 +153,9 @@ data class ConversationUiState(
     val tagNotice: TagNotice? = null,
     /** Tags the model proposed for this conversation alone; empty without the `tag-suggestions` feature. */
     val tagProposals: List<TagProposalState> = emptyList(),
+    /** True when the server lists `speech-kind`: chips and marks show. */
+    val speechAccess: Boolean = false,
+    val speechNotice: SpeechNotice? = null,
 )
 
 @Suppress("TooManyFunctions") // one screen, one function per action
@@ -167,6 +173,7 @@ class ConversationViewModel
         private val clock: Clock,
         private val info: InfoClient,
         private val tagsClient: TagsClient,
+        private val speech: SpeechClient,
     ) : ViewModel() {
         private val id: String = checkNotNull(savedState["id"]) { "The conversation route carries an id." }
         private val mutableState = MutableStateFlow(ConversationUiState())
@@ -437,7 +444,14 @@ class ConversationViewModel
         private suspend fun loadTagAccess() {
             val server = (info.info() as? ApiResult.Ok)?.value
             roles = server?.has(ServerInfo.FEATURE_ROLES) == true
-            mutableState.update { it.copy(tagAccess = server?.tagAccess() ?: TagAccess.None, banner = bannerOf()) }
+            mutableState.update {
+                it.copy(
+                    tagAccess = server?.tagAccess() ?: TagAccess.None,
+                    speechAccess = server?.has(ServerInfo.FEATURE_SPEECH_KIND) == true,
+                    banner = bannerOf(),
+                )
+            }
+            showSegments()
             if (server?.has(ServerInfo.FEATURE_TAG_SUGGESTIONS) == true) {
                 proposals.load()
                 showProposals()
@@ -530,8 +544,51 @@ class ConversationViewModel
             }
         }
 
+        /**
+         * The owner's kind for a line: "person", "media" or "call", null clears the mark. A kind shows at once and is
+         * taken back, with a notice, if the server refuses; a clear waits for the server, which alone knows what the
+         * line is then. Any line may be marked, the wearer's too. Does nothing without `speech-kind`.
+         */
+        fun markKind(
+            segmentId: Long,
+            kind: String?,
+        ) {
+            if (!mutableState.value.speechAccess) return
+            val before = segments.firstOrNull { it.id == segmentId } ?: return
+            val shown = kind?.let { before.copy(speechKind = it, speechMarked = true) }
+            if (shown != null) replace(shown)
+            viewModelScope.launch {
+                when (val result = speech.markSegment(segmentId, kind)) {
+                    is ApiResult.Ok -> replace(result.value)
+                    is ApiResult.Failure -> {
+                        if (shown != null && segments.firstOrNull { it.id == segmentId } == shown) replace(before)
+                        mutableState.update { it.copy(speechNotice = result.speechNotice()) }
+                    }
+                }
+            }
+        }
+
+        /** Marks every line that is not the wearer's, then reads the conversation again. */
+        fun markOthers(kind: String?) {
+            if (!mutableState.value.speechAccess) return
+            viewModelScope.launch {
+                when (val result = speech.markConversation(id, kind)) {
+                    is ApiResult.Ok ->
+                        (api.conversation(id) as? ApiResult.Ok)?.let { mutableState.value = show(it.value) }
+
+                    is ApiResult.Failure -> mutableState.update { it.copy(speechNotice = result.speechNotice()) }
+                }
+            }
+        }
+
+        fun speechNoticeShown() = mutableState.update { it.copy(speechNotice = null) }
+
         private fun replace(segment: Segment) {
             segments = segments.map { if (it.id == segment.id) segment else it }
+            showSegments()
+        }
+
+        private fun showSegments() {
             mutableState.update { state ->
                 val old = state.paragraphs
                 state.copy(
@@ -663,6 +720,7 @@ class ConversationViewModel
                 tags = detail.tags,
                 tagAccess = mutableState.value.tagAccess,
                 tagProposals = mutableState.value.tagProposals,
+                speechAccess = mutableState.value.speechAccess,
             )
         }
 
@@ -687,6 +745,7 @@ class ConversationViewModel
                     isUser = it.isUser,
                     sourceNote = note,
                     marked = it.isUserSource == SOURCE_MANUAL,
+                    speech = if (mutableState.value.speechAccess) it.speechLabel() else null,
                 ).also { previous = speaker to note }
             }
         }
