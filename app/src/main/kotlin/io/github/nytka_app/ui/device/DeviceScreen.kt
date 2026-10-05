@@ -49,7 +49,6 @@ fun DeviceScreen(
     status: StatusUiState,
     onMute: (Boolean) -> Unit,
     onOpenDeveloper: () -> Unit,
-    onOpenPeople: () -> Unit,
     onOpenVoice: () -> Unit,
     viewModel: DeviceViewModel = hiltViewModel(),
 ) {
@@ -110,7 +109,6 @@ fun DeviceScreen(
         item {
             Section(stringResource(R.string.people)) {
                 Text(stringResource(R.string.people_description))
-                OutlinedButton(onClick = onOpenPeople) { Text(stringResource(R.string.people)) }
             }
         }
         if (state.serverVoice == true) {

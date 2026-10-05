@@ -7,12 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -31,48 +27,39 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.Person
-import io.github.nytka_app.core.api.UnnamedVoice
-import io.github.nytka_app.ui.conversations.Formatting
 import io.github.nytka_app.ui.conversations.MAX_NAME
 import io.github.nytka_app.ui.conversations.NameVoiceDialog
-import java.time.LocalDate
-import java.time.ZoneId
 
-/** The people Nytka knows, and the voices it heard but nobody named. Reached from the Device tab. */
+/**
+ * The People tab's list: the people Nytka knows and the voices it heard but nobody named. [onOpenPerson] opens
+ * the person page; without it, or on a server that has none, a row opens the actions dialog.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PeopleScreen(
-    onBack: () -> Unit,
+    onOpenPerson: ((String) -> Unit)? = null,
     viewModel: PeopleViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
+    val context = LocalContext.current
     LaunchedEffect(state.note) {
         state.note?.let {
-            snackbar.showSnackbar(it)
+            snackbar.showSnackbar(noticeText(context, it))
             viewModel.noteShown()
         }
     }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.people_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.action_back),
-                        )
-                    }
-                },
-            )
+            TopAppBar(title = { Text(stringResource(R.string.people_title)) })
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
@@ -88,8 +75,8 @@ fun PeopleScreen(
                 state.error?.let { error ->
                     item {
                         Column(Modifier.padding(horizontal = 16.dp)) {
-                            Text(error, color = MaterialTheme.colorScheme.error)
-                            TextButton(onClick = viewModel::refresh) { Text("Retry") }
+                            Text(noticeText(context, error), color = MaterialTheme.colorScheme.error)
+                            TextButton(onClick = viewModel::refresh) { Text(stringResource(R.string.action_retry)) }
                         }
                     }
                 }
@@ -101,20 +88,18 @@ fun PeopleScreen(
                     items(state.people, key = { "p" + it.id }) { person ->
                         ListItem(
                             headlineContent = { Text(person.name) },
-                            supportingContent = { Text(lines(person.segments)) },
-                            modifier = Modifier.clickable { viewModel.openPerson(person) },
+                            supportingContent = { Text(personLine(person, state.hasSummaries)) },
+                            modifier = Modifier.clickable { viewModel.tap(person, onOpenPerson) },
                         )
                     }
                     item { SectionTitle(stringResource(R.string.unnamed_voices_section)) }
-                    if (state.voices.isEmpty() &&
-                        !state.loading
-                    ) {
+                    if (state.voices.isEmpty() && !state.loading) {
                         item { Empty(stringResource(R.string.no_unnamed_voices)) }
                     }
                     items(state.voices, key = { "v" + it.speakerId }) { voice ->
                         ListItem(
                             headlineContent = { Text(voiceTitle(voice)) },
-                            supportingContent = { Text("${lines(voice.segments)} · last heard ${lastHeard(voice)}") },
+                            supportingContent = { Text(voiceLine(voice)) },
                             modifier = Modifier.clickable { viewModel.openVoice(voice) },
                         )
                     }
@@ -165,17 +150,6 @@ private fun Empty(text: String) {
     Text(text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(horizontal = 16.dp))
 }
 
-private fun lines(count: Int) = if (count == 1) "1 line" else "$count lines"
-
-private fun voiceTitle(voice: UnnamedVoice) = voice.label?.takeIf { it.isNotBlank() } ?: "Unknown voice"
-
-private fun lastHeard(voice: UnnamedVoice): String {
-    val instant = Formatting.parse(voice.lastSeenAt) ?: return "unknown"
-    val zone = ZoneId.systemDefault()
-    val day = Formatting.dayTitle(instant.atZone(zone).toLocalDate(), LocalDate.now(zone))
-    return "$day, ${Formatting.clock(instant, zone)}"
-}
-
 @Composable
 private fun ActionsDialog(
     person: Person,
@@ -186,12 +160,18 @@ private fun ActionsDialog(
         title = { Text(person.name) },
         text = {
             Column {
-                TextButton(onClick = { viewModel.startRename(person) }) { Text("Rename") }
-                TextButton(onClick = { viewModel.startMerge(person) }) { Text("Merge into another person") }
-                TextButton(onClick = { viewModel.startDelete(person) }) { Text("Delete") }
+                TextButton(onClick = { viewModel.startRename(person) }) { Text(stringResource(R.string.action_rename)) }
+                TextButton(onClick = { viewModel.startMerge(person) }) {
+                    Text(stringResource(R.string.people_merge_action))
+                }
+                TextButton(onClick = { viewModel.startDelete(person) }) { Text(stringResource(R.string.action_delete)) }
             }
         },
-        confirmButton = { TextButton(onClick = viewModel::dismissDialog) { Text("Close") } },
+        confirmButton = {
+            TextButton(
+                onClick = viewModel::dismissDialog,
+            ) { Text(stringResource(R.string.action_close)) }
+        },
     )
 }
 
@@ -204,19 +184,24 @@ private fun RenameDialog(
     var text by rememberSaveable { mutableStateOf(dialog.person.name) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename") },
+        title = { Text(stringResource(R.string.action_rename)) },
         text = {
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it.take(MAX_NAME) },
-                label = { Text("Name") },
+                label = { Text(stringResource(R.string.people_name_label)) },
                 isError = dialog.error != null,
-                supportingText = dialog.error?.let { error -> { Text(error) } },
+                supportingText = dialog.error?.let { error -> { Text(noticeText(LocalContext.current, error)) } },
                 singleLine = true,
             )
         },
-        confirmButton = { TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank()) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = {
+            TextButton(
+                onClick = { onSave(text) },
+                enabled = text.isNotBlank(),
+            ) { Text(stringResource(R.string.action_save)) }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -229,16 +214,16 @@ private fun MergeDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Merge ${person.name} into") },
+        title = { Text(stringResource(R.string.people_merge_title_format, person.name)) },
         text = {
             if (others.isEmpty()) {
-                Text("There is nobody else to merge into.")
+                Text(stringResource(R.string.people_merge_nobody))
             } else {
                 LazyColumn {
                     items(others, key = { it.id }) { other ->
                         ListItem(
                             headlineContent = { Text(other.name) },
-                            supportingContent = { Text(lines(other.segments)) },
+                            supportingContent = { Text(linesText(other.segments)) },
                             modifier = Modifier.clickable { onPick(other) },
                         )
                     }
@@ -246,7 +231,7 @@ private fun MergeDialog(
             }
         },
         confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -257,19 +242,17 @@ private fun DeleteDialog(
 ) {
     AlertDialog(
         onDismissRequest = viewModel::dismissDialog,
-        title = { Text("Delete ${person.name}?") },
-        text = {
-            Text(
-                "Their lines stay, but show an unknown voice again. Deleting the voice model as well removes " +
-                    "the stored voiceprint from the transcription service, so the voice is no longer recognized. " +
-                    "This cannot be undone.",
-            )
-        },
+        title = { Text(stringResource(R.string.people_delete_title_format, person.name)) },
+        text = { Text(stringResource(R.string.people_delete_text)) },
         confirmButton = {
             Column {
-                TextButton(onClick = { viewModel.forget(person) }) { Text("Delete and remove voice model") }
-                TextButton(onClick = { viewModel.delete(person) }) { Text("Delete, keep voice model") }
-                TextButton(onClick = viewModel::dismissDialog) { Text("Cancel") }
+                TextButton(onClick = { viewModel.forget(person) }) {
+                    Text(stringResource(R.string.people_delete_and_forget))
+                }
+                TextButton(onClick = { viewModel.delete(person) }) {
+                    Text(stringResource(R.string.people_delete_keep_model))
+                }
+                TextButton(onClick = viewModel::dismissDialog) { Text(stringResource(R.string.action_cancel)) }
             }
         },
     )

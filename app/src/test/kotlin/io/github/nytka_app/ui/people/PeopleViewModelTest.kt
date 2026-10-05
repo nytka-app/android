@@ -3,10 +3,11 @@ package io.github.nytka_app.ui.people
 import io.github.nytka_app.MainDispatcherRule
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
+import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.PeopleClient
 import io.github.nytka_app.core.api.Person
+import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.UnnamedVoice
-import io.github.nytka_app.ui.NEEDS_UPDATE
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -57,11 +58,14 @@ class PeopleViewModelTest {
     }
 
     private val api = FakePeople()
+    private var info: ApiResult<ServerInfo> = ApiResult.Ok(ServerInfo("0.14.0", 1, features = listOf("people")))
     private val anna = Person("p1", "Anna", voices = listOf("4"), segments = 12)
     private val bea = Person("p2", "bea", segments = 1)
     private val voice = UnnamedVoice("7", "SPEAKER_02", 5, "2026-09-29T08:00:00Z")
 
-    private fun newViewModel() = PeopleViewModel(api)
+    private fun newViewModel() = PeopleViewModel(api, InfoClient { info })
+
+    private val updateNeeded = PeopleNotice.Failed(FailureKind.NotFound, "The server answered.", item = false)
 
     private fun failure(kind: FailureKind) = ApiResult.Failure(kind, "The server answered.")
 
@@ -82,14 +86,17 @@ class PeopleViewModelTest {
     fun `an older server says it needs an update`() {
         api.people = failure(FailureKind.NotFound)
 
-        assertEquals(NEEDS_UPDATE, newViewModel().state.value.error)
+        assertEquals(updateNeeded, newViewModel().state.value.error)
     }
 
     @Test
     fun `a 405 on the voices also says it needs an update`() {
         api.voices = failure(FailureKind.Unsupported)
 
-        assertEquals(NEEDS_UPDATE, newViewModel().state.value.error)
+        assertEquals(
+            PeopleNotice.Failed(FailureKind.Unsupported, "The server answered.", item = false),
+            newViewModel().state.value.error,
+        )
     }
 
     @Test
@@ -102,7 +109,7 @@ class PeopleViewModelTest {
 
         assertEquals(listOf("7" to "Carl"), api.named)
         assertNull(vm.state.value.dialog)
-        assertEquals("Named the voice Carl.", vm.state.value.note)
+        assertEquals(PeopleNotice.VoiceNamed("Carl"), vm.state.value.note)
         assertEquals(2, api.listCalls)
     }
 
@@ -124,7 +131,7 @@ class PeopleViewModelTest {
 
         assertEquals(listOf("p1" to "Anna B"), api.renamed)
         assertNull(vm.state.value.dialog)
-        assertEquals("Renamed to Anna B.", vm.state.value.note)
+        assertEquals(PeopleNotice.Renamed("Anna B"), vm.state.value.note)
     }
 
     @Test
@@ -135,7 +142,7 @@ class PeopleViewModelTest {
 
         vm.rename(anna, "Bea")
 
-        assertEquals(PeopleDialog.Rename(anna, "Someone is already called Bea."), vm.state.value.dialog)
+        assertEquals(PeopleDialog.Rename(anna, PeopleNotice.NameTaken("Bea")), vm.state.value.dialog)
         assertNull(vm.state.value.note)
     }
 
@@ -158,7 +165,7 @@ class PeopleViewModelTest {
         vm.merge(anna, bea)
 
         assertEquals(listOf("p1" to "p2"), api.merged)
-        assertEquals("Merged Anna into bea.", vm.state.value.note)
+        assertEquals(PeopleNotice.Merged("Anna", "bea"), vm.state.value.note)
         assertEquals(2, api.listCalls)
     }
 
@@ -169,7 +176,10 @@ class PeopleViewModelTest {
 
         vm.merge(anna, bea)
 
-        assertEquals("This item no longer exists", vm.state.value.note)
+        assertEquals(
+            PeopleNotice.Failed(FailureKind.NotFound, "The server answered.", item = true),
+            vm.state.value.note,
+        )
         assertEquals(2, api.listCalls)
     }
 
@@ -181,7 +191,7 @@ class PeopleViewModelTest {
 
         assertEquals(listOf("p1"), api.deleted)
         assertTrue(api.forgotten.isEmpty())
-        assertEquals("Deleted Anna.", vm.state.value.note)
+        assertEquals(PeopleNotice.Deleted("Anna"), vm.state.value.note)
     }
 
     @Test
@@ -189,13 +199,13 @@ class PeopleViewModelTest {
         val vm = newViewModel()
 
         vm.forget(anna)
-        assertEquals("Deleted Anna and their voice model.", vm.state.value.note)
+        assertEquals(PeopleNotice.DeletedWithVoiceModel("Anna"), vm.state.value.note)
 
         api.forget = ApiResult.Ok(false)
         vm.forget(anna)
 
         assertEquals(listOf("p1", "p1"), api.forgotten)
-        assertEquals("Deleted Anna, but the voice model could not be removed.", vm.state.value.note)
+        assertEquals(PeopleNotice.DeletedVoiceModelStays("Anna"), vm.state.value.note)
     }
 
     @Test
@@ -206,7 +216,75 @@ class PeopleViewModelTest {
 
         vm.delete(anna)
 
-        assertEquals("The app needs an admin token.", vm.state.value.note)
+        assertEquals(
+            PeopleNotice.Failed(FailureKind.Forbidden, "The server answered.", item = true),
+            vm.state.value.note,
+        )
         assertNull(vm.state.value.dialog)
+    }
+
+    @Test
+    fun `without lastSeenAt people sort by name and rows show line counts`() {
+        api.people = ApiResult.Ok(listOf(bea, anna))
+
+        val state = newViewModel().state.value
+
+        assertEquals(listOf("p1", "p2"), state.people.map { it.id })
+        assertTrue(!state.hasSummaries)
+    }
+
+    @Test
+    fun `with lastSeenAt the latest comes first, never heard last, ties by name`() {
+        val old = Person("p3", "Old", lastSeenAt = "2026-10-01T10:00:00Z", facts = 2)
+        val recent = Person("p4", "Zed", lastSeenAt = "2026-10-05T10:00:00Z", facts = 0)
+        val never = Person("p5", "Aaron", facts = 1)
+        api.people = ApiResult.Ok(listOf(never, old, bea, recent))
+
+        val state = newViewModel().state.value
+
+        assertEquals(listOf("p4", "p3", "p5", "p2"), state.people.map { it.id })
+        assertTrue(state.hasSummaries)
+    }
+
+    @Test
+    fun `a row opens the person page when the server lists people and the tab can show it`() {
+        val opened = mutableListOf<String>()
+        val vm = newViewModel()
+
+        vm.tap(anna) { opened += it }
+
+        assertEquals(listOf("p1"), opened)
+        assertNull(vm.state.value.dialog)
+    }
+
+    @Test
+    fun `a row opens the actions dialog on a server without people`() {
+        info = ApiResult.Ok(ServerInfo("0.12.0", 1))
+        val opened = mutableListOf<String>()
+        val vm = newViewModel()
+
+        vm.tap(anna) { opened += it }
+
+        assertTrue(opened.isEmpty())
+        assertEquals(PeopleDialog.Actions(anna), vm.state.value.dialog)
+    }
+
+    @Test
+    fun `a row opens the actions dialog while the tab has no person page`() {
+        val vm = newViewModel()
+
+        vm.tap(anna, null)
+
+        assertEquals(PeopleDialog.Actions(anna), vm.state.value.dialog)
+    }
+
+    @Test
+    fun `an unreadable info answer leaves the actions dialog`() {
+        info = failure(FailureKind.Network)
+        val vm = newViewModel()
+
+        vm.tap(anna) { error("no page") }
+
+        assertEquals(PeopleDialog.Actions(anna), vm.state.value.dialog)
     }
 }
