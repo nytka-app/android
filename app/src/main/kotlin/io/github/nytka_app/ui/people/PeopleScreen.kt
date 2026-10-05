@@ -48,6 +48,7 @@ import io.github.nytka_app.ui.people.cards.CardsEffects
 import io.github.nytka_app.ui.people.cards.CardsViewModel
 import io.github.nytka_app.ui.people.cards.cardsSection
 import io.github.nytka_app.ui.people.review.ReviewInboxAction
+import io.github.nytka_app.ui.tags.TagRow
 
 /**
  * The People tab's list: the people Nytka knows and the voices it heard but nobody named. [onOpenPerson] opens
@@ -120,7 +121,12 @@ fun PeopleScreen(
                     items(state.people, key = { "p" + it.id }) { person ->
                         ListItem(
                             headlineContent = { Text(person.name) },
-                            supportingContent = { Text(personLine(person, state.hasSummaries)) },
+                            supportingContent = {
+                                Column {
+                                    Text(personLine(person, state.hasSummaries))
+                                    TagRow(person.tags, Modifier.padding(top = 4.dp))
+                                }
+                            },
                             modifier = Modifier.clickable { viewModel.tap(person, onOpenPerson) },
                         )
                     }

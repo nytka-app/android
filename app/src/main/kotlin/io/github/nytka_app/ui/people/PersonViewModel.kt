@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
+import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.NoteChange
 import io.github.nytka_app.core.api.NytkaTask
 import io.github.nytka_app.core.api.PeopleClient
@@ -14,6 +15,11 @@ import io.github.nytka_app.core.api.PersonConversation
 import io.github.nytka_app.core.api.PersonFact
 import io.github.nytka_app.core.api.PersonPage
 import io.github.nytka_app.core.api.PersonPageClient
+import io.github.nytka_app.core.api.TagsClient
+import io.github.nytka_app.ui.tags.TagAccess
+import io.github.nytka_app.ui.tags.TagNotice
+import io.github.nytka_app.ui.tags.tagAccess
+import io.github.nytka_app.ui.tags.tagNotice
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -118,6 +124,10 @@ data class PersonUiState(
     val notice: PersonNotice? = null,
     /** The person was deleted or merged away: the screen leaves. */
     val gone: Boolean = false,
+    /** The person's tags, as the server holds them; the screen shows them only when [tagAccess] allows. */
+    val tags: List<String> = emptyList(),
+    val tagAccess: TagAccess = TagAccess.None,
+    val tagNotice: TagNotice? = null,
 )
 
 @HiltViewModel
@@ -127,6 +137,8 @@ class PersonViewModel
         savedState: SavedStateHandle,
         private val pages: PersonPageClient,
         private val people: PeopleClient,
+        private val info: InfoClient,
+        private val tagsClient: TagsClient,
     ) : ViewModel() {
         private val id: String = checkNotNull(savedState["id"]) { "The person route carries an id." }
         private val mutableState = MutableStateFlow(PersonUiState())
@@ -134,6 +146,7 @@ class PersonViewModel
 
         init {
             refresh()
+            viewModelScope.launch { loadTagAccess() }
         }
 
         fun refresh() {
@@ -174,6 +187,7 @@ class PersonViewModel
             conversations = page.conversations,
             loading = false,
             error = null,
+            tags = page.tags,
         )
 
         fun setNoteDraft(text: String) = mutableState.update { it.copy(noteDraft = text.take(MAX_NOTE)) }
@@ -236,6 +250,45 @@ class PersonViewModel
         }
 
         fun dismissDialog() = show(null)
+
+        /** Chips need the `tags` feature, and changing them an admin token; any failure of `/info` shows none. */
+        private suspend fun loadTagAccess() {
+            val access = (info.info() as? ApiResult.Ok)?.value?.tagAccess() ?: TagAccess.None
+            mutableState.update { it.copy(tagAccess = access) }
+        }
+
+        /** The server normalizes [name] and answers the person's tags, which replace the chips. */
+        fun addTag(name: String) {
+            val wanted = name.trim()
+            if (wanted.isEmpty() || state.value.tagAccess != TagAccess.Edit) return
+            viewModelScope.launch {
+                when (val result = tagsClient.addPersonTag(id, wanted)) {
+                    is ApiResult.Ok -> mutableState.update { it.copy(tags = result.value) }
+                    is ApiResult.Failure -> mutableState.update { it.copy(tagNotice = result.tagNotice()) }
+                }
+            }
+        }
+
+        /** The chip goes at once and comes back, with a notice, if the server refuses. */
+        fun removeTag(name: String) {
+            if (state.value.tagAccess != TagAccess.Edit) return
+            val before = state.value.tags
+            mutableState.update { it.copy(tags = it.tags - name) }
+            viewModelScope.launch {
+                when (val result = tagsClient.removePersonTag(id, name)) {
+                    is ApiResult.Ok -> mutableState.update { it.copy(tags = result.value) }
+                    is ApiResult.Failure ->
+                        mutableState.update {
+                            it.copy(
+                                tags = before,
+                                tagNotice = result.tagNotice(),
+                            )
+                        }
+                }
+            }
+        }
+
+        fun tagNoticeShown() = mutableState.update { it.copy(tagNotice = null) }
 
         fun noticeShown() = mutableState.update { it.copy(notice = null) }
 

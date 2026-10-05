@@ -36,6 +36,8 @@ data class ConversationRow(
     val chip: String? = null,
     /** How many bookmarks the conversation holds; the row shows an icon when it is above zero. */
     val bookmarks: Int = 0,
+    /** Sorted tag names; none from a server without the `tags` feature. */
+    val tags: List<String> = emptyList(),
 )
 
 data class DaySection(
@@ -230,6 +232,7 @@ class ConversationsViewModel
                                 it.title?.takeIf(String::isNotBlank),
                                 aiChip(it.aiStatus),
                                 it.bookmarks,
+                                it.tags,
                             )
                         },
                     )

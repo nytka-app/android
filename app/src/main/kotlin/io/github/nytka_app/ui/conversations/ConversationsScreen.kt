@@ -42,6 +42,7 @@ import io.github.nytka_app.ui.StatusCard
 import io.github.nytka_app.ui.StatusUiState
 import io.github.nytka_app.ui.search.SEARCH_ENABLED
 import io.github.nytka_app.ui.search.SearchScreen
+import io.github.nytka_app.ui.tags.TagRow
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -190,6 +191,7 @@ fun ConversationsScreen(
                                 row.chip?.let { chip ->
                                     AiChip(chip, Modifier.padding(top = 4.dp))
                                 }
+                                TagRow(row.tags, Modifier.padding(top = 4.dp))
                             }
                         },
                         modifier = Modifier.clickable { onOpen(row.id) },

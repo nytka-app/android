@@ -7,6 +7,8 @@ import io.github.nytka_app.core.api.ConversationDetail
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.Segment
 import io.github.nytka_app.ui.conversations.FakeReview.Companion.suggestion
+import io.github.nytka_app.ui.tags.FakeTags
+import io.github.nytka_app.ui.tags.fakeInfo
 import io.github.nytka_app.ui.tasks.FakeTasks
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -37,6 +39,8 @@ class ConversationSuggestionsTest {
             FakeAudio(),
             FakePlayer(),
             clock,
+            fakeInfo(),
+            FakeTags(),
         )
 
     private fun detail(segments: List<Segment>) =
