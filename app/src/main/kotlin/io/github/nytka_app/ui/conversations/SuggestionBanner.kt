@@ -18,6 +18,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.people.acceptText
+import io.github.nytka_app.ui.people.rejectText
+import io.github.nytka_app.ui.people.title
 
 /** "{label} may be {name}", the line that carries it, and two text buttons. Nothing is sent until one is tapped. */
 @Composable
@@ -30,11 +33,7 @@ fun SuggestionBanner(
     ElevatedCard(modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                stringResource(
-                    R.string.suggestion_banner_format,
-                    banner.label ?: stringResource(R.string.suggestion_unknown_voice),
-                    banner.name,
-                ),
+                banner.wording.title(banner.label ?: stringResource(R.string.suggestion_unknown_voice)),
                 style = MaterialTheme.typography.titleMedium,
             )
             banner.evidence?.let {
@@ -47,10 +46,10 @@ fun SuggestionBanner(
             }
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 TextButton(onClick = onReject, enabled = !banner.busy) {
-                    Text(stringResource(R.string.suggestion_reject_format, banner.name))
+                    Text(banner.wording.rejectText())
                 }
                 TextButton(onClick = onAccept, enabled = !banner.busy) {
-                    Text(stringResource(R.string.suggestion_accept))
+                    Text(banner.wording.acceptText())
                 }
             }
         }

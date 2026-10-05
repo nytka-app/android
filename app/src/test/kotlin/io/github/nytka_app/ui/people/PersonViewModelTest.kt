@@ -425,4 +425,41 @@ class PersonViewModelTest {
         assertFalse(vm.state.value.gone)
         assertTrue(vm.state.value.notice is PersonNotice.Failed)
     }
+
+    @Test
+    fun `a person known by a role shows as not named, and naming them marks the header named`() {
+        pages.page = ApiResult.Ok(PersonPage("p1", "Repairman", named = false))
+        val vm = newViewModel()
+        assertEquals(
+            false,
+            vm.state.value.header
+                ?.named,
+        )
+
+        pages.update = ApiResult.Ok(Person("p1", "Mykola"))
+        vm.rename("Mykola")
+
+        assertEquals(Triple("p1", "Mykola", NoteChange.Keep), pages.updates.single())
+        assertEquals(
+            "Mykola",
+            vm.state.value.header
+                ?.name,
+        )
+        assertEquals(
+            true,
+            vm.state.value.header
+                ?.named,
+        )
+        assertEquals(PersonNotice.Renamed("Mykola"), vm.state.value.notice)
+    }
+
+    @Test
+    fun `a named person's header is named`() {
+        assertEquals(
+            true,
+            loaded()
+                .state.value.header
+                ?.named,
+        )
+    }
 }

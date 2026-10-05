@@ -90,6 +90,11 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   Accept names the voice, so every line of it shows the name; Not Olena keeps the name from being
   suggested again for that voice. Nothing is applied until you tap. Tap a person's name above a run
   to open their page in the People tab. Needs server 0.14.0 and an admin token.
+  On a server that lists `roles` the suggestion may be a role: someone known by what they do before you
+  know their name. A role alone reads "A voice may be the repairman" with **Add as repairman** and **Not
+  that**; a name and a role read "A voice may be Mykola, the repairman". The role is shown as the server
+  sends it. Add as repairman creates a person called "Repairman" (or "Repairman 2") and tags them
+  `repairman`; nothing is created until you tap. A server without `roles` shows the name only.
   Titles, summaries and tasks come from a language model on your server: without one, a row shows the
   start of the transcript instead.
 - **Tasks.** What your conversations left you to do, newest first, with the conversation's title and
@@ -122,6 +127,13 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   the name), voice matches (with the similarity) and lines Nytka is unsure are yours ("Did you say
   this?"), each with **Yes** and **No**. Nothing is applied until you tap; the row goes at once and
   comes back if the server refuses. Tap a row to open its conversation. Needs an admin token.
+  A role reads "Is this the repairman?" or "Is this Mykola, the repairman?".
+  **Known by a role.** A person who has a role and no name yet shows their role as the name with a
+  second line "Name not known yet", in the list and on their page, whose ⋮ then has **Add name** in
+  place of Rename. It opens the usual rename dialog, empty; saving sets the name. A name someone else
+  has is refused ("taken") as for any rename. Later the server may suggest the name it hears for them:
+  accepting that, when the name already belongs to another person, merges the role-only person into
+  them, and the app says "Merged with {name}". Needs `roles`; an older server never sends the flag.
   A server that lists `tag-suggestions` adds proposed tags to the inbox ("Tag this conversation
   work?", "Tag Anna repairman?"), each with **Yes** and **No**; a person's tag opens that person. A tag
   that the item has no room for (20 tags) stays in the list with "This item has 20 tags."

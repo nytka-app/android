@@ -388,4 +388,14 @@
     <string name="review_tag_conversation_format">Позначити цю розмову тегом %1$s?</string>
     <string name="review_tag_person_format">Позначити %1$s тегом %2$s?</string>
     <string name="review_this_person">цю людину</string>
+    <!-- Tags: roles -->
+    <string name="role_suggestion_role_format">Можливо, %1$s — це %2$s</string>
+    <string name="role_suggestion_name_role_format">Можливо, %1$s — це %2$s, %3$s</string>
+    <string name="role_accept_format">Додати як «%1$s»</string>
+    <string name="role_reject">Не це</string>
+    <string name="review_role_question_format">Це %1$s?</string>
+    <string name="review_name_role_question_format">Це %1$s, %2$s?</string>
+    <string name="name_not_known">Ім\'я ще невідоме</string>
+    <string name="action_add_name">Додати ім\'я</string>
+    <string name="role_merged_format">Об\'єднано з %1$s: це ім\'я вже було в списку.</string>
 </resources>

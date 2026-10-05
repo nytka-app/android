@@ -476,4 +476,40 @@ class PeopleViewModelTest {
         assertEquals(ListEmpty.NotEmpty, viewModel.state.value.empty)
         assertNull(viewModel.state.value.tag)
     }
+
+    @Test
+    fun `a person known by a role keeps their listed name and is marked not named`() {
+        api.people = ApiResult.Ok(listOf(Person("p9", "Repairman", named = false), anna))
+
+        val state = newViewModel().state.value
+
+        assertEquals(listOf(true, false), state.people.map { it.named })
+        assertEquals("Repairman", state.people.single { !it.named }.name)
+    }
+
+    @Test
+    fun `naming a person known by a role sends the usual rename`() {
+        val repairman = Person("p9", "Repairman", named = false)
+        api.people = ApiResult.Ok(listOf(repairman))
+        val vm = newViewModel()
+
+        vm.startRename(repairman)
+        vm.rename(repairman, " Mykola ")
+
+        assertEquals(listOf("p9" to "Mykola"), api.renamed)
+        assertEquals(PeopleNotice.Renamed("Mykola"), vm.state.value.note)
+    }
+
+    @Test
+    fun `a name another person has is refused with the dialog kept, not merged`() {
+        val repairman = Person("p9", "Repairman", named = false)
+        api.people = ApiResult.Ok(listOf(repairman, anna))
+        api.rename = failure(FailureKind.Conflict)
+        val vm = newViewModel()
+
+        vm.startRename(repairman)
+        vm.rename(repairman, "Anna")
+
+        assertEquals(PeopleDialog.Rename(repairman, PeopleNotice.NameTaken("Anna")), vm.state.value.dialog)
+    }
 }
