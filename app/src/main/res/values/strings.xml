@@ -348,4 +348,15 @@
     <string name="review_no">No</string>
     <string name="review_not_them">Not them</string>
     <string name="review_already_answered">This was already answered.</string>
+    <!-- People: cards (A-P4) -->
+    <string name="cards_group_title">Who is this?</string>
+    <string name="cards_match_title_format">Is this %1$s?</string>
+    <string name="cards_play_clip">Play clip</string>
+    <string name="cards_stop_clip">Stop clip</string>
+    <string name="cards_yes">Yes</string>
+    <string name="cards_not_them">Not them</string>
+    <string name="cards_not_person">Not a person</string>
+    <string name="cards_skip">Skip</string>
+    <string name="cards_clip_gone">The audio of this card is gone.</string>
+    <string name="cards_clip_failed">The clip could not be played.</string>
 </resources>

@@ -39,6 +39,9 @@ import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.ui.conversations.MAX_NAME
 import io.github.nytka_app.ui.conversations.NameVoiceDialog
 import io.github.nytka_app.ui.people.review.ReviewInboxAction
+import io.github.nytka_app.ui.people.cards.CardsEffects
+import io.github.nytka_app.ui.people.cards.CardsViewModel
+import io.github.nytka_app.ui.people.cards.cardsSection
 
 /**
  * The People tab's list: the people Nytka knows and the voices it heard but nobody named. [onOpenPerson] opens
@@ -50,8 +53,11 @@ fun PeopleScreen(
     onOpenPerson: ((String) -> Unit)? = null,
     onOpenReview: () -> Unit = {},
     viewModel: PeopleViewModel = hiltViewModel(),
+    cardsViewModel: CardsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val cards by cardsViewModel.state.collectAsStateWithLifecycle()
+    val clip by cardsViewModel.clip.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.resumed() }
@@ -61,6 +67,7 @@ fun PeopleScreen(
             viewModel.noteShown()
         }
     }
+    CardsEffects(cardsViewModel, snackbar)
 
     Scaffold(
         topBar = {
@@ -73,7 +80,10 @@ fun PeopleScreen(
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = state.loading,
-            onRefresh = viewModel::refresh,
+            onRefresh = {
+                viewModel.refresh()
+                cardsViewModel.refresh()
+            },
             modifier =
                 Modifier
                     .fillMaxSize()
@@ -89,6 +99,7 @@ fun PeopleScreen(
                     }
                 }
                 if (state.error == null) {
+                    cardsSection(cards.cards, clip, cards.busy, state.people, cardsViewModel, viewModel::refresh)
                     item { SectionTitle(stringResource(R.string.people_section)) }
                     if (state.people.isEmpty() && !state.loading) {
                         item { Empty(stringResource(R.string.no_people_yet)) }

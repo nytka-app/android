@@ -344,4 +344,15 @@
     <string name="review_no">Ні</string>
     <string name="review_not_them">Не він</string>
     <string name="review_already_answered">На це вже відповіли.</string>
+    <!-- People: cards (A-P4) -->
+    <string name="cards_group_title">Хто це?</string>
+    <string name="cards_match_title_format">Це %1$s?</string>
+    <string name="cards_play_clip">Відтворити фрагмент</string>
+    <string name="cards_stop_clip">Зупинити фрагмент</string>
+    <string name="cards_yes">Так</string>
+    <string name="cards_not_them">Це не вони</string>
+    <string name="cards_not_person">Не людина</string>
+    <string name="cards_skip">Пропустити</string>
+    <string name="cards_clip_gone">Запис цієї картки вже видалено.</string>
+    <string name="cards_clip_failed">Не вдалося відтворити фрагмент.</string>
 </resources>
