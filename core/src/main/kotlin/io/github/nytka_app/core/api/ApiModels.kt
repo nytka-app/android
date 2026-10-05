@@ -19,6 +19,9 @@ data class ServerInfo(
         const val FEATURE_PEOPLE = "people"
         const val FEATURE_VOICE_GROUPS = "voice-groups"
         const val FEATURE_REVIEW = "review"
+        const val FEATURE_TAGS = "tags"
+        const val FEATURE_TAG_SUGGESTIONS = "tag-suggestions"
+        const val FEATURE_ROLES = "roles"
 
         const val SCOPE_ADMIN = "admin"
         const val SCOPE_READ = "read"
@@ -65,6 +68,8 @@ data class ConversationSummary(
     val aiStatus: String = AiState.NONE,
     /** How many bookmarks fall in the conversation; a server before v0.8 sends none. */
     val bookmarks: Int = 0,
+    /** Sorted names; a server without the `tags` feature sends none. */
+    val tags: List<String> = emptyList(),
 )
 
 @Serializable
@@ -131,6 +136,7 @@ data class ConversationDetail(
     val aiUpdatedAt: String? = null,
     val tasks: List<NytkaTask> = emptyList(),
     val bookmarks: List<Bookmark> = emptyList(),
+    val tags: List<String> = emptyList(),
 )
 
 /** A tap on the pendant (or a mark from the app) at [at], with the note a person added. */

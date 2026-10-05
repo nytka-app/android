@@ -17,6 +17,10 @@ data class Person(
     /** Newest segment of the person and their live facts (server 0.14 and later), so both are optional. */
     val lastSeenAt: String? = null,
     val factCount: Int? = null,
+    /** Sorted tag names (feature `tags`). */
+    val tags: List<String> = emptyList(),
+    /** False for a person known only by a role, such as "Repairman" (feature `roles`). */
+    val named: Boolean = true,
 )
 
 /** A voice not yet named and not the wearer's. [label] is the transcription service's own, such as `SPEAKER_01`. */
