@@ -63,6 +63,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import io.github.nytka_app.R
 
+@Suppress("UnusedParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConversationScreen(
@@ -70,6 +71,7 @@ fun ConversationScreen(
     onBack: () -> Unit,
     onDeleted: () -> Unit,
     onOpenPerson: (String) -> Unit,
+    onOpenTag: (String) -> Unit,
     viewModel: ConversationViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()

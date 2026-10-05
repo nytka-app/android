@@ -59,6 +59,8 @@ fun PeopleScreen(
     onOpenPerson: ((String) -> Unit)? = null,
     onOpenReview: () -> Unit = {},
     onOpenSettings: (() -> Unit)? = null,
+    tagRequest: String? = null,
+    onTagRequestHandled: () -> Unit = {},
     viewModel: PeopleViewModel = hiltViewModel(),
     cardsViewModel: CardsViewModel = hiltViewModel(),
 ) {
@@ -68,6 +70,7 @@ fun PeopleScreen(
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.resumed() }
+    TagRequestEffect(tagRequest, viewModel::showTag, onTagRequestHandled)
     LaunchedEffect(state.note) {
         state.note?.let {
             snackbar.showSnackbar(noticeText(context, it))
@@ -161,6 +164,21 @@ fun PeopleScreen(
                 onDismiss = viewModel::dismissDialog,
                 onSave = { viewModel.nameVoice(dialog.voice, it) },
             )
+    }
+}
+
+/** Hands a tag asked for on a person page to the view model once. */
+@Composable
+private fun TagRequestEffect(
+    tagRequest: String?,
+    show: (String) -> Unit,
+    handled: () -> Unit,
+) {
+    LaunchedEffect(tagRequest) {
+        tagRequest?.let {
+            show(it)
+            handled()
+        }
     }
 }
 

@@ -1,5 +1,6 @@
 package io.github.nytka_app.ui.people
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -9,6 +10,7 @@ import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.PeopleClient
 import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.core.api.ServerInfo
+import io.github.nytka_app.core.api.TagsClient
 import io.github.nytka_app.core.api.UnnamedVoice
 import io.github.nytka_app.ui.conversations.Formatting
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -95,6 +97,8 @@ data class PeopleUiState(
     val dialog: PeopleDialog? = null,
     /** The result of the last action, for a snackbar. */
     val note: PeopleNotice? = null,
+    /** The tag the list is filtered by; kept in saved state, so it survives rotation but not a launch. */
+    val tag: String? = null,
 )
 
 @HiltViewModel
@@ -103,8 +107,10 @@ class PeopleViewModel
     constructor(
         private val api: PeopleClient,
         private val info: InfoClient,
+        private val tags: TagsClient,
+        private val savedState: SavedStateHandle,
     ) : ViewModel() {
-        private val mutableState = MutableStateFlow(PeopleUiState())
+        private val mutableState = MutableStateFlow(PeopleUiState(tag = savedState[TAG]))
         val state: StateFlow<PeopleUiState> = mutableState.asStateFlow()
 
         private var visited = false
@@ -118,15 +124,39 @@ class PeopleViewModel
             if (visited) refresh() else visited = true
         }
 
+        /**
+         * Filters the list by [name], a tag taken from a chip. A server without the `tags` feature keeps the full list.
+         * Voices nobody named carry no tags, so a filtered list has none.
+         */
+        fun showTag(name: String) {
+            viewModelScope.launch {
+                if ((info.info() as? ApiResult.Ok)?.value?.has(ServerInfo.FEATURE_TAGS) != true) return@launch
+                setTag(name)
+            }
+        }
+
+        fun clearTag() = setTag(null)
+
+        private fun setTag(name: String?) {
+            if (name == mutableState.value.tag) return
+            savedState[TAG] = name
+            mutableState.update { it.copy(tag = name, people = emptyList(), voices = emptyList()) }
+            refresh()
+        }
+
         fun refresh() {
             mutableState.update { it.copy(loading = true, error = null) }
             viewModelScope.launch {
-                val people = api.people()
-                val voices = api.voices()
+                val filter = mutableState.value.tag
+                val people = if (filter == null) api.people() else tags.people(filter)
+                val voices = if (filter == null) api.voices() else ApiResult.Ok(emptyList())
                 val personPages = (info.info() as? ApiResult.Ok)?.value?.has(ServerInfo.FEATURE_PEOPLE) == true
                 val failure = (people as? ApiResult.Failure) ?: (voices as? ApiResult.Failure)
                 mutableState.update { current ->
-                    if (failure != null) {
+                    // The filter changed while this read was out: a newer refresh brings the right list.
+                    if (current.tag != filter) {
+                        current
+                    } else if (failure != null) {
                         current.copy(loading = false, error = failure.asNotice(item = false))
                     } else {
                         val list = (people as ApiResult.Ok).value
@@ -255,6 +285,7 @@ class PeopleViewModel
 
         companion object {
             const val MAX_NAME = 80
+            private const val TAG = "tag"
 
             /**
              * Most recently heard first, never-heard last, then by name; by name alone while the server sends

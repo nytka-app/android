@@ -2,7 +2,9 @@ package io.github.nytka_app.ui.people
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -12,6 +14,8 @@ import io.github.nytka_app.R
 import io.github.nytka_app.ui.developer.server.ServerSettingsScreen
 import io.github.nytka_app.ui.people.review.ReviewScreen
 import kotlinx.coroutines.flow.Flow
+
+private const val TAG_REQUEST = "tagRequest"
 
 /**
  * The People tab: its own NavHost, so person pages, the review inbox and settings open inside it. A person that
@@ -28,15 +32,30 @@ fun PeopleTab(
         openRequests.collect { id -> navController.navigate("person/$id") { popUpTo("list") } }
     }
     NavHost(navController, startDestination = "list") {
-        composable("list") {
+        composable("list") { entry ->
+            // A tag tapped on a person page comes back as this entry's result: the list filters by it.
+            val tagRequest by entry.savedStateHandle
+                .getStateFlow<String?>(
+                    TAG_REQUEST,
+                    null,
+                ).collectAsStateWithLifecycle()
             PeopleScreen(
+                tagRequest = tagRequest,
+                onTagRequestHandled = { entry.savedStateHandle[TAG_REQUEST] = null },
                 onOpenPerson = { navController.navigate("person/$it") },
                 onOpenReview = { navController.navigate("review") },
                 onOpenSettings = { navController.navigate("settings?prefixes=people") },
             )
         }
         composable("person/{id}") {
-            PersonScreen(onBack = { navController.popBackStack() }, onOpenConversation = onOpenConversation)
+            PersonScreen(
+                onBack = { navController.popBackStack() },
+                onOpenConversation = onOpenConversation,
+                onOpenTag = { name ->
+                    navController.getBackStackEntry("list").savedStateHandle[TAG_REQUEST] = name
+                    navController.popBackStack("list", inclusive = false)
+                },
+            )
         }
         composable("review") {
             ReviewScreen(onBack = navController::popBackStack, onOpenConversation = onOpenConversation)

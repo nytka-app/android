@@ -148,6 +148,11 @@ the memory and a snippet with the matches in bold, and opens its conversation wh
 word must match, exactly or as the start of a word. Endings of Ukrainian words need the server's optional dictionary:
 see the [server README](https://github.com/nytka-app/server#ukrainian-search-optional).
 
+**Tag chips.** Tapping a tag on a conversation opens the Conversations list with only the conversations
+that have it, and tapping one on a person page does the same in People (the unnamed voices, which carry
+no tags, drop out). The filter lasts until you leave the app; a server without the `tags` feature
+keeps the full list.
+
 ## Offline sync
 
 While the phone is out of range, the pendant stores what it hears on its own card. When the phone

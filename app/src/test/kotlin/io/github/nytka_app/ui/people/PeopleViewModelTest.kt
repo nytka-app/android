@@ -1,5 +1,6 @@
 package io.github.nytka_app.ui.people
 
+import androidx.lifecycle.SavedStateHandle
 import io.github.nytka_app.MainDispatcherRule
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
@@ -7,6 +8,9 @@ import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.PeopleClient
 import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.core.api.ServerInfo
+import io.github.nytka_app.core.api.Tag
+import io.github.nytka_app.core.api.TagSuggestion
+import io.github.nytka_app.core.api.TagsClient
 import io.github.nytka_app.core.api.UnnamedVoice
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -57,13 +61,58 @@ class PeopleViewModelTest {
         override suspend fun forgetPerson(id: String) = forget.also { forgotten += id }
     }
 
+    /** Only the filtered people are read from here; every other call is a test bug. */
+    private class FakeTagLists : TagsClient {
+        var people: ApiResult<List<Person>> = ApiResult.Ok(emptyList())
+        val requested = mutableListOf<String>()
+
+        override suspend fun people(tag: String): ApiResult<List<Person>> = people.also { requested += tag }
+
+        override suspend fun tags(q: String?): ApiResult<List<Tag>> = error("unused")
+
+        override suspend fun addConversationTag(
+            id: String,
+            name: String,
+        ): ApiResult<List<String>> = error("unused")
+
+        override suspend fun removeConversationTag(
+            id: String,
+            name: String,
+        ): ApiResult<List<String>> = error("unused")
+
+        override suspend fun addPersonTag(
+            id: String,
+            name: String,
+        ): ApiResult<List<String>> = error("unused")
+
+        override suspend fun removePersonTag(
+            id: String,
+            name: String,
+        ): ApiResult<List<String>> = error("unused")
+
+        override suspend fun conversations(
+            tag: String,
+            before: String?,
+            limit: Int,
+        ): ApiResult<io.github.nytka_app.core.api.ConversationPage> = error("unused")
+
+        override suspend fun suggestions(): ApiResult<List<TagSuggestion>> = error("unused")
+
+        override suspend fun answerSuggestion(
+            id: String,
+            accept: Boolean,
+        ): ApiResult<Unit> = error("unused")
+    }
+
     private val api = FakePeople()
+    private val tagLists = FakeTagLists()
     private var info: ApiResult<ServerInfo> = ApiResult.Ok(ServerInfo("0.14.0", 1, features = listOf("people")))
     private val anna = Person("p1", "Anna", voices = listOf("4"), segments = 12)
     private val bea = Person("p2", "bea", segments = 1)
     private val voice = UnnamedVoice("7", "SPEAKER_02", 5, "2026-09-29T08:00:00Z")
 
-    private fun newViewModel() = PeopleViewModel(api, InfoClient { info })
+    private fun newViewModel(savedState: SavedStateHandle = SavedStateHandle()) =
+        PeopleViewModel(api, InfoClient { info }, tagLists, savedState)
 
     private val updateNeeded = PeopleNotice.Failed(FailureKind.NotFound, "The server answered.", item = false)
 
@@ -286,5 +335,92 @@ class PeopleViewModelTest {
         vm.tap(anna) { error("no page") }
 
         assertEquals(PeopleDialog.Actions(anna), vm.state.value.dialog)
+    }
+
+    private val withTags = ApiResult.Ok(ServerInfo("0.17.0", 1, features = listOf("people", "tags")))
+
+    @Test
+    fun `a tag from a chip shows the people who have it, without the unnamed voices`() {
+        api.people = ApiResult.Ok(listOf(anna, bea))
+        api.voices = ApiResult.Ok(listOf(voice))
+        tagLists.people = ApiResult.Ok(listOf(bea))
+        info = withTags
+        val viewModel = newViewModel()
+
+        viewModel.showTag("repairman")
+
+        assertEquals("repairman", viewModel.state.value.tag)
+        assertEquals(listOf(bea), viewModel.state.value.people)
+        assertTrue(
+            viewModel.state.value.voices
+                .isEmpty(),
+        )
+        assertEquals(listOf("repairman"), tagLists.requested)
+        assertEquals("only the first load read the full list", 1, api.listCalls)
+    }
+
+    @Test
+    fun `clearing the tag reads the full list again`() {
+        api.people = ApiResult.Ok(listOf(anna, bea))
+        api.voices = ApiResult.Ok(listOf(voice))
+        tagLists.people = ApiResult.Ok(listOf(bea))
+        info = withTags
+        val viewModel = newViewModel()
+        viewModel.showTag("repairman")
+
+        viewModel.clearTag()
+
+        assertNull(viewModel.state.value.tag)
+        assertEquals(listOf(anna, bea), viewModel.state.value.people)
+        assertEquals(listOf(voice), viewModel.state.value.voices)
+    }
+
+    @Test
+    fun `refreshing a filtered list keeps the filter`() {
+        tagLists.people = ApiResult.Ok(listOf(bea))
+        info = withTags
+        val viewModel = newViewModel()
+        viewModel.showTag("repairman")
+
+        viewModel.refresh()
+
+        assertEquals(listOf("repairman", "repairman"), tagLists.requested)
+        assertEquals(1, api.listCalls)
+        assertEquals("repairman", viewModel.state.value.tag)
+    }
+
+    @Test
+    fun `a server without the tags feature keeps the full list and makes no tag call`() {
+        api.people = ApiResult.Ok(listOf(anna, bea))
+        val viewModel = newViewModel()
+
+        viewModel.showTag("repairman")
+
+        assertNull(viewModel.state.value.tag)
+        assertEquals(listOf(anna, bea), viewModel.state.value.people)
+        assertTrue(tagLists.requested.isEmpty())
+    }
+
+    @Test
+    fun `the tag survives a restore of the saved state`() {
+        tagLists.people = ApiResult.Ok(listOf(bea))
+
+        val viewModel = newViewModel(SavedStateHandle(mapOf("tag" to "repairman")))
+
+        assertEquals("repairman", viewModel.state.value.tag)
+        assertEquals(listOf(bea), viewModel.state.value.people)
+        assertEquals(0, api.listCalls)
+    }
+
+    @Test
+    fun `a filtered list that cannot be read says the server needs an update on a 404`() {
+        tagLists.people = failure(FailureKind.NotFound)
+        info = withTags
+        val viewModel = newViewModel()
+
+        viewModel.showTag("repairman")
+
+        assertEquals(updateNeeded, viewModel.state.value.error)
+        assertEquals("repairman", viewModel.state.value.tag)
     }
 }

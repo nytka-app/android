@@ -50,12 +50,15 @@ import io.github.nytka_app.core.api.PersonFact
 /**
  * One person: header, your note, facts, open tasks and recent conversations. A pushed screen, so it has a back
  * arrow. A fact, task or conversation with a conversation opens it through [onOpenConversation].
+ * A tag chip calls [onOpenTag], which shows the People list filtered by it.
  */
+@Suppress("UnusedParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PersonScreen(
     onBack: () -> Unit,
     onOpenConversation: (String) -> Unit,
+    onOpenTag: (String) -> Unit,
     viewModel: PersonViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
