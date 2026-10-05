@@ -159,7 +159,7 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   **Delete and remove voice model** on one person.
 - **Ask.** A placeholder that says "Arrives in a later version".
 - **Device.** The pendant, its storage and settings, the server, the settings,
-  [Your voice](#your-voice) and the version.
+  [Phone context](#phone-context), [Your voice](#your-voice) and the version.
 
 **Search** opens from the magnifier above the conversation list. It looks through transcripts,
 titles, summaries and memories, in Ukrainian and English, while you type: from one letter or digit,
@@ -312,6 +312,22 @@ example another language), **Forget what it learned** goes back to the enrolled 
 made from them; your own marks stay. See the
 [server README](https://github.com/nytka-app/server#your-voice).
 
+## Phone context
+
+When the server lists `context-ranges` in `/api/v1/info`, the **Device** tab has a **Phone context** switch,
+on by default: "Tell your server when this phone plays sound through its speaker or is in a call. Only times are
+sent, never what played." While capture runs, the app notes two kinds of stretch: **media**, when the phone plays
+music or video through its built-in speaker at a volume above 0 (it ends 2 seconds after the sound stops, or at
+once when the sound moves to headphones), and **call**, when the phone is in a call or a voice or video chat, with
+the route it held longest: speaker, earpiece, headset, Bluetooth or other. The server uses them to tell a
+conversation in the room from a television, a video or a call.
+
+What the app sends is the kind, the route and two times for each stretch, in batches of up to 500 once a minute.
+Never an app, a title, a contact or a number, and nothing from the microphone: the app listens to Android's
+playback and call-state callbacks, which need no permission, and does not poll. A stretch under 3 seconds is
+dropped. Stretches wait on the phone until the server has them and are deleted after 7 days if they never go out.
+With the switch off, or on a server without `context-ranges`, nothing is recorded or sent.
+
 ## Meeting briefs
 
 With a server that has a calendar feed (`Nytka__Calendar__IcsUrl`, see the
@@ -394,7 +410,7 @@ is not set, and "This server needs an update" means the server predates it.
 
 Audio waiting to upload, in the app's private storage, until the server has it; the settings; the
 token, encrypted with a key that never leaves the Android Keystore; how far the pendant's storage
-has been read; the time and result of the last firmware check; the ids (not the text) of the meeting briefs already posted, at most 50; and a log of when you muted and unmuted (times and on or off, nothing else). Android
+has been read; the time and result of the last firmware check; the ids (not the text) of the meeting briefs already posted, at most 50; the [phone-context](#phone-context) stretches not yet sent (kind, route, two times); and a log of when you muted and unmuted (times and on or off, nothing else). Android
 backups and phone-to-phone transfers skip all of it, so a new phone starts with first run. The
 pendant keeps the audio it stored until your server has it. The app talks to your server and nothing
 else, apart from the once-a-day [firmware notice](#pendant-firmware-notice) (GitHub, switchable): no

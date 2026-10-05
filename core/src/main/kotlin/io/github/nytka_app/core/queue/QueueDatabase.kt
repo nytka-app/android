@@ -9,8 +9,8 @@ import io.github.nytka_app.core.diagnostics.DiagnosticRow
 import io.github.nytka_app.core.diagnostics.DiagnosticsDao
 
 // Version 2 adds the diagnostic samples, version 3 their kind (sample or log), version 4 the ring sync (stored
-// frames and chunks, the position, parked chunks, the mute log), version 5 the bookmark outbox; version 1 held the
-// queue only.
+// frames and chunks, the position, parked chunks, the mute log), version 5 the bookmark outbox, version 6 the
+// phone-context outbox; version 1 held the queue only.
 // Never a destructive fallback: the queue holds audio nobody can record again.
 @Database(
     entities =
@@ -22,14 +22,16 @@ import io.github.nytka_app.core.diagnostics.DiagnosticsDao
             RingPositionRow::class,
             MuteLogRow::class,
             BookmarkRow::class,
+            ContextRow::class,
         ],
-    version = 5,
+    version = 6,
     autoMigrations =
         [
             AutoMigration(from = 1, to = 2),
             AutoMigration(from = 2, to = 3),
             AutoMigration(from = 3, to = 4),
             AutoMigration(from = 4, to = 5),
+            AutoMigration(from = 5, to = 6),
         ],
 )
 abstract class QueueDatabase : RoomDatabase() {
@@ -38,6 +40,8 @@ abstract class QueueDatabase : RoomDatabase() {
     abstract fun diagnostics(): DiagnosticsDao
 
     abstract fun bookmarks(): BookmarksDao
+
+    abstract fun contextOutbox(): ContextOutboxDao
 
     companion object {
         fun open(

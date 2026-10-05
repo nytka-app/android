@@ -35,6 +35,8 @@ data class Settings(
     /** Play a short chime every [consentChimeMinutes] while the pendant records; off until switched on. */
     val consentChime: Boolean = false,
     val consentChimeMinutes: Int = 15,
+    /** Tell the server when the phone plays sound through its speaker or is in a call: times only; on by default. */
+    val phoneContext: Boolean = true,
 ) {
     /** What the uploader watches: a change here may end a pause. */
     val connectionKey: Triple<String, String, Boolean> get() = Triple(serverUrl, token, privateNetwork)
@@ -46,5 +48,5 @@ data class Settings(
             "developerMode=$developerMode, fakePendant=$fakePendant, " +
             "alerts=$alertDisconnectedMinutes/$alertUnreachableMinutes/$alertBatteryPercent, " +
             "diagnosticsUpload=$diagnosticsUpload, muteWindows=${muteSchedule.windows.size}, " +
-            "firmwareCheck=$firmwareCheck, highPriorityConnection=$highPriorityConnection)"
+            "firmwareCheck=$firmwareCheck, highPriorityConnection=$highPriorityConnection, phoneContext=$phoneContext)"
 }
