@@ -144,6 +144,29 @@ class QueueDatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun `version 5 to 6 keeps the bookmarks and adds the context outbox`() {
+        helper.createDatabase(NAME, 5).use { db ->
+            db.execSQL("insert into bookmark_outbox (id, atMs, source) values ('b', 5, 'pendant')")
+        }
+
+        helper.runMigrationsAndValidate(NAME, 6, true).use { db ->
+            db.query("select count(*) from bookmark_outbox").use {
+                it.moveToFirst()
+                assertEquals(1, it.getInt(0))
+            }
+            db.execSQL(
+                "insert into context_outbox (id, kind, route, startMs, endMs) values ('c', 'media', 'speaker', 5, 9)",
+            )
+            db.query("select kind, route, endMs from context_outbox where id = 'c'").use {
+                assertTrue(it.moveToFirst())
+                assertEquals("media", it.getString(0))
+                assertEquals("speaker", it.getString(1))
+                assertEquals(9, it.getInt(2))
+            }
+        }
+    }
+
     private companion object {
         const val NAME = "migration-test"
     }

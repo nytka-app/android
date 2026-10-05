@@ -114,6 +114,9 @@ fun DeviceScreen(
                 viewModel::setConsentChimeMinutes,
             )
         }
+        if (state.serverContext == true) {
+            item { PhoneContextSection(state.phoneContext, viewModel::setPhoneContext) }
+        }
         item { ServerSection(state, status, viewModel::checkServer) }
         item { SettingsSection(state, viewModel::save) }
         item {

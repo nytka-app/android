@@ -581,4 +581,8 @@
     <string name="speech_others_media">Other voices are media</string>
     <string name="speech_others_people">Other voices are people</string>
     <string name="speech_mark_failed">The kind could not be saved</string>
+    <!-- Speech kind: phone context -->
+    <string name="phone_context_title">Phone context</string>
+    <string name="phone_context_label">Tell my server when this phone plays sound</string>
+    <string name="phone_context_explanation">Tell your server when this phone plays sound through its speaker or is in a call. Only times are sent, never what played.</string>
 </resources>

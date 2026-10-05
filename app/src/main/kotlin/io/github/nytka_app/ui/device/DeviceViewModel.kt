@@ -81,6 +81,10 @@ data class DeviceUiState(
     val firmwareNotice: FirmwareNotice? = null,
     val consentChime: Boolean = false,
     val consentChimeMinutes: Int = 15,
+    /** Whether the phone tells the server when it plays sound through its speaker or is in a call (a setting). */
+    val phoneContext: Boolean = true,
+    /** Whether /info lists `context-ranges`; null until it answers or after a failed check. */
+    val serverContext: Boolean? = null,
     /** Whether meeting briefs post notifications (a setting, off by default). */
     val briefNotifications: Boolean = false,
     /** How the user answered the notification prompt when switching briefs on; null until asked. */
@@ -152,6 +156,7 @@ class DeviceViewModel
                     firmwareCheck = current.firmwareCheck,
                     consentChime = current.consentChime,
                     consentChimeMinutes = current.consentChimeMinutes,
+                    phoneContext = current.phoneContext,
                     briefNotifications = current.briefNotifications,
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, DeviceUiState())
@@ -214,6 +219,7 @@ class DeviceViewModel
                             serverUnreachable = false,
                             serverSync = result.value.has(ServerInfo.FEATURE_OFFLINE_SYNC),
                             serverVoice = result.value.has(ServerInfo.FEATURE_VOICE),
+                            serverContext = result.value.has(ServerInfo.FEATURE_CONTEXT_RANGES),
                         )
                     }
 
@@ -225,6 +231,7 @@ class DeviceViewModel
                             apiMismatch = false,
                             serverSync = null,
                             serverVoice = null,
+                            serverContext = null,
                             serverUnreachable = result.kind == FailureKind.Network,
                         )
                     }
@@ -360,6 +367,10 @@ class DeviceViewModel
 
         fun setConsentChime(on: Boolean) {
             viewModelScope.launch { settings.update { it.copy(consentChime = on) } }
+        }
+
+        fun setPhoneContext(on: Boolean) {
+            viewModelScope.launch { settings.update { it.copy(phoneContext = on) } }
         }
 
         fun setConsentChimeMinutes(minutes: Int) {

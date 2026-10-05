@@ -586,4 +586,8 @@
     <string name="speech_others_media">Інші голоси — медіа</string>
     <string name="speech_others_people">Інші голоси — люди</string>
     <string name="speech_mark_failed">Не вдалося зберегти позначку</string>
+    <!-- Speech kind: phone context -->
+    <string name="phone_context_title">Контекст телефона</string>
+    <string name="phone_context_label">Повідомляти сервер, коли телефон відтворює звук</string>
+    <string name="phone_context_explanation">Повідомляти ваш сервер, коли телефон відтворює звук через динамік або триває дзвінок. Надсилаються лише часи, ніколи не те, що відтворювалось.</string>
 </resources>

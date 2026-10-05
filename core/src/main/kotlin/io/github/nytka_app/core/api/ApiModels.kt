@@ -23,6 +23,7 @@ data class ServerInfo(
         const val FEATURE_TAG_SUGGESTIONS = "tag-suggestions"
         const val FEATURE_ROLES = "roles"
         const val FEATURE_SPEECH_KIND = "speech-kind"
+        const val FEATURE_CONTEXT_RANGES = "context-ranges"
 
         const val SCOPE_ADMIN = "admin"
         const val SCOPE_READ = "read"
