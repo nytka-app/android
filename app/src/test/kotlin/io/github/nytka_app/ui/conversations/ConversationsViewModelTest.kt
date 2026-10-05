@@ -1,11 +1,17 @@
 package io.github.nytka_app.ui.conversations
 
+import androidx.lifecycle.SavedStateHandle
 import io.github.nytka_app.MainDispatcherRule
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.ConversationPage
 import io.github.nytka_app.core.api.FailureKind
+import io.github.nytka_app.core.api.InfoClient
+import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.ServerStatus
 import io.github.nytka_app.core.api.StatusClient
+import io.github.nytka_app.core.api.Tag
+import io.github.nytka_app.core.api.TagSuggestion
+import io.github.nytka_app.core.api.TagsClient
 import io.github.nytka_app.ui.conversations.FakeConversations.Companion.summary
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
@@ -31,7 +37,56 @@ class ConversationsViewModelTest {
     private var serverStatus: ApiResult<ServerStatus> = ApiResult.Ok(ServerStatus(pendingChunks = 0))
     private var statusCalls = 0
 
-    private fun newViewModel() =
+    /** Only the filtered list is read from here; every other call is a test bug. */
+    private class FakeTagLists : TagsClient {
+        val pages = mutableMapOf<String?, ApiResult<ConversationPage>>()
+        val requested = mutableListOf<Pair<String, String?>>()
+
+        override suspend fun conversations(
+            tag: String,
+            before: String?,
+            limit: Int,
+        ): ApiResult<ConversationPage> {
+            requested += tag to before
+            return pages.getValue(before)
+        }
+
+        override suspend fun tags(q: String?): ApiResult<List<Tag>> = error("unused")
+
+        override suspend fun addConversationTag(
+            id: String,
+            name: String,
+        ): ApiResult<List<String>> = error("unused")
+
+        override suspend fun removeConversationTag(
+            id: String,
+            name: String,
+        ): ApiResult<List<String>> = error("unused")
+
+        override suspend fun addPersonTag(
+            id: String,
+            name: String,
+        ): ApiResult<List<String>> = error("unused")
+
+        override suspend fun removePersonTag(
+            id: String,
+            name: String,
+        ): ApiResult<List<String>> = error("unused")
+
+        override suspend fun people(tag: String): ApiResult<List<io.github.nytka_app.core.api.Person>> = error("unused")
+
+        override suspend fun suggestions(): ApiResult<List<TagSuggestion>> = error("unused")
+
+        override suspend fun answerSuggestion(
+            id: String,
+            accept: Boolean,
+        ): ApiResult<Unit> = error("unused")
+    }
+
+    private val tagLists = FakeTagLists()
+    private var info: ApiResult<ServerInfo> = ApiResult.Ok(ServerInfo("0.17.0", 1, features = listOf("tags")))
+
+    private fun newViewModel(savedState: SavedStateHandle = SavedStateHandle()) =
         ConversationsViewModel(
             api,
             StatusClient {
@@ -39,6 +94,15 @@ class ConversationsViewModelTest {
                 serverStatus
             },
             clock,
+            tagLists,
+            InfoClient { info },
+            savedState,
+        )
+
+    private val workPage =
+        ConversationPage(
+            items = listOf(summary("w2", "2026-09-29T10:00:00Z", "2026-09-29T10:10:00Z")),
+            nextBefore = "2026-09-29T10:00:00Z",
         )
 
     private val firstPage =
@@ -466,4 +530,128 @@ class ConversationsViewModelTest {
             runCurrent()
             assertEquals(calls, statusCalls)
         }
+
+    @Test
+    fun `a tag from a chip shows the list filtered by it`() {
+        api.pages[null] = ApiResult.Ok(firstPage)
+        tagLists.pages[null] = ApiResult.Ok(workPage)
+        val viewModel = newViewModel()
+
+        viewModel.showTag("work")
+
+        assertEquals("work", viewModel.state.value.tag)
+        assertEquals(listOf("w2"), viewModel.ids())
+        assertEquals(listOf("work" to null), tagLists.requested)
+        assertEquals("only the first load read the full list", listOf<String?>(null), api.requestedBefore)
+    }
+
+    @Test
+    fun `a filtered list pages with before`() {
+        api.pages[null] = ApiResult.Ok(firstPage)
+        tagLists.pages[null] = ApiResult.Ok(workPage)
+        tagLists.pages["2026-09-29T10:00:00Z"] =
+            ApiResult.Ok(ConversationPage(listOf(summary("w1", "2026-09-29T08:00:00Z", "2026-09-29T08:10:00Z"))))
+        val viewModel = newViewModel()
+        viewModel.showTag("work")
+
+        viewModel.loadMore()
+
+        assertEquals(listOf("w2", "w1"), viewModel.ids())
+        assertEquals(listOf("work" to null, "work" to "2026-09-29T10:00:00Z"), tagLists.requested)
+        assertTrue(viewModel.state.value.endReached)
+    }
+
+    @Test
+    fun `clearing the tag reads the full list again`() {
+        api.pages[null] = ApiResult.Ok(firstPage)
+        tagLists.pages[null] = ApiResult.Ok(workPage)
+        val viewModel = newViewModel()
+        viewModel.showTag("work")
+
+        viewModel.clearTag()
+
+        assertNull(viewModel.state.value.tag)
+        assertEquals(listOf("b", "a"), viewModel.ids())
+        assertEquals(listOf<String?>(null, null), api.requestedBefore)
+    }
+
+    @Test
+    fun `a server without the tags feature keeps the full list and makes no tag call`() {
+        api.pages[null] = ApiResult.Ok(firstPage)
+        info = ApiResult.Ok(ServerInfo("0.16.0", 1, features = listOf("people")))
+        val viewModel = newViewModel()
+
+        viewModel.showTag("work")
+
+        assertNull(viewModel.state.value.tag)
+        assertEquals(listOf("b", "a"), viewModel.ids())
+        assertTrue(tagLists.requested.isEmpty())
+    }
+
+    @Test
+    fun `when the feature list cannot be read the full list stays`() {
+        api.pages[null] = ApiResult.Ok(firstPage)
+        info = ApiResult.Failure(FailureKind.Network, "The server did not answer.")
+        val viewModel = newViewModel()
+
+        viewModel.showTag("work")
+
+        assertNull(viewModel.state.value.tag)
+        assertTrue(tagLists.requested.isEmpty())
+    }
+
+    @Test
+    fun `the same tag twice reads the list once`() {
+        api.pages[null] = ApiResult.Ok(firstPage)
+        tagLists.pages[null] = ApiResult.Ok(workPage)
+        val viewModel = newViewModel()
+
+        viewModel.showTag("work")
+        viewModel.showTag("work")
+
+        assertEquals(1, tagLists.requested.size)
+    }
+
+    @Test
+    fun `the refresh that keeps the list fresh keeps the filter`() =
+        runTest {
+            api.pages[null] = ApiResult.Ok(firstPage)
+            tagLists.pages[null] = ApiResult.Ok(workPage)
+            val viewModel = newViewModel()
+            viewModel.showTag("work")
+            val before = tagLists.requested.size
+
+            backgroundScope.launch { viewModel.keepFresh() }
+            runCurrent()
+            advanceTimeBy(ConversationsViewModel.REFRESH_MS)
+            runCurrent()
+
+            assertEquals(before + 2, tagLists.requested.size)
+            assertEquals(listOf("w2"), viewModel.ids())
+            assertEquals(listOf<String?>(null), api.requestedBefore)
+        }
+
+    @Test
+    fun `the tag survives a restore of the saved state`() {
+        tagLists.pages[null] = ApiResult.Ok(workPage)
+
+        val viewModel = newViewModel(SavedStateHandle(mapOf("tag" to "work")))
+
+        assertEquals("work", viewModel.state.value.tag)
+        assertEquals(listOf("w2"), viewModel.ids())
+        assertTrue(api.requestedBefore.isEmpty())
+    }
+
+    @Test
+    fun `a filtered list that cannot be read shows the error and keeps the tag`() {
+        api.pages[null] = ApiResult.Ok(firstPage)
+        tagLists.pages[null] = ApiResult.Failure(FailureKind.NotFound, "The server answered.")
+        val viewModel = newViewModel()
+
+        viewModel.showTag("work")
+
+        assertEquals("work", viewModel.state.value.tag)
+        assertEquals("The server answered.", viewModel.state.value.error)
+        assertTrue(viewModel.ids().isEmpty())
+    }
 }

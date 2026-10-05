@@ -63,10 +63,18 @@ fun ConversationsTab(
         composable("list") { entry ->
             // A conversation deleted on its own screen comes back as this entry's result.
             val deleted by entry.savedStateHandle.getStateFlow<String?>(DELETED, null).collectAsStateWithLifecycle()
+            // So does a tag tapped on a conversation: the list filters by it.
+            val tagRequest by entry.savedStateHandle
+                .getStateFlow<String?>(
+                    TAG_REQUEST,
+                    null,
+                ).collectAsStateWithLifecycle()
             ConversationsScreen(
                 status,
                 onMute,
                 deleted,
+                tagRequest = tagRequest,
+                onTagRequestHandled = { entry.savedStateHandle[TAG_REQUEST] = null },
                 onOpen = { navController.navigate("conversation/$it") },
                 onSearch = { navController.navigate("search") },
             )
@@ -76,6 +84,10 @@ fun ConversationsTab(
                 developerMode = status.developerMode,
                 onBack = { navController.popBackStack() },
                 onOpenPerson = onOpenPerson,
+                onOpenTag = { name ->
+                    navController.getBackStackEntry("list").savedStateHandle[TAG_REQUEST] = name
+                    navController.popBackStack("list", inclusive = false)
+                },
                 onDeleted = {
                     navController.previousBackStackEntry?.savedStateHandle?.set(
                         DELETED,
@@ -98,6 +110,7 @@ fun ConversationsTab(
 }
 
 private const val DELETED = "deleted"
+private const val TAG_REQUEST = "tagRequest"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -107,11 +120,19 @@ fun ConversationsScreen(
     deleted: String?,
     onOpen: (String) -> Unit,
     onSearch: () -> Unit,
+    tagRequest: String? = null,
+    onTagRequestHandled: () -> Unit = {},
     viewModel: ConversationsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
     LaunchedEffect(deleted) { deleted?.let(viewModel::forget) }
+    LaunchedEffect(tagRequest) {
+        tagRequest?.let {
+            viewModel.showTag(it)
+            onTagRequestHandled()
+        }
+    }
     // Refreshes when the screen is shown again and every 30 seconds while it is, but never in the background.
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(viewModel, lifecycleOwner) {

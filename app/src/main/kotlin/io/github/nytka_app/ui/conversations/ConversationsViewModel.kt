@@ -1,5 +1,6 @@
 package io.github.nytka_app.ui.conversations
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -8,7 +9,10 @@ import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.ConversationPage
 import io.github.nytka_app.core.api.ConversationSummary
 import io.github.nytka_app.core.api.ConversationsClient
+import io.github.nytka_app.core.api.InfoClient
+import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.StatusClient
+import io.github.nytka_app.core.api.TagsClient
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,6 +49,8 @@ data class ConversationsUiState(
     val refreshing: Boolean = false,
     val error: String? = null,
     val endReached: Boolean = false,
+    /** The tag the list is filtered by; kept in saved state, so it survives rotation but not a launch. */
+    val tag: String? = null,
 )
 
 @HiltViewModel
@@ -54,6 +60,9 @@ class ConversationsViewModel
         private val api: ConversationsClient,
         private val status: StatusClient,
         private val clock: Clock,
+        private val tags: TagsClient,
+        private val info: InfoClient,
+        private val savedState: SavedStateHandle,
     ) : ViewModel() {
         private val items = mutableListOf<ConversationSummary>()
         private var nextBefore: String? = null
@@ -61,7 +70,8 @@ class ConversationsViewModel
 
         /** Counts loads started, so a quiet refresh can tell that a newer answer has come in while it waited. */
         private var loadsStarted = 0
-        private val mutableState = MutableStateFlow(ConversationsUiState())
+        private var tag: String? = savedState[TAG]
+        private val mutableState = MutableStateFlow(ConversationsUiState(tag = tag))
         val state: StateFlow<ConversationsUiState> = mutableState.asStateFlow()
         private val mutableNotice = MutableStateFlow<String?>(null)
 
@@ -75,6 +85,41 @@ class ConversationsViewModel
         fun refresh() {
             load(reset = true)
             viewModelScope.launch { refreshNotice() }
+        }
+
+        /**
+         * Filters the list by [name], a tag taken from a chip, and reads it again from the start. A server without the
+         * `tags` feature keeps the full list.
+         */
+        fun showTag(name: String) {
+            viewModelScope.launch {
+                if ((info.info() as? ApiResult.Ok)?.value?.has(ServerInfo.FEATURE_TAGS) != true) return@launch
+                setTag(name)
+            }
+        }
+
+        fun clearTag() = setTag(null)
+
+        private fun setTag(name: String?) {
+            if (name == tag) return
+            tag = name
+            savedState[TAG] = name
+            // The old list is not the new one's first page.
+            items.clear()
+            nextBefore = null
+            mutableState.update { it.copy(days = emptyList(), tag = name, endReached = false) }
+            load(reset = true)
+        }
+
+        private suspend fun page(before: String?): ApiResult<ConversationPage> {
+            val filter = tag
+            return if (filter ==
+                null
+            ) {
+                api.conversations(before, PAGE_SIZE)
+            } else {
+                tags.conversations(filter, before, PAGE_SIZE)
+            }
         }
 
         fun loadMore() {
@@ -103,7 +148,7 @@ class ConversationsViewModel
             // A load under way brings the same news.
             if (loadJob?.isActive == true) return
             val started = loadsStarted
-            val page = (api.conversations(null, PAGE_SIZE) as? ApiResult.Ok)?.value ?: return
+            val page = (page(null) as? ApiResult.Ok)?.value ?: return
             // A load that started meanwhile has a newer answer than this one.
             if (loadsStarted != started) return
             val beyond = loadedBeyond(page)
@@ -143,7 +188,7 @@ class ConversationsViewModel
             mutableState.update { it.copy(loading = true, refreshing = reset, error = null) }
             loadJob =
                 viewModelScope.launch {
-                    when (val result = api.conversations(if (reset) null else nextBefore, PAGE_SIZE)) {
+                    when (val result = page(if (reset) null else nextBefore)) {
                         is ApiResult.Ok -> {
                             if (reset) items.clear()
                             // Rows are keyed by id: a conversation that moved pages must not appear twice.
@@ -151,7 +196,7 @@ class ConversationsViewModel
                             items += result.value.items.filter { it.id !in known }
                             nextBefore = result.value.nextBefore
                             mutableState.value =
-                                ConversationsUiState(days = group(items), endReached = nextBefore == null)
+                                ConversationsUiState(days = group(items), endReached = nextBefore == null, tag = tag)
                         }
 
                         is ApiResult.Failure ->
@@ -209,5 +254,6 @@ class ConversationsViewModel
             const val REFRESH_MS = 30_000L
 
             private const val PAGE_SIZE = 30
+            private const val TAG = "tag"
         }
     }
