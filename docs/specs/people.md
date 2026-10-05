@@ -138,6 +138,10 @@ Route `review` in the People tab. `GET /api/v1/review?limit=200`, newest first, 
 Each row opens its conversation on tap. Accept and Reject remove the row at once and restore it with a
 snackbar if the server refuses; `409` means it was already answered (row goes, list reloads).
 
+A `name` row whose `sameName` is above 1 (read from `GET /people/suggestions` under the same id, since the
+review list does not carry it) and that is not role-only also has **Accept all N**, which calls
+`POST /people/suggestions/accept-by-name`; see the banner below for the answers.
+
 ### Name-suggestion banner
 
 The conversation screen reads `GET /people/suggestions` (pending) and keeps those with its
@@ -145,6 +149,17 @@ The conversation screen reads `GET /people/suggestions` (pending) and keeps thos
 evidence line, **Accept** and **Not {name}**. `{label}` is the evidence segment's current label, or
 "A voice". Accept reloads the conversation, since labels change. Any failure to read suggestions hides
 the banner silently.
+
+When the banner's suggestion is a name (not role-only) with `sameName` above 1, a third button
+**Accept all N** sits beside Accept ("Accept all 16 suggestions for {name}" to a screen reader). It calls
+`POST /people/suggestions/accept-by-name { name }` and nothing runs without a tap. `200 { person, accepted,
+skipped }` drops every suggestion of that name (any case), reloads and shows "Added 16 voices to {name}"
+(plural resource, "2 skipped" when `skipped` > 0). `409` (the pending ones disagree) shows "These
+suggestions disagree. Accept them one by one." and keeps the rows. `404` reads the suggestions again: rows
+of the name still pending mean a server without the route ("This server needs an update", button hidden
+until the screen is opened again), none left means they were answered elsewhere (the inbox says "This was
+already answered", the banner says nothing). `403` is the admin-token notice. A server before 0.21 sends
+no `sameName`, so the button never shows.
 
 ### Transcript labels
 

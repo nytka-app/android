@@ -339,6 +339,20 @@
     <string name="suggestion_unknown_voice">A voice</string>
     <string name="suggestion_accept">Accept</string>
     <string name="suggestion_reject_format">Not %1$s</string>
+    <string name="accept_all_format">Accept all %1$d</string>
+    <plurals name="accept_all_description">
+        <item quantity="one">Accept %1$d suggestion for %2$s</item>
+        <item quantity="other">Accept all %1$d suggestions for %2$s</item>
+    </plurals>
+    <plurals name="accept_all_added">
+        <item quantity="one">Added %1$d voice to %2$s.</item>
+        <item quantity="other">Added %1$d voices to %2$s.</item>
+    </plurals>
+    <plurals name="accept_all_skipped">
+        <item quantity="one">%1$d skipped.</item>
+        <item quantity="other">%1$d skipped.</item>
+    </plurals>
+    <string name="accept_all_disagree">These suggestions disagree. Accept them one by one.</string>
     <string name="suggestion_failed">The answer could not be saved.</string>
     <string name="open_person">Open this person</string>
     <!-- People: review inbox (A-P5) -->

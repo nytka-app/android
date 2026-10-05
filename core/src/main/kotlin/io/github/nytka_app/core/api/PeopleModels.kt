@@ -83,6 +83,18 @@ data class NameSuggestion(
      */
     val role: String? = null,
     val named: Boolean = true,
+    /**
+     * Pending suggestions with this name in any case, this one included (server 0.21 and later); 1 where the server
+     * sends none.
+     */
+    val sameName: Int = 1,
+)
+
+/** What accepting every suggestion of a name did: [personId] is the one person; [skipped] no longer applied. */
+data class AcceptedByName(
+    val personId: String?,
+    val accepted: Int,
+    val skipped: Int,
 )
 
 /** The stretch of capture a card's clip covers; the app asks for the audio, not for these times. */

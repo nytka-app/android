@@ -85,6 +85,7 @@ fun ConversationScreen(
     val snackbar = rememberNoteHost(state.note, viewModel::noteShown)
     LaunchedEffect(state.deleted) { if (state.deleted) onDeleted() }
     SuggestionNoticeEffect(state.suggestionNotice, snackbar, viewModel::suggestionNoticeShown)
+    AcceptAllNoticeEffect(state.acceptAllNotice, snackbar, viewModel::acceptAllNoticeShown)
     RoleNoticeEffect(state.roleNotice, snackbar, viewModel::roleNoticeShown)
     TagNoticeEffect(state.tagNotice, snackbar, viewModel::tagNoticeShown)
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.pause() }
@@ -160,7 +161,12 @@ fun ConversationScreen(
             }
             state.chip?.let { chip -> item { AiChip(chip) } }
             state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
-            suggestion(state.banner, viewModel::acceptSuggestion, viewModel::rejectSuggestion)
+            suggestion(
+                state.banner,
+                viewModel::acceptSuggestion,
+                viewModel::rejectSuggestion,
+                viewModel::acceptAllByName,
+            )
             tagProposalsItem(state.tagProposals, viewModel::acceptTagProposal, viewModel::rejectTagProposal)
             state.summary?.let { summary ->
                 item { InfoCard(stringResource(R.string.summary_card_title)) { Text(summary) } }

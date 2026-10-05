@@ -29,6 +29,8 @@ sealed interface ReviewRow {
         val name: String?,
         val role: String? = null,
         val named: Boolean = true,
+        /** Pending suggestions that share the name (server 0.21 and later); 1 where the server sends none. */
+        val sameName: Int = 1,
     ) : ReviewRow
 
     /** A voice match; [percent] is the similarity, when the server sent it. */
@@ -52,13 +54,14 @@ sealed interface ReviewRow {
         fun of(
             item: ReviewItem,
             roles: Boolean = false,
+            sameName: Int = 1,
         ): ReviewRow? =
             when (item.kind) {
                 ReviewItem.KIND_NAME ->
                     if (roles) {
-                        NameSuggestion(item.proposal.name, item.proposal.role, item.proposal.named)
+                        NameSuggestion(item.proposal.name, item.proposal.role, item.proposal.named, sameName)
                     } else {
-                        NameSuggestion(item.proposal.name)
+                        NameSuggestion(item.proposal.name, sameName = sameName)
                     }
 
                 ReviewItem.KIND_VOICE ->
@@ -94,6 +97,16 @@ sealed interface ReviewNotice {
     data class MergedInto(
         val name: String,
     ) : ReviewNotice
+
+    /** The server accepted [accepted] suggestions for [name] at once; [skipped] no longer applied. */
+    data class AddedAll(
+        val name: String,
+        val accepted: Int,
+        val skipped: Int,
+    ) : ReviewNotice
+
+    /** A `409` on accepting by name: the pending ones disagree, and every row stays. */
+    data object AcceptAllDisagree : ReviewNotice
 }
 
 data class ReviewUiState(
@@ -105,6 +118,12 @@ data class ReviewUiState(
     val available: Boolean = false,
     /** `/info` lists `roles`: name rows may carry one. */
     val roles: Boolean = false,
+    /** `sameName` of each name item that shares its name with another, by item id. */
+    val sameNames: Map<String, Int> = emptyMap(),
+    /** False once the server answered 404 to "accept all" while the rows were pending: it lacks the route. */
+    val acceptAllAvailable: Boolean = true,
+    /** An "accept all" is on its way. */
+    val busy: Boolean = false,
     val error: ReviewNotice? = null,
     /** The result of the last answer, for a snackbar. */
     val note: ReviewNotice? = null,
@@ -155,10 +174,12 @@ class ReviewViewModel
                                 key(item) !in pending
                         }
                     val people = if (tagsOn) personNames(items) else emptyMap()
+                    val same = sameNames(items)
                     mutableState.update {
                         it.copy(
                             items = items,
                             tagPeople = people,
+                            sameNames = same,
                             loading = false,
                             available = true,
                             roles = features.has(ServerInfo.FEATURE_ROLES),
@@ -183,6 +204,20 @@ class ReviewViewModel
                 .toMap()
         }
 
+        /**
+         * The review list carries no `sameName`; the suggestions do, under the same id. Asked only when a name row
+         * exists; a failure, or a server before 0.21, leaves every row as it is.
+         */
+        private suspend fun sameNames(items: List<ReviewItem>): Map<String, Int> {
+            if (items.none { it.kind == ReviewItem.KIND_NAME }) return emptyMap()
+            val shown = items.filter { it.kind == ReviewItem.KIND_NAME }.map { it.id }.toSet()
+            return (api.suggestions() as? ApiResult.Ok)
+                ?.value
+                .orEmpty()
+                .filter { it.id in shown && it.sameName > 1 }
+                .associate { it.id to it.sameName }
+        }
+
         /** A route the server lacks hides the icon; any other failure keeps what the screen had. */
         private fun unavailable(failure: ApiResult.Failure) {
             val missing = failure.kind == FailureKind.NotFound || failure.kind == FailureKind.Unsupported
@@ -198,6 +233,75 @@ class ReviewViewModel
         fun accept(item: ReviewItem) = answer(item, accept = true)
 
         fun reject(item: ReviewItem) = answer(item, accept = false)
+
+        /** Accepts every pending suggestion that shares the name of [item]. Only a tap gets here. */
+        fun acceptAll(item: ReviewItem) {
+            val name = item.proposal.name?.takeIf(String::isNotBlank) ?: return
+            if (state.value.busy) return
+            mutableState.update { it.copy(busy = true) }
+            viewModelScope.launch {
+                try {
+                    when (val result = api.acceptAllByName(name)) {
+                        is ApiResult.Ok -> {
+                            mutableState.update {
+                                it.copy(
+                                    items =
+                                        it.items.filterNot { row ->
+                                            sameNameRow(row, name)
+                                        },
+                                )
+                            }
+                            load()
+                            val (_, accepted, skipped) = result.value
+                            mutableState.update { it.copy(note = ReviewNotice.AddedAll(name, accepted, skipped)) }
+                        }
+
+                        is ApiResult.Failure -> acceptAllFailed(name, result)
+                    }
+                } finally {
+                    mutableState.update { it.copy(busy = false) }
+                }
+            }
+        }
+
+        /**
+         * A `404` is "answered elsewhere" or a server without the route; the list read again tells which: rows of the
+         * name still there mean the route is missing, and the button stays away for this screen.
+         */
+        private suspend fun acceptAllFailed(
+            name: String,
+            failure: ApiResult.Failure,
+        ) {
+            when (failure.kind) {
+                FailureKind.Conflict -> mutableState.update { it.copy(note = ReviewNotice.AcceptAllDisagree) }
+                FailureKind.NotFound, FailureKind.Unsupported -> {
+                    load()
+                    val missing =
+                        failure.kind == FailureKind.Unsupported || state.value.items.any { sameNameRow(it, name) }
+                    mutableState.update {
+                        it.copy(
+                            acceptAllAvailable = it.acceptAllAvailable && !missing,
+                            note =
+                                if (missing) {
+                                    ReviewNotice.Failed(FailureKind.NotFound, failure.message, item = false)
+                                } else {
+                                    ReviewNotice.AlreadyAnswered
+                                },
+                        )
+                    }
+                }
+
+                else ->
+                    mutableState.update {
+                        it.copy(note = ReviewNotice.Failed(failure.kind, failure.message, item = false))
+                    }
+            }
+        }
+
+        private fun sameNameRow(
+            item: ReviewItem,
+            name: String,
+        ) = item.kind == ReviewItem.KIND_NAME && item.proposal.name?.lowercase() == name.lowercase()
 
         fun noteShown() = mutableState.update { it.copy(note = null) }
 
