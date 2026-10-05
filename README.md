@@ -150,6 +150,10 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   A server that lists `tag-suggestions` adds proposed tags to the inbox ("Tag this conversation
   work?", "Tag Anna repairman?"), each with **Yes** and **No**; a person's tag opens that person. A tag
   that the item has no room for (20 tags) stays in the list with "This item has 20 tags."
+  A server that lists `speech-kind` adds stretches of speech it is unsure about ("Was this a TV or a
+  video?", or "Was this a call?" when it guesses a call), with the stretch's lines. **Yes** keeps the
+  guess as your mark (a TV or video when it was unsure), **No** marks the stretch as a person. A
+  stretch you or someone else already marked leaves the list without a notice.
   **Who is this?** cards sit above the list when your server groups voices (it needs
   `people.voiceMatching` on and keeps audio for at least a day). A card shows the conversation, up to
   three lines and a clip of at most 10 seconds, played from your server with your token and never

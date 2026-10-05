@@ -262,4 +262,29 @@ class ReviewApiTest {
             assertEquals(FailureKind.Forbidden, kind(api.acceptAllByName("Аня")))
             assertEquals(FailureKind.Invalid, kind(api.acceptAllByName(" ")))
         }
+
+    @Test
+    fun `a speech item decodes its guess and lines and is answered on its own routes`() =
+        runTest {
+            answer(
+                200,
+                """{"items":[{"kind":"speech","id":"7","conversationId":"c1","conversationTitle":"Evening",
+                "at":"2026-10-05T20:00:00Z","text":"a\nb","proposal":{"name":null,"personId":null,"confidence":null,
+                "similarity":null,"isUser":null,"speechKind":"unsure","lines":[
+                {"segmentId":7,"startedAt":"2026-10-05T20:00:00Z","text":"a"},
+                {"segmentId":8,"startedAt":"2026-10-05T20:00:05Z","text":"b"}]}}]}""",
+            )
+            val item = ok(api.review(200)).single()
+            assertEquals("unsure", item.proposal.speechKind)
+            assertEquals(listOf(7L, 8L), item.proposal.lines.map { it.segmentId })
+            assertEquals(listOf("a", "b"), item.proposal.lines.map { it.text })
+
+            answer(200)
+            answer(204)
+            ok(api.acceptReview("speech", "7"))
+            ok(api.answer("speech", "7", accept = false))
+            server.takeRequest()
+            assertEquals("/api/v1/review/speech/7/accept", server.takeRequest().url.encodedPath)
+            assertEquals("/api/v1/review/speech/7/reject", server.takeRequest().url.encodedPath)
+        }
 }

@@ -50,11 +50,18 @@ sealed interface ReviewRow {
         val personId: String?,
     ) : ReviewRow
 
+    /** A stretch of speech Nytka guessed is a TV or video ([call] false, also for "unsure") or a call. */
+    data class Speech(
+        val call: Boolean,
+        val lines: List<String>,
+    ) : ReviewRow
+
     companion object {
         fun of(
             item: ReviewItem,
             roles: Boolean = false,
             sameName: Int = 1,
+            speech: Boolean = false,
         ): ReviewRow? =
             when (item.kind) {
                 ReviewItem.KIND_NAME ->
@@ -73,6 +80,22 @@ sealed interface ReviewRow {
                         ?.takeIf(
                             String::isNotBlank,
                         )?.let { Tag(it, item.proposal.personId) }
+                ReviewItem.KIND_SPEECH ->
+                    if (speech) {
+                        Speech(
+                            item.proposal.speechKind == "call",
+                            item.proposal.lines
+                                .map { it.text }
+                                .ifEmpty {
+                                    listOf(
+                                        item.text,
+                                    )
+                                }.filter(String::isNotBlank),
+                        )
+                    } else {
+                        null
+                    }
+
                 else -> null
             }
     }
@@ -118,6 +141,8 @@ data class ReviewUiState(
     val available: Boolean = false,
     /** `/info` lists `roles`: name rows may carry one. */
     val roles: Boolean = false,
+    /** `/info` lists `speech-kind`: speech rows are shown. */
+    val speech: Boolean = false,
     /** `sameName` of each name item that shares its name with another, by item id. */
     val sameNames: Map<String, Int> = emptyMap(),
     /** False once the server answered 404 to "accept all" while the rows were pending: it lacks the route. */
@@ -165,11 +190,12 @@ class ReviewViewModel
             }
             // A tag item is shown only by a server that lists `tag-suggestions`, and then no more is asked of it.
             val tagsOn = features.has(ServerInfo.FEATURE_TAG_SUGGESTIONS)
+            val speechOn = features.has(ServerInfo.FEATURE_SPEECH_KIND)
             when (val result = api.review(LIMIT)) {
                 is ApiResult.Ok -> {
                     val items =
                         result.value.filter { item ->
-                            ReviewRow.of(item) != null &&
+                            ReviewRow.of(item, speech = speechOn) != null &&
                                 (tagsOn || item.kind != ReviewItem.KIND_TAG) &&
                                 key(item) !in pending
                         }
@@ -183,6 +209,7 @@ class ReviewViewModel
                             loading = false,
                             available = true,
                             roles = features.has(ServerInfo.FEATURE_ROLES),
+                            speech = speechOn,
                         )
                     }
                 }
@@ -332,7 +359,7 @@ class ReviewViewModel
                         ) {
                             tagConflict(item)
                         } else {
-                            gone(ReviewNotice.AlreadyAnswered)
+                            gone(if (item.kind == ReviewItem.KIND_SPEECH) null else ReviewNotice.AlreadyAnswered)
                         }
 
                     FailureKind.NotFound -> gone(ReviewNotice.Failed(result.kind, result.message, item = true))
@@ -349,8 +376,8 @@ class ReviewViewModel
             }
         }
 
-        private suspend fun gone(note: ReviewNotice) {
-            mutableState.update { it.copy(note = note) }
+        private suspend fun gone(note: ReviewNotice?) {
+            if (note != null) mutableState.update { it.copy(note = note) }
             load()
         }
 

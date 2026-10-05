@@ -145,6 +145,17 @@ data class ReviewProposal(
     val tag: String? = null,
     val role: String? = null,
     val named: Boolean = true,
+    /** Kind `speech`: the guess ("media", "call" or "unsure") and the lines of the stretch. */
+    val speechKind: String? = null,
+    val lines: List<SpeechLine> = emptyList(),
+)
+
+/** One line of a `speech` item's stretch. */
+@Serializable
+data class SpeechLine(
+    val segmentId: Long = 0,
+    val startedAt: String = "",
+    val text: String = "",
 )
 
 /** One thing waiting for an answer. [id] is a guid, or a segment number for a `label`. */
@@ -163,6 +174,7 @@ data class ReviewItem(
         const val KIND_VOICE = "voice"
         const val KIND_LABEL = "label"
         const val KIND_TAG = "tag"
+        const val KIND_SPEECH = "speech"
     }
 }
 

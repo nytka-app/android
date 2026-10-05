@@ -590,4 +590,7 @@
     <string name="phone_context_title">Контекст телефона</string>
     <string name="phone_context_label">Повідомляти сервер, коли телефон відтворює звук</string>
     <string name="phone_context_explanation">Повідомляти ваш сервер, коли телефон відтворює звук через динамік або триває дзвінок. Надсилаються лише часи, ніколи не те, що відтворювалось.</string>
+    <!-- Speech kind: review -->
+    <string name="review_speech_media">Це був телевізор чи відео?</string>
+    <string name="review_speech_call">Це був дзвінок?</string>
 </resources>
