@@ -153,6 +153,21 @@ that have it, and tapping one on a person page does the same in People (the unna
 no tags, drop out). The filter lasts until you leave the app; a server without the `tags` feature
 keeps the full list.
 
+## Tags
+
+Short words you put on conversations and people (`work`, `family`, `repairman`); only you add
+them. A server that lists the `tags` feature (0.17.0 or later) shows them; an older one shows no tags
+and no tag controls. A row in Conversations and People shows up to three tags and "+N" for the rest.
+A conversation and a person page show all of them under the header.
+
+With an admin token, **+ Tag** opens a sheet: type a name, or pick one of the tags already in use
+(most used first, narrowed as you type), then tap it or **Done**. The server cleans the name up (lower
+case, `dog walker` becomes `dog-walker`) and its answer is what the chips show. A chip's **✕** removes
+the tag at once and puts it back with a message if the server refuses. A name the server does not accept
+says "Use letters, digits, - or _ (up to 32)"; a 21st tag says "This item has 20 tags." A read token
+shows the chips without **+ Tag** or **✕**. Tag names are personal: they are never written to a log or
+the debug report, and the phone keeps no copy.
+
 ## Offline sync
 
 While the phone is out of range, the pendant stores what it hears on its own card. When the phone

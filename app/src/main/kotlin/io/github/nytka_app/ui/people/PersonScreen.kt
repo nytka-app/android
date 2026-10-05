@@ -46,13 +46,14 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.PersonFact
+import io.github.nytka_app.ui.tags.TagNoticeEffect
+import io.github.nytka_app.ui.tags.tagChipsItem
 
 /**
  * One person: header, your note, facts, open tasks and recent conversations. A pushed screen, so it has a back
  * arrow. A fact, task or conversation with a conversation opens it through [onOpenConversation].
  * A tag chip calls [onOpenTag], which shows the People list filtered by it.
  */
-@Suppress("UnusedParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PersonScreen(
@@ -65,6 +66,7 @@ fun PersonScreen(
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
     LaunchedEffect(state.gone) { if (state.gone) onBack() }
+    TagNoticeEffect(state.tagNotice, snackbar, viewModel::tagNoticeShown)
     LaunchedEffect(state.notice) {
         state.notice?.let {
             snackbar.showSnackbar(personNoticeText(context, it))
@@ -108,6 +110,14 @@ fun PersonScreen(
                 }
                 state.header?.let { header ->
                     item { Header(header) }
+                    tagChipsItem(
+                        state.tags,
+                        state.tagAccess,
+                        viewModel::addTag,
+                        viewModel::removeTag,
+                        Modifier.padding(horizontal = 16.dp),
+                        onOpenTag,
+                    )
                     item { NoteSection(state, viewModel) }
                     factsSection(state, viewModel, onOpenConversation)
                     tasksSection(state, onOpenConversation)

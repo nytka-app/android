@@ -13,6 +13,8 @@ import io.github.nytka_app.core.api.Bookmark
 import io.github.nytka_app.core.api.ConversationDetail
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.Segment
+import io.github.nytka_app.ui.tags.FakeTags
+import io.github.nytka_app.ui.tags.fakeInfo
 import io.github.nytka_app.ui.tasks.FakeTasks
 import io.github.nytka_app.ui.tasks.FakeTasks.Companion.task
 import kotlinx.coroutines.CompletableDeferred
@@ -67,6 +69,8 @@ class ConversationViewModelTest {
             audio,
             player,
             clock,
+            fakeInfo(),
+            FakeTags(),
         )
 
     private fun detail(

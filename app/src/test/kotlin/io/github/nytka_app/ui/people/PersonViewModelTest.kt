@@ -14,6 +14,8 @@ import io.github.nytka_app.core.api.PersonFact
 import io.github.nytka_app.core.api.PersonPage
 import io.github.nytka_app.core.api.PersonPageClient
 import io.github.nytka_app.core.api.UnnamedVoice
+import io.github.nytka_app.ui.tags.FakeTags
+import io.github.nytka_app.ui.tags.fakeInfo
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -113,7 +115,8 @@ class PersonViewModelTest {
         text: String = "Fact $id",
     ) = PersonFact(id, "p1", text, "ai", "said", "c1", "Walk")
 
-    private fun newViewModel() = PersonViewModel(SavedStateHandle(mapOf("id" to "p1")), pages, people)
+    private fun newViewModel() =
+        PersonViewModel(SavedStateHandle(mapOf("id" to "p1")), pages, people, fakeInfo(), FakeTags())
 
     private fun failure(kind: FailureKind) = ApiResult.Failure(kind, "The server answered.")
 

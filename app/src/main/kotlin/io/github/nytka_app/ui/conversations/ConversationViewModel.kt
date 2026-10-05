@@ -12,12 +12,18 @@ import io.github.nytka_app.core.api.BookmarksClient
 import io.github.nytka_app.core.api.ConversationDetail
 import io.github.nytka_app.core.api.ConversationsClient
 import io.github.nytka_app.core.api.FailureKind
+import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.NameSuggestion
 import io.github.nytka_app.core.api.ReviewClient
 import io.github.nytka_app.core.api.Segment
+import io.github.nytka_app.core.api.TagsClient
 import io.github.nytka_app.core.api.TasksClient
 import io.github.nytka_app.ui.ITEM_GONE
 import io.github.nytka_app.ui.itemNotice
+import io.github.nytka_app.ui.tags.TagAccess
+import io.github.nytka_app.ui.tags.TagNotice
+import io.github.nytka_app.ui.tags.tagAccess
+import io.github.nytka_app.ui.tags.tagNotice
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -117,6 +123,10 @@ data class ConversationUiState(
     val raw: String? = null,
     /** A message for a snackbar, until [ConversationViewModel.noteShown]. */
     val note: String? = null,
+    /** The conversation's tags, as the server holds them; the screen shows them only when [tagAccess] allows. */
+    val tags: List<String> = emptyList(),
+    val tagAccess: TagAccess = TagAccess.None,
+    val tagNotice: TagNotice? = null,
 )
 
 @Suppress("TooManyFunctions") // one screen, one function per action
@@ -132,6 +142,8 @@ class ConversationViewModel
         private val audio: AudioClient,
         private val player: AudioPlayer,
         private val clock: Clock,
+        private val info: InfoClient,
+        private val tagsClient: TagsClient,
     ) : ViewModel() {
         private val id: String = checkNotNull(savedState["id"]) { "The conversation route carries an id." }
         private val mutableState = MutableStateFlow(ConversationUiState())
@@ -147,6 +159,7 @@ class ConversationViewModel
         init {
             viewModelScope.launch { loadAudio() }
             viewModelScope.launch { loadSuggestions() }
+            viewModelScope.launch { loadTagAccess() }
             viewModelScope.launch {
                 when (val result = api.conversation(id)) {
                     is ApiResult.Ok -> mutableState.value = show(result.value)
@@ -323,6 +336,45 @@ class ConversationViewModel
             mutableState.update { it.copy(banner = it.banner?.copy(busy = value)) }
         }
 
+        /** Chips need the `tags` feature, and changing them an admin token; any failure of `/info` shows none. */
+        private suspend fun loadTagAccess() {
+            val access = (info.info() as? ApiResult.Ok)?.value?.tagAccess() ?: TagAccess.None
+            mutableState.update { it.copy(tagAccess = access) }
+        }
+
+        /** The server normalizes [name] and answers the conversation's tags, which replace the chips. */
+        fun addTag(name: String) {
+            val wanted = name.trim()
+            if (wanted.isEmpty() || mutableState.value.tagAccess != TagAccess.Edit) return
+            viewModelScope.launch {
+                when (val result = tagsClient.addConversationTag(id, wanted)) {
+                    is ApiResult.Ok -> mutableState.update { it.copy(tags = result.value) }
+                    is ApiResult.Failure -> mutableState.update { it.copy(tagNotice = result.tagNotice()) }
+                }
+            }
+        }
+
+        /** The chip goes at once and comes back, with a notice, if the server refuses. */
+        fun removeTag(name: String) {
+            if (mutableState.value.tagAccess != TagAccess.Edit) return
+            val before = mutableState.value.tags
+            mutableState.update { it.copy(tags = it.tags - name) }
+            viewModelScope.launch {
+                when (val result = tagsClient.removeConversationTag(id, name)) {
+                    is ApiResult.Ok -> mutableState.update { it.copy(tags = result.value) }
+                    is ApiResult.Failure ->
+                        mutableState.update {
+                            it.copy(
+                                tags = before,
+                                tagNotice = result.tagNotice(),
+                            )
+                        }
+                }
+            }
+        }
+
+        fun tagNoticeShown() = mutableState.update { it.copy(tagNotice = null) }
+
         fun suggestionNoticeShown() = mutableState.update { it.copy(suggestionNotice = null) }
 
         fun noteShown() = mutableState.update { it.copy(note = null) }
@@ -481,6 +533,8 @@ class ConversationViewModel
                 playback = mutableState.value.playback,
                 banner = bannerOf(),
                 loading = false,
+                tags = detail.tags,
+                tagAccess = mutableState.value.tagAccess,
             )
         }
 

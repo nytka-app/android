@@ -369,4 +369,13 @@
     <string name="voice_models_confirm_text">Your server deletes every voice group, every voiceprint of a named person and every voice match waiting in the review inbox. People, names and lines stay, but Nytka no longer recognizes anyone by voice until you turn voice matching on and name voices again. This cannot be undone.</string>
     <string name="voice_models_confirm">Delete all</string>
     <string name="voice_models_deleted">Deleted every voice group and voiceprint.</string>
+    <!-- Tags: chips -->
+    <string name="tags_add">+ Tag</string>
+    <string name="tag_remove_format">Remove tag %1$s</string>
+    <string name="tags_more_format">+%1$d</string>
+    <string name="tag_sheet_title">Add a tag</string>
+    <string name="tag_field_label">Tag</string>
+    <string name="tags_in_use">Tags in use</string>
+    <string name="tag_invalid">Use letters, digits, - or _ (up to 32)</string>
+    <string name="tag_too_many">This item has 20 tags.</string>
 </resources>

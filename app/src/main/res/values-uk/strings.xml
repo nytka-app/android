@@ -365,4 +365,13 @@
     <string name="voice_models_confirm_text">Ваш сервер видалить кожну групу голосів, кожен відбиток названої людини й кожен збіг голосу, що чекає в черзі перевірки. Люди, імена й репліки залишаться, але Nytka не розпізнаватиме нікого за голосом, доки ви знову не ввімкнете зіставлення голосів і не назвете голоси. Це не можна скасувати.</string>
     <string name="voice_models_confirm">Видалити все</string>
     <string name="voice_models_deleted">Усі групи голосів і відбитки видалено.</string>
+    <!-- Tags: chips -->
+    <string name="tags_add">Додати тег</string>
+    <string name="tag_remove_format">Видалити тег %1$s</string>
+    <string name="tags_more_format">+%1$d</string>
+    <string name="tag_sheet_title">Додати тег</string>
+    <string name="tag_field_label">Тег</string>
+    <string name="tags_in_use">Теги, що вже вживаються</string>
+    <string name="tag_invalid">Використовуйте літери, цифри, - або _ (до 32 символів)</string>
+    <string name="tag_too_many">Тут уже 20 тегів.</string>
 </resources>

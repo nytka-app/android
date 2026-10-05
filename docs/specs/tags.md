@@ -95,11 +95,14 @@ fields only: `ConversationSummary.tags`, `ConversationDetail.tags`, `Person.tags
 
 **Feature gates.** Chips, add, remove and the filter need `tags`; proposals need `tag-suggestions`;
 role wording needs `roles`. Without a flag the part is hidden, not "needs an update": tags are new, and
-an older server simply has none. A `404` on a tag route with the flag listed reads as "This server
-needs an update", as `ServerNotices` does today.
+an older server simply has none. List rows read `tags` off the items, which an older server does not send,
+so they make no `/info` call of their own. A `404` on `GET /tags` with the flag listed reads as "This server
+needs an update", as `ServerNotices` does today; on an item's tag route it means the item is gone ("This
+item no longer exists"), since the flag already proves the route exists.
 
 **Token scope.** The app keeps requiring `admin`. Reads take `read` on the server; every write needs
-`admin`, and a `403` shows "The app needs an admin token."
+`admin`, and a `403` shows "The app needs an admin token." With a `read` token (`/info` `scope`) the
+chips show without **+ Tag** and ✕.
 
 **Nothing applies itself.** A proposal or a role becomes a tag only from a tap on Accept; no code calls
 an accept route on load.

@@ -62,8 +62,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.tags.TagNoticeEffect
+import io.github.nytka_app.ui.tags.tagChipsItem
 
-@Suppress("UnusedParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConversationScreen(
@@ -82,6 +83,7 @@ fun ConversationScreen(
     val snackbar = rememberNoteHost(state.note, viewModel::noteShown)
     LaunchedEffect(state.deleted) { if (state.deleted) onDeleted() }
     SuggestionNoticeEffect(state.suggestionNotice, snackbar, viewModel::suggestionNoticeShown)
+    TagNoticeEffect(state.tagNotice, snackbar, viewModel::tagNoticeShown)
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.pause() }
     // A summary in the making shows up on its own, while the screen is in front.
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -149,6 +151,7 @@ fun ConversationScreen(
                     style = MaterialTheme.typography.titleMedium,
                 )
             }
+            tagChipsItem(state.tags, state.tagAccess, viewModel::addTag, viewModel::removeTag, onTagClick = onOpenTag)
             state.playback?.let { playback ->
                 item { PlayBar(playback, onToggle = viewModel::togglePlay, onSeek = viewModel::seekTo) }
             }
