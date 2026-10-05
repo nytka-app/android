@@ -134,6 +134,7 @@ fun ReviewScreen(
                         item,
                         state.tagPeople[item.id],
                         state.roles,
+                        state.speech,
                         if (state.acceptAllAvailable) state.sameNames[item.id] ?: 1 else 1,
                         !state.busy,
                         onOpenConversation,
@@ -149,11 +150,14 @@ fun ReviewScreen(
     }
 }
 
+private const val SPEECH_LINES = 4
+
 @Composable
 private fun ReviewRowView(
     item: ReviewItem,
     personName: String?,
     roles: Boolean,
+    speech: Boolean,
     sameName: Int,
     acceptAllEnabled: Boolean,
     onOpenConversation: (String) -> Unit,
@@ -162,7 +166,7 @@ private fun ReviewRowView(
     onReject: (ReviewItem) -> Unit,
     onAcceptAll: (ReviewItem) -> Unit,
 ) {
-    val row = ReviewRow.of(item, roles, sameName) ?: return
+    val row = ReviewRow.of(item, roles, sameName, speech) ?: return
     val question = reviewQuestion(row, personName)
     // A person's tag opens the person; every other row its conversation.
     val opens: (() -> Unit)? =
@@ -186,7 +190,7 @@ private fun ReviewRowView(
     ) {
         Text(question, style = MaterialTheme.typography.titleMedium)
         if (details.isNotEmpty()) Text(details, style = MaterialTheme.typography.bodySmall)
-        if (item.text.isNotBlank()) Text(item.text, style = MaterialTheme.typography.bodyMedium, maxLines = 4)
+        ReviewText(row, item.text)
         Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Button(onClick = { onAccept(item) }) { Text(stringResource(R.string.review_yes)) }
             OutlinedButton(onClick = { onReject(item) }) {
@@ -201,6 +205,19 @@ private fun ReviewRowView(
     }
 }
 
+/** A stretch of speech shows its lines; any other row the text of its line. */
+@Composable
+private fun ReviewText(
+    row: ReviewRow,
+    text: String,
+) {
+    if (row is ReviewRow.Speech) {
+        row.lines.take(SPEECH_LINES).forEach { Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 2) }
+    } else if (text.isNotBlank()) {
+        Text(text, style = MaterialTheme.typography.bodyMedium, maxLines = 4)
+    }
+}
+
 @Composable
 private fun reviewQuestion(
     row: ReviewRow,
@@ -212,6 +229,9 @@ private fun reviewQuestion(
         is ReviewRow.VoiceMatch -> stringResource(R.string.review_name_question_format, row.name ?: someone)
         is ReviewRow.Label ->
             stringResource(if (row.isUser) R.string.review_label_yours else R.string.review_label_other)
+
+        is ReviewRow.Speech ->
+            stringResource(if (row.call) R.string.review_speech_call else R.string.review_speech_media)
 
         is ReviewRow.Tag ->
             if (row.personId == null) {

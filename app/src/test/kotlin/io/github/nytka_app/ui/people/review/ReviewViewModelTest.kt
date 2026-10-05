@@ -10,6 +10,7 @@ import io.github.nytka_app.core.api.ReviewClient
 import io.github.nytka_app.core.api.ReviewItem
 import io.github.nytka_app.core.api.ReviewProposal
 import io.github.nytka_app.core.api.ServerInfo
+import io.github.nytka_app.core.api.SpeechLine
 import io.github.nytka_app.ui.tags.FakeTags
 import io.github.nytka_app.ui.tags.proposal
 import org.junit.Assert.assertEquals
@@ -486,5 +487,111 @@ class ReviewViewModelTest {
             viewModel.state.value.note,
         )
         assertTrue(viewModel.state.value.acceptAllAvailable)
+    }
+
+    private fun speech(
+        id: String,
+        guess: String,
+    ) = ReviewItem(
+        "speech",
+        id,
+        "c9",
+        "Evening",
+        "2026-10-05T20:00:00Z",
+        "line one\nline two",
+        ReviewProposal(
+            speechKind = guess,
+            lines =
+                listOf(
+                    SpeechLine(7, "2026-10-05T20:00:00Z", "line one"),
+                    SpeechLine(8, "2026-10-05T20:00:05Z", "line two"),
+                ),
+        ),
+    )
+
+    private val tv = speech("7", "media")
+    private val call = speech("9", "call")
+
+    private fun speechServer() {
+        info = ApiResult.Ok(ServerInfo("0.30.0", 1, features = listOf("review", "speech-kind")))
+    }
+
+    @Test
+    fun `a speech item maps to a row with its lines when the server lists speech-kind`() {
+        speechServer()
+        api.list = ApiResult.Ok(listOf(tv, call, speech("11", "unsure")))
+        val state = newViewModel().state.value
+        assertEquals(3, state.count)
+        assertTrue(state.speech)
+        assertEquals(
+            ReviewRow.Speech(call = false, lines = listOf("line one", "line two")),
+            ReviewRow.of(tv, speech = true),
+        )
+        assertEquals(
+            ReviewRow.Speech(call = true, lines = listOf("line one", "line two")),
+            ReviewRow.of(call, speech = true),
+        )
+        assertEquals(false, (ReviewRow.of(speech("11", "unsure"), speech = true) as ReviewRow.Speech).call)
+    }
+
+    @Test
+    fun `an older server shows no speech rows and an unknown kind is still dropped`() {
+        api.list = ApiResult.Ok(listOf(name, tv, name.copy(kind = "other", id = "x")))
+        val state = newViewModel().state.value
+        assertEquals(listOf(name), state.items)
+        assertNull(ReviewRow.of(tv))
+    }
+
+    @Test
+    fun `yes and no on a speech row call its own routes and drop it`() {
+        speechServer()
+        api.list = ApiResult.Ok(listOf(tv, call))
+        val viewModel = newViewModel()
+        viewModel.accept(tv)
+        viewModel.reject(call)
+        assertEquals(listOf(Triple("speech", "7", true), Triple("speech", "9", false)), api.answers)
+        assertTrue(
+            viewModel.state.value.items
+                .isEmpty(),
+        )
+    }
+
+    @Test
+    fun `a refused speech answer puts the row back`() {
+        speechServer()
+        api.list = ApiResult.Ok(listOf(tv, call))
+        api.answer = failure(FailureKind.Forbidden)
+        val viewModel = newViewModel()
+        viewModel.accept(tv)
+        assertEquals(listOf(tv, call), viewModel.state.value.items)
+        assertEquals(
+            ReviewNotice.Failed(FailureKind.Forbidden, "The server answered.", item = false),
+            viewModel.state.value.note,
+        )
+    }
+
+    @Test
+    fun `a gone speech item says so and a marked one leaves silently`() {
+        speechServer()
+        api.list = ApiResult.Ok(listOf(tv, call))
+        val viewModel = newViewModel()
+        api.answer = failure(FailureKind.NotFound)
+        api.list = ApiResult.Ok(listOf(call))
+        viewModel.accept(tv)
+        assertEquals(
+            ReviewNotice.Failed(FailureKind.NotFound, "The server answered.", item = true),
+            viewModel.state.value.note,
+        )
+        assertEquals(listOf(call), viewModel.state.value.items)
+
+        viewModel.noteShown()
+        api.answer = failure(FailureKind.Conflict)
+        api.list = ApiResult.Ok(emptyList())
+        viewModel.accept(call)
+        assertNull(viewModel.state.value.note)
+        assertTrue(
+            viewModel.state.value.items
+                .isEmpty(),
+        )
     }
 }
