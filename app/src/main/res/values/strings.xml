@@ -588,4 +588,10 @@
     <!-- Speech kind: review -->
     <string name="review_speech_media">Was this a TV or a video?</string>
     <string name="review_speech_call">Was this a call?</string>
+
+    <!-- Speech kind: list -->
+    <string name="speech_list_hide_media">Hide media</string>
+    <string name="speech_list_media_hidden">Media hidden</string>
+    <string name="speech_list_show_media">Show media again</string>
+    <string name="speech_list_only_media">Nothing here but media</string>
 </resources>

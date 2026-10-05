@@ -593,4 +593,10 @@
     <!-- Speech kind: review -->
     <string name="review_speech_media">Це був телевізор чи відео?</string>
     <string name="review_speech_call">Це був дзвінок?</string>
+
+    <!-- Speech kind: list -->
+    <string name="speech_list_hide_media">Сховати медіа</string>
+    <string name="speech_list_media_hidden">Медіа сховано</string>
+    <string name="speech_list_show_media">Показати медіа знову</string>
+    <string name="speech_list_only_media">Тут лише медіа</string>
 </resources>

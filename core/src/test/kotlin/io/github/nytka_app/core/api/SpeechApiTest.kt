@@ -164,4 +164,31 @@ class SpeechApiTest {
                 0.0,
             )
         }
+
+    @Test
+    fun `the media-free list asks for media=hide with the tag and the cursor`() =
+        runTest {
+            val item = """{"id":"c1","startedAt":"a","endedAt":"b","status":"closed","preview":"p","mediaShare":0.9}"""
+            answer(200, """{"items":[$item],"nextBefore":null}""")
+
+            val page = (speech.conversationsWithoutMedia("work", "2026-09-29T10:00:00Z", 30) as ApiResult.Ok).value
+
+            assertEquals(0.9, page.items.single().mediaShare, 0.0)
+            val url = server.takeRequest().url
+            assertEquals("/api/v1/conversations", url.encodedPath)
+            assertEquals("hide", url.queryParameter("media"))
+            assertEquals("work", url.queryParameter("tag"))
+            assertEquals("2026-09-29T10:00:00Z", url.queryParameter("before"))
+            assertEquals("30", url.queryParameter("limit"))
+        }
+
+    @Test
+    fun `the media-free list sends no tag when there is none`() =
+        runTest {
+            answer(200, """{"items":[],"nextBefore":null}""")
+
+            speech.conversationsWithoutMedia(null, null, 30)
+
+            assertNull(server.takeRequest().url.queryParameter("tag"))
+        }
 }
