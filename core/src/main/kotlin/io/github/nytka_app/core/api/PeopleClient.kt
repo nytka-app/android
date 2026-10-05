@@ -12,6 +12,11 @@ data class Person(
     val createdAt: String = "",
     val voices: List<String> = emptyList(),
     val segments: Int = 0,
+    /** Your own note; the server sends it with the list. */
+    val note: String? = null,
+    /** Newest segment of the person and their live facts: `GET /people` lacks both yet, so they are optional. */
+    val lastSeenAt: String? = null,
+    val facts: Int? = null,
 )
 
 /** A voice not yet named and not the wearer's. [label] is the transcription service's own, such as `SPEAKER_01`. */

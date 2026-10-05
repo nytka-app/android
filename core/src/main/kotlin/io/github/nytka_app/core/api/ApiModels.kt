@@ -16,6 +16,8 @@ data class ServerInfo(
     companion object {
         const val FEATURE_OFFLINE_SYNC = "offline-sync"
         const val FEATURE_VOICE = "voice"
+        const val FEATURE_PEOPLE = "people"
+        const val FEATURE_VOICE_GROUPS = "voice-groups"
 
         const val SCOPE_ADMIN = "admin"
         const val SCOPE_READ = "read"
@@ -102,6 +104,9 @@ data class NytkaTask(
     val conversationStartedAt: String? = null,
     val doneAt: String? = null,
     val createdAt: String? = null,
+    /** The person the task is owed to; server 0.14 and later. */
+    val personId: String? = null,
+    val personName: String? = null,
 )
 
 @Serializable
