@@ -9,6 +9,7 @@ import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.ReviewClient
 import io.github.nytka_app.core.api.ReviewItem
 import io.github.nytka_app.core.api.ServerInfo
+import io.github.nytka_app.core.api.TagsClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,6 +36,12 @@ sealed interface ReviewRow {
         val isUser: Boolean,
     ) : ReviewRow
 
+    /** A proposed tag; [personId] is set for a person's tag and null for a conversation's. */
+    data class Tag(
+        val tag: String,
+        val personId: String?,
+    ) : ReviewRow
+
     companion object {
         fun of(item: ReviewItem): ReviewRow? =
             when (item.kind) {
@@ -43,6 +50,11 @@ sealed interface ReviewRow {
                     VoiceMatch(item.proposal.name, item.proposal.similarity?.let { (it * 100).roundToInt() })
 
                 ReviewItem.KIND_LABEL -> Label(item.proposal.isUser == true)
+                ReviewItem.KIND_TAG ->
+                    item.proposal.tag
+                        ?.takeIf(
+                            String::isNotBlank,
+                        )?.let { Tag(it, item.proposal.personId) }
                 else -> null
             }
     }
@@ -59,10 +71,15 @@ sealed interface ReviewNotice {
 
     /** A `409`: someone answered it already. */
     data object AlreadyAnswered : ReviewNotice
+
+    /** A `409` on accepting a tag the item has no room for: the proposal stays in the list. */
+    data object TagLimit : ReviewNotice
 }
 
 data class ReviewUiState(
     val items: List<ReviewItem> = emptyList(),
+    /** The person's name for each person-tag item, by item id; missing where the server gave none. */
+    val tagPeople: Map<String, String> = emptyMap(),
     val loading: Boolean = false,
     /** `/info` lists `review` and the list answered: the People screen shows its icon. */
     val available: Boolean = false,
@@ -79,6 +96,7 @@ class ReviewViewModel
     constructor(
         private val api: ReviewClient,
         private val info: InfoClient,
+        private val tags: TagsClient,
     ) : ViewModel() {
         private val mutableState = MutableStateFlow(ReviewUiState())
         val state: StateFlow<ReviewUiState> = mutableState.asStateFlow()
@@ -91,33 +109,55 @@ class ReviewViewModel
         }
 
         fun refresh() {
-            mutableState.update { it.copy(loading = true, error = null) }
-            viewModelScope.launch {
-                val features =
-                    when (val result = info.info()) {
-                        is ApiResult.Ok -> result.value
-                        is ApiResult.Failure -> return@launch unavailable(result)
-                    }
-                if (!features.has(ServerInfo.FEATURE_REVIEW)) {
-                    return@launch unavailable(ApiResult.Failure(FailureKind.NotFound, ""))
-                }
-                when (val result = api.review(LIMIT)) {
-                    is ApiResult.Ok ->
-                        mutableState.update {
-                            it.copy(
-                                items =
-                                    result.value.filter { item ->
-                                        ReviewRow.of(item) != null &&
-                                            key(item) !in pending
-                                    },
-                                loading = false,
-                                available = true,
-                            )
-                        }
+            viewModelScope.launch { load() }
+        }
 
-                    is ApiResult.Failure -> unavailable(result)
+        private suspend fun load() {
+            mutableState.update { it.copy(loading = true, error = null) }
+            val features =
+                when (val result = info.info()) {
+                    is ApiResult.Ok -> result.value
+                    is ApiResult.Failure -> return unavailable(result)
                 }
+            if (!features.has(ServerInfo.FEATURE_REVIEW)) {
+                return unavailable(ApiResult.Failure(FailureKind.NotFound, ""))
             }
+            // A tag item is shown only by a server that lists `tag-suggestions`, and then no more is asked of it.
+            val tagsOn = features.has(ServerInfo.FEATURE_TAG_SUGGESTIONS)
+            when (val result = api.review(LIMIT)) {
+                is ApiResult.Ok -> {
+                    val items =
+                        result.value.filter { item ->
+                            ReviewRow.of(item) != null &&
+                                (tagsOn || item.kind != ReviewItem.KIND_TAG) &&
+                                key(item) !in pending
+                        }
+                    val people = if (tagsOn) personNames(items) else emptyMap()
+                    mutableState.update {
+                        it.copy(
+                            items = items,
+                            tagPeople = people,
+                            loading = false,
+                            available = true,
+                        )
+                    }
+                }
+
+                is ApiResult.Failure -> unavailable(result)
+            }
+        }
+
+        /**
+         * The inbox row of a person's tag names the person, which the review list does not carry but the list of
+         * proposals does. Asked only when such a row exists; a failure leaves the row without a name.
+         */
+        private suspend fun personNames(items: List<ReviewItem>): Map<String, String> {
+            if (items.none { it.kind == ReviewItem.KIND_TAG && it.proposal.personId != null }) return emptyMap()
+            return (tags.suggestions() as? ApiResult.Ok)
+                ?.value
+                .orEmpty()
+                .mapNotNull { s -> s.personName?.takeIf(String::isNotBlank)?.let { s.id to it } }
+                .toMap()
         }
 
         /** A route the server lacks hides the icon; any other failure keeps what the screen had. */
@@ -152,7 +192,15 @@ class ReviewViewModel
                 pending -= key(item)
                 if (result !is ApiResult.Failure) return@launch
                 when (result.kind) {
-                    FailureKind.Conflict -> gone(ReviewNotice.AlreadyAnswered)
+                    FailureKind.Conflict ->
+                        if (accept &&
+                            item.kind == ReviewItem.KIND_TAG
+                        ) {
+                            tagConflict(item)
+                        } else {
+                            gone(ReviewNotice.AlreadyAnswered)
+                        }
+
                     FailureKind.NotFound -> gone(ReviewNotice.Failed(result.kind, result.message, item = true))
                     else ->
                         mutableState.update {
@@ -167,9 +215,19 @@ class ReviewViewModel
             }
         }
 
-        private fun gone(note: ReviewNotice) {
+        private suspend fun gone(note: ReviewNotice) {
             mutableState.update { it.copy(note = note) }
-            refresh()
+            load()
+        }
+
+        /**
+         * Accepting a tag answers `409` both for "answered already" and for "the item has 20 tags". The list read again
+         * tells which: a proposal still pending stays, with the limit as the notice.
+         */
+        private suspend fun tagConflict(item: ReviewItem) {
+            load()
+            val stays = state.value.items.any { key(it) == key(item) }
+            mutableState.update { it.copy(note = if (stays) ReviewNotice.TagLimit else ReviewNotice.AlreadyAnswered) }
         }
 
         private fun key(item: ReviewItem) = item.kind + "/" + item.id

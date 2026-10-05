@@ -64,6 +64,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.ui.tags.TagNoticeEffect
 import io.github.nytka_app.ui.tags.tagChipsItem
+import io.github.nytka_app.ui.tags.tagProposalsItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -158,6 +159,7 @@ fun ConversationScreen(
             state.chip?.let { chip -> item { AiChip(chip) } }
             state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
             suggestion(state.banner, viewModel::acceptSuggestion, viewModel::rejectSuggestion)
+            tagProposalsItem(state.tagProposals, viewModel::acceptTagProposal, viewModel::rejectTagProposal)
             state.summary?.let { summary ->
                 item { InfoCard(stringResource(R.string.summary_card_title)) { Text(summary) } }
             }

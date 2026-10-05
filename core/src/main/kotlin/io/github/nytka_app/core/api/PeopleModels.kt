@@ -150,6 +150,7 @@ data class ReviewItem(
         const val KIND_NAME = "name"
         const val KIND_VOICE = "voice"
         const val KIND_LABEL = "label"
+        const val KIND_TAG = "tag"
     }
 }
 

@@ -381,4 +381,11 @@
     <string name="tag_filter_chip_format">Тег: %1$s</string>
     <string name="tag_filter_clear_format">Прибрати фільтр за тегом %1$s</string>
     <string name="tag_filter_empty_format">Немає нічого з тегом %1$s</string>
+    <!-- Tags: proposals -->
+    <string name="tags_suggested">Запропоновані теги</string>
+    <string name="tag_proposal_accept_format">Додати %1$s</string>
+    <string name="tag_proposal_reject_format">Не цей: %1$s</string>
+    <string name="review_tag_conversation_format">Позначити цю розмову тегом %1$s?</string>
+    <string name="review_tag_person_format">Позначити %1$s тегом %2$s?</string>
+    <string name="review_this_person">цю людину</string>
 </resources>

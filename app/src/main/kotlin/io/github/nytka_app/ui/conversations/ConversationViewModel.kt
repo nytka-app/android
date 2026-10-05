@@ -16,14 +16,19 @@ import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.NameSuggestion
 import io.github.nytka_app.core.api.ReviewClient
 import io.github.nytka_app.core.api.Segment
+import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.TagsClient
 import io.github.nytka_app.core.api.TasksClient
 import io.github.nytka_app.ui.ITEM_GONE
 import io.github.nytka_app.ui.itemNotice
+import io.github.nytka_app.ui.tags.ProposalOutcome
 import io.github.nytka_app.ui.tags.TagAccess
 import io.github.nytka_app.ui.tags.TagNotice
+import io.github.nytka_app.ui.tags.TagProposalBook
+import io.github.nytka_app.ui.tags.TagProposalState
 import io.github.nytka_app.ui.tags.tagAccess
 import io.github.nytka_app.ui.tags.tagNotice
+import io.github.nytka_app.ui.tags.withTag
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -127,6 +132,8 @@ data class ConversationUiState(
     val tags: List<String> = emptyList(),
     val tagAccess: TagAccess = TagAccess.None,
     val tagNotice: TagNotice? = null,
+    /** Tags the model proposed for this conversation alone; empty without the `tag-suggestions` feature. */
+    val tagProposals: List<TagProposalState> = emptyList(),
 )
 
 @Suppress("TooManyFunctions") // one screen, one function per action
@@ -153,6 +160,7 @@ class ConversationViewModel
         private var segments: List<Segment> = emptyList()
         private var suggestions: List<NameSuggestion> = emptyList()
         private var answering = false
+        private val proposals = TagProposalBook(tagsClient) { it.conversationId == id && it.personId == null }
         private val prepareLock = Mutex()
         private var prepared = false
 
@@ -336,10 +344,42 @@ class ConversationViewModel
             mutableState.update { it.copy(banner = it.banner?.copy(busy = value)) }
         }
 
-        /** Chips need the `tags` feature, and changing them an admin token; any failure of `/info` shows none. */
+        /**
+         * Chips need the `tags` feature, and changing them an admin token; any failure of `/info` shows none.
+         * Proposals are read only from a server that lists `tag-suggestions`.
+         */
         private suspend fun loadTagAccess() {
-            val access = (info.info() as? ApiResult.Ok)?.value?.tagAccess() ?: TagAccess.None
-            mutableState.update { it.copy(tagAccess = access) }
+            val server = (info.info() as? ApiResult.Ok)?.value
+            mutableState.update { it.copy(tagAccess = server?.tagAccess() ?: TagAccess.None) }
+            if (server?.has(ServerInfo.FEATURE_TAG_SUGGESTIONS) == true) {
+                proposals.load()
+                showProposals()
+            }
+        }
+
+        private fun showProposals() = mutableState.update { it.copy(tagProposals = proposals.views()) }
+
+        /** Adds the proposed tag as a chip. Only a tap on Add gets here. */
+        fun acceptTagProposal(proposalId: String) = answerTagProposal(proposalId, accept = true)
+
+        /** Hides the proposal; the tag is not proposed again for this conversation. */
+        fun rejectTagProposal(proposalId: String) = answerTagProposal(proposalId, accept = false)
+
+        private fun answerTagProposal(
+            proposalId: String,
+            accept: Boolean,
+        ) {
+            viewModelScope.launch {
+                when (val outcome = proposals.answer(proposalId, accept, ::showProposals)) {
+                    is ProposalOutcome.Accepted -> mutableState.update { it.copy(tags = it.tags.withTag(outcome.tag)) }
+                    ProposalOutcome.Dropped ->
+                        (api.conversation(id) as? ApiResult.Ok)?.let { mutableState.value = show(it.value) }
+
+                    is ProposalOutcome.Kept -> mutableState.update { it.copy(tagNotice = outcome.notice) }
+                    ProposalOutcome.Rejected, ProposalOutcome.Ignored -> Unit
+                }
+                showProposals()
+            }
         }
 
         /** The server normalizes [name] and answers the conversation's tags, which replace the chips. */
@@ -535,6 +575,7 @@ class ConversationViewModel
                 loading = false,
                 tags = detail.tags,
                 tagAccess = mutableState.value.tagAccess,
+                tagProposals = mutableState.value.tagProposals,
             )
         }
 

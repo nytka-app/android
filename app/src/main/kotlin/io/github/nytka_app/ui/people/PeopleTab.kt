@@ -58,7 +58,11 @@ fun PeopleTab(
             )
         }
         composable("review") {
-            ReviewScreen(onBack = navController::popBackStack, onOpenConversation = onOpenConversation)
+            ReviewScreen(
+                onBack = navController::popBackStack,
+                onOpenConversation = onOpenConversation,
+                onOpenPerson = { navController.navigate("person/$it") },
+            )
         }
         composable(
             "settings?prefixes={prefixes}",

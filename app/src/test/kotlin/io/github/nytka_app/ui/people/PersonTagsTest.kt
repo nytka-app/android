@@ -17,10 +17,13 @@ import io.github.nytka_app.core.api.UnnamedVoice
 import io.github.nytka_app.ui.tags.FakeTags
 import io.github.nytka_app.ui.tags.TagAccess
 import io.github.nytka_app.ui.tags.TagNotice
+import io.github.nytka_app.ui.tags.TagProposalState
 import io.github.nytka_app.ui.tags.fakeInfo
+import io.github.nytka_app.ui.tags.proposal
 import kotlinx.coroutines.CompletableDeferred
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -171,5 +174,141 @@ class PersonTagsTest {
 
         vm.tagNoticeShown()
         assertNull(vm.state.value.tagNotice)
+    }
+
+    private val suggesting = arrayOf(ServerInfo.FEATURE_TAGS, ServerInfo.FEATURE_TAG_SUGGESTIONS)
+
+    private fun proposals() {
+        tags.pending =
+            ApiResult.Ok(
+                listOf(
+                    proposal("t1", "plumber", conversationId = "c1", personId = "p1", personName = "Anna"),
+                    proposal("t2", "work", conversationId = "c1"),
+                    proposal("t3", "other", conversationId = "c2", personId = "p2", personName = "Ivan"),
+                ),
+            )
+    }
+
+    @Test
+    fun `proposals show for this person only`() {
+        proposals()
+
+        assertEquals(
+            listOf(TagProposalState("t1", "plumber")),
+            viewModel(fakeInfo(*suggesting)).state.value.tagProposals,
+        )
+    }
+
+    @Test
+    fun `a server before person proposals changes nothing`() {
+        tags.pending = ApiResult.Ok(listOf(proposal("t2", "work", conversationId = "c1")))
+        val vm = viewModel(fakeInfo(*suggesting))
+
+        assertTrue(
+            vm.state.value.tagProposals
+                .isEmpty(),
+        )
+        assertEquals(listOf("family", "work"), vm.state.value.tags)
+        assertNull(vm.state.value.tagNotice)
+    }
+
+    @Test
+    fun `a server without tag-suggestions is not asked`() {
+        proposals()
+        val vm = viewModel(fakeInfo(ServerInfo.FEATURE_TAGS))
+
+        vm.acceptTagProposal("t1")
+
+        assertEquals(0, tags.listed)
+        assertTrue(tags.answered.isEmpty())
+        assertTrue(
+            vm.state.value.tagProposals
+                .isEmpty(),
+        )
+    }
+
+    @Test
+    fun `nothing is applied until a tap, and accept adds the chip`() {
+        proposals()
+        val vm = viewModel(fakeInfo(*suggesting))
+        assertTrue(tags.answered.isEmpty())
+
+        vm.acceptTagProposal("t1")
+
+        assertEquals(listOf("t1" to true), tags.answered)
+        assertEquals(listOf("family", "plumber", "work"), vm.state.value.tags)
+        assertTrue(
+            vm.state.value.tagProposals
+                .isEmpty(),
+        )
+    }
+
+    @Test
+    fun `reject drops the proposal`() {
+        proposals()
+        val vm = viewModel(fakeInfo(*suggesting))
+
+        vm.rejectTagProposal("t1")
+
+        assertEquals(listOf("t1" to false), tags.answered)
+        assertEquals(listOf("family", "work"), vm.state.value.tags)
+        assertTrue(
+            vm.state.value.tagProposals
+                .isEmpty(),
+        )
+    }
+
+    @Test
+    fun `a 409 or 404 drops it and reads the page again`() {
+        proposals()
+        tags.suggestionAnswer = failure(FailureKind.Conflict)
+        val vm = viewModel(fakeInfo(*suggesting))
+
+        vm.acceptTagProposal("t1")
+
+        assertTrue(
+            vm.state.value.tagProposals
+                .isEmpty(),
+        )
+        assertNull(vm.state.value.tagNotice)
+        assertEquals(listOf("family", "work"), vm.state.value.tags)
+    }
+
+    @Test
+    fun `a full person keeps the proposal and says so`() {
+        proposals()
+        tags.suggestionAnswer = failure(FailureKind.Conflict)
+        tags.stayPending = true
+        val vm = viewModel(fakeInfo(*suggesting))
+
+        vm.acceptTagProposal("t1")
+
+        assertEquals(listOf(TagProposalState("t1", "plumber")), vm.state.value.tagProposals)
+        assertEquals(TagNotice.TooManyTags, vm.state.value.tagNotice)
+    }
+
+    @Test
+    fun `a failure keeps the proposal with a notice`() {
+        proposals()
+        tags.suggestionAnswer = failure(FailureKind.Forbidden)
+        val vm = viewModel(fakeInfo(*suggesting))
+
+        vm.acceptTagProposal("t1")
+
+        assertEquals(listOf(TagProposalState("t1", "plumber")), vm.state.value.tagProposals)
+        assertEquals(TagNotice.NeedsAdmin, vm.state.value.tagNotice)
+    }
+
+    @Test
+    fun `a failure of the list hides the row silently`() {
+        tags.pending = failure(FailureKind.Network)
+        val vm = viewModel(fakeInfo(*suggesting))
+
+        assertTrue(
+            vm.state.value.tagProposals
+                .isEmpty(),
+        )
+        assertNull(vm.state.value.tagNotice)
+        assertNull(vm.state.value.error)
     }
 }
