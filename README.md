@@ -207,6 +207,13 @@ conversation (or person) carries, most used first, with how many; type to narrow
 an empty one says "Nothing tagged work". The filter survives rotation and lasts until you clear it or
 leave the app; it is not saved on the phone. People leaves out the unnamed voices while it is on.
 
+**Media in the list.** On a server that lists `speech-kind`, a conversation whose speech is 80 percent or
+more media shows a **Media** chip on its row. **Hide media**, in the row above the list, leaves those
+out: a chip "Media hidden" under it shows the filter and its **✕** brings them back. It works with the
+tag filter, pages like the full list, and an empty result says "Nothing here but media". It survives
+rotation and lasts until you clear it or leave the app; it is not saved on the phone. Without
+`speech-kind` there is no chip and no action.
+
 **Proposed tags.** A server that lists `tag-suggestions` may propose tags it read in a
 summary. On a conversation, a "Suggested tags" row under the header shows each as a chip with **✓** (add
 it) and **✕** (not this one, never proposed again for that conversation); the person page shows the same

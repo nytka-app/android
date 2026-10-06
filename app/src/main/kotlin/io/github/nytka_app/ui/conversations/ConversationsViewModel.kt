@@ -9,8 +9,10 @@ import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.ConversationPage
 import io.github.nytka_app.core.api.ConversationSummary
 import io.github.nytka_app.core.api.ConversationsClient
+import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.ServerInfo
+import io.github.nytka_app.core.api.SpeechClient
 import io.github.nytka_app.core.api.StatusClient
 import io.github.nytka_app.core.api.TagsClient
 import io.github.nytka_app.ui.tags.ListEmpty
@@ -43,7 +45,12 @@ data class ConversationRow(
     val bookmarks: Int = 0,
     /** Sorted tag names; none from a server without the `tags` feature. */
     val tags: List<String> = emptyList(),
+    /** The conversation is mostly media (a `mediaShare` of [MEDIA_SHARE] or more); the row shows a chip. */
+    val media: Boolean = false,
 )
+
+/** From this share of a conversation's speech being media, the list calls the conversation media. */
+const val MEDIA_SHARE = 0.8
 
 data class DaySection(
     val title: String,
@@ -58,6 +65,8 @@ data class ConversationsUiState(
     val endReached: Boolean = false,
     /** The tag the list is filtered by; kept in saved state, so it survives rotation but not a launch. */
     val tag: String? = null,
+    /** The list leaves out media conversations; kept in saved state like [tag]. */
+    val hideMedia: Boolean = false,
 ) {
     val empty: ListEmpty get() = listEmpty(days.isEmpty(), loading, error != null, tag)
 }
@@ -71,6 +80,7 @@ class ConversationsViewModel
         private val clock: Clock,
         private val tags: TagsClient,
         private val info: InfoClient,
+        private val speech: SpeechClient,
         private val savedState: SavedStateHandle,
     ) : ViewModel() {
         private val items = mutableListOf<ConversationSummary>()
@@ -80,13 +90,21 @@ class ConversationsViewModel
         /** Counts loads started, so a quiet refresh can tell that a newer answer has come in while it waited. */
         private var loadsStarted = 0
         private var tag: String? = savedState[TAG]
-        private val mutableState = MutableStateFlow(ConversationsUiState(tag = tag))
+        private var hideMedia: Boolean = savedState[HIDE_MEDIA] ?: false
+
+        /** Whether `/info` lists `speech-kind`; null until it has been read. */
+        private var speechKind: Boolean? = null
+        private val mutableState = MutableStateFlow(ConversationsUiState(tag = tag, hideMedia = hideMedia))
         val state: StateFlow<ConversationsUiState> = mutableState.asStateFlow()
         private val mutableNotice = MutableStateFlow<String?>(null)
         private val mutableTagFilter = MutableStateFlow(false)
+        private val mutableMediaFilter = MutableStateFlow(false)
 
         /** The server lists the `tags` feature: the screen offers the tag action. */
         val tagFilter: StateFlow<Boolean> = mutableTagFilter.asStateFlow()
+
+        /** The server lists the `speech-kind` feature: the screen offers **Hide media**. */
+        val mediaFilter: StateFlow<Boolean> = mutableMediaFilter.asStateFlow()
 
         /** What the status card says about transcription on the server; null while nothing is wrong or known. */
         val notice: StateFlow<String?> = mutableNotice.asStateFlow()
@@ -103,7 +121,39 @@ class ConversationsViewModel
 
         /** A failed read of `/info` changes nothing: the action stays as it was. */
         private suspend fun refreshTagFilter() {
-            (info.info() as? ApiResult.Ok)?.let { mutableTagFilter.value = it.value.has(ServerInfo.FEATURE_TAGS) }
+            (info.info() as? ApiResult.Ok)?.let {
+                mutableTagFilter.value = it.value.has(ServerInfo.FEATURE_TAGS)
+                speechKind = it.value.has(ServerInfo.FEATURE_SPEECH_KIND)
+                mutableMediaFilter.value = speechKind == true
+            }
+        }
+
+        /** Whether the server lists `speech-kind`; null when `/info` cannot be read. */
+        private suspend fun speechKindListed(): Boolean? {
+            speechKind?.let { return it }
+            val listed = (info.info() as? ApiResult.Ok)?.value?.has(ServerInfo.FEATURE_SPEECH_KIND) ?: return null
+            speechKind = listed
+            return listed
+        }
+
+        /** Leaves media conversations out of the list and reads it again. A server without `speech-kind` keeps it. */
+        fun hideMedia() {
+            viewModelScope.launch {
+                if (speechKindListed() != true) return@launch
+                setHideMedia(true)
+            }
+        }
+
+        fun showMedia() = setHideMedia(false)
+
+        private fun setHideMedia(on: Boolean) {
+            if (on == hideMedia) return
+            hideMedia = on
+            savedState[HIDE_MEDIA] = on
+            items.clear()
+            nextBefore = null
+            mutableState.update { it.copy(days = emptyList(), hideMedia = on, endReached = false) }
+            load(reset = true)
         }
 
         /**
@@ -131,6 +181,17 @@ class ConversationsViewModel
         }
 
         private suspend fun page(before: String?): ApiResult<ConversationPage> {
+            if (hideMedia) {
+                when (speechKindListed()) {
+                    true -> return speech.conversationsWithoutMedia(tag, before, PAGE_SIZE)
+                    // A saved filter outlives the server's feature: the full list is the safe answer.
+                    false -> {
+                        hideMedia = false
+                        savedState[HIDE_MEDIA] = false
+                    }
+                    null -> return ApiResult.Failure(FailureKind.Network, "The server did not answer.")
+                }
+            }
             val filter = tag
             return if (filter ==
                 null
@@ -215,7 +276,12 @@ class ConversationsViewModel
                             items += result.value.items.filter { it.id !in known }
                             nextBefore = result.value.nextBefore
                             mutableState.value =
-                                ConversationsUiState(days = group(items), endReached = nextBefore == null, tag = tag)
+                                ConversationsUiState(
+                                    days = group(items),
+                                    endReached = nextBefore == null,
+                                    tag = tag,
+                                    hideMedia = hideMedia,
+                                )
                         }
 
                         is ApiResult.Failure ->
@@ -250,6 +316,7 @@ class ConversationsViewModel
                                 aiChip(it.aiStatus),
                                 it.bookmarks,
                                 it.tags,
+                                it.mediaShare >= MEDIA_SHARE,
                             )
                         },
                     )
@@ -275,5 +342,6 @@ class ConversationsViewModel
 
             private const val PAGE_SIZE = 30
             private const val TAG = "tag"
+            private const val HIDE_MEDIA = "hideMedia"
         }
     }

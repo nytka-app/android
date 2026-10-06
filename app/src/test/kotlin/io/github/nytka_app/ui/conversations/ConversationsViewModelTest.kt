@@ -85,6 +85,7 @@ class ConversationsViewModelTest {
     }
 
     private val tagLists = FakeTagLists()
+    private val speech = FakeSpeech()
     private var info: ApiResult<ServerInfo> = ApiResult.Ok(ServerInfo("0.17.0", 1, features = listOf("tags")))
 
     private fun newViewModel(savedState: SavedStateHandle = SavedStateHandle()) =
@@ -97,6 +98,7 @@ class ConversationsViewModelTest {
             clock,
             tagLists,
             InfoClient { info },
+            speech,
             savedState,
         )
 

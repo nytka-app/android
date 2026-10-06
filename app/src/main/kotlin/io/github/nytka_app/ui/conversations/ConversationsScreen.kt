@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -133,6 +135,7 @@ fun ConversationsScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
     val tagFilter by viewModel.tagFilter.collectAsStateWithLifecycle()
+    val mediaFilter by viewModel.mediaFilter.collectAsStateWithLifecycle()
     LaunchedEffect(deleted) { deleted?.let(viewModel::forget) }
     LaunchedEffect(tagRequest) {
         tagRequest?.let {
@@ -151,16 +154,19 @@ fun ConversationsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            if (SEARCH_ENABLED || tagFilter) {
+            if (SEARCH_ENABLED || tagFilter || mediaFilter) {
                 item {
                     TopActions(
                         tagFilter,
+                        mediaFilter = mediaFilter && !state.hideMedia,
+                        onHideMedia = viewModel::hideMedia,
                         onPickTag = viewModel::showTag,
                         onSearch = onSearch.takeIf { SEARCH_ENABLED },
                     )
                 }
             }
             tagFilterChipItem(state.tag, onClear = viewModel::clearTag)
+            if (state.hideMedia) item(key = "media-filter") { HideMediaChip(onClear = viewModel::showMedia) }
             item { StatusCard(status, onMute, notice) }
             state.error?.let { error ->
                 item {
@@ -178,46 +184,13 @@ fun ConversationsScreen(
                         modifier = Modifier.padding(top = 16.dp),
                     )
                 }
-                items(day.rows, key = { it.id }) { row ->
-                    ListItem(
-                        headlineContent = {
-                            Text(row.title ?: row.timeRange, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        },
-                        trailingContent =
-                            if (row.bookmarks > 0) {
-                                {
-                                    Icon(
-                                        Icons.Filled.Star,
-                                        contentDescription = stringResource(R.string.has_bookmarks),
-                                        tint = MaterialTheme.colorScheme.primary,
-                                    )
-                                }
-                            } else {
-                                null
-                            },
-                        supportingContent = {
-                            Column {
-                                Text(row.preview, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                                Text(
-                                    stringResource(R.string.time_range_and_length_format, row.timeRange, row.length),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    modifier = Modifier.padding(top = 4.dp),
-                                )
-                                row.chip?.let { chip ->
-                                    AiChip(chip, Modifier.padding(top = 4.dp))
-                                }
-                                TagRow(row.tags, Modifier.padding(top = 4.dp))
-                            }
-                        },
-                        modifier = Modifier.clickable { onOpen(row.id) },
-                    )
-                }
+                items(day.rows, key = { it.id }) { row -> ConversationListRow(row, onOpen) }
             }
             if (state.days.isNotEmpty() && !state.endReached) {
                 item(key = "more") { LaunchedEffect(state.days.sumOf { it.rows.size }) { viewModel.loadMore() } }
             }
             when (state.empty) {
-                ListEmpty.Empty -> item { Text(stringResource(R.string.no_conversations_yet)) }
+                ListEmpty.Empty -> item { EmptyListText(state.hideMedia) }
                 ListEmpty.EmptyForTag -> item { Text(tagFilterEmptyText(state.tag.orEmpty())) }
                 ListEmpty.NotEmpty -> Unit
             }
@@ -229,6 +202,8 @@ fun ConversationsScreen(
 @Composable
 private fun TopActions(
     tagFilter: Boolean,
+    mediaFilter: Boolean,
+    onHideMedia: () -> Unit,
     onPickTag: (String) -> Unit,
     onSearch: (() -> Unit)?,
 ) {
@@ -237,6 +212,7 @@ private fun TopActions(
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (mediaFilter) TextButton(onClick = onHideMedia) { Text(stringResource(R.string.speech_list_hide_media)) }
         if (tagFilter) TagFilterAction(count = { it.conversations }, onPick = onPickTag)
         if (onSearch != null) {
             IconButton(
@@ -264,4 +240,82 @@ internal fun AiChip(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
         )
     }
+}
+
+/** On a row whose speech is mostly media. */
+@Composable
+private fun MediaChip(modifier: Modifier = Modifier) {
+    Surface(modifier, shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surfaceVariant) {
+        Text(
+            stringResource(R.string.speech_chip_media),
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        )
+    }
+}
+
+/** Under the bar while media is hidden; its **✕** shows it again. */
+@Composable
+private fun HideMediaChip(onClear: () -> Unit) {
+    Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.secondaryContainer) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.speech_list_media_hidden),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
+            )
+            IconButton(onClick = onClear, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.speech_list_show_media),
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConversationListRow(
+    row: ConversationRow,
+    onOpen: (String) -> Unit,
+) {
+    ListItem(
+        headlineContent = {
+            Text(row.title ?: row.timeRange, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        },
+        trailingContent =
+            if (row.bookmarks > 0) {
+                {
+                    Icon(
+                        Icons.Filled.Star,
+                        contentDescription = stringResource(R.string.has_bookmarks),
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            } else {
+                null
+            },
+        supportingContent = {
+            Column {
+                Text(row.preview, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(
+                    stringResource(R.string.time_range_and_length_format, row.timeRange, row.length),
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+                row.chip?.let { chip ->
+                    AiChip(chip, Modifier.padding(top = 4.dp))
+                }
+                if (row.media) MediaChip(Modifier.padding(top = 4.dp))
+                TagRow(row.tags, Modifier.padding(top = 4.dp))
+            }
+        },
+        modifier = Modifier.clickable { onOpen(row.id) },
+    )
+}
+
+@Composable
+private fun EmptyListText(hideMedia: Boolean) {
+    Text(stringResource(if (hideMedia) R.string.speech_list_only_media else R.string.no_conversations_yet))
 }

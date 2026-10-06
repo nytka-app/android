@@ -23,6 +23,13 @@ interface SpeechClient {
         id: String,
         kind: String?,
     ): ApiResult<Int>
+
+    /** The conversation list with `media=hide`: leaves out those that are mostly media; [tag] narrows it as usual. */
+    suspend fun conversationsWithoutMedia(
+        tag: String?,
+        before: String?,
+        limit: Int,
+    ): ApiResult<ConversationPage>
 }
 
 class SpeechApi(
@@ -47,6 +54,17 @@ class SpeechApi(
             "api/v1/conversations/$id/speech",
             body = buildJsonObject { put("kind", kind?.let(::JsonPrimitive) ?: JsonNull) }.toString(),
         ) { api.json.decodeFromString<Marked>(it).marked }
+
+    override suspend fun conversationsWithoutMedia(
+        tag: String?,
+        before: String?,
+        limit: Int,
+    ): ApiResult<ConversationPage> =
+        api.request(
+            "GET",
+            "api/v1/conversations",
+            mapOf("tag" to tag, "media" to "hide", "before" to before, "limit" to limit.toString()),
+        ) { api.json.decodeFromString(it) }
 
     @Serializable
     private data class Marked(
