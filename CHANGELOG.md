@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.17.0](https://github.com/nytka-app/android/compare/v0.16.0...v0.17.0) (2026-10-06)
+
+
+### Features
+
+* accept every suggestion for one name in the banner and the inbox ([#81](https://github.com/nytka-app/android/issues/81)) ([53debfd](https://github.com/nytka-app/android/commit/53debfdb373e4c43cfd0f7b6a746ad4ee841aa8a))
+* media chip and Hide media filter in the conversation list (Speech kind A-S3) ([#87](https://github.com/nytka-app/android/issues/87)) ([91f57b5](https://github.com/nytka-app/android/commit/91f57b5e5c269bb39e4a18cab217674562e728e0))
+* phone context ranges (Speech kind A-S2) ([#84](https://github.com/nytka-app/android/issues/84)) ([a5f9f76](https://github.com/nytka-app/android/commit/a5f9f7621a4e5289a5ca08977f139cc30df31b3c))
+* speech items in the review inbox (Speech kind A-S4) ([#86](https://github.com/nytka-app/android/issues/86)) ([9793680](https://github.com/nytka-app/android/commit/979368073c21a9e7faf48270959bfca05cb9510c))
+* speech kind chips and marks (Speech kind A-S1) ([#83](https://github.com/nytka-app/android/issues/83)) ([1a0beb3](https://github.com/nytka-app/android/commit/1a0beb3aab3c126df26b80140fe6ac7d1193aa7d))
+
 ## [0.16.0](https://github.com/nytka-app/android/compare/v0.15.0...v0.16.0) (2026-10-05)
 
 
