@@ -543,6 +543,12 @@
     <string name="window_to_format">To %s</string>
     <string name="window_inactive_hint">Pick at least one day and different times</string>
 
+    <!-- Output language -->
+    <string name="output_language_title">Language of summaries</string>
+    <string name="output_language_auto">Follow the conversation</string>
+    <string name="output_language_english">English</string>
+    <string name="output_language_ukrainian">Ukrainian</string>
+
     <!-- Pendant settings -->
     <string name="pendant_settings">Pendant settings</string>
     <string name="led_brightness">LED brightness</string>

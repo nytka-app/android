@@ -548,6 +548,12 @@
     <string name="window_to_format">До %s</string>
     <string name="window_inactive_hint">Виберіть принаймні один день і різний час початку та кінця</string>
 
+    <!-- Output language -->
+    <string name="output_language_title">Мова підсумків</string>
+    <string name="output_language_auto">Як у розмові</string>
+    <string name="output_language_english">Англійська</string>
+    <string name="output_language_ukrainian">Українська</string>
+
     <!-- Pendant settings -->
     <string name="pendant_settings">Налаштування кулона</string>
     <string name="led_brightness">Яскравість світлодіода</string>

@@ -387,6 +387,9 @@ is not set, and "This server needs an update" means the server predates it.
   reconnect, so people nearby know. It is silent while muted, disconnected or during voice
   enrollment. It uses no microphone and no permission, and follows the notification volume: on
   silent, or when Do Not Disturb blocks notifications, you will not hear it.
+- **Language of summaries** (Device tab): English, Ukrainian or Follow the conversation, editing the
+  server's `llm.outputLanguage`. Shown locked, "Set by the server's environment", when the server's
+  environment sets it.
 - **Delete** a conversation from its ⋮ menu: its transcript, audio, tasks and memories go from your
   server.
 - **After a reboot**, recording starts once the phone has been unlocked and the pendant is in
@@ -457,7 +460,8 @@ it private. Its **Server** section holds three screens.
 locked: "Set by the server's environment". API keys show only **Set** or **Not set**, because they
 live in the server's environment and the app can neither read nor change them. **Save** sends only
 what you changed, all or nothing, and an emptied field restores the default. The server uses a new
-value from its next job, with no restart. The `people` keys are also reachable from People → ⋮ → People settings. What each setting does is in the
+value from its next job, with no restart. The `people` keys are also reachable from People → ⋮ → People settings,
+and `llm.outputLanguage` from the Device tab's [Language of summaries](#everyday-use). What each setting does is in the
 [server README](https://github.com/nytka-app/server#configuration).
 
 **Access tokens** lists the server's named tokens: name, scope, when it was made and last used, and
