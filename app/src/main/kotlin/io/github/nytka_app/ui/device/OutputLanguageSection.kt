@@ -12,7 +12,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.nytka_app.R
 
-/** The Device tab's picker for `llm.outputLanguage`: titles and summaries in English, Ukrainian, or whatever the conversation was spoken in. */
+/** The Device tab's picker for `llm.outputLanguage`: summaries in English, Ukrainian or the conversation's language. */
 @Composable
 internal fun OutputLanguageSection(
     language: String,
