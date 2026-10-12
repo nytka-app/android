@@ -734,4 +734,61 @@ class DeviceViewModelTest {
 
         assertNull(viewModel().state.value.calendarLine)
     }
+
+    @Test
+    fun `the output language follows the conversation by default when the server has no value`() {
+        val viewModel = viewModel()
+
+        assertEquals(DeviceViewModel.OUTPUT_LANGUAGE_AUTO, viewModel.state.value.outputLanguage)
+        assertFalse(viewModel.state.value.outputLanguageLocked)
+    }
+
+    @Test
+    fun `the output language shows what the server holds, and locked when its environment sets it`() {
+        server.catalog += ServerSetting("llm.outputLanguage", "language", "en", default = "auto", locked = true)
+
+        val state = viewModel().state.value
+
+        assertEquals("en", state.outputLanguage)
+        assertTrue(state.outputLanguageLocked)
+    }
+
+    @Test
+    fun `picking a language sends it to the server and the picker reflects it`() {
+        server.catalog += ServerSetting("llm.outputLanguage", "language", null, default = "auto")
+        val viewModel = viewModel()
+
+        viewModel.setOutputLanguage(DeviceViewModel.OUTPUT_LANGUAGE_UKRAINIAN)
+
+        assertEquals(mapOf("llm.outputLanguage" to "uk"), server.sent.last())
+        assertEquals("uk", viewModel.state.value.outputLanguage)
+        assertNull(viewModel.state.value.outputLanguageError)
+    }
+
+    @Test
+    fun `a locked language is never sent`() {
+        server.catalog += ServerSetting("llm.outputLanguage", "language", "en", default = "auto", locked = true)
+        val viewModel = viewModel()
+        server.sent.clear()
+
+        viewModel.setOutputLanguage(DeviceViewModel.OUTPUT_LANGUAGE_UKRAINIAN)
+
+        assertTrue(server.sent.isEmpty())
+        assertEquals("en", viewModel.state.value.outputLanguage)
+    }
+
+    @Test
+    fun `a refused language change keeps the old value and explains why`() {
+        server.catalog += ServerSetting("llm.outputLanguage", "language", "en", default = "auto")
+        val viewModel = viewModel()
+        server.failure = ApiResult.Failure(FailureKind.Forbidden, "no")
+
+        viewModel.setOutputLanguage(DeviceViewModel.OUTPUT_LANGUAGE_UKRAINIAN)
+
+        assertEquals("en", viewModel.state.value.outputLanguage)
+        assertTrue(
+            viewModel.state.value.outputLanguageError!!
+                .contains("cannot change server settings"),
+        )
+    }
 }

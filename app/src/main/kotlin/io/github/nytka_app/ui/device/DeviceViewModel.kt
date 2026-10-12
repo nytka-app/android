@@ -91,6 +91,11 @@ data class DeviceUiState(
     val briefPermission: PermissionAnswer? = null,
     /** The line under the brief switch; null when the server has a calendar feed or has not answered. */
     val calendarLine: CalendarLine? = null,
+    /** `llm.outputLanguage`: one of [DeviceViewModel.OUTPUT_LANGUAGE_AUTO], `_ENGLISH` or `_UKRAINIAN`. */
+    val outputLanguage: String = DeviceViewModel.OUTPUT_LANGUAGE_AUTO,
+    /** True when the server's environment sets `llm.outputLanguage`, so the picker cannot change it. */
+    val outputLanguageLocked: Boolean = false,
+    val outputLanguageError: String? = null,
 )
 
 enum class CalendarLine {
@@ -169,6 +174,7 @@ class DeviceViewModel
             local.update { it.copy(serverState = "Checking…") }
             syncMuteWithServer()
             loadCalendarLine()
+            loadOutputLanguage()
             viewModelScope.launch {
                 val saved = settings.current()
                 val base = (ServerUrl.check(saved.serverUrl, saved.privateNetwork) as? UrlCheck.Ok)?.base
@@ -405,6 +411,40 @@ class DeviceViewModel
             }
         }
 
+        private fun loadOutputLanguage() {
+            viewModelScope.launch {
+                when (val result = serverSettings.settings()) {
+                    is ApiResult.Ok -> {
+                        val setting = result.value.firstOrNull { it.key == OUTPUT_LANGUAGE_KEY }
+                        local.update {
+                            it.copy(
+                                outputLanguage = setting?.value ?: setting?.default ?: OUTPUT_LANGUAGE_AUTO,
+                                outputLanguageLocked = setting?.locked == true,
+                            )
+                        }
+                    }
+
+                    is ApiResult.Failure -> Unit
+                }
+            }
+        }
+
+        /** One choice from the picker; refused when the server's environment locks the setting. */
+        fun setOutputLanguage(language: String) {
+            if (local.value.outputLanguageLocked) return
+            viewModelScope.launch {
+                when (val result = serverSettings.update(mapOf(OUTPUT_LANGUAGE_KEY to language))) {
+                    is ApiResult.Ok ->
+                        local.update { it.copy(outputLanguage = language, outputLanguageError = null) }
+
+                    is ApiResult.Failure ->
+                        local.update {
+                            it.copy(outputLanguageError = "Could not set the output language: ${zoneFailure(result)}")
+                        }
+                }
+            }
+        }
+
         /** Off cancels the job. On saves the setting and schedules it, after the screen has asked for permission. */
         fun setBriefNotifications(on: Boolean) {
             viewModelScope.launch {
@@ -469,6 +509,10 @@ class DeviceViewModel
             const val MUTE_KEY = "mute.windows"
             const val ZONE_KEY = "user.timeZone"
             const val CALENDAR_KEY = "calendar.icsUrl"
+            const val OUTPUT_LANGUAGE_KEY = "llm.outputLanguage"
+            const val OUTPUT_LANGUAGE_AUTO = "auto"
+            const val OUTPUT_LANGUAGE_ENGLISH = "en"
+            const val OUTPUT_LANGUAGE_UKRAINIAN = "uk"
 
             private fun isUtc(zone: String) =
                 zone.isBlank() || zone.uppercase() in setOf("UTC", "ETC/UTC", "Z", "GMT", "ETC/GMT")

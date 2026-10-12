@@ -114,6 +114,14 @@ fun DeviceScreen(
                 viewModel::setConsentChimeMinutes,
             )
         }
+        item {
+            OutputLanguageSection(
+                state.outputLanguage,
+                state.outputLanguageLocked,
+                state.outputLanguageError,
+                viewModel::setOutputLanguage,
+            )
+        }
         if (state.serverContext == true) {
             item { PhoneContextSection(state.phoneContext, viewModel::setPhoneContext) }
         }
