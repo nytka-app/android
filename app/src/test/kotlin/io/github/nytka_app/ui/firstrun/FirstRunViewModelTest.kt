@@ -125,7 +125,10 @@ class FirstRunViewModelTest {
     fun `a scanned qr code with a non-https url is refused like manual entry`() {
         viewModel.qrScanned("nytka://pair?url=http%3A%2F%2F10.0.0.5%3A8080&token=$token")
 
-        assertTrue(viewModel.state.value.serverError!!.contains("private network"))
+        assertTrue(
+            viewModel.state.value.serverError!!
+                .contains("private network"),
+        )
         assertEquals(0, infoCalls)
     }
 
@@ -137,7 +140,10 @@ class FirstRunViewModelTest {
 
         assertEquals("https://kept.example", viewModel.state.value.url)
         assertEquals(token, viewModel.state.value.token)
-        assertTrue(viewModel.state.value.serverError!!.isNotEmpty())
+        assertTrue(
+            viewModel.state.value.serverError!!
+                .isNotEmpty(),
+        )
         assertEquals(0, infoCalls)
     }
 
