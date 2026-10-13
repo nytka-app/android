@@ -34,6 +34,7 @@ import io.github.nytka_app.core.upload.BookmarkUploader
 import io.github.nytka_app.core.upload.ContextUploader
 import io.github.nytka_app.core.upload.Uploader
 import io.github.nytka_app.di.ApplicationScope
+import io.github.nytka_app.pendant.Pendant
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
