@@ -34,6 +34,7 @@ import io.github.nytka_app.core.upload.BookmarkUploader
 import io.github.nytka_app.core.upload.ContextUploader
 import io.github.nytka_app.core.upload.Uploader
 import io.github.nytka_app.di.ApplicationScope
+import io.github.nytka_app.pendant.Pendant
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -161,6 +162,12 @@ class CaptureService : LifecycleService() {
         if (action == ACTION_SYNC_NOW) hub.syncNow() else hub.stopSync()
     }
 
+    private fun attachPendantSettings(pendant: Pendant) {
+        val pendantSettings = PendantSettingsController(pendant, scope)
+        hub.attachSettings(pendantSettings)
+        scope.launch { pendantSettings.state.collect(hub::publishSettings) }
+    }
+
     @OptIn(FlowPreview::class)
     private suspend fun begin() {
         val current = settings.current()
@@ -197,9 +204,7 @@ class CaptureService : LifecycleService() {
         sync = storageSync
         hub.attach(capture)
         hub.attachSync(storageSync)
-        val pendantSettings = PendantSettingsController(pendant, scope)
-        hub.attachSettings(pendantSettings)
-        scope.launch { pendantSettings.state.collect(hub::publishSettings) }
+        attachPendantSettings(pendant)
         pendingSyncAction?.let(::syncAction)
         pendingSyncAction = null
         capture.start(address)
@@ -220,6 +225,7 @@ class CaptureService : LifecycleService() {
                     getSystemService(NotificationManager::class.java)
                         .notify(CaptureNotification.ID, CaptureNotification.build(this, status, usage, syncStatus))
                 }
+                CaptureWidgetProvider.refresh(this, status, usage)
             }
     }
 

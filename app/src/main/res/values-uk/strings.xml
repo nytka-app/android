@@ -460,6 +460,7 @@
     <string name="queued_chunks_format">Частин у черзі: %d</string>
     <string name="recording_channel">Запис</string>
     <string name="alerts_channel">Сповіщення</string>
+    <string name="capture_widget_description">Запис чи вимкнений звук, батарея кулона та черга вивантаження — на головному екрані</string>
 
     <!-- Webhooks screen -->
     <string name="webhook_title">Вебхук</string>

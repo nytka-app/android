@@ -399,10 +399,12 @@ is not set, and "This server needs an update" means the server predates it.
 ## Everyday use
 
 - **Mute** with a double tap on the pendant: one long buzz means muted, two short buzzes mean
-  recording again. **Mute** in the notification and on the status card does the same. While muted,
-  Nytka hears nothing and the pendant discards its audio, and Nytka stays muted when the pendant
-  reconnects. What the pendant records while the phone is away is handled by
-  [Offline sync](#offline-sync).
+  recording again. **Mute** in the notification, on the status card and on the home-screen widget
+  does the same. While muted, Nytka hears nothing and the pendant discards its audio, and Nytka
+  stays muted when the pendant reconnects. What the pendant records while the phone is away is
+  handled by [Offline sync](#offline-sync).
+- A **home-screen widget** shows recording or muted, pendant battery and the upload queue length;
+  tap it to open the app, or tap **Mute**/**Unmute** to toggle recording without opening it.
 - **Bookmark** with a single tap on the pendant: one short buzz after about a second means it is kept.
   A double tap (or two quick single taps) mutes instead and keeps no bookmark. **Bookmark** in the
   notification does the same from the phone. Bookmarks upload like audio, also while muted. A
