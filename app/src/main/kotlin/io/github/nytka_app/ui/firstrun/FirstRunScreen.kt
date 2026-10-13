@@ -2,6 +2,7 @@ package io.github.nytka_app.ui.firstrun
 
 import android.Manifest
 import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +22,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -29,6 +33,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import io.github.nytka_app.R
 import io.github.nytka_app.core.settings.FirstRunStep
 import io.github.nytka_app.ui.LocalNetworkHint
@@ -84,6 +90,7 @@ private fun ServerStep(
         visualTransformation = PasswordVisualTransformation(),
         modifier = Modifier.fillMaxWidth(),
     )
+    ScanQrButton(onScanned = viewModel::qrScanned)
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Switch(checked = state.privateNetwork, onCheckedChange = { viewModel.edit(state.url, state.token, it) })
         Text(stringResource(R.string.private_network_label))
@@ -100,6 +107,37 @@ private fun ServerStep(
     Button(onClick = viewModel::testConnection, enabled = !state.testing) {
         Text(if (state.testing) stringResource(R.string.testing) else stringResource(R.string.test_connection))
     }
+}
+
+/**
+ * Scans the QR code a server's setup page shows and passes its contents to [onScanned]. Android's camera prompt is
+ * requested only here, when the user taps the button, with [R.string.scan_qr_code_description] as the rationale.
+ */
+@Composable
+private fun ScanQrButton(onScanned: (String) -> Unit) {
+    var denied by remember { mutableStateOf(false) }
+    val scan =
+        rememberLauncherForActivityResult(ScanContract()) { result ->
+            result.contents?.let(onScanned)
+        }
+    val prompt = stringResource(R.string.scan_qr_code_prompt)
+    val options =
+        remember(prompt) {
+            ScanOptions()
+                .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                .setBeepEnabled(false)
+                .setPrompt(prompt)
+        }
+    val request =
+        rememberPermissionRequest(listOf(Manifest.permission.CAMERA)) { answer ->
+            denied = answer != PermissionAnswer.Granted
+            if (answer == PermissionAnswer.Granted) scan.launch(options)
+        }
+    Text(stringResource(R.string.scan_qr_code_description), style = MaterialTheme.typography.bodySmall)
+    if (denied) {
+        Text(stringResource(R.string.scan_qr_code_denied), color = MaterialTheme.colorScheme.error)
+    }
+    OutlinedButton(onClick = request) { Text(stringResource(R.string.scan_qr_code)) }
 }
 
 @Composable

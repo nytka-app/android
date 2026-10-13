@@ -8,6 +8,8 @@ import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.InfoClient
+import io.github.nytka_app.core.api.QrPairing
+import io.github.nytka_app.core.api.QrPairingPayload
 import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.ServerUrl
 import io.github.nytka_app.core.api.UrlCheck
@@ -120,6 +122,22 @@ class FirstRunViewModel
                 return mutableState.update { it.copy(askLocalNetwork = true, serverError = null) }
             }
             connect(base.toString(), current)
+        }
+
+        /**
+         * Fills the url and token fields from a scanned `nytka://pair` QR code and runs the same connection test the
+         * "Test connection" button does. A payload the server did not make (junk, or a payload missing the url) is
+         * reported as a server error without touching the fields; a missing token or a non-https url comes back here
+         * as given, so [testConnection] refuses them exactly as it refuses manual entry.
+         */
+        fun qrScanned(text: String) {
+            when (val result = QrPairingPayload.parse(text)) {
+                is QrPairing.Invalid -> mutableState.update { it.copy(serverError = result.reason) }
+                is QrPairing.Ok -> {
+                    edit(result.url, result.token, mutableState.value.privateNetwork)
+                    testConnection()
+                }
+            }
         }
 
         /**

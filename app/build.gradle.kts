@@ -106,6 +106,7 @@ dependencies {
     implementation(libs.media3.datasource.okhttp)
     implementation(libs.serialization.json)
     implementation(libs.coroutines.android)
+    implementation(libs.zxing.android.embedded)
 
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)

@@ -47,8 +47,10 @@ Charge the pendant and keep it next to the phone. Open Nytka: its *Set up Nytka*
 steps.
 
 1. **Server.** Enter the server's address (`https://…`) and an `admin` token, and tap **Test
-   connection**. The next step opens once the server answers and accepts the token. A `read` token
-   stops here with "The app needs an admin token."
+   connection** — or tap **Scan QR code** and point the camera at the QR code the server's setup page
+   shows, which fills both fields and runs the test for you. Scanning asks for the camera permission
+   the first time; Nytka never uses it for anything else. The next step opens once the server answers
+   and accepts the token. A `read` token stops here with "The app needs an admin token."
 2. **Permissions.** Tap **Allow**. Android shows a prompt for *Nearby devices*, so Nytka can reach
    the pendant, and on Android 13 and later a second one for *Notifications*, for the recording
    notification and the alerts. There are no others, and Nytka never uses the phone's microphone or
