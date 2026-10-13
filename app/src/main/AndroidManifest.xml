@@ -66,6 +66,18 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name=".capture.CaptureWidgetProvider"
+            android:exported="false"
+            android:label="@string/app_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/capture_widget_info" />
+        </receiver>
+
         <!-- Shares the diagnostics CSV: read-only, for one file in the cache's diagnostics folder. -->
         <provider
             android:name="androidx.core.content.FileProvider"

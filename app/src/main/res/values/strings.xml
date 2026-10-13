@@ -451,6 +451,7 @@
     <string name="queued_chunks_format">Queued chunks: %d</string>
     <string name="recording_channel">Recording</string>
     <string name="alerts_channel">Alerts</string>
+    <string name="capture_widget_description">Recording or muted, pendant battery and the upload queue, on your home screen</string>
 
     <!-- Webhooks screen -->
     <string name="webhook_title">Webhook</string>

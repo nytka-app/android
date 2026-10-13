@@ -220,6 +220,7 @@ class CaptureService : LifecycleService() {
                     getSystemService(NotificationManager::class.java)
                         .notify(CaptureNotification.ID, CaptureNotification.build(this, status, usage, syncStatus))
                 }
+                CaptureWidgetProvider.refresh(this, status, usage)
             }
     }
 
