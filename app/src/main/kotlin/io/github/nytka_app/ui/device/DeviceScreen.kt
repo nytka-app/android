@@ -136,6 +136,16 @@ fun DeviceScreen(
             )
         }
         item {
+            LocationSection(
+                state,
+                onSwitch = viewModel::setLocationTags,
+                onPermission = viewModel::locationPermissionAnswered,
+                onOpenSettings = viewModel::openAppSettings,
+                onAddPlace = viewModel::addSavedPlace,
+                onRemovePlace = viewModel::removeSavedPlace,
+            )
+        }
+        item {
             Section(stringResource(R.string.people)) {
                 Text(stringResource(R.string.people_description))
             }
