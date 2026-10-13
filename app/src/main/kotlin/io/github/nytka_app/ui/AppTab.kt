@@ -11,7 +11,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 import io.github.nytka_app.R
 
-/** The six tabs of the finished app. Ask is a placeholder until its version arrives. */
+/** The six tabs of the finished app. */
 enum class AppTab(
     val route: String,
     @StringRes val labelRes: Int,
