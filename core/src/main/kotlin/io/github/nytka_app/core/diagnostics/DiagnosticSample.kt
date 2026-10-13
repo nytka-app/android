@@ -48,4 +48,7 @@ data class DiagnosticSample(
     // The link (v0.13): signal strength in dBm and the status of the last link loss, to set drops against signal.
     val rssi: Int? = null,
     val lastDisconnectStatus: Int? = null,
+    // The phone's own battery (v0.18), not the pendant's: percent 0 to 100 and whether it is charging.
+    val phoneBatteryLevel: Int? = null,
+    val phoneCharging: Boolean? = null,
 )

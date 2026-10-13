@@ -61,6 +61,18 @@ class DiagnosticSampleTest {
     }
 
     @Test
+    fun `the phone battery fields round trip and stay out of the JSON while unknown`() {
+        val withBattery = sample(1).copy(phoneBatteryLevel = 64, phoneCharging = true)
+
+        val text = json.encodeToString(DiagnosticSample.serializer(), withBattery)
+
+        assertEquals(withBattery, json.decodeFromString(DiagnosticSample.serializer(), text))
+        assertTrue(text.contains("\"phoneBatteryLevel\":64"))
+        assertTrue(text.contains("\"phoneCharging\":true"))
+        assertFalse(json.encodeToString(DiagnosticSample.serializer(), sample(1)).contains("phoneBattery"))
+    }
+
+    @Test
     fun `carries no audio, transcript, url or token`() {
         val descriptor = DiagnosticSample.serializer().descriptor
         val fields = (0 until descriptor.elementsCount).map(descriptor::getElementName)

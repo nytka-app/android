@@ -288,6 +288,7 @@ class CaptureService : LifecycleService() {
         appVersion = BuildConfig.VERSION_NAME,
         device = "${Build.MODEL} / Android ${Build.VERSION.RELEASE}",
         log = appLog,
+        phoneBattery = AndroidPhoneBattery(this),
     ).also { it.start() }
 
     override fun onDestroy() {

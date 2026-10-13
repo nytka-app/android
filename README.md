@@ -398,8 +398,10 @@ is not set, and "This server needs an update" means the server predates it.
   token and the private-network switch.
 - **Diagnostics** (Device → Developer mode) record link quality, queue and upload health every
   10 seconds while Nytka records, and keep the last 7 days. A sample also holds the pendant's signal
-  strength (`rssi`, dBm) and the status of the last link loss (`lastDisconnectStatus`; 147 is a link that went
-  silent). **Export diagnostics** shares them as a
+  strength (`rssi`, dBm), the status of the last link loss (`lastDisconnectStatus`; 147 is a link that went
+  silent), and the phone's own battery level and charging state. The app's log names that same status (and the
+  other GATT and link statuses Android reports) next to the number, for example `onConnectionStateChange
+  status=147 (LINK_WENT_SILENT) newState=0`. **Export diagnostics** shares them as a
   CSV file through Android's share sheet. **Send diagnostics to my server** is off by default; on, it
   uploads the samples to your server every minute (needs server 0.2.0 or later).
   The app's own log events (tags such as `OmiPendant`, `CaptureController`) are kept and uploaded with
