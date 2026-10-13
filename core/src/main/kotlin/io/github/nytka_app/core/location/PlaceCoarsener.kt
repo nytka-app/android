@@ -1,16 +1,17 @@
 package io.github.nytka_app.core.location
 
-import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.math.cos
-import kotlin.math.round
 import kotlin.math.sin
 import kotlin.math.sqrt
 
 /**
  * Turns one precise reading into a coarse place that is safe to send: the name of whichever [SavedPlace] it falls
  * inside (the nearest, when more than one does), or else a city-level label rounded to [GRID_DEGREES] (about 11 km),
- * so no reading ever leaves the phone as anything close to its exact spot.
+ * so no reading ever leaves the phone as anything close to its exact spot. The label uses only letters, digits and
+ * `_`, the tag format the server accepts (`docs/specs/tags.md`): a punctuated "near 40.7,-74.0" would be a 400 on
+ * every send.
  */
 object PlaceCoarsener {
     const val GRID_DEGREES = 0.1
@@ -46,10 +47,19 @@ object PlaceCoarsener {
     private fun cityLevelLabel(
         latitude: Double,
         longitude: Double,
-    ): String = String.format(Locale.ROOT, "near %.1f,%.1f", gridded(latitude), gridded(longitude))
+    ): String = "near_${axisLabel(latitude, 'n', 's')}_${axisLabel(longitude, 'e', 'w')}"
 
-    // The +0.0 turns a -0.0 result (e.g. rounding -0.02) into 0.0, so the label never shows a bare minus sign.
-    private fun gridded(value: Double): Double = round(value / GRID_DEGREES) * GRID_DEGREES + 0.0
+    /** One axis as `<hemisphere letter><whole degrees>_<tenths>`, e.g. `n40_7` or `w74_1`; never a `-` or `.`. */
+    private fun axisLabel(
+        value: Double,
+        positive: Char,
+        negative: Char,
+    ): String {
+        val tenths = Math.round(value / GRID_DEGREES)
+        val whole = abs(tenths) / 10
+        val fraction = abs(tenths) % 10
+        return "${if (tenths < 0) negative else positive}${whole}_$fraction"
+    }
 
     private const val EARTH_RADIUS_METERS = 6_371_000.0
 }

@@ -1,6 +1,7 @@
 package io.github.nytka_app.core.location
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PlaceCoarsenerTest {
@@ -8,7 +9,14 @@ class PlaceCoarsenerTest {
     fun `with no saved places it answers a city-level grid label`() {
         val place = PlaceCoarsener.coarsen(40.7128, -74.0060)
 
-        assertEquals("near 40.7,-74.0", place)
+        assertEquals("near_n40_7_w74_0", place)
+    }
+
+    @Test
+    fun `the grid label uses only letters, digits and underscore, as the server's tag format requires`() {
+        val place = PlaceCoarsener.coarsen(40.7128, -74.0060)
+
+        assertTrue(place.matches(Regex("[a-z][a-z0-9_]{0,31}")))
     }
 
     @Test
@@ -28,7 +36,7 @@ class PlaceCoarsenerTest {
         // About 1.1 km away: outside the radius.
         val place = PlaceCoarsener.coarsen(40.7228, -74.0060, listOf(home))
 
-        assertEquals("near 40.7,-74.0", place)
+        assertEquals("near_n40_7_w74_0", place)
     }
 
     @Test
@@ -53,13 +61,13 @@ class PlaceCoarsenerTest {
     fun `the grid label never shows a bare minus sign for a reading near zero`() {
         val place = PlaceCoarsener.coarsen(-0.02, 0.02)
 
-        assertEquals("near 0.0,0.0", place)
+        assertEquals("near_n0_0_e0_0", place)
     }
 
     @Test
     fun `the grid label rounds to the nearer multiple of the grid size, not just truncating`() {
         val place = PlaceCoarsener.coarsen(40.74, -74.06)
 
-        assertEquals("near 40.7,-74.1", place)
+        assertEquals("near_n40_7_w74_1", place)
     }
 }
