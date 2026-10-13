@@ -16,6 +16,23 @@ Status: v0.4 of the roadmap is shipped: capture and transcription
 version does and does not do. Roadmap milestones are not release numbers: the app and the server each
 have their own.
 
+## How Nytka compares
+
+As of 2026-10, against the official Omi app and two other pendant/voice-journal apps. Nytka's and
+Omi's rows come from this project and Omi's own published free tier; Chronicle's and LocusTether's
+are not independently verified here, so confirm them yourself before relying on this table.
+
+| | Nytka | Omi (official app) | Chronicle | LocusTether |
+|---|---|---|---|---|
+| Self-host effort | Your own server, Docker Compose, about 15 minutes | None — cloud only, no self-host option | Not verified | Not verified |
+| Choose your models | Yes — any transcription and LLM endpoint you set in the server | No — Omi's own cloud models | Not verified | Not verified |
+| Usage quotas | None — your server, your limits | 300 minutes and 30 questions a month free, then paid | Not verified | Not verified |
+| Offline sync | Yes — reads audio the pendant stored while the phone was away (firmware 3.0.20+) | Not verified | Not verified | Not verified |
+| Tags | Yes, on conversations and people, up to 20 each | Not verified | Not verified | Not verified |
+| Raw audio export | No — playback only, while the server keeps the audio | Not verified | Not verified | Not verified |
+| TV and media kept out of people | Yes — marks TV, video and call audio and leaves it out of names, facts and voice groups | Not verified | Not verified | Not verified |
+| iOS | No | Yes | Not verified | Not verified |
+
 ## What you need
 
 - A phone on Android 12 or later, with Bluetooth on.
@@ -40,6 +57,13 @@ have their own.
    `adb install nytka-<version>.apk`.
 
 A newer APK installs over the old one the same way and keeps the queue and the settings.
+
+## Install with Obtainium
+
+[Obtainium](https://github.com/ImranR98/Obtainium) installs and updates Android apps straight from
+their GitHub releases. Add this repository, `nytka-app/android`, as an app in Obtainium: it finds
+`nytka-<version>.apk` under [Releases](https://github.com/nytka-app/android/releases/latest), the
+same file the manual install step above uses, and offers the next one as it is published.
 
 ## First run (about 5 minutes)
 
@@ -168,7 +192,12 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   then removes every voice group, every voiceprint of a named person and every pending voice match from
   your server. It does not reach the voice models the transcription service keeps: those go with
   **Delete and remove voice model** on one person.
-- **Ask.** A placeholder that says "Arrives in a later version".
+- **Ask.** Type a question (up to 500 characters) and tap send for an answer drawn from your
+  conversations and memories, with its sources numbered below it. Tap a source row, or its `[n]` in
+  the answer, to open the conversation it came from; a memory with none opens nothing. "The server
+  has no model set up, or is restarting.", "The model could not answer. Try again." and "The server
+  took too long to answer. Try a shorter question." cover the server's own failures. Needs server
+  0.8.0 or later; an older server says it needs an update.
 - **Device.** The pendant, its storage and settings, the server, the settings,
   [Phone context](#phone-context), [Your voice](#your-voice) and the version.
 
