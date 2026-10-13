@@ -34,11 +34,17 @@ class DiagnosticsRecorderTest {
         }
     }
 
+    private class FakePhoneBattery(
+        override var level: Int? = null,
+        override var charging: Boolean? = null,
+    ) : PhoneBattery
+
     private val status = MutableStateFlow(CaptureStatus())
     private val usage = MutableStateFlow(QueueUsage())
     private val upload = MutableStateFlow(UploadState())
     private val sink = FakeSink()
     private val sync = MutableStateFlow(StorageSyncStatus())
+    private val phoneBattery = FakePhoneBattery()
 
     /** The clock is the test scheduler's, from a Monday-ish instant so `at` reads like the contract. */
     private fun TestScope.recorder() =
@@ -53,6 +59,7 @@ class DiagnosticsRecorderTest {
             now = { START_MS + testScheduler.currentTime },
             newId = { UUID(0, it) },
             sync = sync,
+            phoneBattery = phoneBattery,
         )
 
     @Test
@@ -187,6 +194,32 @@ class DiagnosticsRecorderTest {
                 ),
                 sink.samples.single(),
             )
+        }
+
+    @Test
+    fun `a sample carries the phone's own battery level and charging state`() =
+        runTest {
+            phoneBattery.level = 64
+            phoneBattery.charging = true
+            recorder().start()
+
+            runCurrent()
+
+            val sample = sink.samples.single()
+            assertEquals(64, sample.phoneBatteryLevel)
+            assertEquals(true, sample.phoneCharging)
+        }
+
+    @Test
+    fun `a phone battery that cannot be read leaves both fields null`() =
+        runTest {
+            recorder().start()
+
+            runCurrent()
+
+            val sample = sink.samples.single()
+            assertNull(sample.phoneBatteryLevel)
+            assertNull(sample.phoneCharging)
         }
 
     @Test

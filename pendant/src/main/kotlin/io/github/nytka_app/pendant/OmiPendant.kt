@@ -645,7 +645,8 @@ class OmiPendant(
                 status: Int,
                 newState: Int,
             ) {
-                info("onConnectionStateChange status=$status newState=$newState")
+                val statusName = GattStatus.name(status)?.let { " ($it)" }.orEmpty()
+                info("onConnectionStateChange status=$status$statusName newState=$newState")
                 // One lock section for the check and the handling: open() assigns gatt after connectGatt returns
                 // (autoConnect on a live ACL can call back before that), and a late event from a replaced client
                 // must not close or reopen the live one.

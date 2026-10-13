@@ -34,6 +34,7 @@ class DiagnosticsRecorder(
     private val everyMs: Long = SAMPLE_EVERY_MS,
     private val log: EventLog = EventLog.Logcat,
     private val sync: StateFlow<StorageSyncStatus>? = null,
+    private val phoneBattery: PhoneBattery? = null,
 ) {
     private var job: Job? = null
 
@@ -118,6 +119,8 @@ class DiagnosticsRecorder(
             parkedChunks = queue.parkedChunks,
             rssi = capture.stats.rssi,
             lastDisconnectStatus = capture.stats.lastDisconnectStatus,
+            phoneBatteryLevel = phoneBattery?.level,
+            phoneCharging = phoneBattery?.charging,
         )
     }
 
