@@ -1,6 +1,7 @@
 package io.github.nytka_app.capture
 
 import android.app.Application
+import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.TextView
@@ -24,11 +25,7 @@ class CaptureWidgetTest {
     private fun inflate(
         status: CaptureStatus,
         usage: QueueUsage,
-    ): FrameLayout {
-        val parent = FrameLayout(app)
-        CaptureWidget.remoteViews(app, status, usage).apply(app, parent)
-        return parent
-    }
+    ): View = CaptureWidget.remoteViews(app, status, usage).apply(app, FrameLayout(app))
 
     @Test
     fun `shows recording, battery and queue length`() {
