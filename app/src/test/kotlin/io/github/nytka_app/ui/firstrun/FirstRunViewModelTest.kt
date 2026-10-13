@@ -105,6 +105,49 @@ class FirstRunViewModelTest {
     }
 
     @Test
+    fun `a scanned qr code fills both fields and tests the connection`() {
+        viewModel.qrScanned("nytka://pair?url=https%3A%2F%2Fnytka.example&token=$token")
+
+        assertEquals(FirstRunStep.Permissions, viewModel.state.value.step)
+        assertEquals("https://nytka.example/", settings.state.value.serverUrl)
+        assertEquals(token, settings.state.value.token)
+    }
+
+    @Test
+    fun `a scanned qr code with no token asks for one, like manual entry does`() {
+        viewModel.qrScanned("nytka://pair?url=https%3A%2F%2Fnytka.example")
+
+        assertEquals("Enter the server's token.", viewModel.state.value.serverError)
+        assertEquals(0, infoCalls)
+    }
+
+    @Test
+    fun `a scanned qr code with a non-https url is refused like manual entry`() {
+        viewModel.qrScanned("nytka://pair?url=http%3A%2F%2F10.0.0.5%3A8080&token=$token")
+
+        assertTrue(
+            viewModel.state.value.serverError!!
+                .contains("private network"),
+        )
+        assertEquals(0, infoCalls)
+    }
+
+    @Test
+    fun `a scanned qr code that is junk shows an error without touching the fields`() {
+        viewModel.edit("https://kept.example", token, privateNetwork = false)
+
+        viewModel.qrScanned("not a pairing code")
+
+        assertEquals("https://kept.example", viewModel.state.value.url)
+        assertEquals(token, viewModel.state.value.token)
+        assertTrue(
+            viewModel.state.value.serverError!!
+                .isNotEmpty(),
+        )
+        assertEquals(0, infoCalls)
+    }
+
+    @Test
     fun `a server on the local network asks for the permission before the test`() {
         actions.localNetwork = false
         viewModel.edit("http://192.168.1.10:8080", token, privateNetwork = true)

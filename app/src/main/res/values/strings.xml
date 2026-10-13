@@ -119,6 +119,10 @@
     <string name="permissions_description">Nytka needs the nearby-devices permission to reach the pendant, and notifications to show that it is recording. It never uses the phone\'s microphone</string>
     <string name="permissions_denied_nearby">Without nearby devices Nytka cannot reach the pendant. Tap Allow to be asked again</string>
     <string name="permissions_blocked_nearby">Without nearby devices Nytka cannot reach the pendant. If Android does not ask again, allow it in the system settings for Nytka, then come back and tap Allow</string>
+    <string name="scan_qr_code">Scan QR code</string>
+    <string name="scan_qr_code_description">Nytka uses the camera only to read the QR code your server shows, to fill in its address and token. It never takes a photo or records video</string>
+    <string name="scan_qr_code_prompt">Point the camera at your server\'s QR code</string>
+    <string name="scan_qr_code_denied">Without the camera Nytka cannot scan the code. Tap Scan QR code to be asked again, or type the address and token above</string>
 
     <!-- Tasks -->
     <string name="tasks_tab_empty">No open tasks. Tasks the language model finds in your conversations show up here</string>

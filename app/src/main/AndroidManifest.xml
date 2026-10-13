@@ -8,10 +8,16 @@
     <uses-feature
         android:name="android.software.companion_device_setup"
         android:required="true" />
+    <!-- Only to scan a server's pairing QR code; a phone with no camera can still type the address and token. -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
 
     <uses-permission
         android:name="android.permission.BLUETOOTH_SCAN"
         android:usesPermissionFlags="neverForLocation" />
+    <!-- Requested only when the user taps Scan QR code, to read the server's pairing code; see QrScanButton. -->
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
