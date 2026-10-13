@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStoreFile
+import io.github.nytka_app.core.location.SavedPlace
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -58,6 +59,11 @@ class SettingsStore(
             preferences[CONSENT_CHIME] = next.consentChime
             preferences[CONSENT_CHIME_MINUTES] = next.consentChimeMinutes
             preferences[PHONE_CONTEXT] = next.phoneContext
+            preferences[LOCATION_TAGS] = next.locationTags
+            preferences[SAVED_PLACES] = SavedPlace.encodeList(next.savedPlaces)
+            next.pendingLocationPlace?.let { preferences[PENDING_LOCATION_PLACE] = it }
+                ?: preferences.remove(PENDING_LOCATION_PLACE)
+            preferences[PENDING_LOCATION_AT] = next.pendingLocationAt
         }
     }
 
@@ -89,6 +95,10 @@ class SettingsStore(
             consentChime = preferences[CONSENT_CHIME] ?: false,
             consentChimeMinutes = preferences[CONSENT_CHIME_MINUTES] ?: Settings().consentChimeMinutes,
             phoneContext = preferences[PHONE_CONTEXT] ?: true,
+            locationTags = preferences[LOCATION_TAGS] ?: false,
+            savedPlaces = SavedPlace.decodeList(preferences[SAVED_PLACES]),
+            pendingLocationPlace = preferences[PENDING_LOCATION_PLACE],
+            pendingLocationAt = preferences[PENDING_LOCATION_AT] ?: 0,
         )
 
     /** Stored by name, so reordering the steps moves no one; a name no longer known starts over. */
@@ -121,6 +131,10 @@ class SettingsStore(
         private val CONSENT_CHIME = booleanPreferencesKey("consent_chime")
         private val CONSENT_CHIME_MINUTES = intPreferencesKey("consent_chime_minutes")
         private val PHONE_CONTEXT = booleanPreferencesKey("phone_context")
+        private val LOCATION_TAGS = booleanPreferencesKey("location_tags")
+        private val SAVED_PLACES = stringPreferencesKey("saved_places")
+        private val PENDING_LOCATION_PLACE = stringPreferencesKey("pending_location_place")
+        private val PENDING_LOCATION_AT = longPreferencesKey("pending_location_at")
 
         fun create(
             context: Context,

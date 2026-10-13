@@ -95,11 +95,13 @@ class DeviceViewModelTest {
         )
     private val weekdaysJson = """[{"days":[1,2,3,4,5],"start":"09:30","end":"10:00"}]"""
 
+    private var location: Pair<Double, Double>? = null
+
     private fun viewModel() =
         DeviceViewModel(settings, {
             infoCalls++
             info
-        }, actions, sync, server, { phoneZone }, pendantSettings, { notice }, briefs)
+        }, actions, sync, server, { phoneZone }, pendantSettings, { notice }, briefs, { location })
 
     private fun saveServerOnTheLocalNetwork() {
         settings.state.value = settings.state.value.copy(serverUrl = "http://192.168.1.10:8080/", privateNetwork = true)
@@ -790,5 +792,74 @@ class DeviceViewModelTest {
             viewModel.state.value.outputLanguageError!!
                 .contains("cannot change server settings"),
         )
+    }
+
+    @Test
+    fun `switching location tags on saves the setting, off clears any pending place`() {
+        val viewModel = viewModel()
+
+        viewModel.setLocationTags(true)
+        assertTrue(settings.state.value.locationTags)
+        assertTrue(viewModel.state.value.locationTags)
+
+        settings.state.value = settings.state.value.copy(pendingLocationPlace = "Home", pendingLocationAt = 1L)
+        viewModel.setLocationTags(false)
+        assertFalse(settings.state.value.locationTags)
+        assertNull(settings.state.value.pendingLocationPlace)
+    }
+
+    @Test
+    fun `a granted location prompt switches location tags on and clears the refusal`() {
+        val viewModel = viewModel()
+        viewModel.locationPermissionAnswered(PermissionAnswer.Denied)
+
+        viewModel.locationPermissionAnswered(PermissionAnswer.Granted)
+
+        assertTrue(settings.state.value.locationTags)
+        assertNull(viewModel.state.value.locationPermission)
+    }
+
+    @Test
+    fun `a denied location prompt is recorded without touching the setting`() {
+        val viewModel = viewModel()
+
+        viewModel.locationPermissionAnswered(PermissionAnswer.Denied)
+
+        assertFalse(settings.state.value.locationTags)
+        assertEquals(PermissionAnswer.Denied, viewModel.state.value.locationPermission)
+    }
+
+    @Test
+    fun `saving the current place with no fix does nothing`() {
+        location = null
+        val viewModel = viewModel()
+
+        viewModel.addSavedPlace("Home")
+
+        assertEquals(emptyList<Any>(), settings.state.value.savedPlaces)
+    }
+
+    @Test
+    fun `saving the current place under a name already used replaces it`() {
+        location = 40.7128 to -74.0060
+        val viewModel = viewModel()
+        viewModel.addSavedPlace("Home")
+
+        location = 51.5074 to -0.1278
+        viewModel.addSavedPlace("Home")
+
+        assertEquals(listOf("Home"), settings.state.value.savedPlaces.map { it.name })
+        assertEquals(51.5074, settings.state.value.savedPlaces.single().latitude, 0.0)
+    }
+
+    @Test
+    fun `removing a saved place drops it by name`() {
+        location = 40.7128 to -74.0060
+        val viewModel = viewModel()
+        viewModel.addSavedPlace("Home")
+
+        viewModel.removeSavedPlace("Home")
+
+        assertEquals(emptyList<Any>(), settings.state.value.savedPlaces)
     }
 }

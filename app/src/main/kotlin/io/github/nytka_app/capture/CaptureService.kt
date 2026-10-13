@@ -25,10 +25,12 @@ import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.diagnostics.AppLog
 import io.github.nytka_app.core.diagnostics.DiagnosticsSink
 import io.github.nytka_app.core.diagnostics.DiagnosticsUploader
+import io.github.nytka_app.core.location.PlaceCoarsener
 import io.github.nytka_app.core.queue.BookmarkOutbox
 import io.github.nytka_app.core.queue.ContextOutbox
 import io.github.nytka_app.core.queue.FrameQueue
 import io.github.nytka_app.core.ring.CaptureTimes
+import io.github.nytka_app.core.settings.Settings
 import io.github.nytka_app.core.settings.SettingsStore
 import io.github.nytka_app.core.upload.BookmarkUploader
 import io.github.nytka_app.core.upload.ContextUploader
@@ -98,6 +100,9 @@ class CaptureService : LifecycleService() {
 
     @Inject
     lateinit var muteLog: MuteLogRecorder
+
+    @Inject
+    lateinit var locationSource: CoarseLocationSource
 
     @Inject
     @ApplicationScope
@@ -171,6 +176,7 @@ class CaptureService : LifecycleService() {
         }
         logRun = appLog.start()
         power.start()
+        if (current.locationTags) scope.launch { recordSessionPlace(current) }
         val pendant = pendants.create(scope, current.fakePendant, current.highPriorityConnection)
         val capture =
             CaptureController(
@@ -227,6 +233,17 @@ class CaptureService : LifecycleService() {
         scope.launch { bookmarkUploader.run() }
         scope.launch { contextUploader.run() }
         scope.launch { recordPhoneContext() }
+    }
+
+    /**
+     * One reading at the start of this capture session, coarsened right away so nothing precise is ever held:
+     * [LocationTagSync] matches it to the conversation the session becomes and sends it as a tag. Silent without
+     * the permission or a fix: the switch alone never prompts for either.
+     */
+    private suspend fun recordSessionPlace(current: Settings) {
+        val fix = locationSource.lastKnown() ?: return
+        val place = PlaceCoarsener.coarsen(fix.first, fix.second, current.savedPlaces)
+        settings.update { it.copy(pendingLocationPlace = place, pendingLocationAt = System.currentTimeMillis()) }
     }
 
     /** Records only while the switch is on and the server lists `context-ranges`; nothing is recorded otherwise. */

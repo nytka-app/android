@@ -14,6 +14,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import io.github.nytka_app.core.location.LocationTagSync
 import io.github.nytka_app.core.queue.FrameQueue
 import io.github.nytka_app.core.upload.BookmarkUploader
 import io.github.nytka_app.core.upload.DrainResult
@@ -34,11 +35,14 @@ class UploadDrainWorker
         private val queue: FrameQueue,
         private val uploader: Uploader,
         private val bookmarkUploader: BookmarkUploader,
+        private val locationTagSync: LocationTagSync,
     ) : CoroutineWorker(context, params) {
         override suspend fun doWork(): Result {
             queue.seal()
             val bookmarks = drainBookmarks()
-            return when (uploader.drain()) {
+            val drain = uploader.drain()
+            locationTagSync.sync()
+            return when (drain) {
                 DrainResult.Empty, is DrainResult.Paused ->
                     if (bookmarks is DrainResult.Failed) Result.retry() else Result.success()
 

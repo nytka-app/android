@@ -365,6 +365,24 @@ is not set, and "This server needs an update" means the server predates it.
 - **A failed check** (no network, an older server) posts nothing and waits for the next one.
 - Nothing about a brief goes into the app's logs or the debug report.
 
+## Location tags
+
+Switch on **Location tags** in the Device tab (off by default) and Nytka reads a coarse location
+when a capture session starts, asking Android for it first: on Android 13 and later this is a
+system permission prompt; if you refuse twice, the switch offers **Open settings**. Only
+`ACCESS_COARSE_LOCATION` is requested, and the exact reading never leaves the phone: it is turned
+at once into either the name of a place you saved (the nearest one it falls within, see below) or a
+city-level label such as `near_n40_7_w74_0` (about 11 km across, letters/digits/underscore only, the
+tag format the server accepts). Once your server has made a
+conversation from that session, Nytka adds the place as a tag suggestion through the tags API, the
+same write **+ Tag** uses. A reading more than a day old, or one that matches no conversation, is
+dropped rather than tagging whatever is newest.
+
+**Saved places.** Under the switch, name the phone's current coarse location (for example "Home" or
+"Office") and Nytka remembers it; a reading within about 150 m of a saved place uses its name
+instead of the city-level label. Saved places stay on the phone and are never sent to the server by
+themselves, only as the tag a session's place becomes.
+
 ## Everyday use
 
 - **Mute** with a double tap on the pendant: one long buzz means muted, two short buzzes mean
@@ -431,7 +449,7 @@ is not set, and "This server needs an update" means the server predates it.
 
 Audio waiting to upload, in the app's private storage, until the server has it; the settings; the
 token, encrypted with a key that never leaves the Android Keystore; how far the pendant's storage
-has been read; the time and result of the last firmware check; the ids (not the text) of the meeting briefs already posted, at most 50; the [phone-context](#phone-context) stretches not yet sent (kind, route, two times); and a log of when you muted and unmuted (times and on or off, nothing else). Android
+has been read; the time and result of the last firmware check; the ids (not the text) of the meeting briefs already posted, at most 50; the [phone-context](#phone-context) stretches not yet sent (kind, route, two times); the names and coordinates of your [saved places](#location-tags) and the one coarse reading still waiting to be tagged; and a log of when you muted and unmuted (times and on or off, nothing else). Android
 backups and phone-to-phone transfers skip all of it, so a new phone starts with first run. The
 pendant keeps the audio it stored until your server has it. The app talks to your server and nothing
 else, apart from the once-a-day [firmware notice](#pendant-firmware-notice) (GitHub, switchable): no

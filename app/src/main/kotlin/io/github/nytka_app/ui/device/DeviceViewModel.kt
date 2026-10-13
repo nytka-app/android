@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.nytka_app.BuildConfig
 import io.github.nytka_app.briefs.BriefScheduler
+import io.github.nytka_app.capture.CoarseLocationSource
 import io.github.nytka_app.capture.DeviceActions
 import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.capture.PendantSettingsControls
@@ -19,6 +20,7 @@ import io.github.nytka_app.core.api.ServerSetting
 import io.github.nytka_app.core.api.ServerSettingsClient
 import io.github.nytka_app.core.api.ServerUrl
 import io.github.nytka_app.core.api.UrlCheck
+import io.github.nytka_app.core.location.SavedPlace
 import io.github.nytka_app.core.settings.MuteSchedule
 import io.github.nytka_app.core.settings.Settings
 import io.github.nytka_app.core.settings.SettingsSource
@@ -96,6 +98,12 @@ data class DeviceUiState(
     /** True when the server's environment sets `llm.outputLanguage`, so the picker cannot change it. */
     val outputLanguageLocked: Boolean = false,
     val outputLanguageError: String? = null,
+    /** Whether each conversation is tagged with a coarse place (a setting, off by default). */
+    val locationTags: Boolean = false,
+    /** How the user answered the location prompt when switching location tags on; null until asked. */
+    val locationPermission: PermissionAnswer? = null,
+    /** Places the user has named, such as "Home" or "Office"; checked nearest-first. */
+    val savedPlaces: List<SavedPlace> = emptyList(),
 )
 
 enum class CalendarLine {
@@ -133,6 +141,7 @@ class DeviceViewModel
         private val pendantSettings: PendantSettingsControls,
         private val firmware: FirmwareNotices,
         private val briefs: BriefScheduler,
+        private val location: CoarseLocationSource,
     ) : ViewModel() {
         private val local = MutableStateFlow(DeviceUiState())
 
@@ -163,6 +172,8 @@ class DeviceViewModel
                     consentChimeMinutes = current.consentChimeMinutes,
                     phoneContext = current.phoneContext,
                     briefNotifications = current.briefNotifications,
+                    locationTags = current.locationTags,
+                    savedPlaces = current.savedPlaces,
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, DeviceUiState())
 
@@ -460,6 +471,40 @@ class DeviceViewModel
                 setBriefNotifications(true)
             } else {
                 local.update { it.copy(briefPermission = answer.after(it.briefPermission)) }
+            }
+        }
+
+        /** Off clears any pending place. On is asked for only after the screen has the location permission. */
+        fun setLocationTags(on: Boolean) {
+            viewModelScope.launch {
+                settings.update {
+                    if (on) it.copy(locationTags = true) else it.copy(locationTags = false, pendingLocationPlace = null)
+                }
+                local.update { it.copy(locationPermission = null) }
+            }
+        }
+
+        /** The answer to Android's location prompt, asked when the switch went on without the permission. */
+        fun locationPermissionAnswered(answer: PermissionAnswer) {
+            if (answer == PermissionAnswer.Granted) {
+                setLocationTags(true)
+            } else {
+                local.update { it.copy(locationPermission = answer.after(it.locationPermission)) }
+            }
+        }
+
+        /** Saves where the phone is right now under [name]; silently does nothing without a fix. */
+        fun addSavedPlace(name: String) {
+            viewModelScope.launch {
+                val fix = location.lastKnown() ?: return@launch
+                val place = SavedPlace(name, fix.first, fix.second)
+                settings.update { it.copy(savedPlaces = it.savedPlaces.filterNot { p -> p.name == name } + place) }
+            }
+        }
+
+        fun removeSavedPlace(name: String) {
+            viewModelScope.launch {
+                settings.update { it.copy(savedPlaces = it.savedPlaces.filterNot { p -> p.name == name }) }
             }
         }
 
