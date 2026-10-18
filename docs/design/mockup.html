@@ -1,0 +1,456 @@
+<title>Nytka screens</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@500;600;700&family=Roboto:wght@400;500&family=Roboto+Mono&display=swap">
+<style>
+/* Layout: a control rail and notes beside one phone; the phone carries Nytka's own tokens, the page its own. */
+:root {
+  --page: #f3f1ee; --page-fg: #1f1e24; --page-muted: #5d5c66; --page-line: #d9d6d0; --page-card: #fbfaf8; --page-accent: #3b3f8f;
+  --display: "Onest", "Roboto", system-ui, sans-serif;
+  --body: "Roboto", system-ui, sans-serif;
+  --mono: "Roboto Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --page: #0e0f13; --page-fg: #e7e4ec; --page-muted: #a3a1ad; --page-line: #2c2d35; --page-card: #17181d; --page-accent: #bfc2ff; color-scheme: dark } }
+:root[data-theme="dark"] { --page: #0e0f13; --page-fg: #e7e4ec; --page-muted: #a3a1ad; --page-line: #2c2d35; --page-card: #17181d; --page-accent: #bfc2ff; color-scheme: dark }
+
+/* Nytka tokens, from docs/design/tokens.md */
+.phone {
+  --primary:#3B3F8F; --on-primary:#FFFFFF; --primary-c:#E1E0FF; --on-primary-c:#14175C;
+  --secondary-c:#E2E0F9; --on-secondary-c:#191A2C;
+  --tertiary:#9A4521; --tertiary-c:#FFDBCD; --on-tertiary-c:#3A0F00;
+  --error:#BA1A1A; --error-c:#FFDAD6; --on-error-c:#410002;
+  --surface:#FBF8F3; --s-low:#F5F2EC; --s:#EFECE6; --s-high:#E9E6E1;
+  --on-surface:#1B1B21; --on-surface-v:#46464F; --outline:#777680; --outline-v:#C8C5D0;
+  --recording:#C4282B; --ink:#2B2F6B; --thread:#F1E9DA;
+}
+.phone.dark {
+  --primary:#BFC2FF; --on-primary:#23286B; --primary-c:#3A3E87; --on-primary-c:#E1E0FF;
+  --secondary-c:#444559; --on-secondary-c:#E2E0F9;
+  --tertiary:#FFB598; --tertiary-c:#7B2E0C; --on-tertiary-c:#FFDBCD;
+  --error:#FFB4AB; --error-c:#93000A; --on-error-c:#FFDAD6;
+  --surface:#121318; --s-low:#1A1B21; --s:#1F1F25; --s-high:#292A30;
+  --on-surface:#E4E1E9; --on-surface-v:#C7C5D0; --outline:#918F9A; --outline-v:#46464F;
+  --recording:#FF8A80;
+}
+
+* { box-sizing: border-box }
+body { background: var(--page); color: var(--page-fg); font-family: var(--body); margin: 0 }
+.wrap { max-width: 1120px; margin: 0 auto; padding-block: 24px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+header.top { display: flex; align-items: center; gap: 12px; margin-bottom: 20px }
+header.top h1 { font: 600 26px/1.1 var(--display); margin: 0; letter-spacing: -0.01em }
+header.top p { margin: 2px 0 0; color: var(--page-muted); font-size: 14px }
+.grid { display: grid; grid-template-columns: 240px 380px minmax(0, 1fr); gap: 28px; align-items: start }
+@media (max-width: 980px) { .grid { grid-template-columns: minmax(0, 1fr) } .phone-col { justify-self: center } }
+
+.rail { display: flex; flex-direction: column; gap: 18px }
+.rail h2 { font: 500 11px/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--page-muted); margin: 0 0 8px }
+.seg { display: flex; flex-wrap: wrap; gap: 6px }
+.seg button, .screens button {
+  font: 500 13px/1 var(--body); color: var(--page-fg); background: transparent; border: 1px solid var(--page-line);
+  border-radius: 8px; padding: 8px 11px; cursor: pointer }
+.screens { display: flex; flex-direction: column; gap: 4px }
+.screens button { text-align: left; border-color: transparent; padding: 9px 10px }
+.seg button[aria-pressed="true"], .screens button[aria-pressed="true"] { background: var(--page-accent); color: var(--page); border-color: var(--page-accent) }
+button:focus-visible { outline: 2px solid var(--page-accent); outline-offset: 2px }
+.notes { background: var(--page-card); border: 1px solid var(--page-line); border-radius: 14px; padding: 20px 22px; min-width: 0 }
+.notes h3 { font: 600 19px/1.25 var(--display); margin: 0 0 10px; text-wrap: balance }
+.notes p, .notes li { font-size: 14px; line-height: 1.55; max-width: 62ch }
+.notes ul { padding-left: 18px; margin: 8px 0 }
+.notes .k { font: 500 11px/1 var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--page-muted); margin-top: 16px }
+.notes code { font-family: var(--mono); font-size: 12.5px }
+
+/* phone */
+.phone-col { position: sticky; top: max(16px, env(safe-area-inset-top, 0px)) }
+.phone { width: 360px; max-width: 100%; height: 760px; border-radius: 36px; overflow: hidden; position: relative;
+  background: var(--surface); color: var(--on-surface); font-family: var(--body);
+  box-shadow: 0 0 0 10px #1b1b21, 0 18px 50px rgba(0,0,0,.25); display: flex; flex-direction: column }
+.sb { height: 30px; display: flex; justify-content: space-between; align-items: center; padding: 0 22px; font: 500 12px var(--body); color: var(--on-surface); flex: none }
+.appbar { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 16px; min-height: 56px; flex: none }
+.appbar h4 { font: 600 22px/28px var(--display); margin: 0; flex: 1; letter-spacing: -0.01em }
+.ib { width: 40px; height: 40px; border-radius: 20px; display: grid; place-items: center; border: 0; background: transparent; color: var(--on-surface-v); cursor: pointer; position: relative }
+.ib svg { width: 22px; height: 22px }
+.badge { position: absolute; top: 4px; right: 3px; min-width: 16px; height: 16px; border-radius: 8px; background: var(--tertiary); color: var(--surface); font: 500 10px/16px var(--body); padding: 0 4px }
+.body { flex: 1; overflow-y: auto; padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px }
+.nav { flex: none; display: grid; grid-template-columns: repeat(5, 1fr); background: var(--s); padding: 10px 4px 14px }
+.nav button { border: 0; background: transparent; color: var(--on-surface-v); display: flex; flex-direction: column; align-items: center; gap: 4px; font: 500 12px var(--body); cursor: pointer; padding: 0 }
+.nav .pill { width: 56px; height: 30px; border-radius: 15px; display: grid; place-items: center }
+.nav button[aria-current="true"] { color: var(--on-surface) }
+.nav button[aria-current="true"] .pill { background: var(--secondary-c); color: var(--on-secondary-c) }
+.nav svg { width: 22px; height: 22px }
+
+.card { background: var(--s); border-radius: 16px; padding: 16px }
+.card.big { border-radius: 24px }
+.card.ter { background: var(--tertiary-c); color: var(--on-tertiary-c) }
+.title-m { font: 500 16px/24px var(--body) }
+.body-l { font: 400 16px/24px var(--body) }
+.body-m { font: 400 14px/20px var(--body); color: var(--on-surface-v) }
+.label-m { font: 500 12px/16px var(--body); letter-spacing: .03em; color: var(--on-surface-v); font-variant-numeric: tabular-nums }
+.headline { font: 600 24px/32px var(--display); margin: 0; letter-spacing: -0.01em; text-wrap: balance }
+.display { font: 600 36px/44px var(--display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em }
+.row { display: flex; align-items: center; gap: 12px }
+.grow { flex: 1; min-width: 0 }
+.btn { border: 0; border-radius: 20px; height: 40px; padding: 0 20px; font: 500 14px var(--body); cursor: pointer; background: var(--primary); color: var(--on-primary) }
+.btn.tonal { background: var(--secondary-c); color: var(--on-secondary-c) }
+.btn.text { background: transparent; color: var(--primary); padding: 0 12px }
+.btn.out { background: transparent; color: var(--primary); box-shadow: inset 0 0 0 1px var(--outline) }
+.btn.ter { background: var(--tertiary); color: var(--surface) }
+.btn[disabled] { opacity: .38; cursor: default }
+.btn.wide { width: 100% }
+.btns { display: flex; flex-wrap: wrap; gap: 8px }
+.chip { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 8px; font: 500 12px var(--body); box-shadow: inset 0 0 0 1px var(--outline-v); color: var(--on-surface-v) }
+.chip.err { color: var(--error); box-shadow: inset 0 0 0 1px var(--error) }
+.chip.sel { background: var(--secondary-c); color: var(--on-secondary-c); box-shadow: none }
+.chip.ter { color: var(--tertiary); box-shadow: inset 0 0 0 1px var(--tertiary) }
+.day { font: 500 12px/16px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--on-surface-v); margin-top: 6px }
+.conv { padding: 12px 4px; border-bottom: 1px solid var(--outline-v); cursor: pointer }
+.conv:last-child { border-bottom: 0 }
+.clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden }
+.field { border-radius: 8px; box-shadow: inset 0 0 0 1px var(--outline); padding: 8px 12px 9px; display: flex; flex-direction: column; gap: 2px }
+.field small { font: 400 12px var(--body); color: var(--on-surface-v) }
+.field span { font: 400 15px/22px var(--body); overflow-wrap: anywhere }
+.field.err { box-shadow: inset 0 0 0 2px var(--error) }
+.field.err small { color: var(--error) }
+.mono { font-family: var(--mono); font-size: 13px }
+.errline { color: var(--error); font: 400 14px/20px var(--body); display: flex; gap: 6px; align-items: flex-start }
+.errline svg { flex: none; width: 18px; height: 18px; margin-top: 1px }
+.banner { background: var(--error-c); color: var(--on-error-c); border-radius: 12px; padding: 10px 12px; font: 400 14px/20px var(--body); display: flex; align-items: center; gap: 10px }
+.banner.quiet { background: var(--s-high); color: var(--on-surface) }
+.banner .btn { height: 32px; padding: 0 12px; background: transparent; color: inherit; box-shadow: inset 0 0 0 1px currentColor }
+.empty { text-align: center; padding: 36px 12px; display: flex; flex-direction: column; align-items: center; gap: 12px }
+.empty p { margin: 0; max-width: 28ch }
+.sk { background: var(--s-high); border-radius: 6px; height: 12px; animation: pulse 1.4s ease-in-out infinite }
+@keyframes pulse { 50% { opacity: .45 } }
+.steps { display: flex; gap: 6px }
+.steps i { flex: 1; height: 4px; border-radius: 2px; background: var(--outline-v) }
+.steps i.on { background: var(--primary) }
+.switch { width: 52px; height: 32px; border-radius: 16px; background: var(--s-high); box-shadow: inset 0 0 0 2px var(--outline); position: relative; flex: none }
+.switch::after { content: ""; position: absolute; width: 16px; height: 16px; border-radius: 8px; background: var(--outline); top: 8px; left: 8px }
+.switch.on { background: var(--primary); box-shadow: none }
+.switch.on::after { background: var(--on-primary); width: 24px; height: 24px; top: 4px; left: 24px; border-radius: 12px }
+.avatar { width: 40px; height: 40px; border-radius: 20px; background: var(--secondary-c); color: var(--on-secondary-c); display: grid; place-items: center; font: 600 16px var(--display); flex: none }
+.list-row { display: flex; align-items: center; gap: 14px; padding: 10px 0 }
+.speaker { font: 500 12px/16px var(--body); letter-spacing: .03em }
+.para { display: flex; flex-direction: column; gap: 2px }
+.cite { display: inline-grid; place-items: center; min-width: 18px; height: 18px; border-radius: 9px; background: var(--primary-c); color: var(--on-primary-c); font: 500 11px var(--body); vertical-align: 2px; padding: 0 4px }
+.bar { height: 6px; border-radius: 3px; background: var(--s-high); overflow: hidden; display: flex }
+.bar b { display: block; height: 100% }
+.tabs2 { display: flex; border-bottom: 1px solid var(--outline-v); margin: 0 -16px; padding: 0 16px }
+.tabs2 button { flex: 1; border: 0; background: transparent; padding: 12px 0; font: 500 14px var(--body); color: var(--on-surface-v); cursor: pointer; border-bottom: 3px solid transparent }
+.tabs2 button[aria-selected="true"] { color: var(--primary); border-color: var(--primary) }
+.check { width: 18px; height: 18px; border-radius: 3px; box-shadow: inset 0 0 0 2px var(--on-surface-v); flex: none }
+.check.on { background: var(--primary); box-shadow: none }
+.fab { position: absolute; right: 16px; bottom: 92px; width: 56px; height: 56px; border-radius: 16px; background: var(--primary-c); color: var(--on-primary-c); display: grid; place-items: center; border: 0; box-shadow: 0 3px 8px rgba(0,0,0,.18) }
+.mark-wave path { fill: none; stroke-linecap: round; stroke-linejoin: round }
+.wave-rec { animation: swing 1.2s ease-in-out infinite; transform-origin: center; transform-box: fill-box }
+@keyframes swing { 50% { transform: scaleY(.55) } }
+.wave-wait { stroke-dasharray: 3 6; animation: crawl 1.6s linear infinite }
+@keyframes crawl { to { stroke-dashoffset: -18 } }
+@media (prefers-reduced-motion: reduce) { .wave-rec, .wave-wait, .sk { animation: none } }
+.wordmark { display: flex; align-items: center; gap: 10px; font: 600 26px var(--display); letter-spacing: -0.01em }
+.foot { margin-top: 28px; color: var(--page-muted); font-size: 13px }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <svg width="44" height="44" viewBox="0 0 108 108" aria-hidden="true"><rect width="108" height="108" rx="26" fill="#2B2F6B"/><path d="M30,54 C36,54 38,54 42,54 C44,54 45,44 47,44 C49,44 50,66 52,66 C54,66 55,36 57,36 C59,36 60,72 62,72 C64,72 65,48 67,48 C69,48 70,54 72,54 C74,54 76,54 78,54" fill="none" stroke="#F1E9DA" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div><h1>Nytka screens</h1><p>Redesign mockup for the Android app · docs/design in nytka-app/android · 2026-10-19</p></div>
+  </header>
+
+  <div class="grid">
+    <nav class="rail" aria-label="Mockup controls">
+      <div><h2>Screen</h2><div class="screens" id="screens"></div></div>
+      <div><h2>State</h2><div class="seg" id="states"></div></div>
+      <div><h2>Phone theme</h2><div class="seg" id="themes"></div></div>
+    </nav>
+    <div class="phone-col"><div class="phone" id="phone"></div></div>
+    <article class="notes" id="notes"></article>
+  </div>
+  <p class="foot">Example data only: names, conversations and numbers are invented. Tap rows and the bottom bar inside the phone; the states on the left switch every screen between its normal, empty, loading and error look.</p>
+</div>
+
+<script>
+const WAVE = "M30,54 C36,54 38,54 42,54 C44,54 45,44 47,44 C49,44 50,66 52,66 C54,66 55,36 57,36 C59,36 60,72 62,72 C64,72 65,48 67,48 C69,48 70,54 72,54 C74,54 76,54 78,54";
+const FLAT = "M30,54 L78,54";
+const ic = {
+  forum: '<path d="M4 5h12v9H8l-4 3z M8 17v1h9l3 3V9h-2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+  task: '<circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 12.2l2.7 2.7L16.2 9.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+  group: '<circle cx="9" cy="8.5" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3 19c.6-3.3 3-5 6-5s5.4 1.7 6 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M15.5 5.6a3 3 0 0 1 0 5.8M17.5 14.3c1.8.6 3 2.2 3.4 4.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+  ask: '<circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15 15l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M8 9.2h5M8 12h3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  device: '<rect x="7" y="3" width="10" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="9" r="1.6" fill="currentColor"/>',
+  search: '<circle cx="10.5" cy="10.5" r="6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M15 15l5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+  inbox: '<path d="M4 13l2.5-8h11L20 13v6H4z M4 13h4.5l1 2h5l1-2H20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+  back: '<path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  more: '<circle cx="12" cy="5.5" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="18.5" r="1.7" fill="currentColor"/>',
+  play: '<path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/>',
+  star: '<path d="M12 4l2.3 4.9 5.2.6-3.9 3.6 1.1 5.2L12 15.7 7.3 18.3l1.1-5.2-3.9-3.6 5.2-.6z" fill="currentColor"/>',
+  alert: '<circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.5v5.5M12 16.2v.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  lock: '<rect x="5.5" y="10.5" width="13" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+  plus: '<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  send: '<path d="M4 12l16-7-5.5 15-2.8-6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+  qr: '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z" fill="none" stroke="currentColor" stroke-width="1.6"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
+};
+const svg = (n, s = 22) => `<svg viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true">${ic[n]}</svg>`;
+function wave(kind, w = 120, h = 44) {
+  const d = kind === "rec" ? WAVE : FLAT;
+  const color = kind === "rec" ? "var(--recording)" : kind === "wait" ? "var(--outline)" : "var(--on-surface-v)";
+  const cls = kind === "rec" ? "wave-rec" : kind === "wait" ? "wave-wait" : "";
+  return `<svg class="mark-wave" width="${w}" height="${h}" viewBox="26 30 56 48" aria-hidden="true"><path class="${cls}" d="${d}" stroke="${color}" stroke-width="3.2"/></svg>`;
+}
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+const SCREENS = [
+  { id: "setup", label: "Set up Nytka" },
+  { id: "conversations", label: "Conversations", tab: "conversations" },
+  { id: "conversation", label: "A conversation", tab: "conversations" },
+  { id: "people", label: "People", tab: "people" },
+  { id: "voice", label: "Your voice", tab: "device" },
+  { id: "ask", label: "Ask and Memories", tab: "ask" },
+  { id: "device", label: "Device", tab: "device" },
+];
+const STATES = [["normal", "Normal"], ["empty", "Empty"], ["loading", "Loading"], ["error", "Error"]];
+const TABS = [["conversations", "Conversations", "forum"], ["tasks", "Tasks", "task"], ["people", "People", "group"], ["ask", "Ask", "ask"], ["device", "Device", "device"]];
+
+const st = { screen: "conversations", state: "normal", theme: "light", step: 1, capture: "rec", askTab: "ask" };
+try { const saved = JSON.parse(localStorage.getItem("nytka-mock") || "{}"); Object.assign(st, saved); } catch (e) {}
+function save() { try { localStorage.setItem("nytka-mock", JSON.stringify(st)); } catch (e) {} }
+
+const skRows = n => Array.from({ length: n }, () => `<div style="display:flex;flex-direction:column;gap:8px;padding:12px 4px"><div class="sk" style="width:62%;height:14px"></div><div class="sk" style="width:92%"></div><div class="sk" style="width:40%"></div></div>`).join("");
+const errBanner = (msg, act = "Retry") => `<div class="banner">${svg("alert", 20)}<span class="grow">${msg}</span><button class="btn">${act}</button></div>`;
+const appbar = (title, actions = "", back = false) => `<div class="appbar">${back ? `<button class="ib" data-go="conversations" aria-label="Back">${svg("back")}</button>` : ""}<h4>${title}</h4>${actions}</div>`;
+
+/* ---------- screens ---------- */
+const R = {};
+
+R.setup = () => {
+  const s = st.step, err = st.state === "error", loading = st.state === "loading";
+  const bars = [1, 2, 3, 4].map(i => `<i class="${i <= s ? "on" : ""}"></i>`).join("");
+  let content = "";
+  if (s === 1) content = `
+    <div class="wordmark">${wave("idle", 34, 26).replace("var(--on-surface-v)", "var(--primary)").replace(FLAT, WAVE)}nytka</div>
+    <h2 class="headline">Connect your server</h2>
+    <p class="body-m" style="margin:0">Nytka sends the pendant's audio to your own server and nowhere else.</p>
+    <button class="btn wide" ${loading ? "disabled" : ""}>${svg("qr", 18).replace("<svg", '<svg style="vertical-align:-4px;margin-right:8px"')}Scan QR code</button>
+    <div class="label-m" style="text-align:center">or enter it by hand</div>
+    <div class="field ${err ? "err" : ""}"><small>Server address</small><span class="mono">https://nytka.home.example</span>${err ? "" : ""}</div>
+    <div class="field ${err ? "err" : ""}"><small>Admin token</small><span class="mono">••••••••••••••••••••••••</span>${err ? `<small>The server refused the token. Paste it again, whole.</small>` : ""}</div>
+    <div class="row"><div class="grow"><div class="title-m" style="font-size:14px">Private network (allow plain HTTP)</div><div class="body-m">For a VPN without HTTPS</div></div><div class="switch"></div></div>
+    <div style="flex:1"></div>
+    ${loading ? `<button class="btn wide" disabled>Testing…</button>` : `<button class="btn wide" data-step="2">Test connection</button>`}`;
+  if (s === 2) content = `
+    <h2 class="headline">Two permissions</h2>
+    <div class="card"><div class="title-m">Nearby devices</div><div class="body-m">To find and stay connected to the pendant.</div>
+      ${err ? `<div class="errline" style="margin-top:8px">${svg("alert")}Without nearby devices Nytka cannot reach the pendant.</div><button class="btn out" style="margin-top:10px">Open app info</button>` : ""}</div>
+    <div class="card"><div class="title-m">Notifications</div><div class="body-m">For the recording notification and alerts.</div></div>
+    <p class="body-m" style="margin:0">Nytka never uses the phone's microphone or location.</p>
+    <div style="flex:1"></div><button class="btn wide" data-step="3">Allow</button>`;
+  if (s === 3) content = `
+    <h2 class="headline">Before you record</h2>
+    <p class="body-l" style="margin:0">Recording people without their consent is illegal in some places. You answer for following the law where you are.</p>
+    <p class="body-l" style="margin:0">The pendant also records while the phone is away, and Nytka copies that audio when it comes back.</p>
+    <div class="row"><div class="check on"></div><span class="title-m" style="font-size:15px">I understand</span></div>
+    <div style="flex:1"></div><button class="btn wide" data-step="4">Continue</button>`;
+  if (s === 4) content = `
+    <h2 class="headline">Pair the pendant</h2>
+    <div class="card big" style="display:grid;place-items:center;padding:36px 16px">${err ? wave("idle", 160, 56) : wave("wait", 160, 56)}</div>
+    ${err ? `<div class="errline">${svg("alert")}No pendant found. The official Omi app or another phone may still hold it.</div>`
+          : `<p class="body-m" style="margin:0">Turn the pendant on and hold it near the phone.</p>`}
+    <div style="flex:1"></div>
+    <button class="btn wide" data-go="conversations">Pair pendant</button>
+    <button class="btn text wide" data-go="conversations">Set up later</button>`;
+  return { nav: false, html: `<div class="body" style="gap:16px;padding-top:12px"><div class="label-m">Step ${s} of 4</div><div class="steps">${bars}</div>${content}</div>` };
+};
+
+function captureCard() {
+  const k = st.capture;
+  const rows = {
+    rec: ["Recording", "Pendant 67% · uploaded 14:31", "Mute"],
+    muted: ["Muted", "Double-tap the pendant to record again", "Unmute"],
+    wait: ["Waiting for the pendant", "Out of range, off, or held by another app", "Mute"],
+  }[k];
+  const w = k === "rec" ? "rec" : k === "wait" ? "wait" : "idle";
+  const extra = st.state === "error" ? `<div class="errline" style="margin-top:10px">${svg("alert")}<span>Paused: The server refused the token. <b style="text-decoration:underline">Enter token</b></span></div>` : "";
+  return `<div class="card big">
+    <div class="row">${wave(w, 72, 40)}<div class="grow"><div style="font:600 18px/24px var(--display)">${rows[0]}</div><div class="label-m">${rows[1]}</div></div>
+    <button class="btn tonal" data-cap="${k === "muted" ? "rec" : "muted"}" style="padding:0 16px">${rows[2]}</button></div>${extra}
+    <div class="seg" style="margin-top:12px;gap:6px">${[["rec", "Recording"], ["muted", "Muted"], ["wait", "Waiting"]].map(([v, l]) => `<button class="chip ${v === k ? "sel" : ""}" data-cap="${v}" style="cursor:pointer;border:0">${l}</button>`).join("")}</div>
+  </div>`;
+}
+
+const CONVS = [
+  ["Today", [["Design sync with Olena", "Agreed the capture card leads with the state. Olena wants the brief card tested for a week before it ships.", "14:02–14:37 · 35 min", ["work"], true],
+             ["Hardware store", "Bought hinges and a drill bit set; the repairman comes Thursday at 10 to look at the boiler.", "11:20–11:31 · 11 min", [], false]]],
+  ["Yesterday", [["Call with Mykola about the invoice", "Mykola sends the corrected invoice by Friday. VAT line was wrong.", "18:05–18:22 · 17 min", ["money"], false],
+                 ["Untitled", "", "09:40–09:44 · 4 min", ["Summarizing"], false]]],
+];
+
+R.conversations = () => {
+  const actions = `<button class="ib" aria-label="Search">${svg("search")}</button>`;
+  let list;
+  if (st.state === "loading") list = skRows(3);
+  else if (st.state === "empty") list = `<div class="empty">${svg("forum", 40)}<p class="body-l">Nothing yet. Speech shows up here a few minutes after it is said.</p></div>`;
+  else list = CONVS.map(([day, rows]) => `<div class="day">${day}</div>` + rows.map(([t, s, time, chips, star]) => `
+    <div class="conv" data-go="conversation"><div class="title-m">${t}</div>${s ? `<div class="body-m clamp">${s}</div>` : ""}
+    <div class="row" style="gap:8px;margin-top:6px;flex-wrap:wrap">${star ? `<span style="color:var(--tertiary)">${svg("star", 15)}</span>` : ""}<span class="label-m">${time}</span>${chips.map(c => `<span class="chip ${c === "Summarizing" ? "" : ""}">${c}</span>`).join("")}</div></div>`).join("")).join("");
+  const brief = st.state === "normal" ? `<div class="card ter"><div class="label-m" style="color:inherit;opacity:.85">IN 25 MIN · 15:00</div><div class="title-m">Design sync with Olena</div><div style="font:400 14px/20px var(--body);margin:2px 0 10px">She leads the hardware side. Still open: the brief card trial and LED brightness defaults.</div><button class="btn ter" style="height:34px">Open brief</button></div>` : "";
+  const err = st.state === "error" ? `<div class="banner quiet">${svg("alert", 20)}<span class="grow">Unreachable since 14:02. Audio waits on the phone.</span></div>` : "";
+  return { html: appbar("Conversations", actions) + `<div class="body">${captureCard()}${err}${brief}${list}</div>` };
+};
+
+R.conversation = () => {
+  if (st.state === "error") return { html: appbar("", `<button class="ib">${svg("more")}</button>`, true) + `<div class="body"><div class="empty"><p class="body-l">This item no longer exists</p><button class="btn tonal" data-go="conversations">Back to conversations</button></div></div>` };
+  if (st.state === "loading") return { html: appbar("", "", true) + `<div class="body">${skRows(4)}</div>` };
+  const sp = (name, color, text, extra = "") => `<div class="para"><div class="row" style="gap:8px"><span class="speaker" style="color:${color}">${name}</span><span class="label-m">${extra}</span></div><div class="body-l">${text}</div></div>`;
+  const summary = st.state === "empty"
+    ? `<div class="banner quiet"><span class="grow">Your server has no language model, so there are no titles or summaries.</span></div>`
+    : `<p class="body-l" style="margin:0">Agreed the capture card leads with the state. Olena wants the brief card tested for a week before it ships.</p>
+       <div class="row"><div class="check"></div><span class="body-l">Send Olena the token table</span></div>`;
+  return { html: appbar("", `<button class="ib">${svg("more")}</button>`, true) + `<div class="body" style="gap:14px">
+    <h2 class="headline">${st.state === "empty" ? "So the card shows the state first…" : "Design sync with Olena"}</h2>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><span class="label-m">Today · 14:02–14:37 · 35 min</span><span class="chip">work</span></div>
+    ${summary}
+    <div class="card ter" style="padding:12px 14px"><div style="font:400 14px/20px var(--body)">A voice may be <b>Olena</b>: “Olena here, can you hear me?”</div><div class="btns" style="margin-top:8px"><button class="btn ter" style="height:32px">Accept</button><button class="btn text" style="height:32px;color:inherit">Not Olena</button></div></div>
+    <div class="card" style="padding:10px 12px"><div class="row"><button class="ib" style="background:var(--primary);color:var(--on-primary)">${svg("play", 20)}</button><div class="grow"><div class="bar"><b style="width:28%;background:var(--primary)"></b></div></div><span class="label-m">9:48 / 35:02</span></div></div>
+    ${sp("Me · voice", "var(--primary)", "So the card shows the state first, and the battery goes to the second line.", "14:02")}
+    ${sp("Olena", "var(--tertiary)", "Yes. And muted has to look different without the color, people check it at a glance.", "14:03")}
+    ${sp("Media", "var(--on-surface-v)", `<span style="color:var(--on-surface-v)">…and now the weather for Kyiv region…</span>`, "14:05")}
+  </div>` };
+};
+
+R.people = () => {
+  const actions = `<button class="ib" aria-label="Review inbox">${svg("inbox")}<span class="badge">4</span></button><button class="ib">${svg("more")}</button>`;
+  if (st.state === "loading") return { html: appbar("People", actions) + `<div class="body">${skRows(2)}</div>` };
+  if (st.state === "error") return { html: appbar("People", "") + `<div class="body">${errBanner("The app needs an admin token.", "Enter token")}<div class="empty"><p class="body-m">Names and voices need an admin token to change.</p></div></div>` };
+  if (st.state === "empty") return { html: appbar("People", "") + `<div class="body"><div class="empty">${svg("group", 40)}<p class="body-l">People appear here once your server hears them. Name a voice to start.</p><button class="btn tonal">Unnamed voices (3)</button></div></div>` };
+  const person = (n, sub) => `<div class="list-row"><div class="avatar">${n[0]}</div><div class="grow"><div class="title-m">${n}</div><div class="body-m">${sub}</div></div></div>`;
+  return { html: appbar("People", actions) + `<div class="body">
+    <div class="card ter">
+      <div class="label-m" style="color:inherit;opacity:.85">WHO IS THIS? · HARDWARE STORE, TODAY</div>
+      <div style="font:400 15px/22px var(--body);margin:8px 0">“Thursday at ten works, I'll bring the part for the boiler.”</div>
+      <div class="row" style="margin-bottom:10px"><button class="ib" style="background:var(--tertiary);color:var(--surface)">${svg("play", 20)}</button><span class="label-m" style="color:inherit">0:08</span></div>
+      <div class="field" style="background:var(--surface);box-shadow:none"><small>Name</small><span>Repairman</span></div>
+      <div class="btns" style="margin-top:10px"><button class="btn ter" style="height:34px">Save</button><button class="btn text" style="height:34px;color:inherit">Skip</button><button class="btn text" style="height:34px;color:inherit">Not a person</button></div>
+      <div class="label-m" style="color:inherit;opacity:.8;margin-top:6px">Nothing is named until you tap.</div>
+    </div>
+    <div>${person("Olena", "Last heard 2 h ago · 14 facts")}${person("Mykola", "Yesterday · 6 facts")}${person("Repairman", "Name not known yet")}</div>
+    <div class="day">Unnamed voices</div>
+    <div class="list-row"><div class="avatar" style="background:var(--s-high);color:var(--on-surface-v)">?</div><div class="grow"><div class="title-m">Voice 7</div><div class="body-m">3 conversations · 2 min of speech</div></div></div>
+  </div>` };
+};
+
+R.voice = () => {
+  const head = appbar("Your voice", "", true).replace('data-go="conversations"', 'data-go="device"');
+  if (st.state === "empty") return { html: head + `<div class="body"><div class="card big" style="display:grid;place-items:center;padding:32px">${wave("wait", 160, 56)}</div><p class="body-l" style="margin:0">Connect the pendant to read your voice.</p></div>` };
+  const secs = st.state === "loading" ? 41 : st.state === "error" ? 14 : 34;
+  const bar = `<div class="bar"><b style="width:${Math.min(secs, 30) / 120 * 100}%;background:var(--tertiary)"></b><b style="width:${Math.max(secs - 30, 0) / 120 * 100}%;background:var(--primary)"></b></div>`;
+  const bottom = st.state === "loading" ? `<button class="btn wide" disabled>Sending ${secs} s of speech…</button>`
+    : st.state === "error" ? `<div class="errline">${svg("alert")}Less than 20 seconds of speech. Read the sentences again, a little slower.</div><button class="btn wide">Start over</button>`
+    : `<button class="btn wide">Send</button><button class="btn text wide">Cancel</button>`;
+  return { html: head + `<div class="body" style="gap:14px">
+    <div class="seg"><span class="chip sel">Ukrainian</span><span class="chip sel">English</span><span class="chip">Russian</span></div>
+    <div class="label-m">SENTENCE 2 OF 3 · UKRAINIAN</div>
+    <p class="headline" style="font-size:22px;line-height:30px">Вранці я зазвичай п'ю каву й переглядаю пошту.</p>
+    <button class="btn text" style="align-self:flex-start;padding:0">Next sentence</button>
+    <div class="card big" style="display:flex;flex-direction:column;align-items:center;gap:6px">${wave(st.state === "error" ? "idle" : "rec", 200, 60)}
+      <div class="display">${secs} s</div><div class="label-m">at least 30 s · stops at 120 s</div></div>
+    ${bar}
+    <div class="body-m">This reading is not saved as a conversation.</div>
+    <div style="flex:1"></div>${bottom}</div>` };
+};
+
+R.ask = () => {
+  const tabs = `<div class="tabs2" role="tablist"><button role="tab" aria-selected="${st.askTab === "ask"}" data-asktab="ask">Ask</button><button role="tab" aria-selected="${st.askTab === "mem"}" data-asktab="mem">Memories</button></div>`;
+  if (st.askTab === "mem") {
+    let body;
+    if (st.state === "loading") body = skRows(3);
+    else if (st.state === "empty") body = `<div class="empty"><p class="body-l">Lasting facts about you appear here as the server finds them in your conversations. You can add one yourself.</p><button class="btn tonal">Add a memory</button></div>`;
+    else if (st.state === "error") body = errBanner("This server needs an update", "Retry");
+    else body = [["You prefer meetings before noon.", "Design sync with Olena · Today"], ["Your boiler is a Vaillant ecoTEC, serviced every October.", "Hardware store · Today"], ["You run your own Nytka server at home.", "Added by you"]]
+      .map(([m, s]) => `<div class="conv" style="cursor:default"><div class="body-l">${m}</div><div class="label-m" style="color:var(--primary);margin-top:4px">${s}</div></div>`).join("");
+    return { html: appbar("Ask") + `<div class="body">${tabs}${body}</div>` + (st.state === "normal" ? `<button class="fab" aria-label="Add a memory">${svg("plus", 24)}</button>` : "") };
+  }
+  let body;
+  if (st.state === "empty") body = `<div style="flex:1"></div><div class="label-m">Try asking</div><div class="seg"><span class="chip">What did Olena say about the brief card?</span><span class="chip">When does the repairman come?</span><span class="chip">What does Mykola owe me?</span></div>`;
+  else {
+    const q = `<div style="align-self:flex-end;max-width:85%;background:var(--primary-c);color:var(--on-primary-c);border-radius:16px 16px 4px 16px;padding:10px 14px;font:400 15px/22px var(--body)">When does the repairman come?</div>`;
+    const a = st.state === "loading" ? `<div style="display:flex;flex-direction:column;gap:8px"><div class="sk" style="width:90%"></div><div class="sk" style="width:76%"></div><div class="sk" style="width:50%"></div></div>`
+      : st.state === "error" ? `<div class="errline">${svg("alert")}The server took too long to answer. Try a shorter question.</div><button class="btn out" style="align-self:flex-start">Try again</button>`
+      : `<div class="body-l">Thursday at 10, to look at the boiler <span class="cite">1</span>. He said he would bring the part himself <span class="cite">2</span>.</div>
+         <div class="day">Sources</div>
+         <div class="row" style="gap:10px"><span class="cite">1</span><span class="body-m grow">Hardware store · Today 11:20</span></div>
+         <div class="row" style="gap:10px"><span class="cite">2</span><span class="body-m grow">Who is this? card · Today</span></div>`;
+    body = q + a + `<div style="flex:1"></div>`;
+  }
+  return { html: appbar("Ask") + `<div class="body">${tabs}${body}<div class="field" style="border-radius:24px;flex-direction:row;align-items:center;padding:6px 6px 6px 16px"><span class="grow body-m">Ask about your conversations</span><button class="ib" style="background:var(--primary);color:var(--on-primary)">${svg("send", 20)}</button></div></div>` };
+};
+
+R.device = () => {
+  if (st.state === "loading") return { html: appbar("Device") + `<div class="body">${skRows(3)}</div>` };
+  const pend = st.state === "empty"
+    ? `<div class="card"><div class="title-m">Pendant</div><div class="body-m" style="margin:4px 0 12px">No pendant paired.</div><button class="btn">Pair pendant</button></div>`
+    : `<div class="card"><div class="row"><div class="grow"><div class="title-m">Omi CV 1</div><div class="label-m">Firmware 3.0.20 · connected</div></div><div class="display" style="font-size:30px">67%</div></div>
+       <div class="card ter" style="padding:10px 12px;margin-top:12px;font:400 14px/20px var(--body)">Firmware 3.0.22 is out. Update it with the official Omi app.</div>
+       <div class="label-m" style="margin-top:12px">LED BRIGHTNESS</div><div class="bar" style="margin-top:8px"><b style="width:40%;background:var(--primary)"></b></div></div>`;
+  const server = st.state === "error"
+    ? `<div class="card"><div class="title-m">Your server</div><div class="mono" style="color:var(--on-surface-v);margin:2px 0 8px">https://nytka.home.example</div><div class="errline">${svg("alert")}Unreachable since 14:02. Audio waits on the phone.</div></div>`
+    : `<div class="card"><div class="row"><div class="grow"><div class="title-m">Your server</div><div class="mono" style="color:var(--on-surface-v)">https://nytka.home.example</div><div class="label-m" style="margin-top:4px">Version 0.25.0 · last upload 14:31</div></div><button class="btn text">Change</button></div></div>`;
+  return { html: appbar("Device") + `<div class="body">${pend}${server}
+    <div class="card" data-go="voice" style="cursor:pointer"><div class="title-m">Your voice</div><div class="body-m">Enrolled 3 Oct from 9 samples · learned from 212 segments since</div></div>
+    <div class="card"><div class="row"><div class="grow"><div class="title-m">Meeting briefs</div><div class="body-m">A short brief before a meeting with someone you named.</div></div><div class="switch on"></div></div></div>
+    <div class="card"><div class="row"><div class="grow"><div class="title-m">Language of summaries</div><div class="body-m">${svg("lock", 14).replace("<svg", '<svg style="vertical-align:-2px"')} Set by the server's environment</div></div></div></div>
+  </div>` };
+};
+
+/* ---------- notes ---------- */
+const NOTES = {
+  setup: ["Set up Nytka", `<p>Four steps, one job each. The QR code comes first because it fills the address and the token and tests them in one go; typing a long token on a phone is the step people fail.</p>
+    <ul><li>Step 1 error puts the server's sentence under the field it concerns, not in a dialog.</li><li>Step 2 error appears after two refusals, with <b>Open app info</b>.</li><li>Step 4 error: no pendant found after 30 s, and the likely cause.</li></ul>
+    <p>Tap the main button to go to the next step.</p>`],
+  conversations: ["Conversations and the capture card", `<p>The capture card replaces today's chip and card. It leads with the state, drawn by the mark itself: a moving red wave while recording, a flat line while muted, a dashed crawling line while waiting. Shape and word carry the state; color only confirms it.</p>
+    <ul><li>Use the chips in the card to switch recording, muted and waiting.</li><li>The madder card is the next meeting brief (open question 4).</li><li>Error shows the server-refused token inside the card and an offline banner; the list stays.</li></ul>`],
+  conversation: ["A conversation", `<p>Summary and tasks first, then the play bar, then the transcript. Speaker labels take primary, tertiary and secondary tones; media lines are muted text. The name suggestion is a madder card with <b>Accept</b> and <b>Not Olena</b>.</p>
+    <ul><li>Empty here means the server has no language model: no title, no summary, the start of the transcript instead.</li><li>Error is the fixed sentence "This item no longer exists".</li></ul>`],
+  people: ["People and Who is this?", `<p>The inbox count sits in the top bar in madder; the "Who is this?" card is the one madder surface on the screen, so the eye goes to what waits for the owner. "Nothing is named until you tap" stays visible under the buttons.</p>
+    <ul><li>Error: a read token. Lists show, edits hide, one banner says why.</li><li>Empty points to unnamed voices when there are some.</li></ul>`],
+  voice: ["Your voice", `<p>One sentence at a time in the display face, the live level drawn by the mark, and the seconds as a large number. The bar fills madder to the 30 s minimum, then indigo to the 120 s limit, so "enough" is visible before it is reached.</p>
+    <ul><li>Empty: no pendant connected.</li><li>Loading: sending.</li><li>Error: the server refused a short reading, with what to do.</li></ul>`],
+  ask: ["Ask and Memories", `<p>Memories move into Ask as a second tab (open question 2), which brings the bar to five destinations. Citations are small indigo pills; sources list under the answer.</p>
+    <ul><li>Empty Ask offers three questions built from recent conversation titles.</li><li>Error: one of the three fixed sentences with <b>Try again</b>.</li><li>Switch to the Memories tab for its own states.</li></ul>`],
+  device: ["Device", `<p>Cards in order of how often they matter: pendant, your server, your voice, then settings. Each card holds its own error, so an unreachable server never hides the pendant's battery.</p>
+    <ul><li>The firmware notice is a madder row inside the pendant card.</li><li>A setting the server's environment fixes shows a lock and says so.</li><li>Tap <b>Your voice</b> to open enrollment.</li></ul>`],
+};
+
+/* ---------- render ---------- */
+const $ = id => document.getElementById(id);
+function render() {
+  const scr = SCREENS.find(s => s.id === st.screen) || SCREENS[1];
+  const out = R[scr.id]();
+  const nav = out.nav === false ? "" : `<div class="nav">${TABS.map(([id, l, i]) => {
+    const target = id === "tasks" ? "conversations" : id === "device" ? "device" : id;
+    return `<button data-go="${target}" aria-current="${scr.tab === id}"><span class="pill">${svg(i)}</span>${l}</button>`; }).join("")}</div>`;
+  const phone = $("phone");
+  phone.className = "phone" + (st.theme === "dark" ? " dark" : "");
+  phone.innerHTML = `<div class="sb"><span>14:35</span><span>5G · 82%</span></div>${out.html}${nav}`;
+  $("screens").innerHTML = SCREENS.map(s => `<button aria-pressed="${s.id === scr.id}" data-go="${s.id}">${s.label}</button>`).join("");
+  $("states").innerHTML = STATES.map(([v, l]) => `<button aria-pressed="${v === st.state}" data-state="${v}">${l}</button>`).join("");
+  $("themes").innerHTML = [["light", "Light"], ["dark", "Dark"]].map(([v, l]) => `<button aria-pressed="${v === st.theme}" data-theme-set="${v}">${l}</button>`).join("");
+  const [h, body] = NOTES[scr.id];
+  $("notes").innerHTML = `<h3>${h}</h3>${body}<div class="k">Tokens on this screen</div><p>Surface, surfaceContainer for cards, secondaryContainer for the selected tab, tertiaryContainer (madder) for what waits on you, error only for failures, and the separate recording red for the live wave.</p>`;
+  save();
+}
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-go],[data-state],[data-theme-set],[data-step],[data-cap],[data-asktab]");
+  if (!t) return;
+  if (t.dataset.go) { st.screen = t.dataset.go; if (st.screen === "setup") st.step = 1; }
+  if (t.dataset.state) st.state = t.dataset.state;
+  if (t.dataset.themeSet) st.theme = t.dataset.themeSet;
+  if (t.dataset.step) st.step = +t.dataset.step;
+  if (t.dataset.cap) st.capture = t.dataset.cap;
+  if (t.dataset.asktab) st.askTab = t.dataset.asktab;
+  render();
+});
+try { if (matchMedia("(prefers-color-scheme: dark)").matches && !localStorage.getItem("nytka-mock")) st.theme = "dark"; } catch (e) {}
+render();
+</script>
