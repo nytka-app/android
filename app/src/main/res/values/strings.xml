@@ -23,7 +23,6 @@
     <string name="set">Set</string>
     <string name="not_set">Not set</string>
     <string name="testing">Testing…</string>
-    <string name="test_connection">Test connection</string>
     <string name="continue_action">Continue</string>
     <string name="i_understand">I understand</string>
     <string name="regenerate_summary">Regenerate summary</string>
@@ -109,8 +108,6 @@
     <string name="nothing_found">Nothing found</string>
 
     <!-- First run -->
-    <string name="set_up_nytka">Set up Nytka</string>
-    <string name="step_of_format">Step %1$d of %2$d</string>
     <string name="server_step_description">Your Nytka server\'s address and token, from its .env file</string>
     <string name="server_url_hint">Server URL, e.g. https://nytka.example.com</string>
     <string name="token_hint">Token</string>
@@ -200,7 +197,6 @@
     <string name="voice_forget">Forget my voice</string>
     <string name="voice_read_aloud">Read aloud</string>
     <string name="voice_elapsed">%1$d s of %2$d s</string>
-    <string name="voice_level">Level</string>
     <string name="voice_pendant_silent">The pendant is not sending audio. Connect it and unmute it.</string>
     <string name="voice_full">The 120 second limit is reached. Send the reading.</string>
     <string name="voice_send">Send</string>
@@ -617,4 +613,39 @@
     <string name="speech_list_media_hidden">Media hidden</string>
     <string name="speech_list_show_media">Show media again</string>
     <string name="speech_list_only_media">Nothing here but media</string>
+
+    <!-- First run (SetupStep, PermissionRow, ConsentNote) -->
+    <string-array name="first_run_step_labels">
+        <item>Step one of four</item>
+        <item>Step two of four</item>
+        <item>Step three of four</item>
+        <item>Step four of four</item>
+    </string-array>
+    <string name="setup_server_title">Connect your server</string>
+    <string name="setup_connect">Connect</string>
+    <string name="token_show">Show</string>
+    <string name="token_hide">Hide</string>
+    <string name="setup_permissions_title">Allow what the pendant needs</string>
+    <string name="permission_nearby_name">Nearby devices</string>
+    <string name="permission_nearby_why">Reaches the pendant over Bluetooth.</string>
+    <string name="permission_notifications_name">Notifications</string>
+    <string name="permission_notifications_why">Keeps the capture state in view while Nytka runs.</string>
+    <string name="permission_allowed">Allowed</string>
+    <string name="permission_not_yet">Not allowed yet</string>
+    <string name="setup_consent_title">People near you</string>
+    <string name="setup_consent_body">Read these four points, then tick the box.</string>
+    <string name="consent_point_who">People near you are recorded too. Tell them, and mute the pendant when they ask.</string>
+    <string name="consent_point_stop">Mute the pendant to stop. You can delete any conversation from your server.</string>
+    <string name="consent_point_data">Recordings wait on this phone until they upload to your server, and then live on your server.</string>
+    <string name="setup_pairing_title">Pair your pendant</string>
+    <string name="setup_pair">Pair</string>
+
+    <!-- Your voice: reading -->
+    <string name="voice_listening">Listening through the pendant. The phone\'s microphone is not used.</string>
+    <string name="voice_next_sentence">Next sentence</string>
+    <string name="voice_enough">Enough to send. More is better, up to 2 minutes.</string>
+    <plurals name="voice_need_more">
+        <item quantity="one">Read %d more second to send.</item>
+        <item quantity="other">Read %d more seconds to send.</item>
+    </plurals>
 </resources>
