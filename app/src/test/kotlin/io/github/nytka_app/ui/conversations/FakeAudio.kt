@@ -42,6 +42,11 @@ class FakePlayer : AudioPlayer {
         state.value = state.value.copy(positionMs = positionMs)
     }
 
+    override fun setSpeed(speed: Float) {
+        calls += "speed $speed"
+        state.value = state.value.copy(speed = speed)
+    }
+
     override fun release() {
         calls += "release"
     }

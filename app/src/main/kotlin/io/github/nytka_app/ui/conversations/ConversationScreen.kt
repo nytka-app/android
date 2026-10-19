@@ -1,9 +1,9 @@
 package io.github.nytka_app.ui.conversations
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
@@ -35,8 +36,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -57,9 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.repeatOnLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.ui.people.RoleNoticeEffect
 import io.github.nytka_app.ui.tags.TagNoticeEffect
@@ -83,19 +82,20 @@ fun ConversationScreen(
     var confirmDelete by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
     var naming by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var follow by rememberSaveable { mutableStateOf(true) }
+    val listState = rememberLazyListState()
     val snackbar = rememberNoteHost(state.note, viewModel::noteShown)
     LaunchedEffect(state.deleted) { if (state.deleted) onDeleted() }
+    val skip = rememberSuggestionSkip(state.banner, snackbar)
     SuggestionNoticeEffect(state.suggestionNotice, snackbar, viewModel::suggestionNoticeShown)
     AcceptAllNoticeEffect(state.acceptAllNotice, snackbar, viewModel::acceptAllNoticeShown)
     RoleNoticeEffect(state.roleNotice, snackbar, viewModel::roleNoticeShown)
     TagNoticeEffect(state.tagNotice, snackbar, viewModel::tagNoticeShown)
     SpeechNoticeEffect(state.speechNotice, snackbar, viewModel::speechNoticeShown)
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.pause() }
-    // A summary in the making shows up on its own, while the screen is in front.
-    val lifecycleOwner = LocalLifecycleOwner.current
-    LaunchedEffect(viewModel, lifecycleOwner, state.chip) {
-        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) { viewModel.keepFresh() }
-    }
+    val playback = state.playback
+    val heard = playback.heardParagraph()
+    FollowTranscript(listState, heard, follow && playback?.playing == true, state.paragraphs.size, state.raw != null)
 
     Scaffold(
         topBar = {
@@ -144,12 +144,16 @@ fun ConversationScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
+        bottomBar = {
+            ConversationPlayerBar(playback, state.paragraphs, heard, follow, { follow = !follow }, viewModel)
+        },
     ) { padding ->
         ReadingColumn {
             LazyColumn(
                 Modifier
                     .fillMaxSize()
                     .padding(padding),
+                state = listState,
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
@@ -167,16 +171,14 @@ fun ConversationScreen(
                     viewModel::removeTag,
                     onTagClick = onOpenTag,
                 )
-                state.playback?.let { playback ->
-                    item { PlayBar(playback, onToggle = viewModel::togglePlay, onSeek = viewModel::seekTo) }
-                }
                 state.chip?.let { chip -> item { AiChip(chip) } }
                 state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
                 suggestion(
-                    state.banner,
+                    skip.shown,
                     viewModel::acceptSuggestion,
                     viewModel::rejectSuggestion,
-                    viewModel::acceptAllByName,
+                    onSkip = skip.onSkip,
+                    onAcceptAll = viewModel::acceptAllByName,
                 )
                 tagProposalsItem(state.tagProposals, viewModel::acceptTagProposal, viewModel::rejectTagProposal)
                 state.summary?.let { summary ->
@@ -210,6 +212,7 @@ fun ConversationScreen(
                 items(state.looseBookmarks) { mark -> BookmarkLine(mark, viewModel::setBookmarkNote) }
                 transcript(
                     state.paragraphs,
+                    playingIndex = heard,
                     canPlay = state.playback != null,
                     onName = { naming = it },
                     onOpenPerson = onOpenPerson,
@@ -267,9 +270,10 @@ fun ConversationScreen(
     }
 }
 
-/** The paragraphs; the time of one plays from there when [canPlay]. */
+/** The paragraphs; the time of one plays from there when [canPlay], and the one at [playingIndex] is marked. */
 private fun LazyListScope.transcript(
     paragraphs: List<Paragraph>,
+    playingIndex: Int?,
     canPlay: Boolean,
     onName: (Pair<String, String>) -> Unit,
     onOpenPerson: (String) -> Unit,
@@ -277,55 +281,21 @@ private fun LazyListScope.transcript(
     onPlay: (Int) -> Unit,
     onMark: (Long, Boolean?) -> Unit,
     onKind: ((Long, String?) -> Unit)?,
-) = itemsIndexed(paragraphs) { i, paragraph ->
-    ParagraphItem(
-        paragraph,
-        onName,
-        onOpenPerson,
-        onSave,
-        onMark,
-        onKind,
-        onPlay = if (canPlay) ({ onPlay(i) }) else null,
-    )
-}
-
-/** Play or pause, the position and length, and a slider. A drag seeks when it ends, not on every move. */
-@Composable
-private fun PlayBar(
-    playback: Playback,
-    onToggle: () -> Unit,
-    onSeek: (Long) -> Unit,
 ) {
-    var dragging by remember { mutableStateOf<Float?>(null) }
-    val shown = dragging ?: playback.positionMs.toFloat()
-    ElevatedCard(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = onToggle) {
-                    Text(stringResource(if (playback.playing) R.string.pause else R.string.play))
-                }
-                Slider(
-                    value = shown.coerceIn(0f, playback.durationMs.toFloat()),
-                    onValueChange = { dragging = it },
-                    onValueChangeFinished = {
-                        dragging?.let { onSeek(it.toLong()) }
-                        dragging = null
-                    },
-                    valueRange = 0f..playback.durationMs.toFloat().coerceAtLeast(1f),
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            Text(
-                if (playback.failed) {
-                    stringResource(R.string.audio_play_failed)
-                } else {
-                    "${Formatting.position(shown.toLong())} / ${Formatting.position(playback.durationMs)}"
-                },
-                style = MaterialTheme.typography.labelMedium,
-                color = if (playback.failed) MaterialTheme.colorScheme.error else Color.Unspecified,
-                modifier = Modifier.padding(start = 16.dp, bottom = 4.dp),
-            )
-        }
+    // "Voice 1", "Voice 2" ... by first appearance among the voices nobody has named.
+    val unknown = paragraphs.filter { it.unknownVoice }.mapNotNull { it.speaker }.distinct()
+    itemsIndexed(paragraphs) { i, paragraph ->
+        ParagraphItem(
+            paragraph,
+            voiceNumber = unknown.indexOf(paragraph.speaker) + 1,
+            playing = i == playingIndex,
+            onName,
+            onOpenPerson,
+            onSave,
+            onMark,
+            onKind,
+            onPlay = if (canPlay) ({ onPlay(i) }) else null,
+        )
     }
 }
 
@@ -346,34 +316,71 @@ private fun InfoCard(
 }
 
 /**
- * The speaker above a run. A named person opens their page; a voice that can be named opens the dialog with its id
- * and label.
+ * The speaker above a run, told apart by shape and not by hue. The wearer is a primary tag; a named person is a
+ * mark and a name that opens their page; a voice nobody has named is a tertiary tag, "Voice N", and "Who is this?"
+ * opens the dialog that names it.
  */
 @Composable
 private fun SpeakerLabel(
     paragraph: Paragraph,
+    voiceNumber: Int,
     onName: (Pair<String, String>) -> Unit,
     onOpenPerson: (String) -> Unit,
 ) {
     val voiceId = paragraph.voiceId
     val personId = paragraph.personId
     val label = paragraph.speaker.orEmpty()
-    Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            label,
-            style = MaterialTheme.typography.labelLarge,
-            color = speakerColor(paragraph.speakerColor),
-            modifier =
-                when {
-                    personId != null ->
-                        Modifier.clickable(
-                            onClickLabel = stringResource(R.string.open_person),
-                        ) { onOpenPerson(personId) }
+    Row(
+        Modifier.padding(top = 8.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        when {
+            paragraph.isUser == true ->
+                SpeakerTag(
+                    stringResource(R.string.speaker_you),
+                    MaterialTheme.colorScheme.primaryContainer,
+                    MaterialTheme.colorScheme.onPrimaryContainer,
+                )
 
-                    voiceId != null -> Modifier.clickable { onName(voiceId to label) }
-                    else -> Modifier
-                },
-        )
+            paragraph.unknownVoice -> {
+                SpeakerTag(
+                    stringResource(R.string.speaker_voice_format, voiceNumber),
+                    MaterialTheme.colorScheme.tertiaryContainer,
+                    MaterialTheme.colorScheme.onTertiaryContainer,
+                )
+                if (voiceId != null) {
+                    Text(
+                        stringResource(R.string.who_is_this_title),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.clickable { onName(voiceId to label) },
+                    )
+                }
+            }
+
+            else ->
+                Row(
+                    Modifier.then(
+                        if (personId != null) {
+                            Modifier.clickable(onClickLabel = stringResource(R.string.open_person)) {
+                                onOpenPerson(personId)
+                            }
+                        } else {
+                            Modifier
+                        },
+                    ),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    SpeakerMark(paragraph.speakerMark)
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.secondary,
+                    )
+                }
+        }
         paragraph.sourceNote?.let {
             val note =
                 when (it) {
@@ -383,7 +390,7 @@ private fun SpeakerLabel(
                     else -> it
                 }
             Text(
-                " · $note",
+                "· $note",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -391,10 +398,28 @@ private fun SpeakerLabel(
     }
 }
 
+@Composable
+private fun SpeakerTag(
+    text: String,
+    container: Color,
+    content: Color,
+) {
+    Surface(shape = MaterialTheme.shapes.extraSmall, color = container) {
+        Text(
+            text,
+            style = MaterialTheme.typography.labelLarge,
+            color = content,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+        )
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ParagraphItem(
     paragraph: Paragraph,
+    voiceNumber: Int,
+    playing: Boolean,
     onName: (Pair<String, String>) -> Unit,
     onOpenPerson: (String) -> Unit,
     onSave: (String, String) -> Unit,
@@ -404,20 +429,37 @@ private fun ParagraphItem(
 ) {
     var markMenu by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
-    Column {
+    Column(
+        if (playing) {
+            Modifier.background(MaterialTheme.colorScheme.surfaceContainer, MaterialTheme.shapes.small).padding(8.dp)
+        } else {
+            Modifier
+        },
+    ) {
         if (paragraph.showSpeaker) {
-            SpeakerLabel(paragraph, onName = onName, onOpenPerson = onOpenPerson)
+            SpeakerLabel(paragraph, voiceNumber, onName = onName, onOpenPerson = onOpenPerson)
         }
         Row {
-            Text(
-                paragraph.time,
-                style = MaterialTheme.typography.labelMedium,
-                color = if (onPlay != null) MaterialTheme.colorScheme.primary else Color.Unspecified,
-                modifier =
-                    Modifier
-                        .width(56.dp)
-                        .then(if (onPlay != null) Modifier.clickable(onClick = onPlay) else Modifier),
-            )
+            Column(
+                Modifier
+                    .width(56.dp)
+                    .then(if (onPlay != null) Modifier.clickable(onClick = onPlay) else Modifier),
+            ) {
+                Text(
+                    paragraph.time,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (onPlay != null) MaterialTheme.colorScheme.primary else Color.Unspecified,
+                )
+                if (playing) {
+                    PlayPauseGlyph(
+                        playing = true,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        size = 12.dp,
+                        modifier = Modifier.padding(top = 4.dp),
+                        description = stringResource(R.string.audio_playing_here),
+                    )
+                }
+            }
             Column {
                 paragraph.speech?.let { SpeechChip(it, Modifier.padding(bottom = 2.dp)) }
                 Box {
@@ -594,18 +636,6 @@ private fun RenameDialog(
 }
 
 private const val MAX_TITLE = 120
-
-/** Six colors that read on a light and on a dark surface; a seventh speaker starts over. */
-@Composable
-internal fun speakerColor(index: Int): Color {
-    val palette = if (isSystemInDarkTheme()) DARK_SPEAKERS else LIGHT_SPEAKERS
-    return palette[index % palette.size]
-}
-
-private val LIGHT_SPEAKERS =
-    listOf(0xFF1565C0, 0xFF2E7D32, 0xFFC62828, 0xFF6A1B9A, 0xFFEF6C00, 0xFF00838F).map { Color(it) }
-private val DARK_SPEAKERS =
-    listOf(0xFF90CAF9, 0xFFA5D6A7, 0xFFEF9A9A, 0xFFCE93D8, 0xFFFFCC80, 0xFF80DEEA).map { Color(it) }
 
 private const val KIND_PERSON = "person"
 private const val KIND_MEDIA = "media"

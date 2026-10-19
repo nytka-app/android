@@ -51,15 +51,15 @@ import javax.inject.Inject
 
 /**
  * One segment. [speaker] is what shows above a run: "Me" for the wearer, else the name given to the voice, else the
- * label the transcription gave it. [showSpeaker] is true where a run by one speaker begins, and [speakerColor] picks
- * that speaker's color by first appearance. [voiceId] is set where the voice can be named.
+ * label the transcription gave it. [showSpeaker] is true where a run by one speaker begins, and [speakerMark] picks
+ * that speaker's mark (one of seven shapes) by first appearance. [voiceId] is set where the voice can be named.
  */
 data class Paragraph(
     val time: String,
     val text: String,
     val speaker: String? = null,
     val showSpeaker: Boolean = false,
-    val speakerColor: Int = 0,
+    val speakerMark: Int = 0,
     val voiceId: String? = null,
     /** The person the line is attributed to, so the label can open them; null for the wearer and unnamed voices. */
     val personId: String? = null,
@@ -118,6 +118,9 @@ data class Playback(
     val positionMs: Long = 0,
     val playing: Boolean = false,
     val failed: Boolean = false,
+    val speed: Float = 1f,
+    /** Where each paragraph starts in the audio, by paragraph index; empty until the transcript and index are in. */
+    val paragraphStartsMs: List<Long> = emptyList(),
 )
 
 data class ConversationUiState(
@@ -214,11 +217,17 @@ class ConversationViewModel
         private suspend fun loadAudio() {
             val loaded = (audio.audioIndex(id) as? ApiResult.Ok)?.value ?: return
             index = loaded
-            mutableState.update { it.copy(playback = Playback(loaded.durationMs)) }
+            mutableState.update { it.copy(playback = Playback(loaded.durationMs, paragraphStartsMs = startsMs())) }
             player.state.collect { s ->
                 mutableState.update {
                     it.copy(
-                        playback = it.playback?.copy(positionMs = s.positionMs, playing = s.playing, failed = s.failed),
+                        playback =
+                            it.playback?.copy(
+                                positionMs = s.positionMs,
+                                playing = s.playing,
+                                failed = s.failed,
+                                speed = s.speed,
+                            ),
                     )
                 }
             }
@@ -240,6 +249,23 @@ class ConversationViewModel
         }
 
         fun pause() = player.pause()
+
+        /** Steps through [SPEEDS] and wraps. */
+        fun cycleSpeed() {
+            val now = mutableState.value.playback?.speed ?: return
+            player.setSpeed(SPEEDS[(SPEEDS.indexOf(now) + 1) % SPEEDS.size])
+        }
+
+        /** Moves the playhead by [deltaMs], inside the audio. */
+        fun skip(deltaMs: Long) {
+            val playback = mutableState.value.playback ?: return
+            seekTo((playback.positionMs + deltaMs).coerceIn(0, playback.durationMs))
+        }
+
+        private fun startsMs(): List<Long> {
+            val loaded = index ?: return emptyList()
+            return segmentStarts.map(loaded::positionOf)
+        }
 
         private fun start(
             positionMs: Long?,
@@ -714,7 +740,7 @@ class ConversationViewModel
                 looseBookmarks =
                     if (paragraphs.isEmpty()) detail.bookmarks.map { BookmarkMark(it.id, it.note) } else emptyList(),
                 open = detail.status == "open",
-                playback = mutableState.value.playback,
+                playback = mutableState.value.playback?.copy(paragraphStartsMs = startsMs()),
                 banner = bannerOf(),
                 loading = false,
                 tags = detail.tags,
@@ -726,19 +752,19 @@ class ConversationViewModel
 
         private fun paragraphsOf(list: List<Segment>): List<Paragraph> {
             val zone = clock.zone
-            val colors = LinkedHashMap<String, Int>()
+            val marks = LinkedHashMap<String, Int>()
             var previous: Pair<String?, String?>? = null
             return list.map {
                 val speaker = labelOf(it)
                 val note = sourceNote(it)
-                val color = speaker?.let { name -> colors.getOrPut(name) { colors.size % SPEAKER_COLORS } } ?: 0
+                val mark = speaker?.let { name -> marks.getOrPut(name) { marks.size % SPEAKER_MARKS } } ?: 0
                 Paragraph(
                     Formatting.clock(Formatting.instant(it.startedAt), zone),
                     it.text,
                     speaker,
                     // A change of source starts a run too, so a mark inside one speaker's lines shows.
                     showSpeaker = speaker != null && (speaker to note) != previous,
-                    speakerColor = color,
+                    speakerMark = mark,
                     voiceId = it.speakerId.takeIf { _ -> it.isUser != true },
                     personId = it.personId.takeIf { _ -> it.isUser != true },
                     segmentId = it.id,
@@ -790,8 +816,11 @@ class ConversationViewModel
             /** How often a summary in the making is looked for. */
             const val POLL_MS = 5_000L
 
-            /** The palette has six colors; a seventh speaker starts over. */
-            const val SPEAKER_COLORS = 6
+            /** Seven marks (disc, square, triangle, diamond, ring, plus, bar); an eighth speaker starts over. */
+            const val SPEAKER_MARKS = 7
+
+            /** What the speed button cycles through. */
+            val SPEEDS = listOf(1f, 1.25f, 1.5f, 2f)
 
             private const val MAX_TITLE = 120
             private const val MAX_NAME = 80

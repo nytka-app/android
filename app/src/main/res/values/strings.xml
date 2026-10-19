@@ -585,7 +585,6 @@
     <string name="title_hint">Leave it empty to use the generated title</string>
     <string name="play">Play</string>
     <string name="pause">Pause</string>
-    <string name="audio_play_failed">The audio could not be played</string>
 
     <!-- Ask tab -->
     <string name="ask_hint">Ask about your conversations</string>
@@ -654,4 +653,18 @@
         <item quantity="one">Read %d more second to send.</item>
         <item quantity="other">Read %d more seconds to send.</item>
     </plurals>
+||||||| parent of 6830563 (feat: speaker marks, docked audio player and saffron suggestion card)
+    <string name="speaker_you">You</string>
+    <string name="speaker_voice_format">Voice %1$d</string>
+    <string name="audio_unreachable">Your server can\'t be reached, so the audio can\'t play.</string>
+    <string name="audio_follow">Follow</string>
+    <string name="audio_back_10">Back 10 seconds</string>
+    <string name="audio_forward_10">Forward 10 seconds</string>
+    <string name="audio_back_10_label">−10</string>
+    <string name="audio_forward_10_label">+10</string>
+    <string name="audio_speed_format">%1$s×</string>
+    <string name="audio_playing_here">Playing here</string>
+    <string name="suggestion_skip">Later</string>
+    <string name="suggestion_skipped">Left for later</string>
+    <string name="action_undo">Undo</string>
 </resources>
