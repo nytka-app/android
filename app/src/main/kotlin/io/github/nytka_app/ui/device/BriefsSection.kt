@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,6 +15,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.NytkaSwitch
 import io.github.nytka_app.ui.PermissionAnswer
 import io.github.nytka_app.ui.rememberPermissionRequest
 
@@ -35,7 +35,7 @@ internal fun BriefsSection(
             PackageManager.PERMISSION_GRANTED
     Section(stringResource(R.string.briefs_title)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Switch(
+            NytkaSwitch(
                 checked = state.briefNotifications,
                 onCheckedChange = { on -> if (on && needsPermission) request() else onSwitch(on) },
             )

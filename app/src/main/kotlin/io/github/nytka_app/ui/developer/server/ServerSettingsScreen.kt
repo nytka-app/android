@@ -18,7 +18,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -33,6 +32,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.ServerSetting
+import io.github.nytka_app.ui.NytkaSwitch
 
 /**
  * The server's settings, grouped by key prefix. Admin token only. Under Developer mode it lists every key; the
@@ -144,7 +144,7 @@ private fun SettingRow(
                         )
                     }
                 }
-                Switch(
+                NytkaSwitch(
                     checked = field.text.equals("true", ignoreCase = true),
                     onCheckedChange = { onEdit(setting.key, it.toString()) },
                     enabled = !locked,

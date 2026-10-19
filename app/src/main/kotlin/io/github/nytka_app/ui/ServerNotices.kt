@@ -18,3 +18,6 @@ fun ApiResult.Failure.notice(): String =
 const val ITEM_GONE = "This item no longer exists"
 
 fun ApiResult.Failure.itemNotice(): String = if (kind == FailureKind.NotFound) ITEM_GONE else notice()
+
+/** The server could not be reached: a list says "offline", which is normal, not a failure. */
+val FailureKind.unreachable: Boolean get() = this == FailureKind.Network || this == FailureKind.Timeout

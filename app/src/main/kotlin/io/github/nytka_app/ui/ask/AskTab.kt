@@ -37,6 +37,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.ListFailure
+import io.github.nytka_app.ui.ListState
+import io.github.nytka_app.ui.ListStateKind
 import io.github.nytka_app.ui.theme.NytkaTheme
 import io.github.nytka_app.ui.theme.ReadingColumn
 
@@ -83,8 +86,11 @@ fun AskTab(
                     }
                 }
             }
+            if (state.result == null && state.error == null && !state.asking) {
+                item { ListState(ListStateKind.Empty, stringResource(R.string.ask_empty)) }
+            }
             state.error?.let { error ->
-                item { Text(error, color = MaterialTheme.colorScheme.error) }
+                item { ListFailure(error, offline = false, onRetry = viewModel::ask) }
             }
             state.result?.let { result ->
                 item {

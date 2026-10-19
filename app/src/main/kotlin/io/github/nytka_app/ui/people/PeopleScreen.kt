@@ -43,6 +43,10 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.Person
+import io.github.nytka_app.ui.ListFailure
+import io.github.nytka_app.ui.ListState
+import io.github.nytka_app.ui.ListStateKind
+import io.github.nytka_app.ui.Monogram
 import io.github.nytka_app.ui.conversations.MAX_NAME
 import io.github.nytka_app.ui.conversations.NameVoiceDialog
 import io.github.nytka_app.ui.people.cards.CardsEffects
@@ -56,6 +60,7 @@ import io.github.nytka_app.ui.tags.TagFilterAction
 import io.github.nytka_app.ui.tags.TagRow
 import io.github.nytka_app.ui.tags.tagFilterChipItem
 import io.github.nytka_app.ui.tags.tagFilterEmptyText
+import io.github.nytka_app.ui.unreachable
 
 /**
  * The People tab's list: the people Nytka knows and the voices it heard but nobody named. [onOpenPerson] opens
@@ -118,12 +123,16 @@ fun PeopleScreen(
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
                 state.error?.let { error ->
-                    item {
-                        Column(Modifier.padding(horizontal = 16.dp)) {
-                            Text(noticeText(context, error), color = MaterialTheme.colorScheme.error)
-                            TextButton(onClick = viewModel::refresh) { Text(stringResource(R.string.action_retry)) }
-                        }
+                    item(key = "error") {
+                        ListFailure(
+                            noticeText(context, error),
+                            offline = (error as? PeopleNotice.Failed)?.kind?.unreachable == true,
+                            onRetry = viewModel::refresh,
+                        )
                     }
+                }
+                if (state.loading && state.people.isEmpty() && state.error == null) {
+                    item(key = "loading") { ListState(ListStateKind.Loading, stringResource(R.string.list_loading)) }
                 }
                 if (state.error == null) peopleContent(state, cards, clip, viewModel, cardsViewModel, onOpenPerson)
             }
@@ -171,12 +180,13 @@ private fun LazyListScope.peopleContent(
     }
     item { SectionTitle(stringResource(R.string.people_section)) }
     when (state.empty) {
-        ListEmpty.Empty -> item { Empty(stringResource(R.string.no_people_yet)) }
-        ListEmpty.EmptyForTag -> item { Empty(tagFilterEmptyText(state.tag.orEmpty())) }
+        ListEmpty.Empty -> item { ListState(ListStateKind.Empty, stringResource(R.string.no_people_yet)) }
+        ListEmpty.EmptyForTag -> item { ListState(ListStateKind.Empty, tagFilterEmptyText(state.tag.orEmpty())) }
         ListEmpty.NotEmpty -> Unit
     }
     items(state.people, key = { "p" + it.id }) { person ->
         ListItem(
+            leadingContent = { Monogram(person.name) },
             headlineContent = { Text(person.name) },
             supportingContent = {
                 Column {
@@ -195,6 +205,7 @@ private fun LazyListScope.peopleContent(
         }
         items(state.voices, key = { "v" + it.speakerId }) { voice ->
             ListItem(
+                leadingContent = { Monogram("?") },
                 headlineContent = { Text(voiceTitle(voice)) },
                 supportingContent = { Text(voiceLine(voice)) },
                 modifier = Modifier.clickable { viewModel.openVoice(voice) },

@@ -53,8 +53,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -191,12 +189,18 @@ fun ConversationScreen(
                 if (state.tasks.isNotEmpty()) {
                     item {
                         InfoCard(stringResource(R.string.tasks_card_title)) {
-                            state.tasks.forEach { task ->
+                            // Done tasks sink below the open ones and dim; a strikethrough would be harder to read.
+                            state.tasks.sortedBy { it.done }.forEach { task ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Checkbox(task.done, onCheckedChange = { viewModel.setTaskDone(task.id, it) })
                                     Text(
                                         task.text,
-                                        textDecoration = if (task.done) TextDecoration.LineThrough else null,
+                                        color =
+                                            if (task.done) {
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            } else {
+                                                Color.Unspecified
+                                            },
                                     )
                                 }
                             }
@@ -215,7 +219,7 @@ fun ConversationScreen(
                     onKind = viewModel::markKind.takeIf { state.speechAccess },
                 )
                 state.raw?.let { raw ->
-                    item { Text(raw, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall) }
+                    item { Text(raw, style = NytkaTheme.typography.code) }
                 }
             }
         }

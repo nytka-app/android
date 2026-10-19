@@ -9,6 +9,7 @@ import io.github.nytka_app.core.api.MemoriesClient
 import io.github.nytka_app.core.api.Memory
 import io.github.nytka_app.ui.itemNotice
 import io.github.nytka_app.ui.notice
+import io.github.nytka_app.ui.unreachable
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +39,7 @@ data class MemoriesUiState(
     val loading: Boolean = false,
     val refreshing: Boolean = false,
     val error: String? = null,
+    val offline: Boolean = false,
     val endReached: Boolean = false,
     val editor: MemoryEditor? = null,
 )
@@ -147,7 +149,7 @@ class MemoriesViewModel
 
         private fun load(reset: Boolean) {
             if (reset) loadJob?.cancel()
-            mutableState.update { it.copy(loading = true, refreshing = reset, error = null) }
+            mutableState.update { it.copy(loading = true, refreshing = reset, error = null, offline = false) }
             loadJob =
                 viewModelScope.launch {
                     when (val result = api.memories(if (reset) null else nextBefore, PAGE_SIZE)) {
@@ -168,7 +170,12 @@ class MemoriesViewModel
 
                         is ApiResult.Failure ->
                             mutableState.update {
-                                it.copy(loading = false, refreshing = false, error = result.notice())
+                                it.copy(
+                                    loading = false,
+                                    refreshing = false,
+                                    error = result.notice(),
+                                    offline = result.kind.unreachable,
+                                )
                             }
                     }
                 }

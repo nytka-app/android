@@ -1,7 +1,6 @@
 package io.github.nytka_app.ui.tasks
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -36,12 +35,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.ListFailure
+import io.github.nytka_app.ui.ListState
+import io.github.nytka_app.ui.ListStateKind
 
 /**
  * The Tasks tab: open tasks newest first, done ones below, collapsed. A task opens its conversation through
@@ -60,12 +62,10 @@ fun TasksTab(
     PullToRefreshBox(isRefreshing = state.refreshing, onRefresh = viewModel::refresh) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
             state.error?.let { error ->
-                item {
-                    Column(Modifier.padding(horizontal = 16.dp)) {
-                        Text(error, color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = viewModel::refresh) { Text(stringResource(R.string.action_retry)) }
-                    }
-                }
+                item(key = "error") { ListFailure(error, state.offline, onRetry = viewModel::refresh) }
+            }
+            if (state.loading && state.open.isEmpty() && state.error == null) {
+                item(key = "loading") { ListState(ListStateKind.Loading, stringResource(R.string.list_loading)) }
             }
             items(state.open, key = { "open-${it.id}" }) { task ->
                 TaskItem(task, onOpenConversation, viewModel::setDone, { editing = task }, { deleting = task })
@@ -74,12 +74,7 @@ fun TasksTab(
                 item(key = "more-open") { LaunchedEffect(state.open.size) { viewModel.loadMoreOpen() } }
             }
             if (state.open.isEmpty() && !state.loading && state.error == null) {
-                item {
-                    Text(
-                        stringResource(R.string.tasks_tab_empty),
-                        modifier = Modifier.padding(16.dp),
-                    )
-                }
+                item { ListState(ListStateKind.Empty, stringResource(R.string.tasks_tab_empty)) }
             }
             completedSection(state, viewModel, onOpenConversation, { editing = it }, { deleting = it })
         }
@@ -178,7 +173,7 @@ private fun TaskItem(
     ListItem(
         leadingContent = { Checkbox(task.done, onCheckedChange = { onDone(task.id, it) }) },
         headlineContent = {
-            Text(task.text, textDecoration = if (task.done) TextDecoration.LineThrough else null)
+            Text(task.text, color = if (task.done) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified)
         },
         supportingContent = { if (task.source.isNotEmpty()) Text(task.source) },
         trailingContent = {

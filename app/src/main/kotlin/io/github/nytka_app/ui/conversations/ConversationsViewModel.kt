@@ -17,6 +17,7 @@ import io.github.nytka_app.core.api.StatusClient
 import io.github.nytka_app.core.api.TagsClient
 import io.github.nytka_app.ui.tags.ListEmpty
 import io.github.nytka_app.ui.tags.listEmpty
+import io.github.nytka_app.ui.unreachable
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,6 +63,8 @@ data class ConversationsUiState(
     val loading: Boolean = false,
     val refreshing: Boolean = false,
     val error: String? = null,
+    /** The failure was that the server could not be reached; the list says offline, not failed. */
+    val offline: Boolean = false,
     val endReached: Boolean = false,
     /** The tag the list is filtered by; kept in saved state, so it survives rotation but not a launch. */
     val tag: String? = null,
@@ -265,7 +268,7 @@ class ConversationsViewModel
             loadsStarted++
             // A refresh supersedes a page load in flight: its cursor belongs to the old list.
             if (reset) loadJob?.cancel()
-            mutableState.update { it.copy(loading = true, refreshing = reset, error = null) }
+            mutableState.update { it.copy(loading = true, refreshing = reset, error = null, offline = false) }
             loadJob =
                 viewModelScope.launch {
                     when (val result = page(if (reset) null else nextBefore)) {
@@ -290,6 +293,7 @@ class ConversationsViewModel
                                     loading = false,
                                     refreshing = false,
                                     error = result.message,
+                                    offline = result.kind.unreachable,
                                 )
                             }
                     }

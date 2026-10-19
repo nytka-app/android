@@ -26,7 +26,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -45,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.NytkaSwitch
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -125,14 +125,14 @@ fun DeveloperScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Switch(checked = state.fakePendant, onCheckedChange = viewModel::setFakePendant)
+                        NytkaSwitch(checked = state.fakePendant, onCheckedChange = viewModel::setFakePendant)
                         Text(stringResource(R.string.fake_pendant_label))
                     }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Switch(
+                        NytkaSwitch(
                             checked = state.highPriorityConnection,
                             onCheckedChange = viewModel::setHighPriorityConnection,
                         )
@@ -168,7 +168,10 @@ fun DeveloperScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Switch(checked = state.diagnosticsUpload, onCheckedChange = viewModel::setDiagnosticsUpload)
+                        NytkaSwitch(
+                            checked = state.diagnosticsUpload,
+                            onCheckedChange = viewModel::setDiagnosticsUpload,
+                        )
                         Text(stringResource(R.string.send_diagnostics_to_server))
                     }
                     state.diagnosticsNote?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
