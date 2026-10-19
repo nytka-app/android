@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.20.0](https://github.com/nytka-app/android/compare/v0.19.0...v0.20.0) (2026-10-19)
+
+
+### Features
+
+* suggest known names where you name a voice and as you write ([#111](https://github.com/nytka-app/android/issues/111)) ([9154074](https://github.com/nytka-app/android/commit/91540748347c4f2c3c600d52022af6d89a7874bf))
+
 ## [0.19.0](https://github.com/nytka-app/android/compare/v0.18.0...v0.19.0) (2026-10-19)
 
 
