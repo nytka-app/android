@@ -11,7 +11,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,6 +38,7 @@ import io.github.nytka_app.core.settings.FirstRunStep
 import io.github.nytka_app.ui.ErrorLine
 import io.github.nytka_app.ui.LocalNetworkHint
 import io.github.nytka_app.ui.LocalNetworkPrompt
+import io.github.nytka_app.ui.NytkaSwitch
 import io.github.nytka_app.ui.NytkaTextField
 import io.github.nytka_app.ui.PairButton
 import io.github.nytka_app.ui.PermissionAnswer
@@ -108,7 +108,10 @@ private fun ServerStep(
             modifier = Modifier.fillMaxWidth(),
         )
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Switch(checked = state.privateNetwork, onCheckedChange = { viewModel.edit(state.url, state.token, it) })
+            NytkaSwitch(
+                checked = state.privateNetwork,
+                onCheckedChange = { viewModel.edit(state.url, state.token, it) },
+            )
             Text(stringResource(R.string.private_network_label))
         }
         if (state.privateNetwork) ErrorLine(stringResource(R.string.private_network_warning))

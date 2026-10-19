@@ -1,24 +1,31 @@
 package io.github.nytka_app.ui.conversations
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -41,6 +48,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.ListFailure
+import io.github.nytka_app.ui.ListState
+import io.github.nytka_app.ui.ListStateKind
 import io.github.nytka_app.ui.StatusCard
 import io.github.nytka_app.ui.StatusUiState
 import io.github.nytka_app.ui.search.SEARCH_ENABLED
@@ -120,7 +130,7 @@ fun ConversationsTab(
 private const val DELETED = "deleted"
 private const val TAG_REQUEST = "tagRequest"
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ConversationsScreen(
     status: StatusUiState,
@@ -152,7 +162,7 @@ fun ConversationsScreen(
         LazyColumn(
             Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (SEARCH_ENABLED || tagFilter || mediaFilter) {
                 item {
@@ -168,33 +178,43 @@ fun ConversationsScreen(
             tagFilterChipItem(state.tag, onClear = viewModel::clearTag)
             if (state.hideMedia) item(key = "media-filter") { HideMediaChip(onClear = viewModel::showMedia) }
             item { StatusCard(status, onMute, notice) }
-            state.error?.let { error ->
-                item {
-                    Column {
-                        Text(error, color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = viewModel::refresh) { Text(stringResource(R.string.action_retry)) }
-                    }
-                }
-            }
-            state.days.forEach { day ->
-                item(key = "day-${day.title}") {
-                    Text(
-                        day.title,
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(top = 16.dp),
-                    )
-                }
-                items(day.rows, key = { it.id }) { row -> ConversationListRow(row, onOpen) }
-            }
-            if (state.days.isNotEmpty() && !state.endReached) {
-                item(key = "more") { LaunchedEffect(state.days.sumOf { it.rows.size }) { viewModel.loadMore() } }
-            }
-            when (state.empty) {
-                ListEmpty.Empty -> item { EmptyListText(state.hideMedia) }
-                ListEmpty.EmptyForTag -> item { Text(tagFilterEmptyText(state.tag.orEmpty())) }
-                ListEmpty.NotEmpty -> Unit
-            }
+            conversationRows(state, viewModel, onOpen)
         }
+    }
+}
+
+/** The rows below the status card, by day, or whatever stands in for them: loading, the failure, the empty text. */
+private fun LazyListScope.conversationRows(
+    state: ConversationsUiState,
+    viewModel: ConversationsViewModel,
+    onOpen: (String) -> Unit,
+) {
+    state.error?.let { error ->
+        item(key = "error") { ListFailure(error, state.offline, onRetry = viewModel::refresh) }
+    }
+    if (state.loading && state.days.isEmpty() && state.error == null) {
+        item(key = "loading") { ListState(ListStateKind.Loading, stringResource(R.string.list_loading)) }
+    }
+    state.days.forEach { day ->
+        stickyHeader(key = "day-${day.title}") { DayHeader(day.title) }
+        items(day.rows, key = { it.id }) { row -> ConversationCard(row, onOpen) }
+    }
+    if (state.days.isNotEmpty() && !state.endReached) {
+        item(key = "more") { LaunchedEffect(state.days.sumOf { it.rows.size }) { viewModel.loadMore() } }
+    }
+    when (state.empty) {
+        ListEmpty.Empty ->
+            item {
+                ListState(
+                    ListStateKind.Empty,
+                    stringResource(
+                        if (state.hideMedia) R.string.speech_list_only_media else R.string.no_conversations_yet,
+                    ),
+                )
+            }
+        ListEmpty.EmptyForTag ->
+            item { ListState(ListStateKind.Empty, tagFilterEmptyText(state.tag.orEmpty())) }
+        ListEmpty.NotEmpty -> Unit
     }
 }
 
@@ -275,47 +295,98 @@ private fun HideMediaChip(onClear: () -> Unit) {
     }
 }
 
+/** The day's name, pinned over the cards of that day while they scroll. */
 @Composable
-private fun ConversationListRow(
+private fun DayHeader(title: String) {
+    Text(
+        title,
+        style = MaterialTheme.typography.headlineMedium,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .padding(top = 8.dp, bottom = 4.dp),
+    )
+}
+
+/**
+ * One conversation as a card: title, two lines of summary, time and length, and the pipeline line while the
+ * summary is not ready. Only a failed summary turns the border red.
+ */
+@Composable
+private fun ConversationCard(
     row: ConversationRow,
     onOpen: (String) -> Unit,
 ) {
-    ListItem(
-        headlineContent = {
-            Text(row.title ?: row.timeRange, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        },
-        trailingContent =
-            if (row.bookmarks > 0) {
-                {
+    val failed = row.chip == SummaryChip.Failed
+    Card(
+        onClick = { onOpen(row.id) },
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow),
+        border =
+            BorderStroke(
+                1.dp,
+                if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant,
+            ),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(verticalAlignment = Alignment.Top) {
+                Text(
+                    row.title ?: row.timeRange,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                if (row.bookmarks > 0) {
                     Icon(
                         Icons.Filled.Star,
                         contentDescription = stringResource(R.string.has_bookmarks),
                         tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 8.dp).size(20.dp),
                     )
                 }
-            } else {
-                null
-            },
-        supportingContent = {
-            Column {
-                Text(row.preview, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(
-                    stringResource(R.string.time_range_and_length_format, row.timeRange, row.length),
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-                row.chip?.let { chip ->
-                    AiChip(chip, Modifier.padding(top = 4.dp))
-                }
-                if (row.media) MediaChip(Modifier.padding(top = 4.dp))
-                TagRow(row.tags, Modifier.padding(top = 4.dp))
             }
-        },
-        modifier = Modifier.clickable { onOpen(row.id) },
-    )
+            Text(
+                row.preview,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                stringResource(R.string.time_range_and_length_format, row.timeRange, row.length),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            row.chip?.let { PipelineLine(it) }
+            if (row.media) MediaChip(Modifier.padding(top = 4.dp))
+            TagRow(row.tags, Modifier.padding(top = 4.dp))
+        }
+    }
 }
 
+/** Where the summary stands, on its own line: a thin moving line while it is written, a triangle if it failed. */
 @Composable
-private fun EmptyListText(hideMedia: Boolean) {
-    Text(stringResource(if (hideMedia) R.string.speech_list_only_media else R.string.no_conversations_yet))
+private fun PipelineLine(chip: SummaryChip) {
+    val failed = chip == SummaryChip.Failed
+    Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (failed) {
+                Icon(
+                    Icons.Filled.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+            Text(
+                stringResource(if (failed) R.string.summary_failed else R.string.summarizing),
+                style = MaterialTheme.typography.labelMedium,
+                color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (!failed) LinearProgressIndicator(Modifier.fillMaxWidth().height(2.dp))
+    }
 }

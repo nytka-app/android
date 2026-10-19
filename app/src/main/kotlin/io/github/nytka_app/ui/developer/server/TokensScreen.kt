@@ -42,13 +42,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.AccessToken
 import io.github.nytka_app.ui.conversations.Formatting
+import io.github.nytka_app.ui.theme.NytkaTheme
 import kotlinx.coroutines.launch
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -242,7 +242,7 @@ private fun CreatedDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.token_copy_now_message))
-                Text(token, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall)
+                Text(token, style = NytkaTheme.typography.code)
             }
         },
         confirmButton = { TextButton(onClick = onDone) { Text(stringResource(R.string.action_done)) } },

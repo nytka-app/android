@@ -26,7 +26,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -42,7 +41,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -50,6 +48,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.Delivery
 import io.github.nytka_app.core.api.Webhook
+import io.github.nytka_app.ui.NytkaSwitch
+import io.github.nytka_app.ui.theme.NytkaTheme
 import kotlinx.coroutines.launch
 
 /** The server's webhooks: a list, and a screen for one with its test button and delivery log. Admin token only. */
@@ -133,7 +133,7 @@ private fun WebhookList(
                         Text(stringResource(R.string.webhook_summary_format, eventsText(hook), lastDeliveryText(hook)))
                     },
                     trailingContent = {
-                        Switch(checked = hook.active, onCheckedChange = { viewModel.setActive(hook.id, it) })
+                        NytkaSwitch(checked = hook.active, onCheckedChange = { viewModel.setActive(hook.id, it) })
                     },
                     modifier = Modifier.clickable { viewModel.open(hook.id) },
                 )
@@ -317,7 +317,7 @@ private fun SecretDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.signing_secret_message_format, secret.url))
-                SelectionContainer { Text(secret.secret, fontFamily = FontFamily.Monospace) }
+                SelectionContainer { Text(secret.secret, style = NytkaTheme.typography.code) }
             }
         },
         confirmButton = { TextButton(onClick = onDone) { Text(stringResource(R.string.action_done)) } },

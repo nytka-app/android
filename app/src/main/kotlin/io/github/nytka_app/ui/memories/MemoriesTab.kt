@@ -18,7 +18,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,6 +36,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.ListFailure
+import io.github.nytka_app.ui.ListState
+import io.github.nytka_app.ui.ListStateKind
 import io.github.nytka_app.ui.theme.NytkaTheme
 import io.github.nytka_app.ui.theme.ReadingColumn
 
@@ -59,10 +61,10 @@ fun MemoriesTab(
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 88.dp),
             ) {
                 state.error?.let { error ->
-                    item {
-                        Text(error, color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = viewModel::refresh) { Text(stringResource(R.string.action_retry)) }
-                    }
+                    item(key = "error") { ListFailure(error, state.offline, onRetry = viewModel::refresh) }
+                }
+                if (state.loading && state.rows.isEmpty() && state.error == null) {
+                    item(key = "loading") { ListState(ListStateKind.Loading, stringResource(R.string.list_loading)) }
                 }
                 items(state.rows, key = { it.id }) { row ->
                     MemoryItem(
@@ -76,7 +78,7 @@ fun MemoriesTab(
                     item(key = "more") { LaunchedEffect(state.rows.size) { viewModel.loadMore() } }
                 }
                 if (state.rows.isEmpty() && !state.loading && state.error == null) {
-                    item { Text(stringResource(R.string.no_memories_yet)) }
+                    item { ListState(ListStateKind.Empty, stringResource(R.string.no_memories_yet)) }
                 }
             }
         }

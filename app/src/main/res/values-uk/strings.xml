@@ -7,6 +7,11 @@
     <string name="action_search">Пошук</string>
     <string name="action_more">Ще</string>
     <string name="action_retry">Повторити</string>
+    <string name="ask_empty">Поставте питання про ваші розмови. Відповідь покаже розмови, з яких вона взята.</string>
+    <string name="list_loading">Завантаження</string>
+    <string name="list_error_safe">Ваші записи не постраждали.</string>
+    <string name="list_offline_title">Немає звʼязку з сервером</string>
+    <string name="list_offline_body">Записи залишаються на телефоні й завантажаться, щойно сервер стане доступний. Потягніть вниз, щоб спробувати ще раз.</string>
     <string name="action_save">Зберегти</string>
     <string name="action_cancel">Скасувати</string>
     <string name="action_create">Створити</string>

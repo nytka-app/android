@@ -100,9 +100,16 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
 
 ## The tabs
 
-- **Conversations.** A status card, a search icon and your conversations by day. A row shows the
-  title, two lines of summary, and the time range and length. A chip reads **Summarizing** while the
-  server writes a summary and **Summary failed** when it could not. Open a conversation for its
+Every switch shows a check in its knob when it is on, so the state does not rest on color alone.
+Addresses, tokens and signing secrets are set in a monospaced font.
+
+- **Conversations.** A status card, a search icon and your conversations by day; the day's name
+  stays at the top while its cards scroll. A card shows the title, two lines of summary, and the time
+  range and length. A thin moving line and **Summarizing** show while the server writes a summary;
+  **Summary failed** with a red border shows when it could not. While the list loads it shows three
+  grey placeholder cards. When your server cannot be reached the list says **Offline** and that your
+  recordings stay on the phone; pull down to try again. Other failures say what failed and that your
+  recordings are not affected, with **Retry**. Tasks, People, Memories and Ask use the same states. Open a conversation for its
   summary, its tasks and the transcript, with the speaker's name in color above each run of words
   when the transcription provider names speakers. Its ⋮ menu has **Rename** (an empty title restores
   the generated one), **Regenerate summary** (not while the conversation is open) and **Delete**.
@@ -141,12 +148,13 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   start of the transcript instead.
 - **Tasks.** What your conversations left you to do, newest first, with the conversation's title and
   day. Tick a task to complete it, tap it to open its conversation, and use ⋮ to edit or delete it
-  (delete asks first). Done tasks sit below, collapsed. The model finds the tasks; there is no add
+  (delete asks first). Done tasks sit below, collapsed, in a dimmer color and never struck through. The model finds the tasks; there is no add
   button.
 - **Memories.** Lasting facts about you that the server took from your conversations, each with the
   conversation it came from (a memory you add yourself has none). **+** adds one and ⋮ edits or
   deletes one. A memory you delete does not come back from later conversations.
-- **People.** Everyone Nytka knows, most recently heard first and never-heard last, each with when
+- **People.** Everyone Nytka knows, most recently heard first and never-heard last, each with their
+  first letter in a circle (a voice without a name gets ?), when
   they were last heard and how many facts the server holds about them. A server that does not send
   those two fields yet gets the list sorted by name with the number of lines each person said. Below
   it, **Unnamed voices**: tap one to name it. Where the server has no person page, tap a person for

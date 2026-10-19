@@ -16,7 +16,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -43,6 +42,7 @@ import io.github.nytka_app.firmware.FirmwareNotice
 import io.github.nytka_app.pendant.PendantConnection
 import io.github.nytka_app.ui.LocalNetworkHint
 import io.github.nytka_app.ui.LocalNetworkPrompt
+import io.github.nytka_app.ui.NytkaSwitch
 import io.github.nytka_app.ui.PairButton
 import io.github.nytka_app.ui.StatusUiState
 
@@ -251,7 +251,7 @@ private fun PendantSection(
         }
         if (state.pendantAddress != null) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Switch(checked = state.firmwareCheck, onCheckedChange = onFirmwareCheck)
+                NytkaSwitch(checked = state.firmwareCheck, onCheckedChange = onFirmwareCheck)
                 Text(stringResource(R.string.firmware_check_label))
             }
             Text(
@@ -331,7 +331,7 @@ private fun SettingsSection(
             modifier = Modifier.fillMaxWidth(),
         )
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Switch(checked = privateNetwork, onCheckedChange = {
+            NytkaSwitch(checked = privateNetwork, onCheckedChange = {
                 if (it) {
                     confirmPrivate = true
                 } else {

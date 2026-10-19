@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -15,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.NytkaSwitch
 
 internal const val CHIME_MINUTES_MIN = 5
 internal const val CHIME_MINUTES_MAX = 60
@@ -30,7 +30,7 @@ internal fun ConsentChimeSection(
     var draft by remember(minutes) { mutableFloatStateOf(minutes.toFloat()) }
     Section(stringResource(R.string.consent_chime_title)) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Switch(checked = on, onCheckedChange = onSwitch)
+            NytkaSwitch(checked = on, onCheckedChange = onSwitch)
             Text(stringResource(R.string.consent_chime_label))
         }
         if (on) {

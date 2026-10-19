@@ -9,6 +9,7 @@ import io.github.nytka_app.core.api.TasksClient
 import io.github.nytka_app.ui.conversations.Formatting
 import io.github.nytka_app.ui.itemNotice
 import io.github.nytka_app.ui.notice
+import io.github.nytka_app.ui.unreachable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,6 +38,7 @@ data class TasksUiState(
     val refreshing: Boolean = false,
     /** Why the last load or change failed; a v0.1 server says it needs an update. */
     val error: String? = null,
+    val offline: Boolean = false,
 )
 
 @HiltViewModel
@@ -57,7 +59,7 @@ class TasksViewModel
         }
 
         fun refresh() {
-            mutableState.update { it.copy(refreshing = true, error = null) }
+            mutableState.update { it.copy(refreshing = true, error = null, offline = false) }
             viewModelScope.launch {
                 when (val result = api.tasks(done = false, before = null, limit = OPEN_PAGE)) {
                     is ApiResult.Ok -> {
@@ -74,7 +76,14 @@ class TasksViewModel
                     }
 
                     is ApiResult.Failure ->
-                        mutableState.update { it.copy(loading = false, refreshing = false, error = result.notice()) }
+                        mutableState.update {
+                            it.copy(
+                                loading = false,
+                                refreshing = false,
+                                error = result.notice(),
+                                offline = result.kind.unreachable,
+                            )
+                        }
                 }
             }
         }
