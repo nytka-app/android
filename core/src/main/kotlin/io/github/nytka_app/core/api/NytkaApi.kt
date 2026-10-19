@@ -54,6 +54,15 @@ class NytkaApi(
                     // 403: the token cannot upload (a read token); pause and say so instead of retrying forever.
                     401, 403 -> UploadResult.Unauthorized
                     400, 409, 413 -> UploadResult.Dropped(response.code, "The server answered ${response.code}.")
+                    // The server itself answers no other 4xx here, so one comes from a proxy or firewall that
+                    // refuses this chunk; retrying would block every chunk behind it. A wrong address (404, 405) or
+                    // a passing condition (408, 425, 429) hits every chunk alike and stays a retry.
+                    in 400..499 ->
+                        if (response.code in RETRY_4XX) {
+                            UploadResult.Retry("The server answered ${response.code}.")
+                        } else {
+                            UploadResult.Dropped(response.code, "The server answered ${response.code}.")
+                        }
                     else -> UploadResult.Retry("The server answered ${response.code}.")
                 }
             }
@@ -294,5 +303,6 @@ class NytkaApi(
 
     companion object {
         const val API_VERSION = 1
+        private val RETRY_4XX = setOf(404, 405, 408, 425, 429)
     }
 }

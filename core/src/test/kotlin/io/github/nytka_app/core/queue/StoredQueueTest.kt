@@ -303,6 +303,30 @@ class StoredQueueTest {
         }
 
     @Test
+    fun `parked chunks count toward the cap, so live chunks go first and parked ones stay`() =
+        runTest {
+            val queue = FrameQueue(inMemory(), capBytes = 300)
+            queue.commit(timed(20L..29L), position(committedNext = 40, nextFrame = 20))
+            queue.seal()
+            val stored = queue.oldest()!!
+            queue.park(stored.id, 422, "refused")
+            val parkedBytes = queue.usageNow().bytes
+
+            repeat(3) { n ->
+                val session = UUID.randomUUID()
+                repeat(10) { queue.add(session, it.toLong(), n * 1_000L + it * 20L, byteArrayOf(1, 2, 3)) }
+                queue.seal()
+            }
+
+            val usage = queue.usageNow()
+            assertEquals(1, usage.parkedChunks)
+            assertEquals(true, usage.droppedChunks > 0)
+            assertEquals(true, usage.bytes <= 300)
+            assertEquals(true, parkedBytes > 0)
+            assertEquals(20L, queue.ackedThrough.first())
+        }
+
+    @Test
     fun `markAdvanced moves only the advanced point`() =
         runTest {
             val queue = FrameQueue(inMemory())
@@ -325,6 +349,20 @@ class StoredQueueTest {
             queue.clearPosition()
 
             assertNull(queue.position())
+        }
+
+    @Test
+    fun `the mute log drops changes older than 90 days but keeps the state they left`() =
+        runTest {
+            val queue = FrameQueue(inMemory())
+            val day = 24L * 60 * 60 * 1000
+            queue.recordMute(1 * day, true)
+            queue.recordMute(2 * day, false)
+            queue.recordMute(3 * day, true)
+
+            queue.recordMute(100 * day, false)
+
+            assertEquals(listOf(MuteChange(3 * day, true), MuteChange(100 * day, false)), queue.muteChanges())
         }
 
     @Test
