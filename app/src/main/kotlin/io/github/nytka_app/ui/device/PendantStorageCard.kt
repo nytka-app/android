@@ -15,8 +15,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import io.github.nytka_app.R
 import io.github.nytka_app.ui.SettingsBlock
+import io.github.nytka_app.ui.SettingsNote
 
 /** The Device tab's card for what the pendant stored while the phone was away. */
 @Composable
@@ -27,9 +30,15 @@ fun PendantStorageCard(
     onAnswerBacklog: () -> Unit,
 ) {
     SettingsBlock(stringResource(R.string.pendant_storage)) {
-        Text(card.state)
-        card.progress?.let { LinearProgressIndicator(progress = { it }, modifier = Modifier.fillMaxWidth()) }
-        card.details.forEach { Text(it, style = MaterialTheme.typography.bodySmall) }
+        Text(card.state, style = MaterialTheme.typography.bodyLarge)
+        card.progress?.let {
+            LinearProgressIndicator(
+                progress = { it },
+                modifier = Modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = card.state },
+                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            )
+        }
+        card.details.forEach { SettingsNote(it) }
         when (card.action) {
             StorageAction.None -> Unit
             StorageAction.SyncNow ->

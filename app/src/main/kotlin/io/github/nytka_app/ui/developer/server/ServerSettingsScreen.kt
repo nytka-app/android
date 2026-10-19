@@ -3,7 +3,6 @@ package io.github.nytka_app.ui.developer.server
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,19 +10,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -32,7 +27,15 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.ServerSetting
+import io.github.nytka_app.ui.ErrorLine
+import io.github.nytka_app.ui.ListFailure
+import io.github.nytka_app.ui.ListState
+import io.github.nytka_app.ui.ListStateKind
 import io.github.nytka_app.ui.NytkaSwitch
+import io.github.nytka_app.ui.NytkaTextField
+import io.github.nytka_app.ui.SettingsCard
+import io.github.nytka_app.ui.SettingsNote
+import io.github.nytka_app.ui.SettingsRow
 
 /**
  * The server's settings, grouped by key prefix. Admin token only. Under Developer mode it lists every key; the
@@ -78,24 +81,20 @@ fun ServerSettingsScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (state.loading) item { CircularProgressIndicator() }
+            if (state.loading) item { ListState(ListStateKind.Loading, stringResource(R.string.list_loading)) }
             state.error?.let { error ->
                 item {
-                    Column {
-                        Text(error, color = MaterialTheme.colorScheme.error)
-                        if (state.fields.isEmpty()) {
-                            TextButton(
-                                onClick = viewModel::load,
-                            ) { Text(stringResource(R.string.action_retry)) }
-                        }
+                    if (state.fields.isEmpty()) {
+                        ListFailure(error, offline = false, onRetry = viewModel::load)
+                    } else {
+                        ErrorLine(error)
                     }
                 }
             }
-            if (state.saved) item { Text(stringResource(R.string.saved_server_values)) }
+            if (state.saved) item { SettingsNote(stringResource(R.string.saved_server_values)) }
             state.groups.forEach { (prefix, fields) ->
-                item(key = "group-$prefix") { Text(prefix, style = MaterialTheme.typography.titleMedium) }
-                fields.forEach { field ->
-                    item(key = field.setting.key) { SettingRow(field, viewModel::edit) }
+                item(key = "group-$prefix") {
+                    SettingsCard(prefix) { fields.forEach { field -> SettingRow(field, viewModel::edit) } }
                 }
             }
             footer?.let { item(key = "footer") { it() } }
@@ -112,54 +111,39 @@ private fun SettingRow(
     val locked = setting.locked
     when {
         setting.secret ->
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(setting.key)
-                    Text(stringResource(R.string.set_by_server_env), style = MaterialTheme.typography.bodySmall)
-                }
-                Text(if (setting.isSet) stringResource(R.string.set) else stringResource(R.string.not_set))
-            }
+            SettingsRow(
+                setting.key,
+                supporting = stringResource(R.string.set_by_server_env),
+                value = if (setting.isSet) stringResource(R.string.set) else stringResource(R.string.not_set),
+            )
 
-        setting.type == ServerSetting.TYPE_BOOL ->
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(setting.key)
-                    if (locked) {
-                        Text(
-                            stringResource(R.string.set_by_server_env),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                    if (setting.key == VOICE_MATCHING_KEY) {
-                        Text(
-                            stringResource(R.string.people_voice_matching_duty),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                    if (field.errors.isNotEmpty()) {
-                        Text(
-                            field.errors.joinToString(" "),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                }
-                NytkaSwitch(
-                    checked = field.text.equals("true", ignoreCase = true),
-                    onCheckedChange = { onEdit(setting.key, it.toString()) },
-                    enabled = !locked,
+        setting.type == ServerSetting.TYPE_BOOL -> {
+            val on = field.text.equals("true", ignoreCase = true)
+            val notes =
+                listOfNotNull(
+                    stringResource(R.string.set_by_server_env).takeIf { locked },
+                    stringResource(R.string.people_voice_matching_duty).takeIf { setting.key == VOICE_MATCHING_KEY },
                 )
+            Column {
+                SettingsRow(
+                    setting.key,
+                    supporting = notes.joinToString(" ").ifEmpty { null },
+                    onClick = if (locked) null else ({ onEdit(setting.key, (!on).toString()) }),
+                    trailing = { NytkaSwitch(checked = on, onCheckedChange = null, enabled = !locked) },
+                )
+                if (field.errors.isNotEmpty()) ErrorLine(field.errors.joinToString(" "))
             }
+        }
 
         else ->
-            OutlinedTextField(
+            NytkaTextField(
                 value = field.text,
                 onValueChange = { onEdit(setting.key, it) },
-                label = { Text(setting.key) },
+                label = setting.key,
+                mono = true,
                 enabled = !locked,
-                singleLine = true,
-                isError = field.errors.isNotEmpty(),
-                supportingText = { SettingHint(field) },
+                error = field.errors.takeIf { it.isNotEmpty() }?.joinToString(" "),
+                supporting = fieldHint(setting),
                 keyboardOptions = KeyboardOptions(keyboardType = keyboardFor(setting.type)),
                 modifier = Modifier.fillMaxWidth(),
             )
@@ -167,14 +151,12 @@ private fun SettingRow(
 }
 
 @Composable
-private fun SettingHint(field: SettingField) {
-    val setting = field.setting
+private fun fieldHint(setting: ServerSetting): String? =
     when {
-        field.errors.isNotEmpty() -> Text(field.errors.joinToString(" "))
-        setting.locked -> Text(stringResource(R.string.set_by_server_env))
-        !setting.default.isNullOrEmpty() -> Text(stringResource(R.string.default_with_empty, setting.default ?: ""))
+        setting.locked -> stringResource(R.string.set_by_server_env)
+        !setting.default.isNullOrEmpty() -> stringResource(R.string.default_with_empty, setting.default ?: "")
+        else -> null
     }
-}
 
 /** The setting whose switch carries the legal-duty sentence. */
 private const val VOICE_MATCHING_KEY = "people.voiceMatching"

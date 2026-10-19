@@ -376,6 +376,11 @@ The Device screen groups settings by where they live, in four cards: **Pendant**
   last four characters; **Revoke** is on the token's own screen (Developer mode → Server → Access
   tokens → tap a token) and asks first, naming the token. Deleting a webhook asks first and names
   its address.
+- Developer mode sets its measurements in the same monospace font. Server settings groups each prefix
+  in its own card, and Access tokens and Webhooks show a loading, empty or failed list the way the other
+  lists do, with **Retry** on a failure.
+- The recording notification, the alerts and the brief notification follow the phone's language
+  (English or Ukrainian), and the alerts and briefs carry Nytka's indigo accent.
 
 ## Pendant settings
 

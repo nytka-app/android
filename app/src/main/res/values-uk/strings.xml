@@ -737,4 +737,40 @@
     <string name="ask_asking">Пошук у ваших розмовах…</string>
     <string name="ask_no_answer">У ваших розмовах немає відповіді на це.</string>
     <string name="ask_source_format">Джерело %1$d</string>
+
+    <!-- Notifications -->
+    <string name="notification_refused_prefix">"Кулон не підтримується · "</string>
+    <string name="notification_battery_prefix">"%1$d%% · "</string>
+    <plurals name="notification_queued_format">
+        <item quantity="one">%d у черзі</item>
+        <item quantity="few">%d у черзі</item>
+        <item quantity="many">%d у черзі</item>
+        <item quantity="other">%d у черзі</item>
+    </plurals>
+    <string name="notification_syncing_percent_format">" · синхронізація %1$d%%"</string>
+    <string name="notification_syncing">" · синхронізація"</string>
+    <plurals name="alert_pendant_away_format">
+        <item quantity="one">Кулон не на зв\'язку %d хвилину.</item>
+        <item quantity="few">Кулон не на зв\'язку %d хвилини.</item>
+        <item quantity="many">Кулон не на зв\'язку %d хвилин.</item>
+        <item quantity="other">Кулон не на зв\'язку %d хвилини.</item>
+    </plurals>
+    <plurals name="alert_server_unreachable_format">
+        <item quantity="one">Сервер недоступний %d хвилину. Аудіо чекає в черзі.</item>
+        <item quantity="few">Сервер недоступний %d хвилини. Аудіо чекає в черзі.</item>
+        <item quantity="many">Сервер недоступний %d хвилин. Аудіо чекає в черзі.</item>
+        <item quantity="other">Сервер недоступний %d хвилини. Аудіо чекає в черзі.</item>
+    </plurals>
+    <string name="alert_battery_low_format">Заряд кулона: %1$d%%.</string>
+    <string name="alert_queue_filling_format">Черга завантаження заповнена на %1$d%%; коли вона заповниться, найстаріше аудіо зникне першим.</string>
+
+    <!-- Developer: tokens and webhooks -->
+    <string name="no_tokens_yet">Токенів доступу ще немає. Токен дозволяє іншому інструменту читати ваш сервер Nytka</string>
+    <string name="webhook_http_format">HTTP %1$d</string>
+    <plurals name="webhook_attempts_format">
+        <item quantity="one">%d спроба</item>
+        <item quantity="few">%d спроби</item>
+        <item quantity="many">%d спроб</item>
+        <item quantity="other">%d спроби</item>
+    </plurals>
 </resources>

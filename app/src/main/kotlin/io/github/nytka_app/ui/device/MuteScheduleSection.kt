@@ -9,7 +9,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -28,7 +27,9 @@ import androidx.compose.ui.unit.dp
 import io.github.nytka_app.R
 import io.github.nytka_app.core.settings.MuteSchedule
 import io.github.nytka_app.core.settings.MuteWindow
+import io.github.nytka_app.ui.ErrorLine
 import io.github.nytka_app.ui.SettingsBlock
+import io.github.nytka_app.ui.SettingsNote
 import java.time.DayOfWeek
 import java.time.LocalTime
 import java.time.format.TextStyle
@@ -44,10 +45,7 @@ fun MuteScheduleSection(
     onSetServerTimeZone: () -> Unit = {},
 ) {
     SettingsBlock(stringResource(R.string.mute_schedule)) {
-        Text(
-            stringResource(R.string.mute_schedule_description),
-            style = MaterialTheme.typography.bodySmall,
-        )
+        SettingsNote(stringResource(R.string.mute_schedule_description))
         schedule.windows.forEachIndexed { index, window ->
             WindowEditor(
                 window,
@@ -70,31 +68,16 @@ fun MuteScheduleSection(
         }
         when (server) {
             null -> Unit
-            MuteServerState.Applied ->
-                Text(stringResource(R.string.mute_applied_on_server), style = MaterialTheme.typography.bodySmall)
-            is MuteServerState.Failed ->
-                Text(
-                    stringResource(R.string.mute_server_failed_format, server.reason),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.error,
-                )
+            MuteServerState.Applied -> SettingsNote(stringResource(R.string.mute_applied_on_server))
+            is MuteServerState.Failed -> ErrorLine(stringResource(R.string.mute_server_failed_format, server.reason))
         }
         timeZoneHint?.let { zone ->
-            Text(
-                stringResource(R.string.time_zone_hint_format, zone),
-                style = MaterialTheme.typography.bodySmall,
-            )
+            SettingsNote(stringResource(R.string.time_zone_hint_format, zone))
             OutlinedButton(onClick = onSetServerTimeZone) {
                 Text(stringResource(R.string.set_server_time_zone_format, zone))
             }
         }
-        timeZoneError?.let {
-            Text(
-                it,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.error,
-            )
-        }
+        timeZoneError?.let { ErrorLine(it) }
     }
 }
 
@@ -141,7 +124,7 @@ private fun WindowEditor(
             TextButton(onClick = onRemove) { Text(stringResource(R.string.action_remove)) }
         }
         if (!window.active) {
-            Text(stringResource(R.string.window_inactive_hint), style = MaterialTheme.typography.bodySmall)
+            SettingsNote(stringResource(R.string.window_inactive_hint))
         }
     }
     picking?.let { start ->

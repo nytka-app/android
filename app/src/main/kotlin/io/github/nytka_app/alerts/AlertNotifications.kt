@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.res.Resources
 import androidx.core.app.NotificationCompat
 import io.github.nytka_app.MainActivity
 import io.github.nytka_app.R
@@ -11,19 +12,24 @@ import io.github.nytka_app.core.queue.FrameQueue
 
 object AlertNotifications {
     fun text(
+        resources: Resources,
         alert: Alert,
         inputs: AlertInputs,
     ): String =
         when (alert) {
-            Alert.PendantAway -> "The pendant has been disconnected for ${inputs.disconnectedAfterMinutes} minutes."
-            Alert.ServerUnreachable ->
-                "The server has been unreachable for ${inputs.unreachableAfterMinutes} minutes. " +
-                    "Audio waits in the queue."
+            Alert.PendantAway ->
+                inputs.disconnectedAfterMinutes.let {
+                    resources.getQuantityString(R.plurals.alert_pendant_away_format, it, it)
+                }
 
-            Alert.BatteryLow -> "The pendant battery is at ${inputs.battery}%."
+            Alert.ServerUnreachable ->
+                inputs.unreachableAfterMinutes.let {
+                    resources.getQuantityString(R.plurals.alert_server_unreachable_format, it, it)
+                }
+
+            Alert.BatteryLow -> resources.getString(R.string.alert_battery_low_format, inputs.battery ?: 0)
             Alert.QueueFilling ->
-                "The upload queue is ${(FrameQueue.ALERT_FRACTION * 100).toInt()}% full; " +
-                    "the oldest audio goes first when it fills."
+                resources.getString(R.string.alert_queue_filling_format, (FrameQueue.ALERT_FRACTION * 100).toInt())
         }
 
     fun post(
@@ -43,9 +49,10 @@ object AlertNotifications {
             NotificationCompat
                 .Builder(context, Notifier.ALERTS_CHANNEL)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setColor(Notifier.ACCENT)
                 .setContentTitle(context.getString(R.string.app_name))
-                .setContentText(text(alert, inputs))
-                .setStyle(NotificationCompat.BigTextStyle().bigText(text(alert, inputs)))
+                .setContentText(text(context.resources, alert, inputs))
+                .setStyle(NotificationCompat.BigTextStyle().bigText(text(context.resources, alert, inputs)))
                 .setContentIntent(open)
                 .setAutoCancel(true)
                 .build()

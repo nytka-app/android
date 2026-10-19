@@ -13,6 +13,9 @@ object Notifier {
     const val ALERTS_CHANNEL = "alerts"
     const val BRIEFS_CHANNEL = "briefs"
 
+    /** The design system's `primary` (indigo), which Android tints the small icon and action buttons with. */
+    const val ACCENT = 0xFF33427E.toInt()
+
     fun createChannels(context: Context) {
         context.getSystemService(NotificationManager::class.java).createNotificationChannels(
             listOf(

@@ -3,7 +3,6 @@ package io.github.nytka_app.ui.device
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -11,8 +10,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.ErrorLine
 import io.github.nytka_app.ui.PermissionAnswer
 import io.github.nytka_app.ui.SettingsBlock
+import io.github.nytka_app.ui.SettingsNote
 import io.github.nytka_app.ui.SettingsToggleRow
 import io.github.nytka_app.ui.rememberPermissionRequest
 
@@ -35,27 +36,18 @@ internal fun BriefsSection(
             stringResource(R.string.briefs_label),
             checked = state.briefNotifications,
             onCheckedChange = { on -> if (on && needsPermission) request() else onSwitch(on) },
+            supporting = stringResource(R.string.briefs_explanation),
         )
-        Text(stringResource(R.string.briefs_explanation), style = MaterialTheme.typography.bodySmall)
         when (state.calendarLine) {
-            CalendarLine.NoFeed ->
-                Text(
-                    stringResource(R.string.briefs_no_feed),
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            CalendarLine.NeedsUpdate ->
-                Text(
-                    stringResource(R.string.server_needs_update),
-                    style = MaterialTheme.typography.bodySmall,
-                )
+            CalendarLine.NoFeed -> SettingsNote(stringResource(R.string.briefs_no_feed))
+            CalendarLine.NeedsUpdate -> SettingsNote(stringResource(R.string.server_needs_update))
             null -> Unit
         }
         when (state.briefPermission) {
-            PermissionAnswer.Denied ->
-                Text(stringResource(R.string.briefs_permission_denied), color = MaterialTheme.colorScheme.error)
+            PermissionAnswer.Denied -> ErrorLine(stringResource(R.string.briefs_permission_denied))
 
             PermissionAnswer.Blocked -> {
-                Text(stringResource(R.string.briefs_permission_blocked), color = MaterialTheme.colorScheme.error)
+                ErrorLine(stringResource(R.string.briefs_permission_blocked))
                 OutlinedButton(onClick = onOpenSettings) { Text(stringResource(R.string.open_settings)) }
             }
 

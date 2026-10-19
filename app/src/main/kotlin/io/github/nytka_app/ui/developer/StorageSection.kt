@@ -8,6 +8,7 @@ import io.github.nytka_app.capture.StorageSyncStatus
 import io.github.nytka_app.capture.SyncState
 import io.github.nytka_app.ui.SettingsBlock
 import io.github.nytka_app.ui.device.serverUnsupported
+import io.github.nytka_app.ui.theme.NytkaTheme
 import java.util.Locale
 
 /** Developer mode's lines about the offline sync, one string each, in the order they are shown. */
@@ -44,6 +45,6 @@ fun storageDetails(status: StorageSyncStatus): StorageSection? {
 @Composable
 fun StorageSectionCard(section: StorageSection) {
     SettingsBlock(stringResource(R.string.pendant_storage)) {
-        section.lines.forEach { Text(it) }
+        section.lines.forEach { Text(it, style = NytkaTheme.typography.code) }
     }
 }

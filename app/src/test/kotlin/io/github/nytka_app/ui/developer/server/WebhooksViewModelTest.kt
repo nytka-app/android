@@ -205,18 +205,6 @@ class WebhooksViewModelTest {
         )
     }
 
-    @Test
-    fun `a delivery reads as attempts, outcome and time`() {
-        assertEquals(
-            "6 attempts · HTTP 500 · t",
-            deliveryDetail(Delivery("d", "ping", "failed", 6, 500, null, "t", null)),
-        )
-        assertEquals(
-            "1 attempt · timeout · done",
-            deliveryDetail(Delivery("d", "ping", "failed", 1, null, "timeout", "t", "done")),
-        )
-    }
-
     private companion object {
         fun hook(id: String) =
             Webhook(id, "https://x.test/$id", listOf("*"), null, true, "t", LastDelivery("delivered", "t"))

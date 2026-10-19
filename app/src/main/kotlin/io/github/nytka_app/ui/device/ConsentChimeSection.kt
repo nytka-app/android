@@ -8,7 +8,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import io.github.nytka_app.R
 import io.github.nytka_app.ui.SettingsBlock
 import io.github.nytka_app.ui.SettingsToggleRow
@@ -26,17 +29,23 @@ internal fun ConsentChimeSection(
 ) {
     var draft by remember(minutes) { mutableFloatStateOf(minutes.toFloat()) }
     SettingsBlock(stringResource(R.string.consent_chime_title)) {
-        SettingsToggleRow(stringResource(R.string.consent_chime_label), checked = on, onCheckedChange = onSwitch)
+        SettingsToggleRow(
+            stringResource(R.string.consent_chime_label),
+            checked = on,
+            onCheckedChange = onSwitch,
+            supporting = stringResource(R.string.consent_chime_explanation),
+        )
         if (on) {
-            Text(stringResource(R.string.consent_chime_interval_format, draft.toInt()))
+            val interval = stringResource(R.string.consent_chime_interval_format, draft.toInt())
+            Text(interval, style = MaterialTheme.typography.bodyLarge)
             Slider(
                 value = draft,
                 onValueChange = { draft = it },
                 onValueChangeFinished = { onMinutes(draft.toInt()) },
                 valueRange = CHIME_MINUTES_MIN.toFloat()..CHIME_MINUTES_MAX.toFloat(),
                 steps = CHIME_MINUTES_MAX - CHIME_MINUTES_MIN - 1,
+                modifier = Modifier.semantics { contentDescription = interval },
             )
         }
-        Text(stringResource(R.string.consent_chime_explanation), style = MaterialTheme.typography.bodySmall)
     }
 }

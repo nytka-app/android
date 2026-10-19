@@ -1,5 +1,6 @@
 package io.github.nytka_app.ui.developer.server
 
+import android.content.res.Resources
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -8,9 +9,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -24,7 +28,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,7 +43,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -48,7 +54,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.Delivery
 import io.github.nytka_app.core.api.Webhook
+import io.github.nytka_app.ui.ListFailure
+import io.github.nytka_app.ui.ListState
+import io.github.nytka_app.ui.ListStateKind
 import io.github.nytka_app.ui.NytkaSwitch
+import io.github.nytka_app.ui.NytkaTextField
+import io.github.nytka_app.ui.SettingsNote
 import io.github.nytka_app.ui.theme.NytkaTheme
 import kotlinx.coroutines.launch
 
@@ -121,10 +132,7 @@ private fun WebhookList(
     PullToRefreshBox(isRefreshing = state.loading, onRefresh = viewModel::refresh, modifier = modifier) {
         LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
             state.error?.let { error ->
-                item {
-                    Text(error, color = MaterialTheme.colorScheme.error)
-                    TextButton(onClick = viewModel::refresh) { Text(stringResource(R.string.action_retry)) }
-                }
+                item { ListFailure(error, offline = false, onRetry = viewModel::refresh) }
             }
             items(state.webhooks, key = { it.id }) { hook ->
                 ListItem(
@@ -146,9 +154,7 @@ private fun WebhookList(
                 )
             }
             if (state.webhooks.isEmpty() && !state.loading && state.error == null) {
-                item {
-                    Text(stringResource(R.string.no_webhooks_yet))
-                }
+                item { ListState(ListStateKind.Empty, stringResource(R.string.no_webhooks_yet)) }
             }
         }
     }
@@ -179,14 +185,14 @@ private fun WebhookDetail(
         item {
             Text(hook.url, style = NytkaTheme.typography.code)
             hook.description?.let { Text(it) }
-            Text(eventsText(hook), style = MaterialTheme.typography.bodySmall)
+            SettingsNote(eventsText(hook))
         }
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilledTonalButton(onClick = viewModel::sendTest) { Text(stringResource(R.string.send_test)) }
                 OutlinedButton(onClick = { confirmDelete = true }) { Text(stringResource(R.string.action_delete)) }
             }
-            state.note?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+            state.note?.let { SettingsNote(it) }
         }
         item { Text(stringResource(R.string.deliveries), style = MaterialTheme.typography.titleSmall) }
         items(state.deliveries, key = { it.id }) { delivery ->
@@ -194,11 +200,11 @@ private fun WebhookDetail(
                 headlineContent = {
                     Text(stringResource(R.string.webhook_delivery_format, delivery.eventType, delivery.status))
                 },
-                supportingContent = { Text(deliveryDetail(delivery)) },
+                supportingContent = { Text(deliveryDetail(LocalResources.current, delivery)) },
             )
         }
         if (state.deliveries.isEmpty() && !state.deliveriesLoading) {
-            item { Text(stringResource(R.string.no_deliveries_yet)) }
+            item { ListState(ListStateKind.Empty, stringResource(R.string.no_deliveries_yet)) }
         }
     }
     if (confirmDelete) {
@@ -219,14 +225,21 @@ private fun WebhookDetail(
     }
 }
 
-internal fun deliveryDetail(delivery: Delivery): String {
+internal fun deliveryDetail(
+    resources: Resources,
+    delivery: Delivery,
+): String {
     val outcome =
         when {
             delivery.lastError != null -> delivery.lastError
-            delivery.lastStatusCode != null -> "HTTP ${delivery.lastStatusCode}"
+            delivery.lastStatusCode != null ->
+                resources.getString(
+                    R.string.webhook_http_format,
+                    delivery.lastStatusCode,
+                )
             else -> null
         }
-    val attempts = if (delivery.attempts == 1) "1 attempt" else "${delivery.attempts} attempts"
+    val attempts = resources.getQuantityString(R.plurals.webhook_attempts_format, delivery.attempts, delivery.attempts)
     return listOfNotNull(attempts, outcome, delivery.deliveredAt ?: delivery.createdAt).joinToString(" · ")
 }
 
@@ -246,19 +259,18 @@ private fun AddWebhookDialog(
         title = { Text(stringResource(R.string.add_webhook)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                OutlinedTextField(
+                NytkaTextField(
                     value = url,
                     onValueChange = { url = it },
-                    label = { Text(stringResource(R.string.webhook_url_label)) },
-                    singleLine = true,
-                    isError = creator.error != null,
-                    supportingText = creator.error?.let { error -> { Text(error) } },
+                    label = stringResource(R.string.webhook_url_label),
+                    mono = true,
+                    error = creator.error,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 )
-                OutlinedTextField(
+                NytkaTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text(stringResource(R.string.webhook_description_label)) },
-                    singleLine = true,
+                    label = stringResource(R.string.webhook_description_label),
                 )
                 EventRow(stringResource(R.string.all_events), all) { all = it }
                 if (!all) {
@@ -302,11 +314,12 @@ private fun EventRow(
     Row(
         Modifier
             .fillMaxWidth()
-            .clickable { onChange(!checked) },
+            .heightIn(min = 48.dp)
+            .toggleable(checked, role = Role.Checkbox, onValueChange = onChange),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Checkbox(checked = checked, onCheckedChange = onChange)
-        Text(label)
+        Checkbox(checked = checked, onCheckedChange = null)
+        Text(label, Modifier.padding(start = 8.dp), style = MaterialTheme.typography.bodyLarge)
     }
 }
 

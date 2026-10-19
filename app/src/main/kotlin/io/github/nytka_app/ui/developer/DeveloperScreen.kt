@@ -6,8 +6,8 @@ import android.os.PersistableBundle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -17,9 +17,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -38,10 +36,13 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.NytkaTextField
 import io.github.nytka_app.ui.SettingsBlock
 import io.github.nytka_app.ui.SettingsCard
+import io.github.nytka_app.ui.SettingsNote
 import io.github.nytka_app.ui.SettingsRow
 import io.github.nytka_app.ui.SettingsToggleRow
+import io.github.nytka_app.ui.theme.NytkaTheme
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -84,10 +85,10 @@ fun DeveloperScreen(
             item {
                 SettingsCard(stringResource(R.string.pendant)) {
                     SettingsBlock(stringResource(R.string.bluetooth)) {
-                        Text(stringResource(R.string.packets_per_second_format, state.packetsPerSecond))
-                        Text(stringResource(R.string.lost_percent_format, state.lossPercent))
-                        Text(stringResource(R.string.frames_dropped, state.droppedFrames))
-                        Text(stringResource(R.string.frames_this_session, state.framesThisSession))
+                        Readout(stringResource(R.string.packets_per_second_format, state.packetsPerSecond))
+                        Readout(stringResource(R.string.lost_percent_format, state.lossPercent))
+                        Readout(stringResource(R.string.frames_dropped, state.droppedFrames))
+                        Readout(stringResource(R.string.frames_this_session, state.framesThisSession))
                     }
                     state.storage?.let { details ->
                         HorizontalDivider()
@@ -98,17 +99,17 @@ fun DeveloperScreen(
             item {
                 SettingsCard(stringResource(R.string.on_this_phone)) {
                     SettingsBlock(stringResource(R.string.queue_and_upload)) {
-                        Text(stringResource(R.string.queue_mb_format, state.queueMegabytes))
-                        Text(
+                        Readout(stringResource(R.string.queue_mb_format, state.queueMegabytes))
+                        Readout(
                             stringResource(
                                 R.string.sealed_chunks_and_unsealed_format,
                                 state.sealedChunks,
                                 state.unsealedFrames,
                             ),
                         )
-                        Text(stringResource(R.string.chunks_dropped_at_cap, state.droppedChunks))
-                        Text(stringResource(R.string.uploaded_this_run, state.uploadedChunks))
-                        Text(state.lastUpload ?: stringResource(R.string.last_upload_none))
+                        Readout(stringResource(R.string.chunks_dropped_at_cap, state.droppedChunks))
+                        Readout(stringResource(R.string.uploaded_this_run, state.uploadedChunks))
+                        Readout(state.lastUpload ?: stringResource(R.string.last_upload_none))
                     }
                     HorizontalDivider()
                     AlertSection(state, viewModel::setThresholds)
@@ -117,7 +118,7 @@ fun DeveloperScreen(
             item {
                 SettingsCard(stringResource(R.string.your_server)) {
                     SettingsBlock(stringResource(R.string.server)) {
-                        Text(state.serverStatus)
+                        Readout(state.serverStatus)
                         OutlinedButton(
                             onClick = viewModel::refreshServerStatus,
                         ) { Text(stringResource(R.string.check_status)) }
@@ -143,7 +144,7 @@ fun DeveloperScreen(
                         FilledTonalButton(
                             onClick = viewModel::recordFixture,
                         ) { Text(stringResource(R.string.save_next_60_seconds)) }
-                        state.fixture?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                        state.fixture?.let { SettingsNote(it) }
                         FilledTonalButton(onClick = {
                             scope.launch {
                                 clipboard.setClipEntry(
@@ -160,17 +161,17 @@ fun DeveloperScreen(
                     }
                     HorizontalDivider()
                     SettingsBlock(stringResource(R.string.diagnostics)) {
-                        Text(stringResource(R.string.diagnostics_samples_format, state.diagnosticsSamples))
+                        Readout(stringResource(R.string.diagnostics_samples_format, state.diagnosticsSamples))
                         FilledTonalButton(
                             onClick = viewModel::exportDiagnostics,
                         ) { Text(stringResource(R.string.export_diagnostics)) }
-                        state.diagnosticsExport?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                        state.diagnosticsExport?.let { SettingsNote(it) }
                         SettingsToggleRow(
                             stringResource(R.string.send_diagnostics_to_server),
                             checked = state.diagnosticsUpload,
                             onCheckedChange = viewModel::setDiagnosticsUpload,
                         )
-                        state.diagnosticsNote?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                        state.diagnosticsNote?.let { SettingsNote(it) }
                     }
                     OutlinedButton(
                         onClick = viewModel::turnOff,
@@ -214,12 +215,18 @@ private fun NumberField(
     value: String,
     onChange: (String) -> Unit,
 ) {
-    OutlinedTextField(
+    NytkaTextField(
         value = value,
         onValueChange = { text -> onChange(text.filter(Char::isDigit)) },
-        label = { Text(label) },
-        singleLine = true,
+        label = label,
+        mono = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = Modifier.width(280.dp),
+        modifier = Modifier.fillMaxWidth(),
     )
+}
+
+/** One measured value in the code style, so digits line up and nothing reads as a sentence to translate. */
+@Composable
+private fun Readout(text: String) {
+    Text(text, style = NytkaTheme.typography.code)
 }

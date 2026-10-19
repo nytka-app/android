@@ -51,6 +51,7 @@ object BriefNotifications {
         return NotificationCompat
             .Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setColor(Notifier.ACCENT)
             .setContentTitle(context.getString(R.string.brief_title, brief.title))
             .setContentText(start?.let { context.getString(R.string.brief_starts_at, it) } ?: text)
             .setStyle(
