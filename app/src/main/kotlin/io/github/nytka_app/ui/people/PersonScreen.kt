@@ -49,6 +49,8 @@ import io.github.nytka_app.core.api.PersonFact
 import io.github.nytka_app.ui.tags.TagNoticeEffect
 import io.github.nytka_app.ui.tags.tagChipsItem
 import io.github.nytka_app.ui.tags.tagProposalsItem
+import io.github.nytka_app.ui.theme.NytkaTheme
+import io.github.nytka_app.ui.theme.ReadingColumn
 
 /**
  * One person: header, your note, facts, open tasks and recent conversations. A pushed screen, so it has a back
@@ -100,30 +102,32 @@ fun PersonScreen(
                     .fillMaxSize()
                     .padding(padding),
         ) {
-            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
-                state.error?.let { error ->
-                    item {
-                        Column(Modifier.padding(horizontal = 16.dp)) {
-                            Text(personNoticeText(context, error), color = MaterialTheme.colorScheme.error)
-                            TextButton(onClick = viewModel::refresh) { Text(stringResource(R.string.action_retry)) }
+            ReadingColumn {
+                LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
+                    state.error?.let { error ->
+                        item {
+                            Column(Modifier.padding(horizontal = 16.dp)) {
+                                Text(personNoticeText(context, error), color = MaterialTheme.colorScheme.error)
+                                TextButton(onClick = viewModel::refresh) { Text(stringResource(R.string.action_retry)) }
+                            }
                         }
                     }
-                }
-                state.header?.let { header ->
-                    item { Header(header) }
-                    tagChipsItem(
-                        state.tags,
-                        state.tagAccess,
-                        viewModel::addTag,
-                        viewModel::removeTag,
-                        Modifier.padding(horizontal = 16.dp),
-                        onOpenTag,
-                    )
-                    tagProposalsItem(state.tagProposals, viewModel::acceptTagProposal, viewModel::rejectTagProposal)
-                    item { NoteSection(state, viewModel) }
-                    factsSection(state, viewModel, onOpenConversation)
-                    tasksSection(state, onOpenConversation)
-                    conversationsSection(state, onOpenConversation)
+                    state.header?.let { header ->
+                        item { Header(header) }
+                        tagChipsItem(
+                            state.tags,
+                            state.tagAccess,
+                            viewModel::addTag,
+                            viewModel::removeTag,
+                            Modifier.padding(horizontal = 16.dp),
+                            onOpenTag,
+                        )
+                        tagProposalsItem(state.tagProposals, viewModel::acceptTagProposal, viewModel::rejectTagProposal)
+                        item { NoteSection(state, viewModel) }
+                        factsSection(state, viewModel, onOpenConversation)
+                        tasksSection(state, onOpenConversation)
+                        conversationsSection(state, onOpenConversation)
+                    }
                 }
             }
         }
@@ -339,7 +343,7 @@ private fun FactRow(
     var menu by remember { mutableStateOf(false) }
     val conversationId = fact.conversationId
     ListItem(
-        headlineContent = { Text(fact.text) },
+        headlineContent = { Text(fact.text, style = NytkaTheme.typography.readingBody) },
         supportingContent = {
             Text(listOfNotNull(basisText(fact.basis), fact.conversationTitle).joinToString(" · "))
         },

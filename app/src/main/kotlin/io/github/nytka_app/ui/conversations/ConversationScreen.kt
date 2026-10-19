@@ -23,6 +23,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -54,7 +55,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -67,6 +67,8 @@ import io.github.nytka_app.ui.people.RoleNoticeEffect
 import io.github.nytka_app.ui.tags.TagNoticeEffect
 import io.github.nytka_app.ui.tags.tagChipsItem
 import io.github.nytka_app.ui.tags.tagProposalsItem
+import io.github.nytka_app.ui.theme.NytkaTheme
+import io.github.nytka_app.ui.theme.ReadingColumn
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,7 +102,7 @@ fun ConversationScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = {},
                 navigationIcon = {
                     IconButton(
                         onClick = onBack,
@@ -145,63 +147,76 @@ fun ConversationScreen(
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
-        LazyColumn(
-            Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            item {
-                Text(
-                    stringResource(R.string.time_range_and_length_format, state.timeRange, state.length),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
-            tagChipsItem(state.tags, state.tagAccess, viewModel::addTag, viewModel::removeTag, onTagClick = onOpenTag)
-            state.playback?.let { playback ->
-                item { PlayBar(playback, onToggle = viewModel::togglePlay, onSeek = viewModel::seekTo) }
-            }
-            state.chip?.let { chip -> item { AiChip(chip) } }
-            state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
-            suggestion(
-                state.banner,
-                viewModel::acceptSuggestion,
-                viewModel::rejectSuggestion,
-                viewModel::acceptAllByName,
-            )
-            tagProposalsItem(state.tagProposals, viewModel::acceptTagProposal, viewModel::rejectTagProposal)
-            state.summary?.let { summary ->
-                item { InfoCard(stringResource(R.string.summary_card_title)) { Text(summary) } }
-            }
-            if (state.tasks.isNotEmpty()) {
+        ReadingColumn {
+            LazyColumn(
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                item { Text(state.title, style = NytkaTheme.typography.readingTitle) }
                 item {
-                    InfoCard(stringResource(R.string.tasks_card_title)) {
-                        state.tasks.forEach { task ->
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Checkbox(task.done, onCheckedChange = { viewModel.setTaskDone(task.id, it) })
-                                Text(
-                                    task.text,
-                                    textDecoration = if (task.done) TextDecoration.LineThrough else null,
-                                )
+                    Text(
+                        stringResource(R.string.time_range_and_length_format, state.timeRange, state.length),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
+                tagChipsItem(
+                    state.tags,
+                    state.tagAccess,
+                    viewModel::addTag,
+                    viewModel::removeTag,
+                    onTagClick = onOpenTag,
+                )
+                state.playback?.let { playback ->
+                    item { PlayBar(playback, onToggle = viewModel::togglePlay, onSeek = viewModel::seekTo) }
+                }
+                state.chip?.let { chip -> item { AiChip(chip) } }
+                state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
+                suggestion(
+                    state.banner,
+                    viewModel::acceptSuggestion,
+                    viewModel::rejectSuggestion,
+                    viewModel::acceptAllByName,
+                )
+                tagProposalsItem(state.tagProposals, viewModel::acceptTagProposal, viewModel::rejectTagProposal)
+                state.summary?.let { summary ->
+                    item {
+                        InfoCard(stringResource(R.string.summary_card_title)) {
+                            Text(summary, style = NytkaTheme.typography.readingLead)
+                        }
+                    }
+                }
+                if (state.tasks.isNotEmpty()) {
+                    item {
+                        InfoCard(stringResource(R.string.tasks_card_title)) {
+                            state.tasks.forEach { task ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Checkbox(task.done, onCheckedChange = { viewModel.setTaskDone(task.id, it) })
+                                    Text(
+                                        task.text,
+                                        textDecoration = if (task.done) TextDecoration.LineThrough else null,
+                                    )
+                                }
                             }
                         }
                     }
                 }
-            }
-            items(state.looseBookmarks) { mark -> BookmarkLine(mark, viewModel::setBookmarkNote) }
-            transcript(
-                state.paragraphs,
-                canPlay = state.playback != null,
-                onName = { naming = it },
-                onOpenPerson = onOpenPerson,
-                onSave = viewModel::setBookmarkNote,
-                onPlay = viewModel::playFrom,
-                onMark = viewModel::markSegment,
-                onKind = viewModel::markKind.takeIf { state.speechAccess },
-            )
-            state.raw?.let { raw ->
-                item { Text(raw, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall) }
+                items(state.looseBookmarks) { mark -> BookmarkLine(mark, viewModel::setBookmarkNote) }
+                transcript(
+                    state.paragraphs,
+                    canPlay = state.playback != null,
+                    onName = { naming = it },
+                    onOpenPerson = onOpenPerson,
+                    onSave = viewModel::setBookmarkNote,
+                    onPlay = viewModel::playFrom,
+                    onMark = viewModel::markSegment,
+                    onKind = viewModel::markKind.takeIf { state.speechAccess },
+                )
+                state.raw?.let { raw ->
+                    item { Text(raw, fontFamily = FontFamily.Monospace, style = MaterialTheme.typography.bodySmall) }
+                }
             }
         }
     }
@@ -315,7 +330,10 @@ private fun InfoCard(
     title: String,
     content: @Composable () -> Unit,
 ) {
-    ElevatedCard(Modifier.fillMaxWidth()) {
+    ElevatedCard(
+        Modifier.fillMaxWidth(),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
+    ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(title, style = MaterialTheme.typography.titleMedium)
             content()
@@ -401,6 +419,7 @@ private fun ParagraphItem(
                 Box {
                     Text(
                         paragraph.text,
+                        style = NytkaTheme.typography.readingBody,
                         color =
                             if (paragraph.speech?.takeUnless { it.guess }?.tag == SpeechTag.Media) {
                                 MaterialTheme.colorScheme.onSurfaceVariant
