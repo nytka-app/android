@@ -8,6 +8,7 @@ import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Dao
+@Suppress("TooManyFunctions") // one query per table operation of the queue
 abstract class QueueDao {
     @Query("select max(id) from frames")
     abstract suspend fun lastFrameId(): Long?
