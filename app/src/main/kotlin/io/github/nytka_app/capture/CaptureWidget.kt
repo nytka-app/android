@@ -30,6 +30,7 @@ import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
+import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
@@ -88,6 +89,8 @@ fun CaptureWidgetContent(
         actionStartService(
             Intent(context, CaptureService::class.java)
                 .setAction(if (status.muted) CaptureService.ACTION_UNMUTE else CaptureService.ACTION_MUTE),
+            // onStartCommand calls startForeground at once, so a stopped service must be started as a foreground one.
+            isForegroundService = true,
         )
     val battery = status.battery?.let { "$it%" } ?: context.getString(R.string.unknown)
     val body = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 12.sp)
@@ -115,10 +118,8 @@ fun CaptureWidgetContent(
         }
         Text(context.getString(R.string.pendant_battery_format, battery), style = body)
         Text(context.getString(R.string.queued_chunks_format, usage.chunks), style = body)
-        Button(
-            text = context.getString(if (status.muted) R.string.unmute else R.string.mute),
-            onClick = toggle,
-            modifier = GlanceModifier.padding(top = 4.dp),
-        )
+        // A padding modifier on the Button would replace its own, so the gap is a Spacer.
+        Spacer(GlanceModifier.height(4.dp))
+        Button(text = context.getString(if (status.muted) R.string.unmute else R.string.mute), onClick = toggle)
     }
 }
