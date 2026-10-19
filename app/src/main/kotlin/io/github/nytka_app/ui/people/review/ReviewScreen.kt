@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -45,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.ReviewItem
+import io.github.nytka_app.ui.DecisionBadge
 import io.github.nytka_app.ui.people.AcceptAllButton
 import io.github.nytka_app.ui.people.SuggestionWording
 import io.github.nytka_app.ui.people.addedAllText
@@ -62,7 +62,7 @@ fun ReviewInboxAction(
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
     if (!state.available || state.count == 0) return
     IconButton(onClick = onClick) {
-        BadgedBox(badge = { Badge { Text(if (state.count > 99) "99+" else state.count.toString()) } }) {
+        BadgedBox(badge = { DecisionBadge(state.count) }) {
             Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.review_inbox_content_description))
         }
     }

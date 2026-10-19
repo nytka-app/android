@@ -453,6 +453,10 @@
     <string name="capture_sentence_waiting">Waiting for pendant. Nothing is recorded</string>
     <string name="capture_sentence_off">Recording off</string>
     <string name="capture_open_device">Open device and settings</string>
+    <plurals name="needs_you_format">
+        <item quantity="one">%d needs you</item>
+        <item quantity="other">%d need you</item>
+    </plurals>
     <string name="action_open">Open</string>
     <string name="appearance">Appearance</string>
     <string name="wallpaper_colors_label">Match wallpaper colours</string>

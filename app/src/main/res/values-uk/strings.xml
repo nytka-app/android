@@ -244,7 +244,7 @@
     <!-- People: tab and list -->
     <string name="tab_conversations">Розмови</string>
     <string name="tab_tasks">Завдання</string>
-    <string name="tab_memories">Спогади</string>
+    <string name="tab_memories">Памʼять</string>
     <string name="tab_people">Люди</string>
     <string name="tab_ask">Запитати</string>
     <string name="action_close">Закрити</string>
@@ -458,6 +458,12 @@
     <string name="capture_sentence_waiting">Чекає на кулон. Нічого не записується</string>
     <string name="capture_sentence_off">Запис вимкнено</string>
     <string name="capture_open_device">Відкрити пристрій і налаштування</string>
+    <plurals name="needs_you_format">
+        <item quantity="one">%d чекає на вас</item>
+        <item quantity="few">%d чекають на вас</item>
+        <item quantity="many">%d чекають на вас</item>
+        <item quantity="other">%d чекає на вас</item>
+    </plurals>
     <string name="action_open">Відкрити</string>
     <string name="appearance">Вигляд</string>
     <string name="wallpaper_colors_label">Кольори шпалер</string>

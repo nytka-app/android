@@ -202,7 +202,9 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   took too long to answer. Try a shorter question." cover the server's own failures. Needs server
   0.8.0 or later; an older server says it needs an update.
 
-The bar at the bottom holds five tabs: Conversations, Tasks, Ask, People and Memories.
+The bar at the bottom holds five tabs, each with its label: Conversations, Tasks, Ask, People and
+Memories (Памʼять in Ukrainian). People carries a saffron count of the name suggestions and other
+review items waiting for your answer; the review inbox icon on the People screen uses the same badge.
 
 **Capture status.** Every main screen shows what the pendant's audio is doing at the top, in four states
 that differ in shape and words, not only in colour, so none can be mistaken for another:
@@ -427,8 +429,8 @@ is not set, and "This server needs an update" means the server predates it.
   glyph as in the app, so the shape tells the state even in the status bar; **Open** opens the app. While muted, Nytka hears nothing and the pendant discards its audio, and Nytka
   stays muted when the pendant reconnects. What the pendant records while the phone is away is
   handled by [Offline sync](#offline-sync).
-- A **home-screen widget** shows the capture state (Recording, Muted, Waiting for pendant or
-  Recording off), pendant battery and the upload queue length;
+- A **home-screen widget** shows the capture state with its glyph (Recording, Muted, Waiting for
+  pendant or Recording off; only Recording is green), pendant battery and the upload queue length;
   tap it to open the app, or tap **Mute**/**Unmute** to toggle recording without opening it.
 - **Bookmark** with a single tap on the pendant: one short buzz after about a second means it is kept.
   A double tap (or two quick single taps) mutes instead and keeps no bookmark. **Bookmark** in the

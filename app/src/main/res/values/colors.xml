@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The widget's glyph on its white ground: capture (light) while recording, on-surface-variant otherwise. -->
+    <color name="widget_capture">#FF2C6A3B</color>
+    <color name="widget_glyph">#FF4A4852</color>
+</resources>

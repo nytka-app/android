@@ -4,6 +4,7 @@ import android.app.Application
 import android.view.View
 import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import io.github.nytka_app.R
@@ -11,6 +12,7 @@ import io.github.nytka_app.core.queue.QueueUsage
 import io.github.nytka_app.pendant.PendantConnection
 import io.github.nytka_app.pendant.PendantInfo
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -32,6 +34,7 @@ class CaptureWidgetTest {
         val root = inflate(CaptureStatus(running = true, connection = connected, battery = 82), QueueUsage(chunks = 3))
 
         assertEquals("Recording", root.findViewById<TextView>(R.id.widget_status).text.toString())
+        assertNotNull(root.findViewById<ImageView>(R.id.widget_glyph).drawable)
         assertEquals("Pendant battery: 82%", root.findViewById<TextView>(R.id.widget_battery).text.toString())
         assertEquals("Queued chunks: 3", root.findViewById<TextView>(R.id.widget_queue).text.toString())
         assertEquals("Mute", root.findViewById<Button>(R.id.widget_mute_button).text.toString())

@@ -9,3 +9,7 @@ This product bundles the Onest (Copyright 2021 The Onest Project Authors), Liter
 The Literata Project Authors) and JetBrains Mono (Copyright 2020 The JetBrains Mono Project Authors)
 typefaces under the SIL Open Font License, Version 1.1, subset and limited in weight. The license text
 is in app/src/main/res/raw/font_licenses.txt and in the app under Device › About › Font licences.
+
+The tab icons for Conversations, Tasks, Ask and People are Material Symbols Rounded
+(https://github.com/google/material-design-icons), Copyright Google LLC, under the Apache License,
+Version 2.0.

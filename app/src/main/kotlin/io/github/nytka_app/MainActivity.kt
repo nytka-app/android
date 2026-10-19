@@ -28,6 +28,7 @@ import io.github.nytka_app.ui.device.DeviceTab
 import io.github.nytka_app.ui.firstrun.FirstRunScreen
 import io.github.nytka_app.ui.memories.MemoriesTab
 import io.github.nytka_app.ui.people.PeopleTab
+import io.github.nytka_app.ui.people.review.ReviewViewModel
 import io.github.nytka_app.ui.tasks.TasksTab
 import io.github.nytka_app.ui.theme.NytkaTheme
 
@@ -49,7 +50,12 @@ class MainActivity : ComponentActivity() {
                         val statusViewModel: StatusViewModel = hiltViewModel()
                         val status by statusViewModel.state.collectAsStateWithLifecycle()
                         val captureState = CaptureState.of(status.capture, status.muted)
+                        // Activity-scoped, apart from the People screen's own: it only counts for the tab badge.
+                        val review: ReviewViewModel = hiltViewModel()
+                        val reviewState by review.state.collectAsStateWithLifecycle()
                         NytkaNavHost(
+                            peopleBadge = if (reviewState.available) reviewState.count else 0,
+                            onRouteShown = { review.refresh() },
                             topBar = { onOpenDevice ->
                                 Column {
                                     TopAppBar(
