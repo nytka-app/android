@@ -281,7 +281,8 @@ class PersonViewModelTest {
         pages.delete = failure(FailureKind.Network)
         val vm = loaded(fact("f3"), fact("f2"), fact("f1"))
 
-        vm.deleteFact(vm.state.value.facts[1])
+        vm.forgetFact(vm.state.value.facts[1])
+        vm.commitForgetFact("f2")
 
         assertEquals(
             listOf("f3", "f2", "f1"),
@@ -295,10 +296,11 @@ class PersonViewModelTest {
     fun `a delete the server accepted removes the row`() {
         val vm = loaded(fact("f2"), fact("f1"))
 
-        vm.deleteFact(
+        vm.forgetFact(
             vm.state.value.facts
                 .first(),
         )
+        vm.commitForgetFact("f2")
 
         assertEquals(
             listOf("f1"),
@@ -306,6 +308,27 @@ class PersonViewModelTest {
                 .map { it.id },
         )
         assertNull(vm.state.value.notice)
+    }
+
+    @Test
+    fun `undo brings a forgotten fact back and nothing is sent`() {
+        val vm = loaded(fact("f3"), fact("f2"), fact("f1"))
+
+        vm.forgetFact(vm.state.value.facts[1])
+        assertEquals(
+            listOf("f3", "f1"),
+            vm.state.value.facts
+                .map { it.id },
+        )
+        vm.undoForgetFact("f2")
+        vm.commitForgetFact("f2")
+
+        assertEquals(
+            listOf("f3", "f2", "f1"),
+            vm.state.value.facts
+                .map { it.id },
+        )
+        assertNull(vm.state.value.forgottenFact)
     }
 
     @Test

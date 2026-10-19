@@ -46,7 +46,6 @@ import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.ui.ListFailure
 import io.github.nytka_app.ui.ListState
 import io.github.nytka_app.ui.ListStateKind
-import io.github.nytka_app.ui.Monogram
 import io.github.nytka_app.ui.conversations.MAX_NAME
 import io.github.nytka_app.ui.conversations.NameVoiceDialog
 import io.github.nytka_app.ui.people.cards.CardsEffects
@@ -57,7 +56,6 @@ import io.github.nytka_app.ui.people.cards.cardsSection
 import io.github.nytka_app.ui.people.review.ReviewInboxAction
 import io.github.nytka_app.ui.tags.ListEmpty
 import io.github.nytka_app.ui.tags.TagFilterAction
-import io.github.nytka_app.ui.tags.TagRow
 import io.github.nytka_app.ui.tags.tagFilterChipItem
 import io.github.nytka_app.ui.tags.tagFilterEmptyText
 import io.github.nytka_app.ui.unreachable
@@ -184,18 +182,13 @@ private fun LazyListScope.peopleContent(
         ListEmpty.EmptyForTag -> item { ListState(ListStateKind.Empty, tagFilterEmptyText(state.tag.orEmpty())) }
         ListEmpty.NotEmpty -> Unit
     }
-    items(state.people, key = { "p" + it.id }) { person ->
-        ListItem(
-            leadingContent = { Monogram(person.name) },
-            headlineContent = { Text(person.name) },
-            supportingContent = {
-                Column {
-                    NameNotKnown(person.named)
-                    Text(personLine(person, state.hasSummaries))
-                    TagRow(person.tags, Modifier.padding(top = 4.dp))
-                }
-            },
-            modifier = Modifier.clickable { viewModel.tap(person, onOpenPerson) },
+    val needing = peopleWithOpenMatch(cards.cards)
+    items(openFirst(state.people, needing), key = { "p" + it.id }) { person ->
+        PersonRow(
+            person,
+            meta = personLine(person, state.hasSummaries),
+            needsAnswer = person.id in needing,
+            onClick = { viewModel.tap(person, onOpenPerson) },
         )
     }
     if (state.tag == null) {
@@ -204,12 +197,7 @@ private fun LazyListScope.peopleContent(
             item { Empty(stringResource(R.string.no_unnamed_voices)) }
         }
         items(state.voices, key = { "v" + it.speakerId }) { voice ->
-            ListItem(
-                leadingContent = { Monogram("?") },
-                headlineContent = { Text(voiceTitle(voice)) },
-                supportingContent = { Text(voiceLine(voice)) },
-                modifier = Modifier.clickable { viewModel.openVoice(voice) },
-            )
+            UnnamedVoiceRow(voice, onClick = { viewModel.openVoice(voice) })
         }
     }
 }

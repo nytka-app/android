@@ -158,26 +158,32 @@ Addresses, tokens and signing secrets are set in a monospaced font.
   day. Tick a task to complete it, tap it to open its conversation, and use ⋮ to edit or delete it
   (delete asks first). Done tasks sit below, collapsed, in a dimmer color and never struck through. The model finds the tasks; there is no add
   button.
-- **Memories.** Lasting facts about you that the server took from your conversations, each with the
-  conversation it came from (a memory you add yourself has none). **+** adds one and ⋮ edits or
-  deletes one. A memory you delete does not come back from later conversations.
+- **Memories.** Lasting facts about you that the server took from your conversations, grouped by how long
+  ago it learned them (Today, This week, This month, Earlier). Each is set in the reading type with its
+  source, a link that opens the conversation (a memory you add yourself has none). **+** adds one, the
+  pencil edits one, and the trash icon forgets one: it leaves the list at once and an **Undo** snackbar
+  stays for a few seconds; when it goes away the server is asked to delete it, and a memory forgotten
+  does not come back from later conversations. If you close the app before the snackbar is gone, the
+  memory stays.
 - **People.** Everyone Nytka knows, most recently heard first and never-heard last, each with their
-  first letter in a circle (a voice without a name gets ?), when
-  they were last heard and how many facts the server holds about them. A server that does not send
+  first letter in a circle (a voice without a name gets a ? on a different colour), when
+  they were last heard and how many facts the server holds about them. People a voice match asks about
+  ("Is this Olena?") come first with **Needs you**. A server that does not send
   those two fields yet gets the list sorted by name with the number of lines each person said. Below
   it, **Unnamed voices**: tap one to name it. Where the server has no person page, tap a person for
   **Rename**, **Merge into another person** and **Delete** (with or without the stored voice model).
   Pull down to refresh. Needs server 0.7.0 or later; the list is not kept on the phone.
-  Tap a person on a server with person pages (0.14.0 or later) to open their **person page**: when they
-  were last heard and whether a voice model exists, **your note** (up to 500 characters; only you write
+  Tap a person on a server with person pages (0.14.0 or later) to open their **person page**: a large
+  monogram, when they were last heard, a line with a lock saying the voice print lives on your server
+  (and from how many lines), a **Rename** button (**Add name** for a person known by a role), **your note** (up to 500 characters; only you write
   it, the model never reads or changes it; empty it and save to remove it), their **facts** (newest
   first, 50 at a time, **Show more** for older ones) each with why it is there ("They said", "Said about
   them", "Mentioned" or "Added by you") and the conversation it came from, **Open tasks** owed to them
   and their ten newest **Conversations**; tap a fact, task or conversation to open the conversation.
-  **Add a fact** adds one; the fact's ⋮ edits it or deletes it (asks first; a deleted fact does not come
-  back from later conversations). The page's ⋮ has **Rename**, **Merge into…** and **Delete**; Delete
-  asks whether to also **forget the voice**, which asks the transcription service to drop the voice
-  model it holds (Nytka's own voice model of the person goes with any delete). Adding a fact that
+  **Add a fact** adds one; a fact has the same pencil and trash as a memory, with **Undo** (a deleted
+  fact does not come back from later conversations). The page's ⋮ has **Merge into…**. At the very
+  bottom, **Forget this person** asks first and names what goes: the voice print (also in the
+  transcription service), the facts and the name. Adding a fact that
   exists, or taking a name someone has, says so under the field. A server without the page says it
   needs an update. Facts and notes need an admin token to change.
   **Review inbox**: when the server lists the `review` feature and something waits, an inbox icon with

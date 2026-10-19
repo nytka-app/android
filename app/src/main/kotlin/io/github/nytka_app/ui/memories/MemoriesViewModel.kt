@@ -7,6 +7,7 @@ import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.MemoriesClient
 import io.github.nytka_app.core.api.Memory
+import io.github.nytka_app.ui.conversations.Formatting
 import io.github.nytka_app.ui.itemNotice
 import io.github.nytka_app.ui.notice
 import io.github.nytka_app.ui.unreachable
@@ -17,7 +18,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
+import java.time.LocalDate
+import java.time.temporal.ChronoUnit
 import javax.inject.Inject
+
+/** How long ago a memory was learned, as the Memories tab groups them. */
+enum class MemoryGroup { Today, ThisWeek, ThisMonth, Earlier }
 
 /** A memory as the row shows it: [source] is the conversation's title and day, when there is one. */
 data class MemoryRow(
@@ -25,6 +31,7 @@ data class MemoryRow(
     val text: String,
     val source: String?,
     val conversationId: String?,
+    val group: MemoryGroup = MemoryGroup.Earlier,
 )
 
 /** The add or edit dialog: [target] is the memory being edited, null when adding. [error] is the server's refusal. */
@@ -42,6 +49,8 @@ data class MemoriesUiState(
     val offline: Boolean = false,
     val endReached: Boolean = false,
     val editor: MemoryEditor? = null,
+    /** The memory forgotten last, until the snackbar's Undo runs out; the server is asked only then. */
+    val forgotten: String? = null,
 )
 
 @HiltViewModel
@@ -52,6 +61,9 @@ class MemoriesViewModel
         private val clock: Clock,
     ) : ViewModel() {
         private val items = mutableListOf<Memory>()
+
+        /** Forgotten, not yet sent to the server: the memory and the place it had in the list. */
+        private val pending = LinkedHashMap<String, Pair<Int, Memory>>()
         private var nextBefore: String? = null
         private var loadJob: Job? = null
         private val mutableState = MutableStateFlow(MemoriesUiState())
@@ -115,20 +127,35 @@ class MemoriesViewModel
             }
         }
 
-        fun delete(id: String) {
-            viewModelScope.launch {
-                when (val result = api.deleteMemory(id)) {
-                    // A memory that is already gone is what the user wanted.
-                    is ApiResult.Ok -> forget(id)
-                    is ApiResult.Failure ->
-                        if (result.kind == FailureKind.NotFound) forget(id) else fail(result.notice())
-                }
-            }
+        /**
+         * Takes the memory off the list at once but asks the server only in [commitForget], so Undo costs nothing.
+         * A second forget commits the first. Closing the app in between leaves the memory where it was.
+         */
+        fun forget(id: String) {
+            val index = items.indexOfFirst { it.id == id }
+            if (index < 0) return
+            mutableState.value.forgotten?.let(::commitForget)
+            pending[id] = index to items.removeAt(index)
+            mutableState.update { it.copy(rows = rows(), forgotten = id) }
         }
 
-        private fun forget(id: String) {
-            items.removeAll { it.id == id }
-            mutableState.update { it.copy(rows = rows(), error = null) }
+        fun undoForget(id: String) {
+            val (index, memory) = pending.remove(id) ?: return
+            items.add(index.coerceAtMost(items.size), memory)
+            mutableState.update { it.copy(rows = rows(), forgotten = it.forgotten.takeIf { f -> f != id }) }
+        }
+
+        fun commitForget(id: String) {
+            val (index, memory) = pending.remove(id) ?: return
+            mutableState.update { it.copy(forgotten = it.forgotten.takeIf { f -> f != id }) }
+            viewModelScope.launch {
+                val result = api.deleteMemory(id)
+                // A memory that is already gone is what the user wanted.
+                if (result is ApiResult.Failure && result.kind != FailureKind.NotFound) {
+                    items.add(index.coerceAtMost(items.size), memory)
+                    mutableState.update { it.copy(rows = rows(), error = result.notice()) }
+                }
+            }
         }
 
         private fun fail(message: String) = mutableState.update { it.copy(error = message) }
@@ -156,7 +183,7 @@ class MemoriesViewModel
                         is ApiResult.Ok -> {
                             if (reset) items.clear()
                             val known = items.mapTo(HashSet()) { it.id }
-                            items += result.value.items.filter { it.id !in known }
+                            items += result.value.items.filter { it.id !in known && it.id !in pending }
                             nextBefore = result.value.nextBefore
                             mutableState.update {
                                 it.copy(
@@ -183,8 +210,19 @@ class MemoriesViewModel
 
         private fun rows(): List<MemoryRow> =
             items.map { memory ->
-                MemoryRow(memory.id, memory.text, sourceLine(memory), memory.conversationId)
+                MemoryRow(memory.id, memory.text, sourceLine(memory), memory.conversationId, group(memory))
             }
+
+        private fun group(memory: Memory): MemoryGroup {
+            val learned = Formatting.parse(memory.createdAt) ?: return MemoryGroup.Earlier
+            val days = ChronoUnit.DAYS.between(learned.atZone(clock.zone).toLocalDate(), LocalDate.now(clock))
+            return when {
+                days < 1 -> MemoryGroup.Today
+                days < WEEK -> MemoryGroup.ThisWeek
+                days < MONTH -> MemoryGroup.ThisMonth
+                else -> MemoryGroup.Earlier
+            }
+        }
 
         private fun sourceLine(memory: Memory): String? {
             val title = memory.conversationTitle
@@ -200,5 +238,7 @@ class MemoriesViewModel
         companion object {
             const val MAX_LENGTH = 300
             private const val PAGE_SIZE = 50
+            private const val WEEK = 7
+            private const val MONTH = 30
         }
     }

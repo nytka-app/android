@@ -8,20 +8,25 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -46,10 +51,12 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.PersonFact
+import io.github.nytka_app.ui.Monogram
+import io.github.nytka_app.ui.memories.MemoryItem
+import io.github.nytka_app.ui.memories.UndoForgetEffect
 import io.github.nytka_app.ui.tags.TagNoticeEffect
 import io.github.nytka_app.ui.tags.tagChipsItem
 import io.github.nytka_app.ui.tags.tagProposalsItem
-import io.github.nytka_app.ui.theme.NytkaTheme
 import io.github.nytka_app.ui.theme.ReadingColumn
 
 /**
@@ -70,6 +77,13 @@ fun PersonScreen(
     val context = LocalContext.current
     LaunchedEffect(state.gone) { if (state.gone) onBack() }
     TagNoticeEffect(state.tagNotice, snackbar, viewModel::tagNoticeShown)
+    UndoForgetEffect(
+        state.forgottenFact,
+        stringResource(R.string.memory_forgotten),
+        snackbar,
+        onUndo = viewModel::undoForgetFact,
+        onCommit = viewModel::commitForgetFact,
+    )
     LaunchedEffect(state.notice) {
         state.notice?.let {
             snackbar.showSnackbar(personNoticeText(context, it))
@@ -89,7 +103,7 @@ fun PersonScreen(
                         )
                     }
                 },
-                actions = { state.header?.let { PersonMenu(viewModel, it.named) } },
+                actions = { if (state.header != null) PersonMenu(viewModel) },
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
@@ -113,7 +127,7 @@ fun PersonScreen(
                         }
                     }
                     state.header?.let { header ->
-                        item { Header(header) }
+                        item { Header(header) { viewModel.show(PersonDialog.Rename()) } }
                         tagChipsItem(
                             state.tags,
                             state.tagAccess,
@@ -127,6 +141,7 @@ fun PersonScreen(
                         factsSection(state, viewModel, onOpenConversation)
                         tasksSection(state, onOpenConversation)
                         conversationsSection(state, onOpenConversation)
+                        item { ForgetPerson { viewModel.show(PersonDialog.Delete) } }
                     }
                 }
             }
@@ -153,21 +168,6 @@ fun PersonScreen(
                 onSave = { viewModel.editFact(dialog.fact, it) },
             )
 
-        is PersonDialog.DeleteFact ->
-            AlertDialog(
-                onDismissRequest = viewModel::dismissDialog,
-                title = { Text(stringResource(R.string.person_fact_delete_title)) },
-                text = { Text(stringResource(R.string.person_fact_delete_text)) },
-                confirmButton = {
-                    TextButton(onClick = { viewModel.deleteFact(dialog.fact) }) {
-                        Text(stringResource(R.string.action_delete))
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = viewModel::dismissDialog) { Text(stringResource(R.string.action_cancel)) }
-                },
-            )
-
         is PersonDialog.Rename ->
             RenameDialog(
                 named = state.header?.named != false,
@@ -192,40 +192,28 @@ fun PersonScreen(
         PersonDialog.Delete ->
             AlertDialog(
                 onDismissRequest = viewModel::dismissDialog,
-                title = { Text(stringResource(R.string.people_delete_title_format, state.header?.name.orEmpty())) },
-                text = { Text(stringResource(R.string.person_delete_text)) },
+                title = { Text(stringResource(R.string.person_forget_title_format, state.header?.name.orEmpty())) },
+                text = { Text(stringResource(R.string.person_forget_text)) },
                 confirmButton = {
-                    Column {
-                        TextButton(onClick = { viewModel.delete(forgetVoice = true) }) {
-                            Text(stringResource(R.string.person_delete_forget))
-                        }
-                        TextButton(onClick = { viewModel.delete(forgetVoice = false) }) {
-                            Text(stringResource(R.string.person_delete_only))
-                        }
-                        TextButton(onClick = viewModel::dismissDialog) { Text(stringResource(R.string.action_cancel)) }
-                    }
+                    TextButton(
+                        onClick = { viewModel.delete(forgetVoice = true) },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    ) { Text(stringResource(R.string.person_forget_confirm)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = viewModel::dismissDialog) { Text(stringResource(R.string.action_cancel)) }
                 },
             )
     }
 }
 
 @Composable
-private fun PersonMenu(
-    viewModel: PersonViewModel,
-    named: Boolean,
-) {
+private fun PersonMenu(viewModel: PersonViewModel) {
     var open by remember { mutableStateOf(false) }
     IconButton(onClick = { open = true }) {
         Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.action_more))
     }
     DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
-        DropdownMenuItem(
-            text = { Text(renameLabel(named)) },
-            onClick = {
-                open = false
-                viewModel.show(PersonDialog.Rename())
-            },
-        )
         DropdownMenuItem(
             text = { Text(stringResource(R.string.person_merge_action)) },
             onClick = {
@@ -233,40 +221,61 @@ private fun PersonMenu(
                 viewModel.startMerge()
             },
         )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.action_delete)) },
-            onClick = {
-                open = false
-                viewModel.show(PersonDialog.Delete)
-            },
-        )
     }
 }
 
 @Composable
-private fun Header(header: PersonHeader) {
+private fun Header(
+    header: PersonHeader,
+    onRename: () -> Unit,
+) {
     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-        if (!header.named) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Monogram(header.name, size = 72.dp)
+            Column {
+                Text(header.name, style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    if (header.named) {
+                        lastSeenText(header.lastSeenAt)?.let { stringResource(R.string.people_last_heard_format, it) }
+                            ?: stringResource(R.string.people_never_heard)
+                    } else {
+                        stringResource(R.string.name_not_known)
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Row(
+            Modifier.padding(top = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                Icons.Filled.Lock,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Text(
-                stringResource(R.string.name_not_known),
-                style = MaterialTheme.typography.bodyMedium,
+                if (header.hasVoiceprint) {
+                    pluralStringResource(
+                        R.plurals.person_voice_print,
+                        header.voiceprintSamples,
+                        header.voiceprintSamples,
+                    )
+                } else {
+                    stringResource(R.string.person_voice_print_none)
+                },
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Text(
-            lastSeenText(header.lastSeenAt)?.let { stringResource(R.string.people_last_heard_format, it) }
-                ?: stringResource(R.string.people_never_heard),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        Text(
-            if (header.hasVoiceprint) {
-                pluralStringResource(R.plurals.person_voice_model, header.voiceprintSamples, header.voiceprintSamples)
-            } else {
-                stringResource(R.string.person_voice_model_none)
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+        if (header.named) {
+            OutlinedButton(onClick = onRename, Modifier.padding(top = 8.dp)) { Text(renameLabel(true)) }
+        } else {
+            FilledTonalButton(onClick = onRename, Modifier.padding(top = 8.dp)) { Text(renameLabel(false)) }
+        }
     }
 }
 
@@ -340,35 +349,13 @@ private fun FactRow(
     viewModel: PersonViewModel,
     onOpenConversation: (String) -> Unit,
 ) {
-    var menu by remember { mutableStateOf(false) }
     val conversationId = fact.conversationId
-    ListItem(
-        headlineContent = { Text(fact.text, style = NytkaTheme.typography.readingBody) },
-        supportingContent = {
-            Text(listOfNotNull(basisText(fact.basis), fact.conversationTitle).joinToString(" · "))
-        },
-        trailingContent = {
-            IconButton(onClick = { menu = true }) {
-                Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.person_fact_more))
-            }
-            DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.person_fact_edit)) },
-                    onClick = {
-                        menu = false
-                        viewModel.show(PersonDialog.EditFact(fact))
-                    },
-                )
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.action_delete)) },
-                    onClick = {
-                        menu = false
-                        viewModel.show(PersonDialog.DeleteFact(fact))
-                    },
-                )
-            }
-        },
-        modifier = if (conversationId != null) Modifier.clickable { onOpenConversation(conversationId) } else Modifier,
+    MemoryItem(
+        text = fact.text,
+        source = listOfNotNull(basisText(fact.basis), fact.conversationTitle).joinToString(" · "),
+        onOpenSource = conversationId?.let { id -> { onOpenConversation(id) } },
+        onEdit = { viewModel.show(PersonDialog.EditFact(fact)) },
+        onForget = { viewModel.forgetFact(fact) },
     )
 }
 
@@ -405,6 +392,16 @@ private fun LazyListScope.conversationsSection(
             modifier = Modifier.clickable { onOpenConversation(conversation.id) },
         )
     }
+}
+
+/** The last thing on the page: it deletes the voice print, the facts and the name. */
+@Composable
+private fun ForgetPerson(onClick: () -> Unit) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.padding(horizontal = 8.dp, vertical = 16.dp),
+        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+    ) { Text(stringResource(R.string.person_forget_action)) }
 }
 
 @Composable

@@ -88,10 +88,6 @@ sealed interface PersonDialog {
         val error: PersonNotice? = null,
     ) : PersonDialog
 
-    data class DeleteFact(
-        val fact: PersonFact,
-    ) : PersonDialog
-
     data class Rename(
         val error: PersonNotice? = null,
     ) : PersonDialog
@@ -137,6 +133,8 @@ data class PersonUiState(
     val tagNotice: TagNotice? = null,
     /** Tags the model proposed for this person; empty without the `tag-suggestions` feature. */
     val tagProposals: List<TagProposalState> = emptyList(),
+    /** The fact forgotten last, while Undo is on offer. */
+    val forgottenFact: String? = null,
 )
 
 @Suppress("TooManyFunctions") // one screen, one function per action
@@ -154,6 +152,7 @@ class PersonViewModel
         private val mutableState = MutableStateFlow(PersonUiState())
         private val proposals = TagProposalBook(tagsClient) { it.personId == id }
         val state: StateFlow<PersonUiState> = mutableState.asStateFlow()
+        private val pendingFacts = LinkedHashMap<String, Pair<Int, PersonFact>>()
 
         init {
             refresh()
@@ -192,7 +191,7 @@ class PersonViewModel
             header = PersonHeader(page.name, page.lastSeenAt, page.hasVoiceprint, page.voiceprintSamples, page.named),
             note = page.note.orEmpty(),
             noteDraft = page.note.orEmpty(),
-            facts = page.facts,
+            facts = page.facts.filter { it.id !in pendingFacts },
             nextBefore = if (page.facts.size >= PAGE) page.facts.last().id else null,
             tasks = page.openTasks,
             conversations = page.conversations,
@@ -387,12 +386,29 @@ class PersonViewModel
             }
         }
 
-        /** The row goes at once and comes back, in its place, when the server refuses. */
-        fun deleteFact(fact: PersonFact) {
-            val before = state.value.facts
-            val index = before.indexOfFirst { it.id == fact.id }
-            if (index < 0) return dismissDialog()
-            mutableState.update { it.copy(facts = it.facts.filter { f -> f.id != fact.id }, dialog = null) }
+        /**
+         * The row goes at once; the server is asked in [commitForgetFact], after Undo had its time. A second
+         * forget commits the first. Closing the app in between leaves the fact where it was.
+         */
+        fun forgetFact(fact: PersonFact) {
+            val index = state.value.facts.indexOfFirst { it.id == fact.id }
+            if (index < 0) return
+            state.value.forgottenFact?.let { id -> pendingFacts[id]?.let { commitForgetFact(it.second.id) } }
+            pendingFacts[fact.id] = index to fact
+            mutableState.update { it.copy(facts = it.facts.filter { f -> f.id != fact.id }, forgottenFact = fact.id) }
+        }
+
+        fun undoForgetFact(factId: String) {
+            val (index, fact) = pendingFacts.remove(factId) ?: return
+            mutableState.update {
+                val restored = it.facts.toMutableList().apply { add(index.coerceAtMost(size), fact) }
+                it.copy(facts = restored, forgottenFact = it.forgottenFact.takeIf { f -> f != factId })
+            }
+        }
+
+        fun commitForgetFact(factId: String) {
+            val (index, fact) = pendingFacts.remove(factId) ?: return
+            mutableState.update { it.copy(forgottenFact = it.forgottenFact.takeIf { f -> f != factId }) }
             viewModelScope.launch {
                 val result = pages.deleteFact(id, fact.id)
                 if (result is ApiResult.Failure && result.kind != FailureKind.NotFound) {
