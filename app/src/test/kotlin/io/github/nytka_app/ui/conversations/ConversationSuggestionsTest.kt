@@ -73,6 +73,25 @@ class ConversationSuggestionsTest {
     private val voice = Segment(1, "2026-09-29T08:01:00Z", "2026-09-29T08:01:04Z", "I'm Olena.", "SPEAKER_01", "sp1")
 
     @Test
+    fun `the naming dialog gets this voice's suggested names, the most confident first, without roles`() {
+        withSegments(voice)
+        review.pending =
+            ApiResult.Ok(
+                listOf(
+                    suggestion("s1", confidence = 0.6, name = "Olya"),
+                    suggestion("s2", confidence = 0.9),
+                    suggestion("s3", confidence = 0.95, name = "Repairman", named = false, role = "repairman"),
+                    suggestion("s4", conversationId = "c2", confidence = 0.99, name = "Ivan"),
+                ),
+            )
+
+        val vm = viewModel()
+
+        assertEquals(listOf("Olena", "Olya"), vm.nameGuesses("sp1"))
+        assertEquals(emptyList<String>(), vm.nameGuesses("sp2"))
+    }
+
+    @Test
     fun `the banner shows only suggestions of this conversation, the most confident first`() {
         withSegments(voice)
         review.pending =

@@ -527,6 +527,16 @@ themselves, only as the tag a session's place becomes.
 - **Language of summaries** (Device screen): English, Ukrainian or Follow the conversation, editing the
   server's `llm.outputLanguage`. Shown locked, "Set by the server's environment", when the server's
   environment sets it.
+- **Names as you type.** Where you name a voice (**Who is this?** in a conversation, an unnamed
+  voice in People, a voice card), up to three names sit under the field as chips: the server's own
+  suggestions for that voice first, then the people whose name starts with what you typed, then
+  those with a later word or a part that matches, the most recently heard first. An empty field
+  offers the people heard last. Accents do not matter ("zoe" finds Zoë), and a person known only by a
+  role is never offered. Picking a known name joins the voice to that person. In free text (a task,
+  a memory, a fact, your note on a person, a bookmark note, Ask) a capitalised word of two letters or
+  more gets the names with a word that starts with it ("Call Ol" offers Oleh and Olena Petrenko); a
+  tap writes the full name in. Search does the same without the capital. The names come from your
+  server once per screen and are not stored on the phone; a server without people offers none.
 - **Delete** a conversation from its ⋮ menu: its transcript, audio, tasks and memories go from your
   server.
 - **After a reboot**, recording starts once the phone has been unlocked and the pendant is in

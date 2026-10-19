@@ -1,6 +1,8 @@
 package io.github.nytka_app.ui.memories
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -39,6 +42,9 @@ import io.github.nytka_app.R
 import io.github.nytka_app.ui.ListFailure
 import io.github.nytka_app.ui.ListState
 import io.github.nytka_app.ui.ListStateKind
+import io.github.nytka_app.ui.names.NameCompletions
+import io.github.nytka_app.ui.names.filled
+import io.github.nytka_app.ui.names.knownPeople
 import io.github.nytka_app.ui.theme.ReadingColumn
 
 /**
@@ -142,22 +148,29 @@ private fun MemoryDialog(
     onSave: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var text by rememberSaveable(editor.target?.id) { mutableStateOf(editor.target?.text.orEmpty()) }
+    var field by rememberSaveable(editor.target?.id, stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(filled(editor.target?.text.orEmpty()))
+    }
+    val text = field.text
+    val people = knownPeople()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(stringResource(if (editor.target == null) R.string.add_memory else R.string.edit_memory_title))
         },
         text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it.take(MemoriesViewModel.MAX_LENGTH) },
-                label = { Text(stringResource(R.string.memory_label)) },
-                supportingText = { Text(editor.error ?: "${text.length} / ${MemoriesViewModel.MAX_LENGTH}") },
-                shape = MaterialTheme.shapes.small,
-                isError = editor.error != null,
-                minLines = 2,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = field,
+                    onValueChange = { field = it.copy(text = it.text.take(MemoriesViewModel.MAX_LENGTH)) },
+                    label = { Text(stringResource(R.string.memory_label)) },
+                    supportingText = { Text(editor.error ?: "${text.length} / ${MemoriesViewModel.MAX_LENGTH}") },
+                    shape = MaterialTheme.shapes.small,
+                    isError = editor.error != null,
+                    minLines = 2,
+                )
+                NameCompletions(field, onValueChange = { field = it }, people = people)
+            }
         },
         confirmButton = {
             TextButton(

@@ -13,7 +13,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -33,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -41,12 +41,13 @@ import io.github.nytka_app.R
 import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.core.api.VoiceCard
 import io.github.nytka_app.ui.DecisionCard
-import io.github.nytka_app.ui.Monogram
 import io.github.nytka_app.ui.NytkaTextField
+import io.github.nytka_app.ui.names.NameChips
+import io.github.nytka_app.ui.names.filled
+import io.github.nytka_app.ui.names.nameSuggestions
 import io.github.nytka_app.ui.people.PeopleViewModel
 
 private const val MAX_LINES_SHOWN = 3
-private const val MAX_SUGGESTIONS = 3
 
 /** Shows the cards' notices and stops the clip when the list leaves the screen or the app goes to the background. */
 @Composable
@@ -106,7 +107,8 @@ private fun CardItem(
     onReject: () -> Unit,
 ) {
     val match = card.kind == VoiceCard.KIND_MATCH
-    var name by rememberSaveable(card.id) { mutableStateOf("") }
+    var field by rememberSaveable(card.id, stateSaver = TextFieldValue.Saver) { mutableStateOf(filled("")) }
+    val name = field.text
     DecisionCard(
         if (match) {
             stringResource(R.string.cards_match_title_format, card.personName.orEmpty())
@@ -138,33 +140,14 @@ private fun CardItem(
         }
         if (!match) {
             NytkaTextField(
-                value = name,
-                onValueChange = { name = it.take(PeopleViewModel.MAX_NAME) },
+                value = field,
+                onValueChange = { field = it.copy(text = it.text.take(PeopleViewModel.MAX_NAME)) },
                 label = stringResource(R.string.people_name_label),
                 enabled = enabled,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
                 modifier = Modifier.fillMaxWidth(),
             )
-            val suggestions =
-                if (name.isBlank()) {
-                    emptyList()
-                } else {
-                    people
-                        .filter {
-                            it.name.contains(name.trim(), ignoreCase = true) &&
-                                !it.name.equals(name.trim(), true)
-                        }.take(MAX_SUGGESTIONS)
-                }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                suggestions.forEach { person ->
-                    AssistChip(
-                        onClick = { name = person.name },
-                        enabled = enabled,
-                        label = { Text(person.name) },
-                        leadingIcon = { Monogram(person.name, size = 24.dp) },
-                    )
-                }
-            }
+            NameChips(nameSuggestions(people, name), onPick = { field = filled(it) }, enabled = enabled)
         }
         FlowRow(
             Modifier.fillMaxWidth(),

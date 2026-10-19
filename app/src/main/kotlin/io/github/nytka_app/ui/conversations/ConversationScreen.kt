@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
@@ -56,12 +57,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
+import io.github.nytka_app.core.api.Person
+import io.github.nytka_app.ui.NytkaTextField
+import io.github.nytka_app.ui.names.NameChips
+import io.github.nytka_app.ui.names.NameCompletions
+import io.github.nytka_app.ui.names.filled
+import io.github.nytka_app.ui.names.knownPeople
+import io.github.nytka_app.ui.names.nameSuggestions
 import io.github.nytka_app.ui.people.RoleNoticeEffect
 import io.github.nytka_app.ui.tags.TagNoticeEffect
 import io.github.nytka_app.ui.tags.tagChipsItem
@@ -233,6 +243,7 @@ fun ConversationScreen(
     naming?.let { (voiceId, label) ->
         NameVoiceDialog(
             initial = label.takeUnless { it.startsWith("SPEAKER_") }.orEmpty(),
+            guesses = viewModel.nameGuesses(voiceId),
             onDismiss = { naming = null },
             onSave = {
                 naming = null
@@ -566,47 +577,60 @@ private fun BookmarkNoteDialog(
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
 ) {
-    var text by rememberSaveable { mutableStateOf(initial) }
+    var field by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(filled(initial)) }
+    val people = knownPeople()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.bookmark_note_title)) },
         text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it.take(ConversationViewModel.MAX_BOOKMARK_NOTE) },
-                label = { Text(stringResource(R.string.note_label)) },
-                supportingText = { Text(stringResource(R.string.bookmark_note_hint)) },
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = field,
+                    onValueChange = { field = it.copy(text = it.text.take(ConversationViewModel.MAX_BOOKMARK_NOTE)) },
+                    label = { Text(stringResource(R.string.note_label)) },
+                    supportingText = { Text(stringResource(R.string.bookmark_note_hint)) },
+                )
+                NameCompletions(field, onValueChange = { field = it }, people = people)
+            }
         },
-        confirmButton = { TextButton(onClick = { onSave(text) }) { Text(stringResource(R.string.action_save)) } },
+        confirmButton = { TextButton(onClick = { onSave(field.text) }) { Text(stringResource(R.string.action_save)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
-/** Names one voice; every line of it, past and future, shows the name. */
+/**
+ * Names one voice; every line of it, past and future, shows the name. Below the field sit the server's [guesses] for
+ * this voice and known [people] that fit what is typed; a known name joins the voice to that person.
+ */
 @Composable
 internal fun NameVoiceDialog(
     initial: String,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
+    guesses: List<String> = emptyList(),
+    people: List<Person> = knownPeople(),
 ) {
-    var text by rememberSaveable { mutableStateOf(initial) }
+    var field by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(filled(initial)) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.who_is_this_title)) },
         text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it.take(MAX_NAME) },
-                label = { Text(stringResource(R.string.name)) },
-                supportingText = { Text(stringResource(R.string.speaker_name_hint)) },
-                singleLine = true,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                NytkaTextField(
+                    value = field,
+                    onValueChange = { field = it.copy(text = it.text.take(MAX_NAME)) },
+                    label = stringResource(R.string.name),
+                    supporting = stringResource(R.string.speaker_name_hint),
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                NameChips(nameSuggestions(people, field.text, guesses), onPick = { field = filled(it) })
+            }
         },
         confirmButton = {
             TextButton(
-                onClick = { onSave(text) },
-                enabled = text.isNotBlank(),
+                onClick = { onSave(field.text) },
+                enabled = field.text.isNotBlank(),
             ) { Text(stringResource(R.string.action_save)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },

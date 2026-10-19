@@ -46,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -54,6 +55,9 @@ import io.github.nytka_app.core.api.PersonFact
 import io.github.nytka_app.ui.Monogram
 import io.github.nytka_app.ui.memories.MemoryItem
 import io.github.nytka_app.ui.memories.UndoForgetEffect
+import io.github.nytka_app.ui.names.NameCompletions
+import io.github.nytka_app.ui.names.knownPeople
+import io.github.nytka_app.ui.names.rememberFieldValue
 import io.github.nytka_app.ui.tags.TagNoticeEffect
 import io.github.nytka_app.ui.tags.tagChipsItem
 import io.github.nytka_app.ui.tags.tagProposalsItem
@@ -284,11 +288,16 @@ private fun NoteSection(
     state: PersonUiState,
     viewModel: PersonViewModel,
 ) {
+    var note by rememberFieldValue(state.noteDraft)
+    val onNote = { value: TextFieldValue ->
+        note = value
+        viewModel.setNoteDraft(value.text)
+    }
     Column(Modifier.padding(horizontal = 16.dp)) {
         SectionTitle(stringResource(R.string.person_note_title), padded = false)
         OutlinedTextField(
-            value = state.noteDraft,
-            onValueChange = viewModel::setNoteDraft,
+            value = note,
+            onValueChange = onNote,
             label = { Text(stringResource(R.string.person_note_label)) },
             supportingText = {
                 Text(
@@ -302,6 +311,7 @@ private fun NoteSection(
             },
             modifier = Modifier.fillMaxWidth(),
         )
+        NameCompletions(note, onValueChange = onNote, people = knownPeople())
         TextButton(
             onClick = viewModel::saveNote,
             enabled = state.noteDraft.trim() != state.note,

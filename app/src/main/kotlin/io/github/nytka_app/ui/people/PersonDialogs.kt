@@ -26,12 +26,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.ui.ErrorLine
 import io.github.nytka_app.ui.Monogram
 import io.github.nytka_app.ui.NytkaTextField
+import io.github.nytka_app.ui.names.NameCompletions
+import io.github.nytka_app.ui.names.filled
+import io.github.nytka_app.ui.names.knownPeople
 
 @Composable
 internal fun FactDialog(
@@ -41,25 +45,29 @@ internal fun FactDialog(
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
 ) {
-    var text by rememberSaveable { mutableStateOf(initial) }
+    var field by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(filled(initial)) }
+    val people = knownPeople()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(title)) },
         text = {
-            // A fact can run to several lines, which NytkaTextField (one line) cannot hold.
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it.take(PersonViewModel.MAX_FACT) },
-                label = { Text(stringResource(R.string.person_fact_label)) },
-                shape = MaterialTheme.shapes.small,
-                minLines = 2,
-                isError = error != null,
-                supportingText = error?.let { e -> { ErrorLine(personNoticeText(LocalContext.current, e)) } },
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // A fact can run to several lines, which NytkaTextField (one line) cannot hold.
+                OutlinedTextField(
+                    value = field,
+                    onValueChange = { field = it.copy(text = it.text.take(PersonViewModel.MAX_FACT)) },
+                    label = { Text(stringResource(R.string.person_fact_label)) },
+                    shape = MaterialTheme.shapes.small,
+                    minLines = 2,
+                    isError = error != null,
+                    supportingText = error?.let { e -> { ErrorLine(personNoticeText(LocalContext.current, e)) } },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                NameCompletions(field, onValueChange = { field = it }, people = people)
+            }
         },
         confirmButton = {
-            TextButton(onClick = { onSave(text) }, enabled = text.isNotBlank()) {
+            TextButton(onClick = { onSave(field.text) }, enabled = field.text.isNotBlank()) {
                 Text(stringResource(R.string.action_save))
             }
         },
