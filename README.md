@@ -478,7 +478,7 @@ system permission prompt; if you refuse twice, the switch offers **Open settings
 at once into either the name of a place you saved (the nearest one it falls within, see below) or a
 city-level label such as `near_n40_7_w74_0` (about 11 km across, letters/digits/underscore only, the
 tag format the server accepts). Once your server has made a
-conversation from that session, Nytka adds the place as a tag suggestion through the tags API, the
+conversation from that session, Nytka adds the place as a tag through the tags API, the
 same write **+ Tag** uses. A reading more than a day old, or one that matches no conversation, is
 dropped rather than tagging whatever is newest.
 

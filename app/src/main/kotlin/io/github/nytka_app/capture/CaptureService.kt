@@ -30,7 +30,6 @@ import io.github.nytka_app.core.queue.BookmarkOutbox
 import io.github.nytka_app.core.queue.ContextOutbox
 import io.github.nytka_app.core.queue.FrameQueue
 import io.github.nytka_app.core.ring.CaptureTimes
-import io.github.nytka_app.core.settings.Settings
 import io.github.nytka_app.core.settings.SettingsStore
 import io.github.nytka_app.core.upload.BookmarkUploader
 import io.github.nytka_app.core.upload.ContextUploader
@@ -183,7 +182,6 @@ class CaptureService : LifecycleService() {
         }
         logRun = appLog.start()
         power.start()
-        if (current.locationTags) scope.launch { recordSessionPlace(current) }
         val pendant = pendants.create(scope, current.fakePendant, current.highPriorityConnection)
         val capture =
             CaptureController(
@@ -240,6 +238,7 @@ class CaptureService : LifecycleService() {
         scope.launch { bookmarkUploader.run() }
         scope.launch { contextUploader.run() }
         scope.launch { recordPhoneContext() }
+        scope.launch { recordSessionPlace() }
     }
 
     /**
@@ -247,7 +246,9 @@ class CaptureService : LifecycleService() {
      * [LocationTagSync] matches it to the conversation the session becomes and sends it as a tag. Silent without
      * the permission or a fix: the switch alone never prompts for either.
      */
-    private suspend fun recordSessionPlace(current: Settings) {
+    private suspend fun recordSessionPlace() {
+        val current = settings.current()
+        if (!current.locationTags) return
         val fix = locationSource.lastKnown() ?: return
         val place = PlaceCoarsener.coarsen(fix.first, fix.second, current.savedPlaces)
         settings.update { it.copy(pendingLocationPlace = place, pendingLocationAt = System.currentTimeMillis()) }

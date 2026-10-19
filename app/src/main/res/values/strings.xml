@@ -303,7 +303,7 @@
     <!-- Location tags (NYTKA-62) -->
     <string name="location_tags_title">Location tags</string>
     <string name="location_tags_label">Tag conversations with a coarse place</string>
-    <string name="location_tags_explanation">Nytka reads a coarse location when a capture session starts and, once your server has a conversation for it, adds the name of a saved place or a city-level label as a tag suggestion. Your exact coordinates never leave the phone.</string>
+    <string name="location_tags_explanation">Nytka reads a coarse location when a capture session starts and, once your server has a conversation for it, adds the name of a saved place or a city-level label as a tag. Your exact coordinates never leave the phone.</string>
     <string name="location_tags_permission_denied">Without location Nytka cannot tag conversations. Switch on again to be asked</string>
     <string name="location_tags_permission_blocked">Without location Nytka cannot tag conversations. If Android does not ask again, allow location in the system settings for Nytka, then switch on again</string>
     <string name="location_tags_place_name">Place name</string>

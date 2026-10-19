@@ -3,6 +3,7 @@ package io.github.nytka_app.core.settings
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import io.github.nytka_app.core.location.SavedPlace
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -14,7 +15,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import io.github.nytka_app.core.location.SavedPlace
 import java.time.DayOfWeek
 import java.time.LocalTime
 
@@ -77,7 +77,11 @@ class SettingsStoreTest {
                     phoneContext = false,
                     wallpaperColors = true,
                     locationTags = true,
-                    savedPlaces = listOf(SavedPlace("Home", 40.7128, -74.0060), SavedPlace("Office", 51.5074, -0.1278, 80.0)),
+                    savedPlaces =
+                        listOf(
+                            SavedPlace("Home", 40.7128, -74.0060),
+                            SavedPlace("Office", 51.5074, -0.1278, 80.0),
+                        ),
                     pendingLocationPlace = "Home",
                     pendingLocationAt = 1_760_000_000_000,
                     muteSchedule =
@@ -178,7 +182,14 @@ class SettingsStoreTest {
             val store = store()
             val places = listOf(SavedPlace("Home", 40.7128, -74.0060), SavedPlace("Office", 51.5074, -0.1278, 80.0))
 
-            store.update { it.copy(locationTags = true, savedPlaces = places, pendingLocationPlace = "Home", pendingLocationAt = 42) }
+            store.update {
+                it.copy(
+                    locationTags = true,
+                    savedPlaces = places,
+                    pendingLocationPlace = "Home",
+                    pendingLocationAt = 42,
+                )
+            }
             assertEquals(places, store.current().savedPlaces)
             assertEquals("Home", store.current().pendingLocationPlace)
 

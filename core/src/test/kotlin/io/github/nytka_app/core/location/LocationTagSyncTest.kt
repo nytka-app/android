@@ -1,10 +1,10 @@
 package io.github.nytka_app.core.location
 
 import io.github.nytka_app.core.api.ApiResult
-import io.github.nytka_app.core.api.ConversationPage
-import io.github.nytka_app.core.api.ConversationsClient
 import io.github.nytka_app.core.api.ConversationDetail
+import io.github.nytka_app.core.api.ConversationPage
 import io.github.nytka_app.core.api.ConversationSummary
+import io.github.nytka_app.core.api.ConversationsClient
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.core.api.Segment
@@ -127,7 +127,8 @@ class LocationTagSyncTest {
     @Test
     fun `off, it never calls the conversations or tags API`() =
         runTest {
-            val settings = FakeSettings(Settings(locationTags = false, pendingLocationPlace = "Home", pendingLocationAt = now))
+            val settings =
+                FakeSettings(Settings(locationTags = false, pendingLocationPlace = "Home", pendingLocationAt = now))
             val conversations = FakeConversations()
             val tags = FakeTags()
 
@@ -155,8 +156,12 @@ class LocationTagSyncTest {
     @Test
     fun `a pending place matches the conversation that started near it and is sent as its tag`() =
         runTest {
-            val settings = FakeSettings(Settings(locationTags = true, pendingLocationPlace = "Home", pendingLocationAt = now))
-            val startedAt = java.time.Instant.ofEpochMilli(now + 60_000).toString()
+            val settings =
+                FakeSettings(Settings(locationTags = true, pendingLocationPlace = "Home", pendingLocationAt = now))
+            val startedAt =
+                java.time.Instant
+                    .ofEpochMilli(now + 60_000)
+                    .toString()
             val conversations = FakeConversations(ApiResult.Ok(ConversationPage(listOf(summary("c1", startedAt)))))
             val tags = FakeTags()
 
@@ -170,8 +175,12 @@ class LocationTagSyncTest {
     @Test
     fun `no conversation starts near the pending place, so nothing is tagged and the place stays pending`() =
         runTest {
-            val settings = FakeSettings(Settings(locationTags = true, pendingLocationPlace = "Home", pendingLocationAt = now))
-            val farAway = java.time.Instant.ofEpochMilli(now - 60 * 60_000).toString()
+            val settings =
+                FakeSettings(Settings(locationTags = true, pendingLocationPlace = "Home", pendingLocationAt = now))
+            val farAway =
+                java.time.Instant
+                    .ofEpochMilli(now - 60 * 60_000)
+                    .toString()
             val conversations = FakeConversations(ApiResult.Ok(ConversationPage(listOf(summary("c1", farAway)))))
             val tags = FakeTags()
 
@@ -186,7 +195,8 @@ class LocationTagSyncTest {
     fun `a pending place older than a day is dropped instead of tagging whatever is newest`() =
         runTest {
             val oldAt = now - 25 * 60 * 60_000
-            val settings = FakeSettings(Settings(locationTags = true, pendingLocationPlace = "Home", pendingLocationAt = oldAt))
+            val settings =
+                FakeSettings(Settings(locationTags = true, pendingLocationPlace = "Home", pendingLocationAt = oldAt))
             val conversations = FakeConversations()
             val tags = FakeTags()
 
@@ -200,7 +210,8 @@ class LocationTagSyncTest {
     @Test
     fun `a conversations API failure is reported and the place stays pending for the next try`() =
         runTest {
-            val settings = FakeSettings(Settings(locationTags = true, pendingLocationPlace = "Home", pendingLocationAt = now))
+            val settings =
+                FakeSettings(Settings(locationTags = true, pendingLocationPlace = "Home", pendingLocationAt = now))
             val conversations = FakeConversations(ApiResult.Failure(FailureKind.Network, "offline"))
             val tags = FakeTags()
 

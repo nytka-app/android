@@ -15,7 +15,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -29,7 +28,7 @@ import io.github.nytka_app.ui.rememberPermissionRequest
 
 /**
  * The Location tags switch. On asks for coarse location first; precise coordinates never leave the phone, only a
- * saved place's name or a city-level label does, as a tag suggestion on the conversation the session becomes.
+ * saved place's name or a city-level label does, as a tag on the conversation the session becomes.
  */
 @Composable
 internal fun LocationSection(
