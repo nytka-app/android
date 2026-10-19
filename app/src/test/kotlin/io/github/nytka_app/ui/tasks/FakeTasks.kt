@@ -49,6 +49,28 @@ class FakeTasks(
         return if (all.removeAll { it.id == id }) ApiResult.Ok(Unit) else notFound()
     }
 
+    override suspend fun create(
+        text: String,
+        due: String?,
+    ): ApiResult<NytkaTask> {
+        calls += "create $text due=$due"
+        failure?.let { return it }
+        val created = NytkaTask(nextId(), null, text, due = due?.let { "${it}T00:00:00Z" })
+        all += created
+        return ApiResult.Ok(created)
+    }
+
+    override suspend fun setDue(
+        id: String,
+        due: String?,
+    ): ApiResult<NytkaTask> {
+        calls += "due $id $due"
+        return change(id) { it.copy(due = due?.let { day -> "${day}T00:00:00Z" }) }
+    }
+
+    /** A new task's id sorts after every other, as a version 7 UUID does. */
+    private fun nextId() = "z%03d".format(all.size + 1)
+
     private fun change(
         id: String,
         edit: (NytkaTask) -> NytkaTask,
@@ -67,9 +89,10 @@ class FakeTasks(
             id: String,
             text: String = "task $id",
             done: Boolean = false,
-            conversationId: String = "c1",
+            conversationId: String? = "c1",
             title: String? = "Standup",
             startedAt: String? = "2026-09-29T08:00:00Z",
-        ) = NytkaTask(id, conversationId, text, done, title, startedAt)
+            due: String? = null,
+        ) = NytkaTask(id, conversationId, text, done, title, startedAt, due = due)
     }
 }

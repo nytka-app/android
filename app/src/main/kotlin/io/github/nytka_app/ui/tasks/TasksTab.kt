@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
@@ -22,10 +24,12 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -52,6 +56,7 @@ import io.github.nytka_app.ui.NytkaTextField
 import io.github.nytka_app.ui.names.NameCompletions
 import io.github.nytka_app.ui.names.filled
 import io.github.nytka_app.ui.names.knownPeople
+import java.time.LocalDate
 
 /**
  * The Tasks tab: open tasks newest first, done ones below, collapsed. A task opens its conversation through
@@ -66,33 +71,79 @@ fun TasksTab(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<TaskRow?>(null) }
     var deleting by remember { mutableStateOf<TaskRow?>(null) }
+    var dating by remember { mutableStateOf<TaskRow?>(null) }
+    var adding by remember { mutableStateOf(false) }
 
-    PullToRefreshBox(isRefreshing = state.refreshing, onRefresh = viewModel::refresh) {
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
-            state.error?.let { error ->
-                item(key = "error") { ListFailure(error, state.offline, onRetry = viewModel::refresh) }
-            }
-            if (state.loading && state.open.isEmpty() && state.error == null) {
-                item(key = "loading") { ListState(ListStateKind.Loading, stringResource(R.string.list_loading)) }
-            }
-            items(state.open, key = { "open-${it.id}" }) { task ->
-                TaskItem(task, onOpenConversation, viewModel::setDone, { editing = task }, { deleting = task })
-            }
-            if (state.open.isNotEmpty() && !state.openEndReached) {
-                item(key = "more-open") { LaunchedEffect(state.open.size) { viewModel.loadMoreOpen() } }
-            }
-            if (state.open.isEmpty() && !state.loading && state.error == null) {
-                item {
-                    ListState(
-                        ListStateKind.Empty,
-                        stringResource(R.string.tasks_empty_title),
-                        body = stringResource(R.string.tasks_empty_body),
-                    )
+    Scaffold(
+        containerColor = Color.Transparent,
+        contentWindowInsets = WindowInsets(0),
+        floatingActionButton = {
+            if (state.canCreate) {
+                FloatingActionButton(onClick = { adding = true }) {
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.add_task))
                 }
             }
-            completedSection(state, viewModel, onOpenConversation, { editing = it }, { deleting = it })
+        },
+    ) { padding ->
+        PullToRefreshBox(
+            isRefreshing = state.refreshing,
+            onRefresh = viewModel::refresh,
+            modifier = Modifier.padding(padding),
+        ) {
+            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(top = 8.dp, bottom = 88.dp)) {
+                state.error?.let { error ->
+                    item(key = "error") { ListFailure(error, state.offline, onRetry = viewModel::refresh) }
+                }
+                if (state.loading && state.open.isEmpty() && state.error == null) {
+                    item(key = "loading") { ListState(ListStateKind.Loading, stringResource(R.string.list_loading)) }
+                }
+                items(state.open, key = { "open-${it.id}" }) { task ->
+                    TaskItem(
+                        task,
+                        state.canCreate,
+                        onOpenConversation,
+                        viewModel::setDone,
+                        { editing = task },
+                        { dating = task },
+                        { deleting = task },
+                    )
+                }
+                if (state.open.isNotEmpty() && !state.openEndReached) {
+                    item(key = "more-open") { LaunchedEffect(state.open.size) { viewModel.loadMoreOpen() } }
+                }
+                if (state.open.isEmpty() && !state.loading && state.error == null) {
+                    item {
+                        ListState(
+                            ListStateKind.Empty,
+                            stringResource(R.string.tasks_empty_title),
+                            body = stringResource(R.string.tasks_empty_body),
+                        )
+                    }
+                }
+                completedSection(state, viewModel, onOpenConversation, { editing = it }, { dating = it }, {
+                    deleting =
+                        it
+                })
+            }
         }
     }
+
+    AddAndDueDialogs(
+        adding,
+        dating,
+        onAdded = { text, due ->
+            adding = false
+            viewModel.create(text, due)
+        },
+        onDated = { task, due ->
+            dating = null
+            viewModel.setDue(task.id, due)
+        },
+        onDismiss = {
+            adding = false
+            dating = null
+        },
+    )
 
     editing?.let { task ->
         EditDialog(
@@ -116,12 +167,26 @@ fun TasksTab(
     }
 }
 
+/** The dialog that adds a task and the picker that sets one's due date. */
+@Composable
+private fun AddAndDueDialogs(
+    adding: Boolean,
+    dating: TaskRow?,
+    onAdded: (String, LocalDate?) -> Unit,
+    onDated: (TaskRow, LocalDate?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    if (adding) AddTaskDialog(onDismiss, onAdded)
+    dating?.let { task -> DuePicker(task.due, onDismiss, onPick = { onDated(task, it) }) }
+}
+
 /** The collapsed "Done" header and, when opened, the done tasks, 30 at a time. */
 private fun LazyListScope.completedSection(
     state: TasksUiState,
     viewModel: TasksViewModel,
     onOpenConversation: (String) -> Unit,
     onEdit: (TaskRow) -> Unit,
+    onDue: (TaskRow) -> Unit,
     onDelete: (TaskRow) -> Unit,
 ) {
     if (state.error == null || state.completedShown) {
@@ -144,7 +209,15 @@ private fun LazyListScope.completedSection(
     }
     if (!state.completedShown) return
     items(state.completed, key = { "done-${it.id}" }) { task ->
-        TaskItem(task, onOpenConversation, viewModel::setDone, { onEdit(task) }, { onDelete(task) })
+        TaskItem(
+            task,
+            state.canCreate,
+            onOpenConversation,
+            viewModel::setDone,
+            { onEdit(task) },
+            { onDue(task) },
+            { onDelete(task) },
+        )
     }
     if (state.completed.isNotEmpty() && !state.completedEndReached) {
         item(key = "more-done") {
@@ -192,9 +265,11 @@ private fun DeleteDialog(
 @Composable
 private fun TaskItem(
     task: TaskRow,
+    canSetDue: Boolean,
     onOpenConversation: (String) -> Unit,
     onDone: (String, Boolean) -> Unit,
     onEdit: () -> Unit,
+    onDue: () -> Unit,
     onDelete: () -> Unit,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -203,7 +278,14 @@ private fun TaskItem(
         headlineContent = {
             Text(task.text, color = if (task.done) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified)
         },
-        supportingContent = { if (task.source.isNotEmpty()) Text(task.source) },
+        supportingContent = {
+            Column {
+                if (task.source.isNotEmpty()) Text(task.source)
+                task.dueText?.let {
+                    Text(it, color = if (task.overdue) MaterialTheme.colorScheme.error else Color.Unspecified)
+                }
+            }
+        },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = {
@@ -214,6 +296,12 @@ private fun TaskItem(
                         menuOpen = false
                         onEdit()
                     })
+                    if (canSetDue) {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.task_due_edit)) }, onClick = {
+                            menuOpen = false
+                            onDue()
+                        })
+                    }
                     DropdownMenuItem(text = { Text(stringResource(R.string.action_delete)) }, onClick = {
                         menuOpen = false
                         onDelete()
@@ -224,7 +312,9 @@ private fun TaskItem(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clickable { onOpenConversation(task.conversationId) },
+                .then(
+                    task.conversationId?.let { id -> Modifier.clickable { onOpenConversation(id) } } ?: Modifier,
+                ),
     )
 }
 

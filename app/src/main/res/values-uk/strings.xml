@@ -323,6 +323,12 @@
     <string name="person_basis_mentioned">Згадано</string>
     <string name="person_basis_user">Додано вами</string>
     <string name="person_tasks_title">Відкриті завдання</string>
+    <string name="person_ledger_title">Обіцянки</string>
+    <string name="person_ledger_by_me">Ви винні їм</string>
+    <string name="person_ledger_to_me">Вони винні вам</string>
+    <string name="person_ledger_none">Нічого відкритого</string>
+    <string name="person_ledger_done_format">Виконано (%1$d)</string>
+    <string name="person_ledger_hide_done">Сховати виконані</string>
     <string name="person_no_tasks">Їм нічого не винні</string>
     <string name="person_conversations_title">Розмови</string>
     <string name="person_no_conversations">Розмов ще немає</string>
@@ -535,6 +541,12 @@
     <string name="delete_task_title">Видалити це завдання?</string>
     <string name="edit_task_title">Редагувати завдання</string>
     <string name="task_label">Завдання</string>
+    <string name="add_task">Додати завдання</string>
+    <string name="add_task_title">Нове завдання</string>
+    <string name="task_due_add">Додати термін</string>
+    <string name="task_due_edit">Термін</string>
+    <string name="task_due_clear">Без терміну</string>
+    <string name="task_due_format">Термін: %1$s</string>
 
     <!-- Memories tab -->
     <string name="no_memories_yet">Спогадів ще немає</string>

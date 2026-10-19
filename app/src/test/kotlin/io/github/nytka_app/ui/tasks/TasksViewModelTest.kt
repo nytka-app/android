@@ -3,6 +3,8 @@ package io.github.nytka_app.ui.tasks
 import io.github.nytka_app.MainDispatcherRule
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
+import io.github.nytka_app.core.api.ServerInfo
+import io.github.nytka_app.ui.tags.fakeInfo
 import io.github.nytka_app.ui.tasks.FakeTasks.Companion.task
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -11,6 +13,7 @@ import org.junit.Rule
 import org.junit.Test
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneOffset
 
 class TasksViewModelTest {
@@ -21,7 +24,9 @@ class TasksViewModelTest {
     private val api =
         FakeTasks(listOf(task("3"), task("2", startedAt = "2026-09-28T09:00:00Z"), task("1", done = true)))
 
-    private fun viewModel() = TasksViewModel(api, clock)
+    private var features = arrayOf(ServerInfo.FEATURE_TASK_CREATE)
+
+    private fun viewModel() = TasksViewModel(api, fakeInfo(*features), clock)
 
     @Test
     fun `open tasks come newest first with their conversation and day`() {
@@ -215,5 +220,103 @@ class TasksViewModelTest {
         assertEquals("This server needs an update", state.error)
         assertTrue(state.open.isEmpty())
         assertFalse(state.loading)
+    }
+
+    @Test
+    fun `adding needs the task-create feature`() {
+        assertTrue(viewModel().state.value.canCreate)
+
+        features = emptyArray()
+        val old = viewModel()
+        old.create("Pay rent", null)
+
+        assertFalse(old.state.value.canCreate)
+        assertTrue(api.calls.none { it.startsWith("create") })
+    }
+
+    @Test
+    fun `a new task goes on top with its due date and no conversation`() {
+        val viewModel = viewModel()
+
+        viewModel.create("  Pay rent  ", LocalDate.of(2026, 10, 3))
+
+        val added =
+            viewModel.state.value.open
+                .first()
+        assertEquals("Pay rent", added.text)
+        assertEquals(null, added.conversationId)
+        assertEquals("", added.source)
+        assertEquals(LocalDate.of(2026, 10, 3), added.due)
+        assertEquals("Due Saturday, 3 October", added.dueText)
+        assertFalse(added.overdue)
+        assertTrue("create Pay rent due=2026-10-03" in api.calls)
+    }
+
+    @Test
+    fun `a blank text is never sent`() {
+        val viewModel = viewModel()
+
+        viewModel.create("   ", null)
+
+        assertTrue(api.calls.none { it.startsWith("create") })
+    }
+
+    @Test
+    fun `a refused add says so and keeps the list`() {
+        val viewModel = viewModel()
+        api.failure = ApiResult.Failure(FailureKind.NotFound, "Not found.")
+
+        viewModel.create("Pay rent", null)
+
+        assertEquals("This server needs an update", viewModel.state.value.error)
+        assertEquals(
+            listOf("3", "2"),
+            viewModel.state.value.open
+                .map { it.id },
+        )
+    }
+
+    @Test
+    fun `a due date is set, shown as overdue when past, and cleared`() {
+        val viewModel = viewModel()
+
+        viewModel.setDue("3", LocalDate.of(2026, 9, 28))
+
+        val late =
+            viewModel.state.value.open
+                .first { it.id == "3" }
+        assertEquals("Due Yesterday", late.dueText)
+        assertTrue(late.overdue)
+
+        viewModel.setDue("3", null)
+
+        val none =
+            viewModel.state.value.open
+                .first { it.id == "3" }
+        assertEquals(null, none.due)
+        assertEquals(null, none.dueText)
+        assertFalse(none.overdue)
+    }
+
+    @Test
+    fun `a done task past its date is not overdue`() {
+        api.all[2] = task("1", done = true, due = "2026-09-01T00:00:00Z")
+        val viewModel = viewModel()
+        viewModel.toggleCompleted()
+
+        val done =
+            viewModel.state.value.completed
+                .single()
+        assertEquals(LocalDate.of(2026, 9, 1), done.due)
+        assertFalse(done.overdue)
+    }
+
+    @Test
+    fun `a due date that is gone says the item no longer exists`() {
+        val viewModel = viewModel()
+
+        viewModel.setDue("nope", LocalDate.of(2026, 10, 1))
+
+        assertEquals("This item no longer exists", viewModel.state.value.error)
     }
 }
