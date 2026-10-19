@@ -189,8 +189,8 @@ Addresses, tokens and signing secrets are set in a monospaced font.
   **Review inbox**: when the server lists the `review` feature and something waits, an inbox icon with
   a count sits in the top bar. It lists name suggestions ("Is this Olena?" with the line that carries
   the name), voice matches (with the similarity) and lines Nytka is unsure are yours ("Did you say
-  this?"), each with **Yes** and **No**. Nothing is applied until you tap; the row goes at once and
-  comes back if the server refuses. Tap a row to open its conversation. Needs an admin token.
+  this?"), each as a card with a saffron question on top (a decision, not a failure) and **Yes** and **No**. Nothing is applied until you tap; the row goes at once and
+  comes back if the server refuses. Tap the text of a card to open its conversation. An empty inbox, a loading list, an offline server and a failure each say so in words. Needs an admin token.
   A role reads "Is this the repairman?" or "Is this Mykola, the repairman?".
   **Known by a role.** A person who has a role and no name yet shows their role as the name with a
   second line "Name not known yet", in the list and on their page, whose ⋮ then has **Add name** in
@@ -206,8 +206,8 @@ Addresses, tokens and signing secrets are set in a monospaced font.
   guess as your mark (a TV or video when it was unsure), **No** marks the stretch as a person. A
   stretch you or someone else already marked leaves the list without a notice.
   **Who is this?** cards sit above the list when your server groups voices (it needs
-  `people.voiceMatching` on and keeps audio for at least a day). A card shows the conversation, up to
-  three lines and a clip of at most 10 seconds, played from your server with your token and never
+  `people.voiceMatching` on and keeps audio for at least a day). A card has the same saffron header; it shows the conversation, up to
+  three lines in quotes and a clip of at most 10 seconds, played from your server with your token and never
   stored on the phone. On a group, type a name or pick someone you know and tap **Save**, or tap
   **Skip** (hidden for 7 days) or **Not a person**. On a match ("Is this Olena?") tap **Yes**,
   **Not them** or **Skip**. Nothing is named until you tap. Needs an admin token.
@@ -220,8 +220,9 @@ Addresses, tokens and signing secrets are set in a monospaced font.
   your server. It does not reach the voice models the transcription service keeps: those go with
   **Delete and remove voice model** on one person.
 - **Ask.** Type a question (up to 500 characters) and tap send for an answer drawn from your
-  conversations and memories, with its sources numbered below it. Tap a source row, or its `[n]` in
-  the answer, to open the conversation it came from; a memory with none opens nothing. "The server
+  conversations and memories, with its sources numbered below it. Your question is shown above the answer.
+  Tap a source row, or its numbered pill in the answer, to open the conversation it came from; a memory with none opens nothing. When no source supports an answer, the tab says "Nothing in your
+  conversations answers this." and shows none. "The server
   has no model set up, or is restarting.", "The model could not answer. Try again." and "The server
   took too long to answer. Try a shorter question." cover the server's own failures. Needs server
   0.8.0 or later; an older server says it needs an update.
@@ -254,9 +255,9 @@ licences (SIL Open Font License 1.1) are under Device → About → **Font licen
 
 **Search** opens from the magnifier above the conversation list. It looks through transcripts,
 titles, summaries and memories, in Ukrainian and English, while you type: from one letter or digit,
-after a short pause. **All**, **Conversations** and **Memories** narrow it; **All** also finds people by name
+after a short pause. **All**, **Conversations** and **Memories** (chips with a check when selected) narrow it; **All** also finds people by name
 (a server with the People tab), and a person opens their page in the People tab. A hit shows the title or
-the memory and a snippet with the matches in bold, and opens its conversation when it has one. Every
+the memory and a snippet with the matches in bold, and opens its conversation when it has one. Before you type, with no hits, offline and on a failure the list says so. Every
 word must match, exactly or as the start of a word. Endings of Ukrainian words need the server's optional dictionary:
 see the [server README](https://github.com/nytka-app/server#ukrainian-search-optional).
 
@@ -295,10 +296,10 @@ rotation and lasts until you clear it or leave the app; it is not saved on the p
 `speech-kind` there is no chip and no action.
 
 **Proposed tags.** A server that lists `tag-suggestions` may propose tags it read in a
-summary. On a conversation, a "Suggested tags" row under the header shows each as a chip with **✓** (add
-it) and **✕** (not this one, never proposed again for that conversation); the person page shows the same
+summary. On a conversation, a "Suggested tags" row under the header shows each name on a saffron card with **Add**
+and **Not this** (never proposed again for that conversation); the person page shows the same
 row for tags proposed for that person once the server proposes them. Nothing is added until you tap: the
-chip appears at once on **✓**, a refusal keeps the proposal and says why ("This item has 20 tags." when the
+tag appears at once on **Add**, a refusal keeps the proposal and says why ("This item has 20 tags." when the
 item is full), and one the server no longer holds (answered elsewhere) drops and the page reads again.
 A failure of the list shows no row. A server without the feature shows none and the app does not ask it.
 

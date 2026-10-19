@@ -1,16 +1,24 @@
 package io.github.nytka_app.ui.people.cards
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,6 +40,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.core.api.VoiceCard
+import io.github.nytka_app.ui.DecisionCard
+import io.github.nytka_app.ui.Monogram
+import io.github.nytka_app.ui.NytkaTextField
 import io.github.nytka_app.ui.people.PeopleViewModel
 
 private const val MAX_LINES_SHOWN = 3
@@ -96,66 +107,81 @@ private fun CardItem(
 ) {
     val match = card.kind == VoiceCard.KIND_MATCH
     var name by rememberSaveable(card.id) { mutableStateOf("") }
-    OutlinedCard(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    DecisionCard(
+        if (match) {
+            stringResource(R.string.cards_match_title_format, card.personName.orEmpty())
+        } else {
+            stringResource(R.string.cards_group_title)
+        },
+        Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+    ) {
+        card.conversationTitle?.takeIf { it.isNotBlank() }?.let {
             Text(
-                if (match) {
-                    stringResource(R.string.cards_match_title_format, card.personName.orEmpty())
-                } else {
-                    stringResource(R.string.cards_group_title)
-                },
-                style = MaterialTheme.typography.titleMedium,
+                stringResource(R.string.cards_heard_in_format, it),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            card.conversationTitle?.takeIf { it.isNotBlank() }?.let {
-                Text(it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-            }
-            card.lines.take(MAX_LINES_SHOWN).forEach {
-                Text(it.text, style = MaterialTheme.typography.bodyMedium)
-            }
-            if (card.clip != null) {
-                TextButton(onClick = onClip, enabled = enabled) {
-                    Text(stringResource(if (playing) R.string.cards_stop_clip else R.string.cards_play_clip))
-                }
-            }
-            if (!match) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it.take(PeopleViewModel.MAX_NAME) },
-                    label = { Text(stringResource(R.string.people_name_label)) },
-                    singleLine = true,
-                    enabled = enabled,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
-                    modifier = Modifier.fillMaxWidth(),
+        }
+        card.lines.take(MAX_LINES_SHOWN).forEach {
+            Text(stringResource(R.string.source_quote, it.text), style = MaterialTheme.typography.bodyMedium)
+        }
+        if (card.clip != null) {
+            FilledTonalButton(onClick = onClip, enabled = enabled) {
+                Icon(
+                    if (playing) Icons.Filled.Close else Icons.Filled.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
                 )
-                val suggestions =
-                    if (name.isBlank()) {
-                        emptyList()
-                    } else {
-                        people
-                            .filter {
-                                it.name.contains(name.trim(), ignoreCase = true) &&
-                                    !it.name.equals(name.trim(), true)
-                            }.take(MAX_SUGGESTIONS)
-                    }
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    suggestions.forEach { person ->
-                        TextButton(onClick = { name = person.name }, enabled = enabled) { Text(person.name) }
-                    }
-                }
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(if (playing) R.string.cards_stop_clip else R.string.cards_play_clip))
             }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (match) {
-                    TextButton(onClick = onYes, enabled = enabled) { Text(stringResource(R.string.cards_yes)) }
+        }
+        if (!match) {
+            NytkaTextField(
+                value = name,
+                onValueChange = { name = it.take(PeopleViewModel.MAX_NAME) },
+                label = stringResource(R.string.people_name_label),
+                enabled = enabled,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            val suggestions =
+                if (name.isBlank()) {
+                    emptyList()
                 } else {
-                    TextButton(onClick = { onSave(name) }, enabled = enabled && name.isNotBlank()) {
-                        Text(stringResource(R.string.action_save))
-                    }
+                    people
+                        .filter {
+                            it.name.contains(name.trim(), ignoreCase = true) &&
+                                !it.name.equals(name.trim(), true)
+                        }.take(MAX_SUGGESTIONS)
                 }
-                TextButton(onClick = onSkip, enabled = enabled) { Text(stringResource(R.string.cards_skip)) }
-                TextButton(onClick = onReject, enabled = enabled) {
-                    Text(stringResource(if (match) R.string.cards_not_them else R.string.cards_not_person))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                suggestions.forEach { person ->
+                    AssistChip(
+                        onClick = { name = person.name },
+                        enabled = enabled,
+                        label = { Text(person.name) },
+                        leadingIcon = { Monogram(person.name, size = 24.dp) },
+                    )
                 }
             }
+        }
+        FlowRow(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (match) {
+                Button(onClick = onYes, enabled = enabled) { Text(stringResource(R.string.cards_yes)) }
+            } else {
+                Button(onClick = { onSave(name) }, enabled = enabled && name.isNotBlank()) {
+                    Text(stringResource(R.string.action_save))
+                }
+            }
+            OutlinedButton(onClick = onReject, enabled = enabled) {
+                Text(stringResource(if (match) R.string.cards_not_them else R.string.cards_not_person))
+            }
+            TextButton(onClick = onSkip, enabled = enabled) { Text(stringResource(R.string.cards_skip)) }
         }
     }
 }

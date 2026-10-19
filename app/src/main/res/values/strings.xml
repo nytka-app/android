@@ -706,4 +706,18 @@
     <string name="signals_button_hold">Hold for 3 seconds</string>
     <string name="signals_button_hold_means">Turns the pendant off</string>
     <string name="signals_source_omi">From the Omi firmware (BasedHardware/omi, a82aab91e1): set_led_state() in main.c and lib/core/button.c.</string>
+    <string name="search_filter_all">All</string>
+    <string name="search_filter_conversations">Conversations</string>
+    <string name="search_filter_memories">Memories</string>
+    <string name="search_clear">Clear search</string>
+    <string name="search_searching">Searching</string>
+    <string name="search_prompt_title">Search your history</string>
+    <string name="search_prompt_body">Type a word or a name. Results come from your server: conversations, memories and people.</string>
+    <string name="search_nothing_body_format">No conversation, memory or person matches “%1$s”. Try another word.</string>
+    <string name="review_empty_body">Nytka asks here when it is unsure about a name, a voice or a tag.</string>
+    <string name="tag_proposal_reject_label">Not this</string>
+    <string name="cards_heard_in_format">Heard in %1$s</string>
+    <string name="ask_asking">Searching your conversations…</string>
+    <string name="ask_no_answer">Nothing in your conversations answers this.</string>
+    <string name="ask_source_format">Source %1$d</string>
 </resources>

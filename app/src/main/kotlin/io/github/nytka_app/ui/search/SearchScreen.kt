@@ -2,25 +2,30 @@ package io.github.nytka_app.ui.search
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,17 +34,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.ListFailure
+import io.github.nytka_app.ui.ListState
+import io.github.nytka_app.ui.ListStateKind
+import io.github.nytka_app.ui.Monogram
+import io.github.nytka_app.ui.NytkaTextField
 
 /**
  * The Conversations tab's search icon shows only while this is true. A server without search answers 404 and the
@@ -61,6 +74,7 @@ fun SearchScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val focus = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
     LaunchedEffect(Unit) { focus.requestFocus() }
 
     Scaffold(
@@ -84,39 +98,65 @@ fun SearchScreen(
             Modifier
                 .fillMaxSize()
                 .padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            contentPadding = PaddingValues(vertical = 16.dp),
         ) {
             item {
-                OutlinedTextField(
+                NytkaTextField(
                     value = state.query,
                     onValueChange = viewModel::setQuery,
-                    label = { Text(stringResource(R.string.search_hint)) },
-                    singleLine = true,
+                    label = stringResource(R.string.search_hint),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                    trailingIcon =
+                        if (state.query.isEmpty()) {
+                            null
+                        } else {
+                            {
+                                IconButton(onClick = { viewModel.setQuery("") }) {
+                                    Icon(
+                                        Icons.Filled.Close,
+                                        contentDescription = stringResource(R.string.search_clear),
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                }
+                            }
+                        },
                     modifier =
                         Modifier
                             .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
                             .focusRequester(focus),
                 )
             }
             item {
-                Row(Modifier.padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(
+                    Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
                     SearchFilter.entries.forEach { filter ->
+                        val selected = state.filter == filter
                         FilterChip(
-                            selected = state.filter == filter,
+                            selected = selected,
                             onClick = { viewModel.setFilter(filter) },
-                            label = { Text(filter.label) },
+                            label = { Text(stringResource(filter.label)) },
+                            leadingIcon =
+                                if (selected) {
+                                    { Icon(Icons.Filled.Check, contentDescription = null, Modifier.size(18.dp)) }
+                                } else {
+                                    null
+                                },
                         )
                     }
                 }
             }
-            state.error?.let { error ->
-                item {
-                    Text(error, color = MaterialTheme.colorScheme.error)
-                    TextButton(onClick = viewModel::retry) { Text(stringResource(R.string.action_retry)) }
-                }
-            }
+            searchStateItem(state, viewModel::retry)
             items(state.rows, key = { it.key }) { row ->
+                val open: (() -> Unit)? =
+                    when {
+                        row.personId != null -> ({ onOpenPerson(row.personId) })
+                        row.openId != null -> ({ onOpenConversation(row.openId) })
+                        else -> null
+                    }
                 ListItem(
                     overlineContent =
                         row.title?.let { title ->
@@ -130,31 +170,59 @@ fun SearchScreen(
                         )
                     },
                     supportingContent = { Text(row.date) },
-                    modifier =
-                        when {
-                            row.personId != null -> Modifier.clickable { onOpenPerson(row.personId) }
-                            row.openId != null -> Modifier.clickable { onOpenConversation(row.openId) }
-                            else -> Modifier
+                    leadingContent =
+                        row.personId?.let {
+                            { Monogram(row.title ?: row.snippet.joinToString("") { span -> span.text }) }
                         },
+                    modifier = if (open != null) Modifier.clickable(role = Role.Button, onClick = open) else Modifier,
                 )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             }
             if (state.rows.isNotEmpty() && !state.endReached) {
                 item(key = "more") { LaunchedEffect(state.rows.size) { viewModel.loadMore() } }
-            }
-            if (state.nothingFound) {
-                item { Text(stringResource(R.string.nothing_found)) }
             }
         }
     }
 }
 
+/** What the list says when it has no rows: a failure, a search under way, no hit, or the first prompt. */
+private fun LazyListScope.searchStateItem(
+    state: SearchUiState,
+    onRetry: () -> Unit,
+) {
+    val error = state.error
+    when {
+        error != null -> item(key = "error") { ListFailure(error, state.offline, onRetry = onRetry) }
+
+        state.rows.isEmpty() && state.searching ->
+            item(key = "searching") { ListState(ListStateKind.Loading, stringResource(R.string.search_searching)) }
+
+        state.nothingFound ->
+            item(key = "nothing") {
+                ListState(
+                    ListStateKind.Empty,
+                    stringResource(R.string.nothing_found),
+                    body = stringResource(R.string.search_nothing_body_format, state.query.trim()),
+                )
+            }
+
+        state.rows.isEmpty() && !state.searched ->
+            item(key = "prompt") {
+                ListState(
+                    ListStateKind.Empty,
+                    stringResource(R.string.search_prompt_title),
+                    body = stringResource(R.string.search_prompt_body),
+                )
+            }
+    }
+}
+
+// Onest ships 400, 500 and 600 only: a bolder weight would be synthesised.
 private fun snippetText(spans: List<SnippetSpan>): AnnotatedString =
     buildAnnotatedString {
         spans.forEach { span ->
             if (span.bold) {
-                withStyle(
-                    SpanStyle(fontWeight = FontWeight.Bold),
-                ) { append(span.text) }
+                withStyle(SpanStyle(fontWeight = FontWeight.SemiBold)) { append(span.text) }
             } else {
                 append(span.text)
             }

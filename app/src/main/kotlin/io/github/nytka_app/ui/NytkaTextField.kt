@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Warning
@@ -37,6 +38,8 @@ fun NytkaTextField(
     error: String? = null,
     isError: Boolean = error != null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    enabled: Boolean = true,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     trailingIcon: @Composable (() -> Unit)? = null,
 ) {
@@ -54,6 +57,8 @@ fun NytkaTextField(
         textStyle = textStyle.copy(color = MaterialTheme.colorScheme.onSurface),
         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
         keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        enabled = enabled,
         singleLine = true,
         visualTransformation = visualTransformation,
         interactionSource = interaction,
@@ -61,7 +66,7 @@ fun NytkaTextField(
             OutlinedTextFieldDefaults.DecorationBox(
                 value = value,
                 innerTextField = inner,
-                enabled = true,
+                enabled = enabled,
                 singleLine = true,
                 visualTransformation = visualTransformation,
                 interactionSource = interaction,
@@ -72,7 +77,7 @@ fun NytkaTextField(
                 colors = colors,
                 container = {
                     OutlinedTextFieldDefaults.Container(
-                        enabled = true,
+                        enabled = enabled,
                         isError = isError,
                         interactionSource = interaction,
                         colors = colors,

@@ -1,13 +1,16 @@
 package io.github.nytka_app.ui.search
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.nytka_app.R
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.Hit
 import io.github.nytka_app.core.api.SearchClient
 import io.github.nytka_app.ui.memories.MemoryFormatting
 import io.github.nytka_app.ui.notice
+import io.github.nytka_app.ui.unreachable
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,12 +22,12 @@ import java.time.Clock
 import javax.inject.Inject
 
 enum class SearchFilter(
-    val label: String,
+    @StringRes val label: Int,
     val kinds: Set<String>,
 ) {
-    All("All", emptySet()),
-    Conversations("Conversations", setOf("conversation")),
-    Memories("Memories", setOf("memory")),
+    All(R.string.search_filter_all, emptySet()),
+    Conversations(R.string.search_filter_conversations, setOf("conversation")),
+    Memories(R.string.search_filter_memories, setOf("memory")),
 }
 
 /** A run of a snippet: [bold] where the server wrapped it in `<mark>`. */
@@ -53,6 +56,8 @@ data class SearchUiState(
     val searching: Boolean = false,
     val searched: Boolean = false,
     val error: String? = null,
+    /** The failure was a server that could not be reached: the screen says offline, not failed. */
+    val offline: Boolean = false,
     val endReached: Boolean = true,
 ) {
     /** A search finished with no hits and no failure. */
@@ -97,10 +102,26 @@ class SearchViewModel
             nextOffset = null
             val current = mutableState.value
             if (!searchable(current.query)) {
-                mutableState.update { it.copy(rows = emptyList(), searching = false, searched = false, error = null) }
+                mutableState.update {
+                    it.copy(
+                        rows = emptyList(),
+                        searching = false,
+                        searched = false,
+                        error = null,
+                        offline = false,
+                    )
+                }
                 return
             }
-            mutableState.update { it.copy(rows = emptyList(), searching = true, error = null, endReached = true) }
+            mutableState.update {
+                it.copy(
+                    rows = emptyList(),
+                    searching = true,
+                    error = null,
+                    offline = false,
+                    endReached = true,
+                )
+            }
             run(0, if (debounce) DEBOUNCE_MS else 0)
         }
 
@@ -129,7 +150,12 @@ class SearchViewModel
 
                         is ApiResult.Failure ->
                             mutableState.update {
-                                it.copy(searching = false, searched = true, error = result.notice())
+                                it.copy(
+                                    searching = false,
+                                    searched = true,
+                                    error = result.notice(),
+                                    offline = result.kind.unreachable,
+                                )
                             }
                     }
                 }

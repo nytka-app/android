@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
@@ -23,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import io.github.nytka_app.R
 
@@ -49,7 +51,7 @@ fun TagRow(
 
 @Composable
 private fun TagLabel(text: String) {
-    Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surfaceVariant) {
+    Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
         Text(
             text,
             style = MaterialTheme.typography.labelMedium,
@@ -117,17 +119,18 @@ private fun TagChip(
     onClick: ((String) -> Unit)?,
     onRemove: (String) -> Unit,
 ) {
+    // 32dp tall as drawn; IconButton and clickable widen their touch area to 48dp on their own.
     Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.secondaryContainer) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.heightIn(min = 32.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 name,
                 style = MaterialTheme.typography.labelLarge,
                 modifier =
-                    (if (onClick != null) Modifier.clickable { onClick(name) } else Modifier)
-                        .padding(start = 12.dp, end = if (editable) 0.dp else 12.dp, top = 8.dp, bottom = 8.dp),
+                    (if (onClick != null) Modifier.clickable(role = Role.Button) { onClick(name) } else Modifier)
+                        .padding(start = 12.dp, end = if (editable) 0.dp else 12.dp, top = 6.dp, bottom = 6.dp),
             )
             if (editable) {
-                IconButton(onClick = { onRemove(name) }, modifier = Modifier.size(36.dp)) {
+                IconButton(onClick = { onRemove(name) }, modifier = Modifier.size(32.dp)) {
                     Icon(
                         Icons.Filled.Close,
                         contentDescription = stringResource(R.string.tag_remove_format, name),

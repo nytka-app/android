@@ -30,6 +30,8 @@ data class AskSourceRow(
 data class AskResult(
     val parts: List<AnswerPart>,
     val sources: List<AskSourceRow>,
+    /** The question this answers; the field may be edited after asking. */
+    val question: String = "",
 )
 
 data class AskUiState(
@@ -59,7 +61,10 @@ class AskViewModel
             mutableState.update { it.copy(asking = true, error = null) }
             viewModelScope.launch {
                 when (val result = api.ask(current.question.trim())) {
-                    is ApiResult.Ok -> mutableState.update { it.copy(asking = false, result = result(result.value)) }
+                    is ApiResult.Ok ->
+                        mutableState.update {
+                            it.copy(asking = false, result = result(current.question.trim(), result.value))
+                        }
                     is ApiResult.Failure ->
                         mutableState.update {
                             it.copy(
@@ -78,9 +83,12 @@ class AskViewModel
             }
         }
 
-        private fun result(answer: AskAnswer): AskResult {
+        private fun result(
+            question: String,
+            answer: AskAnswer,
+        ): AskResult {
             val rows = answer.sources.map(::row)
-            return AskResult(AnswerParts.parse(answer.answer, rows.associate { it.n to it.openId }), rows)
+            return AskResult(AnswerParts.parse(answer.answer, rows.associate { it.n to it.openId }), rows, question)
         }
 
         private fun row(source: AskSource) =

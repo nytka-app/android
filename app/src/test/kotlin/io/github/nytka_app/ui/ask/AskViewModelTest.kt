@@ -70,6 +70,7 @@ class AskViewModelTest {
             ),
             result.parts,
         )
+        assertEquals("Who?", result.question)
         assertEquals(listOf("c1", "c9", "c3", null), result.sources.map { it.openId })
         assertEquals("met & Anna", result.sources[0].snippet)
         assertEquals("Yesterday", result.sources[0].date)
