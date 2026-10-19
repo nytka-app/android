@@ -24,6 +24,8 @@ data class ServerInfo(
         const val FEATURE_ROLES = "roles"
         const val FEATURE_SPEECH_KIND = "speech-kind"
         const val FEATURE_CONTEXT_RANGES = "context-ranges"
+        const val FEATURE_TASK_CREATE = "task-create"
+        const val FEATURE_LEDGER = "ledger"
 
         const val SCOPE_ADMIN = "admin"
         const val SCOPE_READ = "read"
@@ -111,11 +113,14 @@ data class Segment(
     val speechMarked: Boolean = false,
 )
 
-/** A task the model found. The `conversation*` fields spare a list a request per source. */
+/**
+ * A task the model found or you added. The `conversation*` fields spare a list a request per source; a task added
+ * by hand may have no conversation. [due] is ISO 8601 text, a bare date meaning that day at 00:00 UTC.
+ */
 @Serializable
 data class NytkaTask(
     val id: String,
-    val conversationId: String,
+    val conversationId: String? = null,
     val text: String,
     val done: Boolean = false,
     val conversationTitle: String? = null,
@@ -125,6 +130,8 @@ data class NytkaTask(
     /** The person the task is owed to; server 0.14 and later. */
     val personId: String? = null,
     val personName: String? = null,
+    /** Server 0.20 and later (`task-create`). */
+    val due: String? = null,
 )
 
 @Serializable

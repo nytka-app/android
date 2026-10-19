@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.nytka_app.core.api.ApiResult
+import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.NytkaTask
+import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.TasksClient
 import io.github.nytka_app.ui.conversations.Formatting
 import io.github.nytka_app.ui.itemNotice
@@ -17,15 +19,23 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.LocalDate
+import java.time.ZoneOffset
 import javax.inject.Inject
 
 data class TaskRow(
     val id: String,
     val text: String,
     val done: Boolean,
-    val conversationId: String,
+    /** Null for a task you added by hand. */
+    val conversationId: String?,
     /** The conversation's title, else its day; empty on a server that sends neither. */
     val source: String,
+    /** The due date as the server holds it: a UTC date, shown as it was sent. */
+    val due: LocalDate? = null,
+    /** "Due Today", "Due 24 Oct"; null without a due date. */
+    val dueText: String? = null,
+    /** An open task whose due date is before today. */
+    val overdue: Boolean = false,
 )
 
 data class TasksUiState(
@@ -34,6 +44,8 @@ data class TasksUiState(
     val completedShown: Boolean = false,
     val openEndReached: Boolean = false,
     val completedEndReached: Boolean = false,
+    /** `/info` lists `task-create`: without it there is no add button and no due date. */
+    val canCreate: Boolean = false,
     val loading: Boolean = true,
     val refreshing: Boolean = false,
     /** Why the last load or change failed; a v0.1 server says it needs an update. */
@@ -46,6 +58,7 @@ class TasksViewModel
     @Inject
     constructor(
         private val api: TasksClient,
+        private val info: InfoClient,
         private val clock: Clock,
     ) : ViewModel() {
         private val mutableState = MutableStateFlow(TasksUiState())
@@ -61,6 +74,8 @@ class TasksViewModel
         fun refresh() {
             mutableState.update { it.copy(refreshing = true, error = null, offline = false) }
             viewModelScope.launch {
+                val features = (info.info() as? ApiResult.Ok)?.value
+                mutableState.update { it.copy(canCreate = features?.has(ServerInfo.FEATURE_TASK_CREATE) == true) }
                 when (val result = api.tasks(done = false, before = null, limit = OPEN_PAGE)) {
                     is ApiResult.Ok -> {
                         openCursor = result.value.nextBefore
@@ -224,6 +239,57 @@ class TasksViewModel
             }
         }
 
+        /** Adds a task without a conversation; the newest id sorts first, so it goes on top. */
+        fun create(
+            text: String,
+            due: LocalDate?,
+        ) {
+            val wanted = text.trim().take(MAX_TEXT)
+            if (wanted.isEmpty() || !mutableState.value.canCreate) return
+            viewModelScope.launch {
+                when (val result = api.create(wanted, due?.toString())) {
+                    is ApiResult.Ok ->
+                        mutableState.update {
+                            it.copy(
+                                open =
+                                    (
+                                        it.open.filter { old ->
+                                            old.id != result.value.id
+                                        } + row(result.value)
+                                    ).sortedByDescending { r ->
+                                        r.id
+                                    },
+                                error = null,
+                            )
+                        }
+
+                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.notice()) }
+                }
+            }
+        }
+
+        /** Sets the due date of [id]; null clears it. */
+        fun setDue(
+            id: String,
+            due: LocalDate?,
+        ) {
+            viewModelScope.launch {
+                when (val result = api.setDue(id, due?.toString())) {
+                    is ApiResult.Ok ->
+                        mutableState.update { state ->
+                            val updated = row(result.value)
+                            state.copy(
+                                open = state.open.map { if (it.id == id) updated else it },
+                                completed = state.completed.map { if (it.id == id) updated else it },
+                                error = null,
+                            )
+                        }
+
+                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.itemNotice()) }
+                }
+            }
+        }
+
         fun delete(id: String) {
             viewModelScope.launch {
                 when (val result = api.deleteTask(id)) {
@@ -242,12 +308,23 @@ class TasksViewModel
         }
 
         private fun row(task: NytkaTask): TaskRow {
-            val day =
-                task.conversationStartedAt
+            val source = taskSource(task, clock)
+            val due =
+                task.due
                     ?.let(Formatting::parse)
-                    ?.let { Formatting.dayTitle(it.atZone(clock.zone).toLocalDate(), LocalDate.now(clock)) }
-            val source = listOfNotNull(task.conversationTitle?.takeIf(String::isNotBlank), day).joinToString(" · ")
-            return TaskRow(task.id, task.text, task.done, task.conversationId, source)
+                    ?.atZone(ZoneOffset.UTC)
+                    ?.toLocalDate()
+            val today = LocalDate.now(clock)
+            return TaskRow(
+                task.id,
+                task.text,
+                task.done,
+                task.conversationId,
+                source,
+                due,
+                dueText = due?.let { "Due ${Formatting.dayTitle(it, today)}" },
+                overdue = due != null && !task.done && due.isBefore(today),
+            )
         }
 
         private companion object {
@@ -256,3 +333,15 @@ class TasksViewModel
             const val MAX_TEXT = 200
         }
     }
+
+/** Where a task came from: the conversation's title and the day it was said, either or neither. */
+fun taskSource(
+    task: NytkaTask,
+    clock: Clock,
+): String {
+    val day =
+        task.conversationStartedAt
+            ?.let(Formatting::parse)
+            ?.let { Formatting.dayTitle(it.atZone(clock.zone).toLocalDate(), LocalDate.now(clock)) }
+    return listOfNotNull(task.conversationTitle?.takeIf(String::isNotBlank), day).joinToString(" · ")
+}

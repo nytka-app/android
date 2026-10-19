@@ -328,6 +328,12 @@
     <string name="person_basis_mentioned">Mentioned</string>
     <string name="person_basis_user">Added by you</string>
     <string name="person_tasks_title">Open tasks</string>
+    <string name="person_ledger_title">Promises</string>
+    <string name="person_ledger_by_me">You owe them</string>
+    <string name="person_ledger_to_me">They owe you</string>
+    <string name="person_ledger_none">Nothing open</string>
+    <string name="person_ledger_done_format">Done (%1$d)</string>
+    <string name="person_ledger_hide_done">Hide done</string>
     <string name="person_no_tasks">Nothing is owed to them</string>
     <string name="person_conversations_title">Conversations</string>
     <string name="person_no_conversations">No conversations yet</string>
@@ -530,6 +536,12 @@
     <string name="delete_task_title">Delete this task?</string>
     <string name="edit_task_title">Edit task</string>
     <string name="task_label">Task</string>
+    <string name="add_task">Add a task</string>
+    <string name="add_task_title">New task</string>
+    <string name="task_due_add">Add due date</string>
+    <string name="task_due_edit">Due date</string>
+    <string name="task_due_clear">No due date</string>
+    <string name="task_due_format">Due %1$s</string>
 
     <!-- Memories tab -->
     <string name="no_memories_yet">No memories yet</string>

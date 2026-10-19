@@ -158,8 +158,11 @@ Addresses, tokens and signing secrets are set in a monospaced font.
   start of the transcript instead.
 - **Tasks.** What your conversations left you to do, newest first, with the conversation's title and
   day. Tick a task to complete it, tap it to open its conversation, and use ⋮ to edit or delete it
-  (delete asks first, with a red **Delete**). Done tasks sit below, collapsed, in a dimmer color and never struck through. The model finds the tasks; there is no add
-  button.
+  (delete asks first, with a red **Delete**). Done tasks sit below, collapsed, in a dimmer color and never struck through. The model finds the tasks. On a server that lists `task-create`
+  (0.20 or later) **+** adds one of your own, with an optional due date from a date picker; such a task has no
+  conversation, so tapping it opens nothing. A task with a due date shows "Due …" under its line, in red when it is
+  open and the day has passed; ⋮ → **Due date** sets, changes or clears it. The date is a plain calendar day, shown
+  as sent. An older server shows no **+** and no due dates.
 - **Memories.** Lasting facts about you that the server took from your conversations, grouped by how long
   ago it learned them (Today, This week, This month, Earlier). Each is set in the reading type with its
   source, a link that opens the conversation (a memory you add yourself has none). **+** adds one, the
@@ -180,8 +183,11 @@ Addresses, tokens and signing secrets are set in a monospaced font.
   (and from how many lines), a **Rename** button (**Add name** for a person known by a role), **your note** (up to 500 characters; only you write
   it, the model never reads or changes it; empty it and save to remove it), their **facts** (newest
   first, 50 at a time, **Show more** for older ones) each with why it is there ("They said", "Said about
-  them", "Mentioned" or "Added by you") and the conversation it came from, **Open tasks** owed to them
-  and their ten newest **Conversations**; tap a fact, task or conversation to open the conversation.
+  them", "Mentioned" or "Added by you") and the conversation it came from, **Open tasks** owed to them,
+  **Promises** (on a server that lists `ledger`, 0.20 or later) and their ten newest **Conversations**; tap a fact, task or conversation to open the conversation.
+  **Promises** has two lists: **You owe them** (your commitments to this person) and **They owe you**
+  (what they said they would do for you), each with the open ones, newest first, and **Done (n)** to show the
+  finished ones (up to 100 per list); a promise opens its conversation, if it has one.
   **Add a fact** adds one; a fact has the same pencil and trash as a memory, with **Undo** (a deleted
   fact does not come back from later conversations). The page's ⋮ has **Merge into…**. At the very
   bottom, **Forget this person** asks first and names what goes: the voice print (also in the

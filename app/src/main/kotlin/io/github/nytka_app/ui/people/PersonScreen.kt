@@ -58,6 +58,7 @@ import io.github.nytka_app.ui.memories.UndoForgetEffect
 import io.github.nytka_app.ui.names.NameCompletions
 import io.github.nytka_app.ui.names.knownPeople
 import io.github.nytka_app.ui.names.rememberFieldValue
+import io.github.nytka_app.ui.people.ledger.LedgerSection
 import io.github.nytka_app.ui.tags.TagNoticeEffect
 import io.github.nytka_app.ui.tags.tagChipsItem
 import io.github.nytka_app.ui.tags.tagProposalsItem
@@ -144,6 +145,7 @@ fun PersonScreen(
                         item { NoteSection(state, viewModel) }
                         factsSection(state, viewModel, onOpenConversation)
                         tasksSection(state, onOpenConversation)
+                        item(key = "ledger") { LedgerSection(onOpenConversation) }
                         conversationsSection(state, onOpenConversation)
                         item { ForgetPerson { viewModel.show(PersonDialog.Delete) } }
                     }
@@ -379,7 +381,7 @@ private fun LazyListScope.tasksSection(
         ListItem(
             headlineContent = { Text(task.text) },
             supportingContent = task.conversationTitle?.let { title -> { Text(title) } },
-            modifier = Modifier.clickable { onOpenConversation(task.conversationId) },
+            modifier = task.conversationId?.let { id -> Modifier.clickable { onOpenConversation(id) } } ?: Modifier,
         )
     }
 }

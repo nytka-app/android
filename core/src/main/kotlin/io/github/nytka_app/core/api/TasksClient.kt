@@ -23,6 +23,21 @@ interface TasksClient {
     ): ApiResult<NytkaTask>
 
     suspend fun deleteTask(id: String): ApiResult<Unit>
+
+    /**
+     * Adds a task with no conversation (`task-create`); [due] is a bare date `YYYY-MM-DD` or null.
+     * A server without the feature answers [FailureKind.NotFound] or [FailureKind.Unsupported].
+     */
+    suspend fun create(
+        text: String,
+        due: String?,
+    ): ApiResult<NytkaTask>
+
+    /** Sets the due date to a bare date `YYYY-MM-DD`; null clears it. */
+    suspend fun setDue(
+        id: String,
+        due: String?,
+    ): ApiResult<NytkaTask>
 }
 
 class TasksApi(
@@ -50,6 +65,25 @@ class TasksApi(
     ): ApiResult<NytkaTask> = patch(id, buildJsonObject { put("text", text) }.toString())
 
     override suspend fun deleteTask(id: String): ApiResult<Unit> = api.request("DELETE", "api/v1/tasks/$id") { }
+
+    override suspend fun create(
+        text: String,
+        due: String?,
+    ): ApiResult<NytkaTask> =
+        api.request(
+            "POST",
+            "api/v1/tasks",
+            body =
+                buildJsonObject {
+                    put("text", text)
+                    due?.let { put("due", it) }
+                }.toString(),
+        ) { api.json.decodeFromString(it) }
+
+    override suspend fun setDue(
+        id: String,
+        due: String?,
+    ): ApiResult<NytkaTask> = patch(id, buildJsonObject { put("due", due) }.toString())
 
     private suspend fun patch(
         id: String,

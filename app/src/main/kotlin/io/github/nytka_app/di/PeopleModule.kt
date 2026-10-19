@@ -6,6 +6,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.github.nytka_app.core.api.CardsApi
 import io.github.nytka_app.core.api.CardsClient
+import io.github.nytka_app.core.api.LedgerApi
+import io.github.nytka_app.core.api.LedgerClient
 import io.github.nytka_app.core.api.NytkaApi
 import io.github.nytka_app.core.api.PeopleApi
 import io.github.nytka_app.core.api.PeopleClient
@@ -22,6 +24,9 @@ object PeopleModule {
 
     @Provides
     fun personPageClient(api: NytkaApi): PersonPageClient = PersonPageApi(api)
+
+    @Provides
+    fun ledgerClient(api: NytkaApi): LedgerClient = LedgerApi(api)
 
     @Provides
     fun reviewClient(api: NytkaApi): ReviewClient = ReviewApi(api)
