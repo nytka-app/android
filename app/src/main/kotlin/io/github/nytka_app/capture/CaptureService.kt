@@ -306,6 +306,8 @@ class CaptureService : LifecycleService() {
         val diagnosticsRecorder = recorder
         val logGeneration = logRun
         hub.detach()
+        // The hub now reads "off"; the widget's own session may be closed, so it must be told.
+        applicationScope.launch { runCatching { CaptureWidgetProvider.refresh(applicationContext) } }
         applicationScope.launch {
             // The last sample is of the running capture, before stopping resets its status.
             // Whatever happens to it, the capture below still stops.
