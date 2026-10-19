@@ -74,6 +74,7 @@ class SettingsStoreTest {
                     consentChime = true,
                     consentChimeMinutes = 30,
                     phoneContext = false,
+                    wallpaperColors = true,
                     muteSchedule =
                         MuteSchedule(
                             listOf(
@@ -119,6 +120,7 @@ class SettingsStoreTest {
         assertFalse(defaults.consentChime)
         assertEquals(15, defaults.consentChimeMinutes)
         assertTrue(defaults.phoneContext)
+        assertFalse(defaults.wallpaperColors)
     }
 
     @Test

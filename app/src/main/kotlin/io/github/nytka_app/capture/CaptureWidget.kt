@@ -19,13 +19,7 @@ object CaptureWidget {
         usage: QueueUsage,
     ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_capture)
-        val statusRes =
-            when {
-                status.muted -> R.string.muted
-                status.recording -> R.string.recording
-                else -> R.string.not_recording
-            }
-        views.setTextViewText(R.id.widget_status, context.getString(statusRes))
+        views.setTextViewText(R.id.widget_status, context.getString(CaptureState.of(status).wordRes))
         val battery = status.battery?.let { "$it%" } ?: context.getString(R.string.unknown)
         views.setTextViewText(R.id.widget_battery, context.getString(R.string.pendant_battery_format, battery))
         views.setTextViewText(R.id.widget_queue, context.getString(R.string.queued_chunks_format, usage.chunks))

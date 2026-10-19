@@ -217,7 +217,8 @@ class CaptureService : LifecycleService() {
         scope.launch { capture.status.sample(STATUS_SAMPLE_MS).collect(hub::publish) }
         scope.launch { storageSync.status.sample(STATUS_SAMPLE_MS).collect(hub::publishSync) }
         combine(capture.status, queue.usage, storageSync.status) { status, usage, syncStatus ->
-            CaptureNotification.text(status, usage, syncStatus) to Triple(status, usage, syncStatus)
+            (CaptureNotification.state(status) to CaptureNotification.text(status, usage, syncStatus)) to
+                Triple(status, usage, syncStatus)
         }.distinctUntilChanged { old, new -> old.first == new.first }
             .map { it.second }
             .collect { (status, usage, syncStatus) ->

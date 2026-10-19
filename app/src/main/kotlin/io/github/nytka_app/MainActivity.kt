@@ -4,17 +4,23 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
+import io.github.nytka_app.capture.CaptureState
 import io.github.nytka_app.ui.AppViewModel
+import io.github.nytka_app.ui.CaptureStatusIndicator
+import io.github.nytka_app.ui.CaptureThread
 import io.github.nytka_app.ui.NytkaNavHost
-import io.github.nytka_app.ui.StatusChip
 import io.github.nytka_app.ui.StatusViewModel
 import io.github.nytka_app.ui.ask.AskTab
 import io.github.nytka_app.ui.conversations.ConversationsTab
@@ -32,8 +38,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
-            NytkaTheme {
-                val app: AppViewModel = hiltViewModel()
+            val app: AppViewModel = hiltViewModel()
+            val wallpaperColors by app.wallpaperColors.collectAsStateWithLifecycle()
+            NytkaTheme(wallpaperColors = wallpaperColors) {
                 val onboarded by app.onboarded.collectAsStateWithLifecycle()
                 when (onboarded) {
                     null -> Unit
@@ -41,12 +48,22 @@ class MainActivity : ComponentActivity() {
                     true -> {
                         val statusViewModel: StatusViewModel = hiltViewModel()
                         val status by statusViewModel.state.collectAsStateWithLifecycle()
+                        val captureState = CaptureState.of(status.capture, status.muted)
                         NytkaNavHost(
-                            topBar = {
-                                CenterAlignedTopAppBar(
-                                    title = { Text(stringResource(R.string.app_name)) },
-                                    actions = { StatusChip(status) },
-                                )
+                            topBar = { onOpenDevice ->
+                                Column {
+                                    TopAppBar(
+                                        title = { Text(stringResource(R.string.app_name)) },
+                                        actions = {
+                                            CaptureStatusIndicator(
+                                                captureState,
+                                                Modifier.padding(end = 8.dp),
+                                                onClick = onOpenDevice,
+                                            )
+                                        },
+                                    )
+                                    CaptureThread(captureState)
+                                }
                             },
                             conversations = { openRequests, onOpenPerson ->
                                 ConversationsTab(status, statusViewModel::setMuted, openRequests, onOpenPerson)

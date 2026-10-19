@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** Chooses first run or the tabs, and makes sure capture runs once the app is set up. */
+/** Chooses first run or the tabs and the colour scheme, and makes sure capture runs once the app is set up. */
 @HiltViewModel
 class AppViewModel
     @Inject
@@ -22,6 +22,10 @@ class AppViewModel
     ) : ViewModel() {
         val onboarded: StateFlow<Boolean?> =
             settings.settings.map { it.onboarded }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+        /** "Match wallpaper colours", off by default. */
+        val wallpaperColors: StateFlow<Boolean> =
+            settings.settings.map { it.wallpaperColors }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
         init {
             viewModelScope.launch {

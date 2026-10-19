@@ -47,10 +47,17 @@ class CaptureWidgetTest {
     }
 
     @Test
-    fun `not running reads not recording, with an unknown battery`() {
+    fun `not running reads recording off, with an unknown battery`() {
         val root = inflate(CaptureStatus(), QueueUsage())
 
-        assertEquals("Not recording", root.findViewById<TextView>(R.id.widget_status).text.toString())
+        assertEquals("Recording off", root.findViewById<TextView>(R.id.widget_status).text.toString())
         assertEquals("Pendant battery: Unknown", root.findViewById<TextView>(R.id.widget_battery).text.toString())
+    }
+
+    @Test
+    fun `running without the pendant reads waiting`() {
+        val root = inflate(CaptureStatus(running = true), QueueUsage())
+
+        assertEquals("Waiting for pendant", root.findViewById<TextView>(R.id.widget_status).text.toString())
     }
 }

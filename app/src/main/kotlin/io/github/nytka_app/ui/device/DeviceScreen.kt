@@ -58,6 +58,7 @@ fun DeviceScreen(
     var pairError by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmForget by rememberSaveable { mutableStateOf(false) }
     var backlogDismissed by rememberSaveable { mutableStateOf(false) }
+    var showFontLicenses by rememberSaveable { mutableStateOf(false) }
     // A later question is a new one: show it again.
     LaunchedEffect(state.backlogPackets == null) { if (state.backlogPackets == null) backlogDismissed = false }
 
@@ -124,6 +125,7 @@ fun DeviceScreen(
         }
         if (state.serverContext == true) {
             item { PhoneContextSection(state.phoneContext, viewModel::setPhoneContext) }
+            item { AppearanceSection(state.wallpaperColors, viewModel::setWallpaperColors) }
         }
         item { ServerSection(state, status, viewModel::checkServer) }
         item { SettingsSection(state, viewModel::save) }
@@ -173,6 +175,7 @@ fun DeviceScreen(
                     stringResource(R.string.about_affiliation),
                     style = MaterialTheme.typography.bodySmall,
                 )
+                TextButton(onClick = { showFontLicenses = true }) { Text(stringResource(R.string.font_licenses)) }
             }
         }
     }
@@ -186,6 +189,8 @@ fun DeviceScreen(
             onDiscard = viewModel::discardBacklog,
         )
     }
+
+    if (showFontLicenses) FontLicensesDialog(onDismiss = { showFontLicenses = false })
 
     if (confirmForget) {
         AlertDialog(

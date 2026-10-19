@@ -10,20 +10,50 @@ class CaptureNotificationTest {
     private val connected = PendantConnection.Connected(PendantInfo("Omi"))
 
     @Test
+    fun `the title is the state word and leads with it`() {
+        assertEquals(
+            CaptureState.Recording,
+            CaptureNotification.state(CaptureStatus(running = true, connection = connected)),
+        )
+        assertEquals(
+            CaptureState.Muted,
+            CaptureNotification.state(CaptureStatus(running = true, connection = connected, muted = true)),
+        )
+        assertEquals(CaptureState.Waiting, CaptureNotification.state(CaptureStatus(running = true)))
+        assertEquals(
+            CaptureState.Waiting,
+            CaptureNotification.state(
+                CaptureStatus(running = true, connection = PendantConnection.Refused("old firmware")),
+            ),
+        )
+    }
+
+    @Test
+    fun `names a refused pendant first`() {
+        assertEquals(
+            "Pendant not supported · 0 queued",
+            CaptureNotification.text(
+                CaptureStatus(running = true, connection = PendantConnection.Refused("old firmware")),
+                QueueUsage(),
+            ),
+        )
+    }
+
+    @Test
     fun `reads like the spec`() {
         assertEquals(
-            "Recording · 82% · 0 queued",
+            "82% · 0 queued",
             CaptureNotification.text(CaptureStatus(running = true, connection = connected, battery = 82), QueueUsage()),
         )
         assertEquals(
-            "Muted · 82% · 3 queued",
+            "82% · 3 queued",
             CaptureNotification.text(
                 CaptureStatus(running = true, connection = connected, muted = true, battery = 82),
                 QueueUsage(chunks = 3),
             ),
         )
         assertEquals(
-            "Waiting for the pendant · 0 queued",
+            "0 queued",
             CaptureNotification.text(CaptureStatus(running = true), QueueUsage()),
         )
     }
@@ -34,11 +64,11 @@ class CaptureNotificationTest {
         val syncing = StorageSyncStatus(state = SyncState.Syncing, runDone = 42, runTotal = 100)
 
         assertEquals(
-            "Recording · 82% · 0 queued · syncing 42%",
+            "82% · 0 queued · syncing 42%",
             CaptureNotification.text(status, QueueUsage(), syncing),
         )
         assertEquals(
-            "Recording · 82% · 0 queued · syncing 42%",
+            "82% · 0 queued · syncing 42%",
             CaptureNotification.text(
                 status,
                 QueueUsage(),
@@ -46,11 +76,11 @@ class CaptureNotificationTest {
             ),
         )
         assertEquals(
-            "Recording · 82% · 0 queued",
+            "82% · 0 queued",
             CaptureNotification.text(status, QueueUsage(), StorageSyncStatus(state = SyncState.Idle)),
         )
         assertEquals(
-            "Recording · 82% · 0 queued",
+            "82% · 0 queued",
             CaptureNotification.text(status, QueueUsage(), syncing.copy(state = SyncState.Paused(PauseReason.Stopped))),
         )
     }

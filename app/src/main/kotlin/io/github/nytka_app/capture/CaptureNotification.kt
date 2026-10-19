@@ -16,21 +16,18 @@ object CaptureNotification {
     const val CHANNEL = Notifier.RECORDING_CHANNEL
     private const val PERCENT = 100L
 
-    /** "Recording · 82% · 0 queued", as the spec words it. */
+    /** The title is the state word, so it leads: "Recording", "Muted", "Waiting for pendant". */
+    fun state(status: CaptureStatus): CaptureState = CaptureState.of(status)
+
+    /** The line under the title: "82% · 0 queued", led by the reason when the pendant was refused. */
     fun text(
         status: CaptureStatus,
         usage: QueueUsage,
         sync: StorageSyncStatus? = null,
     ): String {
-        val state =
-            when {
-                status.connection is PendantConnection.Refused -> "Pendant not supported"
-                status.muted -> "Muted"
-                status.connection is PendantConnection.Connected -> "Recording"
-                else -> "Waiting for the pendant"
-            }
-        val battery = status.battery?.let { " · $it%" } ?: ""
-        return "$state$battery · ${usage.chunks} queued${syncSuffix(sync)}"
+        val refused = (status.connection as? PendantConnection.Refused)?.let { "Pendant not supported · " } ?: ""
+        val battery = status.battery?.let { "$it% · " } ?: ""
+        return "$refused$battery${usage.chunks} queued${syncSuffix(sync)}"
     }
 
     /** " · syncing 42%" while a sync runs and knows its size, " · syncing" before that. */
@@ -78,16 +75,19 @@ object CaptureNotification {
                 Intent(context, CaptureService::class.java).setAction(CaptureService.ACTION_BOOKMARK),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
+        val state = state(status)
         return NotificationCompat
             .Builder(context, CHANNEL)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
-            .setContentTitle(context.getString(R.string.app_name))
+            // Android tints the small icon, so the glyph's shape alone tells the states apart.
+            .setSmallIcon(state.iconRes)
+            .setContentTitle(context.getString(state.wordRes))
             .setContentText(text(status, usage, sync))
             .setContentIntent(open)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .addAction(0, context.getString(if (status.muted) R.string.unmute else R.string.mute), toggle)
+            .addAction(0, context.getString(R.string.action_open), open)
             .addAction(0, context.getString(R.string.action_bookmark), bookmark)
             .build()
     }

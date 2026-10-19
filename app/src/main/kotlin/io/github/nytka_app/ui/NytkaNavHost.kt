@@ -28,7 +28,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
  * `onOpenConversation(id)`, which selects the Conversations tab and hands the id to [conversations] as
  * `openRequests`; that tab opens `conversation/{id}` in its own NavHost. Any tab can open a person the same way
  * through `onOpenPerson(id)` and [people]'s `openRequests`; the People tab opens a conversation through its
- * own `onOpenConversation`.
+ * own `onOpenConversation`. The device screen has no tab: [topBar] receives `onOpenDevice`, which the capture status
+ * calls.
  */
 @Composable
 fun NytkaNavHost(
@@ -38,7 +39,7 @@ fun NytkaNavHost(
     people: @Composable (openRequests: Flow<String>, onOpenConversation: (String) -> Unit) -> Unit,
     ask: @Composable (onOpenConversation: (String) -> Unit, onOpenPerson: (String) -> Unit) -> Unit,
     device: @Composable () -> Unit,
-    topBar: @Composable () -> Unit = {},
+    topBar: @Composable (onOpenDevice: () -> Unit) -> Unit = {},
 ) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
@@ -49,8 +50,8 @@ fun NytkaNavHost(
     val personRequests = remember { Channel<String>(Channel.CONFLATED) }
     val openPersonRequests = remember(personRequests) { personRequests.receiveAsFlow() }
 
-    val select = { tab: AppTab ->
-        navController.navigate(tab.route) {
+    val select = { route: String ->
+        navController.navigate(route) {
             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
             launchSingleTop = true
             restoreState = true
@@ -58,21 +59,21 @@ fun NytkaNavHost(
     }
     val onOpenConversation = { id: String ->
         requests.trySend(id)
-        select(AppTab.Conversations)
+        select(AppTab.Conversations.route)
     }
     val onOpenPerson = { id: String ->
         personRequests.trySend(id)
-        select(AppTab.People)
+        select(AppTab.People.route)
     }
 
     Scaffold(
-        topBar = topBar,
+        topBar = { topBar { select(DEVICE_ROUTE) } },
         bottomBar = {
             NavigationBar {
                 AppTab.entries.forEach { tab ->
                     NavigationBarItem(
                         selected = current == tab.route,
-                        onClick = { select(tab) },
+                        onClick = { select(tab.route) },
                         icon = { Icon(tab.icon, contentDescription = null) },
                         alwaysShowLabel = false,
                         label = { TabLabel(stringResource(tab.labelRes)) },
@@ -87,14 +88,14 @@ fun NytkaNavHost(
             composable(AppTab.Memories.route) { memories(onOpenConversation, onOpenPerson) }
             composable(AppTab.People.route) { people(openPersonRequests, onOpenConversation) }
             composable(AppTab.Ask.route) { ask(onOpenConversation, onOpenPerson) }
-            composable(AppTab.Device.route) { device() }
+            composable(DEVICE_ROUTE) { device() }
         }
     }
 }
 
 /**
- * Six items leave about 60 dp each on a 360 dp phone, so only the selected one shows its label, and
- * "Conversations" wraps in the default label style. Smaller, unspaced type on one line keeps it whole.
+ * Five items leave 72 dp each on a 360 dp phone, so only the selected one shows its label, and "Conversations"
+ * would wrap. Unspaced type on one line keeps it whole.
  */
 @Composable
 private fun TabLabel(text: String) {

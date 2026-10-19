@@ -254,7 +254,6 @@
     <string name="tab_memories">Memories</string>
     <string name="tab_people">People</string>
     <string name="tab_ask">Ask</string>
-    <string name="tab_device">Device</string>
     <string name="action_close">Close</string>
     <string name="last_seen_today_format">Today %1$s</string>
     <string name="last_seen_yesterday">Yesterday</string>
@@ -447,9 +446,18 @@
     <!-- Status and tabs -->
     <string name="muted">Muted</string>
     <string name="recording">Recording</string>
-    <string name="not_recording">Not recording</string>
-    <string name="capture_off">Off</string>
-    <string name="capture_waiting">Waiting</string>
+    <string name="capture_off">Recording off</string>
+    <string name="capture_waiting">Waiting for pendant</string>
+    <string name="capture_sentence_recording">Recording from pendant</string>
+    <string name="capture_sentence_muted">Muted. Nothing is recorded</string>
+    <string name="capture_sentence_waiting">Waiting for pendant. Nothing is recorded</string>
+    <string name="capture_sentence_off">Recording off</string>
+    <string name="capture_open_device">Open device and settings</string>
+    <string name="action_open">Open</string>
+    <string name="appearance">Appearance</string>
+    <string name="wallpaper_colors_label">Match wallpaper colours</string>
+    <string name="wallpaper_colors_explanation">Buttons and surfaces follow your wallpaper. Recording, questions that need you and failures keep their colours.</string>
+    <string name="font_licenses">Font licences</string>
     <string name="pendant_battery_format">Pendant battery: %s</string>
     <string name="server_line_format">Server: %s</string>
     <string name="queued_chunks_format">Queued chunks: %d</string>
