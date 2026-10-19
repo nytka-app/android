@@ -152,13 +152,16 @@ fun PermissionRow(
     }
 }
 
-/** The consent step: four numbered points in Literata and the acknowledgement, never pre-ticked. */
+/**
+ * The consent step: four numbered points in Literata and the acknowledgement, never pre-ticked. Without an
+ * [acknowledgement] it is the same text to read again (Settings › About recording), with no box.
+ */
 @Composable
 fun ConsentNote(
     points: List<String>,
-    acknowledgement: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
+    acknowledgement: String? = null,
+    checked: Boolean = false,
+    onCheckedChange: (Boolean) -> Unit = {},
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         points.forEachIndexed { index, point ->
@@ -171,16 +174,18 @@ fun ConsentNote(
                 Text(point, style = NytkaTheme.typography.readingBody, modifier = Modifier.weight(1f))
             }
         }
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .toggleable(value = checked, role = Role.Checkbox, onValueChange = onCheckedChange)
-                .padding(vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Checkbox(checked = checked, onCheckedChange = null)
-            Text(acknowledgement, style = MaterialTheme.typography.bodyLarge)
+        if (acknowledgement != null) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .toggleable(value = checked, role = Role.Checkbox, onValueChange = onCheckedChange)
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Checkbox(checked = checked, onCheckedChange = null)
+                Text(acknowledgement, style = MaterialTheme.typography.bodyLarge)
+            }
         }
     }
 }

@@ -352,6 +352,30 @@ which takes a while, and **Discard…** frees it on the pendant unread, after a 
   connected (the pendant never stores it), audio the pendant overwrote or freed early (shown as
   *Lost*), a backlog you discard, and muted stretches, which are dropped on purpose.
 
+## The Device screen
+
+The Device screen groups settings by where they live, in four cards: **Pendant**, **On this phone**,
+**Your server** and **Developer** (the last only while developer mode is on), then **About**.
+
+- **Pendant** shows the pendant's state, its battery as a meter (a neutral colour; below 10 % it turns
+  red and says to charge the pendant), the firmware, the pendant storage and the pendant settings.
+  **Pendant details** opens a screen with its name and address, where **Forget** asks first and the
+  dialog names the pendant that is removed. Forgetting a pendant is only possible there.
+- **How people nearby know** (Device → Pendant, and the *People near you* step of the first run) says
+  what the Omi pendant shows the people around you, on firmware 3.0.x. It never shows that the pendant is
+  recording or muted: the light means connected (blue), not connected (red), clock not set (blinking
+  red), charging (blinking green, alternating with blue or red), charged (steady green) or off. Under
+  a red light the pendant still records to its own memory while the phone is away. The button: a
+  double-tap mutes or unmutes with one long buzz, a single tap marks the moment with one short buzz,
+  and holding it for 3 seconds turns the pendant off. It is read from the pendant's firmware (see the
+  page's last line), and the colours are written in words, not drawn.
+- **About → About recording** shows the four points of the first run's *People near you* step again,
+  to read; there is nothing to tick.
+- Server addresses, tokens and webhook URLs are set in a monospace font. A token shows as dots and its
+  last four characters; **Revoke** is on the token's own screen (Developer mode → Server → Access
+  tokens → tap a token) and asks first, naming the token. Deleting a webhook asks first and names
+  its address.
+
 ## Pendant settings
 
 While the pendant is connected, the **Device** screen has a **Pendant settings** card with two sliders,

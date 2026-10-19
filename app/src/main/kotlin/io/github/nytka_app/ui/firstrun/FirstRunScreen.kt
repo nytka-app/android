@@ -6,11 +6,13 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -18,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +31,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -42,6 +47,7 @@ import io.github.nytka_app.ui.NytkaSwitch
 import io.github.nytka_app.ui.NytkaTextField
 import io.github.nytka_app.ui.PairButton
 import io.github.nytka_app.ui.PermissionAnswer
+import io.github.nytka_app.ui.device.PendantSignalsScreen
 import io.github.nytka_app.ui.rememberPermissionRequest
 
 @Composable
@@ -222,6 +228,7 @@ private fun ConsentStep(
     state: FirstRunUiState,
     viewModel: FirstRunViewModel,
 ) {
+    var showSignals by rememberSaveable { mutableStateOf(false) }
     SetupStep(
         step = FirstRunStep.Consent.ordinal,
         title = stringResource(R.string.setup_consent_title),
@@ -244,6 +251,15 @@ private fun ConsentStep(
             checked = state.consentChecked,
             onCheckedChange = viewModel::setConsent,
         )
+        TextButton(onClick = { showSignals = true }) { Text(stringResource(R.string.signals_title)) }
+    }
+    if (showSignals) {
+        Dialog(
+            onDismissRequest = { showSignals = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            Surface(Modifier.fillMaxSize()) { PendantSignalsScreen(onBack = { showSignals = false }) }
+        }
     }
 }
 

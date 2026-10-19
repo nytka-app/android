@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import io.github.nytka_app.R
 import io.github.nytka_app.core.settings.MuteSchedule
 import io.github.nytka_app.core.settings.MuteWindow
+import io.github.nytka_app.ui.SettingsBlock
 import java.time.DayOfWeek
 import java.time.LocalTime
 import java.time.format.TextStyle
@@ -42,7 +43,7 @@ fun MuteScheduleSection(
     timeZoneError: String? = null,
     onSetServerTimeZone: () -> Unit = {},
 ) {
-    Section(stringResource(R.string.mute_schedule)) {
+    SettingsBlock(stringResource(R.string.mute_schedule)) {
         Text(
             stringResource(R.string.mute_schedule_description),
             style = MaterialTheme.typography.bodySmall,

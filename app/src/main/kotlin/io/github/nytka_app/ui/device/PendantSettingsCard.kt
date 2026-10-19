@@ -1,10 +1,5 @@
 package io.github.nytka_app.ui.device
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -13,13 +8,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import io.github.nytka_app.R
 import io.github.nytka_app.capture.PendantSettingsState
 import io.github.nytka_app.pendant.LedDim
 import io.github.nytka_app.pendant.MicGain
+import io.github.nytka_app.ui.SettingsBlock
 
 /** The words for the LED slider: the value in percent, and a warning at 0 (the status lights go dark). */
 fun ledLabel(percent: Int): String = "$percent %"
@@ -47,39 +41,36 @@ fun PendantSettingsCard(
     onLed: (Int) -> Unit,
     onGain: (Int) -> Unit,
 ) {
-    ElevatedCard(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(stringResource(R.string.pendant_settings), style = MaterialTheme.typography.titleMedium)
-            card.led?.let {
-                SettingSlider(
-                    title = stringResource(R.string.led_brightness),
-                    value = it,
-                    range = LedDim.MIN..LedDim.MAX,
-                    steps = 0,
-                    label = ::ledLabel,
-                    warning = ::ledWarning,
-                    failures = card.ledFailures,
-                    onCommit = onLed,
-                )
-            }
-            card.gain?.let {
-                SettingSlider(
-                    title = stringResource(R.string.microphone_gain),
-                    value = it,
-                    range = MicGain.MIN..MicGain.MAX,
-                    steps = MicGain.MAX - MicGain.MIN - 1,
-                    label = ::gainLabel,
-                    warning = ::gainWarning,
-                    failures = card.gainFailures,
-                    onCommit = onGain,
-                )
-            }
-            card.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            Text(
-                stringResource(R.string.pendant_settings_note),
-                style = MaterialTheme.typography.bodySmall,
+    SettingsBlock(stringResource(R.string.pendant_settings)) {
+        card.led?.let {
+            SettingSlider(
+                title = stringResource(R.string.led_brightness),
+                value = it,
+                range = LedDim.MIN..LedDim.MAX,
+                steps = 0,
+                label = ::ledLabel,
+                warning = ::ledWarning,
+                failures = card.ledFailures,
+                onCommit = onLed,
             )
         }
+        card.gain?.let {
+            SettingSlider(
+                title = stringResource(R.string.microphone_gain),
+                value = it,
+                range = MicGain.MIN..MicGain.MAX,
+                steps = MicGain.MAX - MicGain.MIN - 1,
+                label = ::gainLabel,
+                warning = ::gainWarning,
+                failures = card.gainFailures,
+                onCommit = onGain,
+            )
+        }
+        card.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        Text(
+            stringResource(R.string.pendant_settings_note),
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }
 
