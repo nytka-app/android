@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +26,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -122,6 +124,23 @@ fun AskTab(
             }
             if (state.result == null && state.error == null && !state.asking) {
                 item { ListState(ListStateKind.Empty, stringResource(R.string.ask_empty)) }
+                item(key = "ideas") {
+                    val ideas =
+                        askIdeas(people).map { idea ->
+                            if (idea.name == null) stringResource(idea.res) else stringResource(idea.res, idea.name)
+                        }
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ideas.forEach { text ->
+                            SuggestionChip(
+                                onClick = {
+                                    viewModel.setQuestion(text)
+                                    viewModel.ask()
+                                },
+                                label = { Text(text) },
+                            )
+                        }
+                    }
+                }
             }
             state.error?.let { error ->
                 item { ListFailure(error, offline = false, onRetry = viewModel::ask) }
