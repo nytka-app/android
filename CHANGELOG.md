@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.18.0](https://github.com/nytka-app/android/compare/v0.17.0...v0.18.0) (2026-10-19)
+
+
+### Features
+
+* add ListState, Monogram and a checked Switch from the design system ([#102](https://github.com/nytka-app/android/issues/102)) ([094b189](https://github.com/nytka-app/android/commit/094b189c8a0b7ec951a035060f12c3321839b818))
+* adopt the Nytka design system (linen and ink) ([#99](https://github.com/nytka-app/android/issues/99)) ([cf89f03](https://github.com/nytka-app/android/commit/cf89f03de06102c6ca437e9e9f1ae2319d5fa474))
+* first run and voice enrollment follow the design system ([#103](https://github.com/nytka-app/android/issues/103)) ([359ab58](https://github.com/nytka-app/android/commit/359ab5845a67d8572a6855a1443060e4da6e99e0))
+* group Device and Developer settings by place; add pendant signals and About recording ([#106](https://github.com/nytka-app/android/issues/106)) ([18738b2](https://github.com/nytka-app/android/commit/18738b2872dba0f1b7d70d87c658c8a69a6dacde))
+* people rows, person header and memory items follow the design system ([#105](https://github.com/nytka-app/android/issues/105)) ([da8f5f1](https://github.com/nytka-app/android/commit/da8f5f118b294620604fde5d6bb6b1682035d010))
+* set long text in Literata at 64 characters a line ([#101](https://github.com/nytka-app/android/issues/101)) ([79e87fa](https://github.com/nytka-app/android/commit/79e87fab161ac626e46fb7c1df3563480e461030))
+* speaker marks, docked audio player and saffron suggestion card ([#104](https://github.com/nytka-app/android/issues/104)) ([b252543](https://github.com/nytka-app/android/commit/b252543eecfbde2ec6f19bdde06669969e428514))
+
 ## [0.17.0](https://github.com/nytka-app/android/compare/v0.16.0...v0.17.0) (2026-10-06)
 
 
