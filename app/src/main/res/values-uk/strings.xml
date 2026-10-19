@@ -294,6 +294,14 @@
     <string name="briefs_no_feed">На вашому сервері немає календаря</string>
     <string name="briefs_permission_denied">Без сповіщень Nytka не може показати підсумок. Увімкніть ще раз, щоб Android запитав знову</string>
     <string name="briefs_permission_blocked">Без сповіщень Nytka не може показати підсумок. Якщо Android більше не питає, дозвольте сповіщення в системних налаштуваннях Nytka й увімкніть ще раз</string>
+    <string name="location_tags_title">Теги місць</string>
+    <string name="location_tags_label">Позначати розмови приблизним місцем</string>
+    <string name="location_tags_explanation">Nytka зчитує приблизну геолокацію на початку сесії запису й, щойно сервер створить розмову, додає назву збереженого місця або мітку рівня міста як тег. Точні координати не залишають телефон.</string>
+    <string name="location_tags_permission_denied">Без геолокації Nytka не може позначати розмови. Увімкніть ще раз, щоб побачити запит</string>
+    <string name="location_tags_permission_blocked">Без геолокації Nytka не може позначати розмови. Якщо Android більше не питає, дозвольте геолокацію в системних налаштуваннях Nytka й увімкніть ще раз</string>
+    <string name="location_tags_place_name">Назва місця</string>
+    <string name="location_tags_add_place">Зберегти поточне місце</string>
+    <string name="location_tags_remove_place">Видалити</string>
     <string name="brief_channel_name">Підсумки зустрічей</string>
     <string name="brief_title">Підсумок: %1$s</string>
     <string name="brief_starts_at">Початок о %1$s</string>

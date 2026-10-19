@@ -3,6 +3,7 @@ package io.github.nytka_app.core.settings
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import io.github.nytka_app.core.location.SavedPlace
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
@@ -75,6 +76,14 @@ class SettingsStoreTest {
                     consentChimeMinutes = 30,
                     phoneContext = false,
                     wallpaperColors = true,
+                    locationTags = true,
+                    savedPlaces =
+                        listOf(
+                            SavedPlace("Home", 40.7128, -74.0060),
+                            SavedPlace("Office", 51.5074, -0.1278, 80.0),
+                        ),
+                    pendingLocationPlace = "Home",
+                    pendingLocationAt = 1_760_000_000_000,
                     muteSchedule =
                         MuteSchedule(
                             listOf(
@@ -144,6 +153,50 @@ class SettingsStoreTest {
     fun `toString holds no brief id`() {
         assertFalse(Settings(notifiedBriefs = listOf("brief-id-1")).toString().contains("brief-id-1"))
     }
+
+    @Test
+    fun `location tags are off with no saved places until switched on`() {
+        val defaults = Settings()
+
+        assertFalse(defaults.locationTags)
+        assertEquals(emptyList<SavedPlace>(), defaults.savedPlaces)
+        assertEquals(null, defaults.pendingLocationPlace)
+    }
+
+    @Test
+    fun `toString holds no saved place or pending place`() {
+        val settings =
+            Settings(
+                savedPlaces = listOf(SavedPlace("Home", 40.7128, -74.0060)),
+                pendingLocationPlace = "Home",
+                pendingLocationAt = 1_760_000_000_000,
+            )
+
+        assertFalse(settings.toString().contains("Home"))
+        assertFalse(settings.toString().contains("40.7128"))
+    }
+
+    @Test
+    fun `saved places round trip and a pending place clears back to null`() =
+        runTest {
+            val store = store()
+            val places = listOf(SavedPlace("Home", 40.7128, -74.0060), SavedPlace("Office", 51.5074, -0.1278, 80.0))
+
+            store.update {
+                it.copy(
+                    locationTags = true,
+                    savedPlaces = places,
+                    pendingLocationPlace = "Home",
+                    pendingLocationAt = 42,
+                )
+            }
+            assertEquals(places, store.current().savedPlaces)
+            assertEquals("Home", store.current().pendingLocationPlace)
+
+            store.update { it.copy(pendingLocationPlace = null, pendingLocationAt = 0) }
+            assertEquals(null, store.current().pendingLocationPlace)
+            assertEquals(0, store.current().pendingLocationAt)
+        }
 
     @Test
     fun `diagnostics upload is off until switched on`() =

@@ -99,7 +99,7 @@ class DeviceViewModelTest {
         DeviceViewModel(settings, {
             infoCalls++
             info
-        }, actions, sync, server, { phoneZone }, pendantSettings, { notice }, briefs)
+        }, actions, sync, server, { phoneZone }, pendantSettings, { notice }, briefs, { null })
 
     private fun saveServerOnTheLocalNetwork() {
         settings.state.value = settings.state.value.copy(serverUrl = "http://192.168.1.10:8080/", privateNetwork = true)

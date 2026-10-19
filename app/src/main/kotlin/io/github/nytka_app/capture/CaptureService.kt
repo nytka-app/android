@@ -25,6 +25,7 @@ import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.diagnostics.AppLog
 import io.github.nytka_app.core.diagnostics.DiagnosticsSink
 import io.github.nytka_app.core.diagnostics.DiagnosticsUploader
+import io.github.nytka_app.core.location.PlaceCoarsener
 import io.github.nytka_app.core.queue.BookmarkOutbox
 import io.github.nytka_app.core.queue.ContextOutbox
 import io.github.nytka_app.core.queue.FrameQueue
@@ -99,6 +100,9 @@ class CaptureService : LifecycleService() {
 
     @Inject
     lateinit var muteLog: MuteLogRecorder
+
+    @Inject
+    lateinit var locationSource: CoarseLocationSource
 
     @Inject
     @ApplicationScope
@@ -234,6 +238,20 @@ class CaptureService : LifecycleService() {
         scope.launch { bookmarkUploader.run() }
         scope.launch { contextUploader.run() }
         scope.launch { recordPhoneContext() }
+        scope.launch { recordSessionPlace() }
+    }
+
+    /**
+     * One reading at the start of this capture session, coarsened right away so nothing precise is ever held:
+     * [LocationTagSync] matches it to the conversation the session becomes and sends it as a tag. Silent without
+     * the permission or a fix: the switch alone never prompts for either.
+     */
+    private suspend fun recordSessionPlace() {
+        val current = settings.current()
+        if (!current.locationTags) return
+        val fix = locationSource.lastKnown() ?: return
+        val place = PlaceCoarsener.coarsen(fix.first, fix.second, current.savedPlaces)
+        settings.update { it.copy(pendingLocationPlace = place, pendingLocationAt = System.currentTimeMillis()) }
     }
 
     /** Records only while the switch is on and the server lists `context-ranges`; nothing is recorded otherwise. */

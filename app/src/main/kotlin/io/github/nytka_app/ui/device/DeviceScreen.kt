@@ -140,6 +140,15 @@ fun DeviceScreen(
                     onPermission = viewModel::briefPermissionAnswered,
                     onOpenSettings = viewModel::openAppSettings,
                 )
+                HorizontalDivider()
+                LocationSection(
+                    state,
+                    onSwitch = viewModel::setLocationTags,
+                    onPermission = viewModel::locationPermissionAnswered,
+                    onOpenSettings = viewModel::openAppSettings,
+                    onAddPlace = viewModel::addSavedPlace,
+                    onRemovePlace = viewModel::removeSavedPlace,
+                )
             }
         }
         item {
