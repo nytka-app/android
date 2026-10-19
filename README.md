@@ -430,7 +430,8 @@ is not set, and "This server needs an update" means the server predates it.
   stays muted when the pendant reconnects. What the pendant records while the phone is away is
   handled by [Offline sync](#offline-sync).
 - A **home-screen widget** shows the capture state with its glyph (Recording, Muted, Waiting for
-  pendant or Recording off; only Recording is green), pendant battery and the upload queue length;
+  pendant or Recording off; only Recording is green), pendant battery and the upload queue length. It
+  follows your launcher's light or dark theme and your wallpaper's colours, and keeps the recording green;
   tap it to open the app, or tap **Mute**/**Unmute** to toggle recording without opening it.
 - **Bookmark** with a single tap on the pendant: one short buzz after about a second means it is kept.
   A double tap (or two quick single taps) mutes instead and keeps no bookmark. **Bookmark** in the
