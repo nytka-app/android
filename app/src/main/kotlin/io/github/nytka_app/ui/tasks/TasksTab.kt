@@ -14,6 +14,8 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -22,7 +24,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -44,6 +45,7 @@ import io.github.nytka_app.R
 import io.github.nytka_app.ui.ListFailure
 import io.github.nytka_app.ui.ListState
 import io.github.nytka_app.ui.ListStateKind
+import io.github.nytka_app.ui.NytkaTextField
 
 /**
  * The Tasks tab: open tasks newest first, done ones below, collapsed. A task opens its conversation through
@@ -74,7 +76,13 @@ fun TasksTab(
                 item(key = "more-open") { LaunchedEffect(state.open.size) { viewModel.loadMoreOpen() } }
             }
             if (state.open.isEmpty() && !state.loading && state.error == null) {
-                item { ListState(ListStateKind.Empty, stringResource(R.string.tasks_tab_empty)) }
+                item {
+                    ListState(
+                        ListStateKind.Empty,
+                        stringResource(R.string.tasks_empty_title),
+                        body = stringResource(R.string.tasks_empty_body),
+                    )
+                }
             }
             completedSection(state, viewModel, onOpenConversation, { editing = it }, { deleting = it })
         }
@@ -141,7 +149,12 @@ private fun LazyListScope.completedSection(
     }
     if (state.completed.isEmpty()) {
         item(key = "no-done") {
-            Text(stringResource(R.string.nothing_done_yet), Modifier.padding(16.dp))
+            Text(
+                stringResource(R.string.nothing_done_yet),
+                Modifier.padding(16.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -156,7 +169,16 @@ private fun DeleteDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.delete_task_title)) },
         text = { Text(text) },
-        confirmButton = { TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) } },
+        confirmButton = {
+            Button(
+                onClick = onDelete,
+                colors =
+                    ButtonDefaults.buttonColors(
+                        MaterialTheme.colorScheme.error,
+                        MaterialTheme.colorScheme.onError,
+                    ),
+            ) { Text(stringResource(R.string.action_delete)) }
+        },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
@@ -211,10 +233,10 @@ private fun EditDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.edit_task_title)) },
         text = {
-            OutlinedTextField(
+            NytkaTextField(
                 value = text,
                 onValueChange = { text = it.take(MAX_TEXT) },
-                label = { Text(stringResource(R.string.task_label)) },
+                label = stringResource(R.string.task_label),
             )
         },
         confirmButton = {

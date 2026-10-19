@@ -106,7 +106,9 @@ Addresses, tokens and signing secrets are set in a monospaced font.
 - **Conversations.** A status card, a search icon and your conversations by day; the day's name
   stays at the top while its cards scroll. A card shows the title, two lines of summary, and the time
   range and length. A thin moving line and **Summarizing** show while the server writes a summary;
-  **Summary failed** with a red border shows when it could not. While the list loads it shows three
+  **Summary failed** with a red border and a triangle shows when it could not. The status card says,
+  with a triangle and what is safe, when the server is more than 15 minutes behind on transcripts.
+  An empty list says what will appear and how. While the list loads it shows three
   grey placeholder cards. When your server cannot be reached the list says **Offline** and that your
   recordings stay on the phone; pull down to try again. Other failures say what failed and that your
   recordings are not affected, with **Retry**. Tasks, People, Memories and Ask use the same states. Open a conversation for its
@@ -156,7 +158,7 @@ Addresses, tokens and signing secrets are set in a monospaced font.
   start of the transcript instead.
 - **Tasks.** What your conversations left you to do, newest first, with the conversation's title and
   day. Tick a task to complete it, tap it to open its conversation, and use ⋮ to edit or delete it
-  (delete asks first). Done tasks sit below, collapsed, in a dimmer color and never struck through. The model finds the tasks; there is no add
+  (delete asks first, with a red **Delete**). Done tasks sit below, collapsed, in a dimmer color and never struck through. The model finds the tasks; there is no add
   button.
 - **Memories.** Lasting facts about you that the server took from your conversations, grouped by how long
   ago it learned them (Today, This week, This month, Earlier). Each is set in the reading type with its
@@ -226,6 +228,8 @@ Addresses, tokens and signing secrets are set in a monospaced font.
   has no model set up, or is restarting.", "The model could not answer. Try again." and "The server
   took too long to answer. Try a shorter question." cover the server's own failures. Needs server
   0.8.0 or later; an older server says it needs an update.
+
+Screens fade into each other (300 ms in, 150 ms out) and nothing else moves.
 
 The bar at the bottom holds five tabs, each with its label: Conversations, Tasks, Ask, People and
 Memories (Памʼять in Ukrainian). People carries a saffron count of the name suggestions and other

@@ -37,6 +37,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -51,6 +53,8 @@ import io.github.nytka_app.R
 import io.github.nytka_app.ui.ListFailure
 import io.github.nytka_app.ui.ListState
 import io.github.nytka_app.ui.ListStateKind
+import io.github.nytka_app.ui.ScreenEnter
+import io.github.nytka_app.ui.ScreenExit
 import io.github.nytka_app.ui.StatusCard
 import io.github.nytka_app.ui.StatusUiState
 import io.github.nytka_app.ui.search.SEARCH_ENABLED
@@ -77,7 +81,14 @@ fun ConversationsTab(
     LaunchedEffect(navController, openRequests) {
         openRequests.collect { id -> navController.navigate("conversation/$id") { popUpTo("list") } }
     }
-    NavHost(navController, startDestination = "list") {
+    NavHost(
+        navController,
+        startDestination = "list",
+        enterTransition = { ScreenEnter },
+        exitTransition = { ScreenExit },
+        popEnterTransition = { ScreenEnter },
+        popExitTransition = { ScreenExit },
+    ) {
         composable("list") { entry ->
             // A conversation deleted on its own screen comes back as this entry's result.
             val deleted by entry.savedStateHandle.getStateFlow<String?>(DELETED, null).collectAsStateWithLifecycle()
@@ -210,6 +221,7 @@ private fun LazyListScope.conversationRows(
                     stringResource(
                         if (state.hideMedia) R.string.speech_list_only_media else R.string.no_conversations_yet,
                     ),
+                    body = if (state.hideMedia) null else stringResource(R.string.no_conversations_body),
                 )
             }
         ListEmpty.EmptyForTag ->
@@ -242,7 +254,7 @@ private fun TopActions(
     }
 }
 
-/** A small label for where the summary stands; red when the model gave up. */
+/** A small label for where the summary stands; with a triangle in the error colours when the model gave up. */
 @Composable
 internal fun AiChip(
     chip: SummaryChip,
@@ -254,11 +266,17 @@ internal fun AiChip(
         shape = MaterialTheme.shapes.small,
         color = if (failed) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
     ) {
-        Text(
-            stringResource(if (failed) R.string.summary_failed else R.string.summarizing),
-            style = MaterialTheme.typography.labelMedium,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-        )
+        Row(
+            Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            if (failed) Icon(Icons.Filled.Warning, contentDescription = null, modifier = Modifier.size(14.dp))
+            Text(
+                stringResource(if (failed) R.string.summary_failed else R.string.summarizing),
+                style = MaterialTheme.typography.labelMedium,
+            )
+        }
     }
 }
 
@@ -284,7 +302,7 @@ private fun HideMediaChip(onClear: () -> Unit) {
                 style = MaterialTheme.typography.labelLarge,
                 modifier = Modifier.padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
             )
-            IconButton(onClick = onClear, modifier = Modifier.size(36.dp)) {
+            IconButton(onClick = onClear) {
                 Icon(
                     Icons.Filled.Close,
                     contentDescription = stringResource(R.string.speech_list_show_media),
@@ -305,7 +323,8 @@ private fun DayHeader(title: String) {
             Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
-                .padding(top = 8.dp, bottom = 4.dp),
+                .padding(top = 8.dp, bottom = 4.dp)
+                .semantics { heading() },
     )
 }
 
@@ -387,6 +406,12 @@ private fun PipelineLine(chip: SummaryChip) {
                 color = if (failed) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        if (!failed) LinearProgressIndicator(Modifier.fillMaxWidth().height(2.dp))
+        if (!failed) {
+            LinearProgressIndicator(
+                Modifier.fillMaxWidth().height(2.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                trackColor = MaterialTheme.colorScheme.outlineVariant,
+            )
+        }
     }
 }

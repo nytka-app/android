@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.activity.compose.LocalActivity
 import androidx.annotation.ArrayRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,7 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -130,8 +132,13 @@ fun VoiceScreen(
 }
 
 @Composable
-private fun Card(content: @Composable () -> Unit) {
-    ElevatedCard(Modifier.fillMaxWidth()) {
+private fun VoiceCard(content: @Composable () -> Unit) {
+    Card(
+        Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceContainerLow),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { content() }
     }
 }
@@ -140,7 +147,7 @@ private fun Card(content: @Composable () -> Unit) {
 private fun StatusCard(
     state: VoiceUiState,
     onRetry: () -> Unit,
-) = Card {
+) = VoiceCard {
     val status = state.status
     when {
         state.error != null -> {
@@ -180,7 +187,7 @@ private fun day(text: String): String =
 private fun StartCard(
     state: VoiceUiState,
     viewModel: VoiceViewModel,
-) = Card {
+) = VoiceCard {
     val idle = state.phase == VoicePhase.Idle
     val enrolled = state.status?.enrolled == true
     Text(stringResource(R.string.voice_languages), style = MaterialTheme.typography.titleMedium)
@@ -236,7 +243,7 @@ private fun RecordingCard(
     state: VoiceUiState,
     onSend: () -> Unit,
     onCancel: () -> Unit,
-) = Card {
+) = VoiceCard {
     val context = LocalContext.current
     val sentences =
         PromptLanguage.entries
@@ -271,7 +278,7 @@ private fun RecordingCard(
     }
     Text(
         "%d:%02d".format(state.seconds.toInt() / 60, state.seconds.toInt() % 60),
-        style = MaterialTheme.typography.displaySmall,
+        style = MaterialTheme.typography.displaySmall.copy(fontFeatureSettings = "tnum"),
     )
     EnrollmentTrack(state.seconds)
     Text(

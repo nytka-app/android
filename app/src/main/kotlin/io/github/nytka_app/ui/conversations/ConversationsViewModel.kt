@@ -99,7 +99,7 @@ class ConversationsViewModel
         private var speechKind: Boolean? = null
         private val mutableState = MutableStateFlow(ConversationsUiState(tag = tag, hideMedia = hideMedia))
         val state: StateFlow<ConversationsUiState> = mutableState.asStateFlow()
-        private val mutableNotice = MutableStateFlow<String?>(null)
+        private val mutableNotice = MutableStateFlow<TranscriptionLag?>(null)
         private val mutableTagFilter = MutableStateFlow(false)
         private val mutableMediaFilter = MutableStateFlow(false)
 
@@ -110,7 +110,7 @@ class ConversationsViewModel
         val mediaFilter: StateFlow<Boolean> = mutableMediaFilter.asStateFlow()
 
         /** What the status card says about transcription on the server; null while nothing is wrong or known. */
-        val notice: StateFlow<String?> = mutableNotice.asStateFlow()
+        val notice: StateFlow<TranscriptionLag?> = mutableNotice.asStateFlow()
 
         init {
             refresh()

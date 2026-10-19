@@ -87,7 +87,7 @@
 
     <!-- Conversations -->
     <string name="conversations_title">Розмови</string>
-    <string name="no_conversations_yet">Розмов ще немає. Мовлення з\'являється тут за кілька хвилин після того, як його сказали</string>
+    <string name="no_conversations_yet">Розмов ще немає</string>
     <string name="summary_failed">Не вдалося створити підсумок</string>
     <string name="summarizing">Створення підсумку</string>
     <string name="time_range_and_length_format">%1$s · %2$s</string>
@@ -129,7 +129,6 @@
     <string name="scan_qr_code_denied">Без камери Nytka не може зчитати код. Натисніть «Сканувати QR-код», щоб запит повторили, або введіть адресу й токен вище</string>
 
     <!-- Tasks -->
-    <string name="tasks_tab_empty">Немає відкритих завдань. Завдання, які мовна модель знаходить у ваших розмовах, з\'являються тут</string>
 
     <!-- Device -->
     <string name="device_title">Пристрій</string>
@@ -538,7 +537,7 @@
     <string name="task_label">Завдання</string>
 
     <!-- Memories tab -->
-    <string name="no_memories_yet">Спогадів ще немає. Спогади — це сталі факти про вас, наприклад де ви працюєте чи що любите. Вони беруться з підсумованих розмов, або ви можете додати власний</string>
+    <string name="no_memories_yet">Спогадів ще немає</string>
     <string name="add_memory">Додати спогад</string>
     <string name="edit_memory_title">Редагувати спогад</string>
     <string name="memory_label">Факт про вас</string>
@@ -773,4 +772,15 @@
         <item quantity="many">%d спроб</item>
         <item quantity="other">%d спроби</item>
     </plurals>
+    <string name="no_conversations_body">Мовлення зʼявляється тут за кілька хвилин після того, як його сказали.</string>
+    <string name="no_memories_body">Спогади — це сталі факти про вас, наприклад де ви працюєте чи що любите. Вони беруться з підсумованих розмов, або ви можете додати власний.</string>
+    <string name="tasks_empty_title">Немає відкритих завдань</string>
+    <string name="tasks_empty_body">Завдання, які сервер знаходить у ваших розмовах, зʼявляються тут.</string>
+    <plurals name="server_behind_format">
+        <item quantity="one">Сервер відстає: %1$d частина чекає від %2$s.</item>
+        <item quantity="few">Сервер відстає: %1$d частини чекають від %2$s.</item>
+        <item quantity="many">Сервер відстає: %1$d частин чекають від %2$s.</item>
+        <item quantity="other">Сервер відстає: %1$d частини чекають від %2$s.</item>
+    </plurals>
+    <string name="server_behind_safe">Аудіо збережено на вашому сервері. Текст зʼявиться, щойно він наздожене.</string>
 </resources>
