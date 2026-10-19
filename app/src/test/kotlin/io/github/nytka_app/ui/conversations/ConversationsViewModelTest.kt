@@ -464,7 +464,7 @@ class ConversationsViewModelTest {
 
         val viewModel = newViewModel()
 
-        assertEquals("The server is behind: 12 chunks have waited since 11:30.", viewModel.notice.value)
+        assertEquals(TranscriptionLag(12, "11:30"), viewModel.notice.value)
     }
 
     @Test
@@ -492,7 +492,7 @@ class ConversationsViewModelTest {
 
         viewModel.refresh()
 
-        assertEquals("The server is behind: 12 chunks have waited since 11:30.", viewModel.notice.value)
+        assertEquals(TranscriptionLag(12, "11:30"), viewModel.notice.value)
     }
 
     @Test
@@ -504,7 +504,7 @@ class ConversationsViewModelTest {
 
         viewModel.refresh()
 
-        assertEquals("The server is behind: 12 chunks have waited since 11:30.", viewModel.notice.value)
+        assertEquals(TranscriptionLag(12, "11:30"), viewModel.notice.value)
     }
 
     @Test
@@ -519,7 +519,7 @@ class ConversationsViewModelTest {
             serverStatus = ApiResult.Ok(ServerStatus(12, "2026-09-29T11:30:00Z"))
             advanceTimeBy(ConversationsViewModel.REFRESH_MS)
             runCurrent()
-            assertEquals("The server is behind: 12 chunks have waited since 11:30.", viewModel.notice.value)
+            assertEquals(TranscriptionLag(12, "11:30"), viewModel.notice.value)
 
             // The server catches up.
             serverStatus = ApiResult.Ok(ServerStatus(0))

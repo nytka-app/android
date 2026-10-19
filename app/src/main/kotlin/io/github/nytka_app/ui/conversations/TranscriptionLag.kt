@@ -8,6 +8,12 @@ import java.time.ZoneId
 /** The server waits up to 10 minutes for a missing chunk before it goes on, so audio older than this is stuck. */
 private val BEHIND_AFTER = Duration.ofMinutes(15)
 
+/** How far behind the server is: [chunks] waiting since the clock time [since]; the card words it. */
+data class TranscriptionLag(
+    val chunks: Long,
+    val since: String,
+)
+
 /**
  * What the status card says about transcription, from `GET /api/v1/status`, or null when the server reports nothing
  * wrong: audio the server has held since [ServerStatus.oldestPendingAt]. With the transcription endpoint down or slow
@@ -21,9 +27,8 @@ fun transcriptionNotice(
     status: ServerStatus,
     now: Instant,
     zone: ZoneId,
-): String? {
+): TranscriptionLag? {
     val since = status.oldestPendingAt?.let { runCatching { Instant.parse(it) }.getOrNull() } ?: return null
     if (Duration.between(since, now) < BEHIND_AFTER) return null
-    val chunks = if (status.pendingChunks == 1L) "1 chunk has" else "${status.pendingChunks} chunks have"
-    return "The server is behind: $chunks waited since ${Formatting.clock(since, zone)}."
+    return TranscriptionLag(status.pendingChunks, Formatting.clock(since, zone))
 }

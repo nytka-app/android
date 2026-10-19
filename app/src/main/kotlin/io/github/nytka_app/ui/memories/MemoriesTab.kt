@@ -30,6 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -98,7 +100,13 @@ fun MemoriesTab(
                             item(key = "more") { LaunchedEffect(state.rows.size) { viewModel.loadMore() } }
                         }
                         if (state.rows.isEmpty() && !state.loading && state.error == null) {
-                            item { ListState(ListStateKind.Empty, stringResource(R.string.no_memories_yet)) }
+                            item {
+                                ListState(
+                                    ListStateKind.Empty,
+                                    stringResource(R.string.no_memories_yet),
+                                    body = stringResource(R.string.no_memories_body),
+                                )
+                            }
                         }
                     }
                 }
@@ -123,8 +131,8 @@ private fun GroupTitle(group: MemoryGroup) {
             },
         ),
         style = MaterialTheme.typography.titleSmall,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp),
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp).semantics { heading() },
     )
 }
 
@@ -146,6 +154,7 @@ private fun MemoryDialog(
                 onValueChange = { text = it.take(MemoriesViewModel.MAX_LENGTH) },
                 label = { Text(stringResource(R.string.memory_label)) },
                 supportingText = { Text(editor.error ?: "${text.length} / ${MemoriesViewModel.MAX_LENGTH}") },
+                shape = MaterialTheme.shapes.small,
                 isError = editor.error != null,
                 minLines = 2,
             )

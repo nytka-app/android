@@ -1,5 +1,10 @@
 package io.github.nytka_app.ui
 
+import androidx.compose.animation.core.EaseInCubic
+import androidx.compose.animation.core.EaseOutCubic
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.BadgedBox
@@ -103,7 +108,15 @@ fun NytkaNavHost(
             }
         },
     ) { padding ->
-        NavHost(navController, startDestination = AppTab.start.route, modifier = Modifier.padding(padding)) {
+        NavHost(
+            navController,
+            startDestination = AppTab.start.route,
+            modifier = Modifier.padding(padding),
+            enterTransition = { ScreenEnter },
+            exitTransition = { ScreenExit },
+            popEnterTransition = { ScreenEnter },
+            popExitTransition = { ScreenExit },
+        ) {
             composable(AppTab.Conversations.route) { conversations(openRequests, onOpenPerson) }
             composable(AppTab.Tasks.route) { tasks(onOpenConversation, onOpenPerson) }
             composable(AppTab.Memories.route) { memories(onOpenConversation, onOpenPerson) }
@@ -113,6 +126,12 @@ fun NytkaNavHost(
         }
     }
 }
+
+/** Motion reports a change of screen and nothing else: enter 300 ms ease-out, exit 150 ms ease-in. */
+internal val ScreenEnter = fadeIn(tween(ENTER_MS, easing = EaseOutCubic))
+internal val ScreenExit = fadeOut(tween(EXIT_MS, easing = EaseInCubic))
+private const val ENTER_MS = 300
+private const val EXIT_MS = 150
 
 @Composable
 private fun TabIcon(

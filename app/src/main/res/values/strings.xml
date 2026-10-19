@@ -87,7 +87,7 @@
 
     <!-- Conversations -->
     <string name="conversations_title">Conversations</string>
-    <string name="no_conversations_yet">No conversations yet. Speech shows up here a few minutes after it is said</string>
+    <string name="no_conversations_yet">No conversations yet</string>
     <string name="summary_failed">Summary failed</string>
     <string name="summarizing">Summarizing</string>
     <string name="time_range_and_length_format">%1$s · %2$s</string>
@@ -127,7 +127,6 @@
     <string name="scan_qr_code_denied">Without the camera Nytka cannot scan the code. Tap Scan QR code to be asked again, or type the address and token above</string>
 
     <!-- Tasks -->
-    <string name="tasks_tab_empty">No open tasks. Tasks the language model finds in your conversations show up here</string>
 
     <!-- Device -->
     <string name="device_title">Device</string>
@@ -533,7 +532,7 @@
     <string name="task_label">Task</string>
 
     <!-- Memories tab -->
-    <string name="no_memories_yet">No memories yet. Memories are lasting facts about you, such as where you work or what you like. They come from summarized conversations, or you can add one</string>
+    <string name="no_memories_yet">No memories yet</string>
     <string name="add_memory">Add a memory</string>
     <string name="edit_memory_title">Edit memory</string>
     <string name="memory_label">A fact about you</string>
@@ -758,4 +757,13 @@
         <item quantity="one">%d attempt</item>
         <item quantity="other">%d attempts</item>
     </plurals>
+    <string name="no_conversations_body">Speech shows up here a few minutes after it is said.</string>
+    <string name="no_memories_body">Memories are lasting facts about you, such as where you work or what you like. They come from summarized conversations, or you can add one.</string>
+    <string name="tasks_empty_title">No open tasks</string>
+    <string name="tasks_empty_body">Tasks the server finds in your conversations show up here.</string>
+    <plurals name="server_behind_format">
+        <item quantity="one">The server is behind: %1$d chunk has waited since %2$s.</item>
+        <item quantity="other">The server is behind: %1$d chunks have waited since %2$s.</item>
+    </plurals>
+    <string name="server_behind_safe">The audio is stored on your server. Transcripts follow when it catches up.</string>
 </resources>
