@@ -537,6 +537,15 @@ themselves, only as the tag a session's place becomes.
   more gets the names with a word that starts with it ("Call Ol" offers Oleh and Olena Petrenko); a
   tap writes the full name in. Search does the same without the capital. The names come from your
   server once per screen and are not stored on the phone; a server without people offers none.
+- **Save a line as a memory.** Press and hold a line in a transcript and choose **Save as a memory**. The text
+  opens with the speaker's name in front ("Olena: I will send the contract"; your own lines carry no
+  name), up to 300 characters, and you can edit it before **Save**. Known names are offered as you type.
+  A fact the server already holds counts as saved. Needs only the Memories API, so any server with the
+  Memories tab has it.
+- **Ask ideas.** The empty Ask tab offers questions as chips: for the two people heard last "What did
+  Olena and I talk about last?" and "What did I promise Olena?", then "What happened yesterday?" and
+  "What is still open on my plate?". A tap asks at once. Names come from the server, as for
+  [names as you type](#everyday-use); nothing is stored on the phone.
 - **Delete** a conversation from its ⋮ menu: its transcript, audio, tasks and memories go from your
   server.
 - **After a reboot**, recording starts once the phone has been unlocked and the pendant is in

@@ -94,6 +94,7 @@ fun ConversationScreen(
     var confirmDelete by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
     var naming by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var memoryDraft by rememberSaveable { mutableStateOf<String?>(null) }
     var follow by rememberSaveable { mutableStateOf(true) }
     val listState = rememberLazyListState()
     val snackbar = rememberNoteHost(state.note, viewModel::noteShown)
@@ -232,6 +233,7 @@ fun ConversationScreen(
                     onPlay = viewModel::playFrom,
                     onMark = viewModel::markSegment,
                     onKind = viewModel::markKind.takeIf { state.speechAccess },
+                    onMemory = { memoryDraft = lineMemoryDraft(it) },
                 )
                 state.raw?.let { raw ->
                     item { Text(raw, style = NytkaTheme.typography.code) }
@@ -239,6 +241,8 @@ fun ConversationScreen(
             }
         }
     }
+
+    LineMemoryHost(memoryDraft, snackbar) { memoryDraft = null }
 
     naming?.let { (voiceId, label) ->
         NameVoiceDialog(
@@ -294,6 +298,7 @@ private fun LazyListScope.transcript(
     onPlay: (Int) -> Unit,
     onMark: (Long, Boolean?) -> Unit,
     onKind: ((Long, String?) -> Unit)?,
+    onMemory: (Paragraph) -> Unit,
 ) {
     // "Voice 1", "Voice 2" ... by first appearance among the voices nobody has named.
     val unknown = paragraphs.filter { it.unknownVoice }.mapNotNull { it.speaker }.distinct()
@@ -308,6 +313,7 @@ private fun LazyListScope.transcript(
             onMark,
             onKind,
             onPlay = if (canPlay) ({ onPlay(i) }) else null,
+            onMemory = onMemory,
         )
     }
 }
@@ -441,6 +447,7 @@ private fun ParagraphItem(
     onMark: (Long, Boolean?) -> Unit,
     onKind: ((Long, String?) -> Unit)?,
     onPlay: (() -> Unit)?,
+    onMemory: (Paragraph) -> Unit,
 ) {
     var markMenu by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
@@ -494,6 +501,11 @@ private fun ParagraphItem(
                             }),
                     )
                     DropdownMenu(expanded = markMenu, onDismissRequest = { markMenu = false }) {
+                        DropdownMenuItem(text = { Text(stringResource(R.string.line_save_memory)) }, onClick = {
+                            markMenu = false
+                            onMemory(paragraph)
+                        })
+                        HorizontalDivider()
                         DropdownMenuItem(text = { Text(stringResource(R.string.segment_mark_me)) }, onClick = {
                             markMenu = false
                             onMark(paragraph.segmentId, true)

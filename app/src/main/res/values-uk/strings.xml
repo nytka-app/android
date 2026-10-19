@@ -783,4 +783,11 @@
         <item quantity="other">Сервер відстає: %1$d частини чекають від %2$s.</item>
     </plurals>
     <string name="server_behind_safe">Аудіо збережено на вашому сервері. Текст зʼявиться, щойно він наздожене.</string>
+    <string name="line_save_memory">Зберегти як спогад</string>
+    <string name="line_memory_title">Зберегти цей рядок як спогад</string>
+    <string name="line_memory_saved">Збережено у Спогадах</string>
+    <string name="ask_idea_last_format">Остання розмова — %1$s</string>
+    <string name="ask_idea_promised_format">Мої обіцянки — %1$s</string>
+    <string name="ask_idea_yesterday">Що сталося вчора?</string>
+    <string name="ask_idea_open">Що в мене ще не зроблено?</string>
 </resources>

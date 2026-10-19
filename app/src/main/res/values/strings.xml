@@ -766,4 +766,11 @@
         <item quantity="other">The server is behind: %1$d chunks have waited since %2$s.</item>
     </plurals>
     <string name="server_behind_safe">The audio is stored on your server. Transcripts follow when it catches up.</string>
+    <string name="line_save_memory">Save as a memory</string>
+    <string name="line_memory_title">Save this line as a memory</string>
+    <string name="line_memory_saved">Saved to Memories</string>
+    <string name="ask_idea_last_format">What did %1$s and I talk about last?</string>
+    <string name="ask_idea_promised_format">What did I promise %1$s?</string>
+    <string name="ask_idea_yesterday">What happened yesterday?</string>
+    <string name="ask_idea_open">What is still open on my plate?</string>
 </resources>
