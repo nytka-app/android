@@ -18,6 +18,14 @@ class QrPairingPayloadTest {
     }
 
     @Test
+    fun `toString hides the token`() {
+        val text = ok("nytka://pair?url=https%3A%2F%2Fnytka.example.com&token=abc123").toString()
+
+        assertTrue(text.contains("token=set"))
+        assertTrue(!text.contains("abc123"))
+    }
+
+    @Test
     fun `a missing token comes back blank, for the blank-token check to refuse like manual entry`() {
         val result = ok("nytka://pair?url=https%3A%2F%2Fnytka.example.com")
 

@@ -59,8 +59,8 @@ class NytkaApi(
             }
         } catch (e: IOException) {
             UploadResult.Retry(e.message ?: "Network error")
-        } catch (e: SerializationException) {
-            UploadResult.Retry("Unexpected answer: ${e.message}")
+        } catch (_: SerializationException) {
+            UploadResult.Retry("Unexpected answer from the server")
         }
     }
 
@@ -88,8 +88,8 @@ class NytkaApi(
             }
         } catch (e: IOException) {
             DiagnosticsResult.Retry(e.message ?: "Network error")
-        } catch (e: SerializationException) {
-            DiagnosticsResult.Retry("Unexpected answer: ${e.message}")
+        } catch (_: SerializationException) {
+            DiagnosticsResult.Retry("Unexpected answer from the server")
         }
     }
 
@@ -194,8 +194,8 @@ class NytkaApi(
             ApiResult.Failure(FailureKind.Timeout, "The server took too long to answer.")
         } catch (e: IOException) {
             ApiResult.Failure(FailureKind.Network, e.message ?: "Network error")
-        } catch (e: SerializationException) {
-            ApiResult.Failure(FailureKind.Server, "Unexpected answer: ${e.message}")
+        } catch (_: SerializationException) {
+            ApiResult.Failure(FailureKind.Server, "Unexpected answer from the server")
         }
     }
 

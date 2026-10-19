@@ -8,7 +8,9 @@ sealed interface QrPairing {
     data class Ok(
         val url: String,
         val token: String,
-    ) : QrPairing
+    ) : QrPairing {
+        override fun toString() = "Ok(url=$url, token=${if (token.isEmpty()) "unset" else "set"})"
+    }
 
     data class Invalid(
         val reason: String,
