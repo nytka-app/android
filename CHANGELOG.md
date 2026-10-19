@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.19.0](https://github.com/nytka-app/android/compare/v0.18.0...v0.19.0) (2026-10-19)
+
+
+### Features
+
+* Device sections, Developer screens and notifications follow the design system ([#108](https://github.com/nytka-app/android/issues/108)) ([3813ec7](https://github.com/nytka-app/android/commit/3813ec720ed77005b63178028fbedeec30ccabea))
+* search, tags, review inbox, voice cards, citations and person dialogs follow the design system ([#107](https://github.com/nytka-app/android/issues/107)) ([7609648](https://github.com/nytka-app/android/commit/7609648ef11a5a4878490508b4a6da8568e9192d))
+* tasks, conversation list, memories, ask and status card follow the design system ([#109](https://github.com/nytka-app/android/issues/109)) ([bd23513](https://github.com/nytka-app/android/commit/bd23513fcc591552eca280be5f4898513beb5866))
+
 ## [0.18.0](https://github.com/nytka-app/android/compare/v0.17.0...v0.18.0) (2026-10-19)
 
 
