@@ -217,7 +217,8 @@ class CaptureService : LifecycleService() {
         scope.launch { capture.status.sample(STATUS_SAMPLE_MS).collect(hub::publish) }
         scope.launch { storageSync.status.sample(STATUS_SAMPLE_MS).collect(hub::publishSync) }
         combine(capture.status, queue.usage, storageSync.status) { status, usage, syncStatus ->
-            CaptureNotification.text(status, usage, syncStatus) to Triple(status, usage, syncStatus)
+            (CaptureNotification.state(status) to CaptureNotification.text(status, usage, syncStatus)) to
+                Triple(status, usage, syncStatus)
         }.distinctUntilChanged { old, new -> old.first == new.first }
             .map { it.second }
             .collect { (status, usage, syncStatus) ->
@@ -225,7 +226,7 @@ class CaptureService : LifecycleService() {
                     getSystemService(NotificationManager::class.java)
                         .notify(CaptureNotification.ID, CaptureNotification.build(this, status, usage, syncStatus))
                 }
-                CaptureWidgetProvider.refresh(this, status, usage)
+                CaptureWidgetProvider.refresh(this)
             }
     }
 
@@ -305,6 +306,8 @@ class CaptureService : LifecycleService() {
         val diagnosticsRecorder = recorder
         val logGeneration = logRun
         hub.detach()
+        // The hub now reads "off"; the widget's own session may be closed, so it must be told.
+        applicationScope.launch { runCatching { CaptureWidgetProvider.refresh(applicationContext) } }
         applicationScope.launch {
             // The last sample is of the running capture, before stopping resets its status.
             // Whatever happens to it, the capture below still stops.

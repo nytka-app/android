@@ -58,6 +58,7 @@ class SettingsStore(
             preferences[CONSENT_CHIME] = next.consentChime
             preferences[CONSENT_CHIME_MINUTES] = next.consentChimeMinutes
             preferences[PHONE_CONTEXT] = next.phoneContext
+            preferences[WALLPAPER_COLORS] = next.wallpaperColors
         }
     }
 
@@ -89,6 +90,7 @@ class SettingsStore(
             consentChime = preferences[CONSENT_CHIME] ?: false,
             consentChimeMinutes = preferences[CONSENT_CHIME_MINUTES] ?: Settings().consentChimeMinutes,
             phoneContext = preferences[PHONE_CONTEXT] ?: true,
+            wallpaperColors = preferences[WALLPAPER_COLORS] ?: false,
         )
 
     /** Stored by name, so reordering the steps moves no one; a name no longer known starts over. */
@@ -121,6 +123,7 @@ class SettingsStore(
         private val CONSENT_CHIME = booleanPreferencesKey("consent_chime")
         private val CONSENT_CHIME_MINUTES = intPreferencesKey("consent_chime_minutes")
         private val PHONE_CONTEXT = booleanPreferencesKey("phone_context")
+        private val WALLPAPER_COLORS = booleanPreferencesKey("wallpaper_colors")
 
         fun create(
             context: Context,

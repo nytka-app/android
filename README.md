@@ -83,10 +83,11 @@ steps.
    some places, that you answer for following the law, and that the pendant also records while the
    phone is away. Tick **I understand** and tap **Continue**.
 4. **Pairing.** Turn the pendant on, tap **Pair pendant** and pick it in the list that opens.
-   **Set up later** skips this; the **Device** tab has the same **Pair pendant** button.
+   **Set up later** skips this; the **Device** screen has the same **Pair pendant** button.
 
-Nytka now opens on **Conversations**. The chip at the top reads **Waiting** while the phone connects
-to the pendant, then **Recording**, with a red dot and the pendant's battery: the first run is done.
+Nytka now opens on **Conversations**. The capture status at the top reads **Waiting for pendant**,
+with a broken ring turning slowly, while the phone connects to the pendant, then **Recording**, with a
+green disc and a solid line under the top bar: the first run is done.
 Say something: within a minute the status card shows "Server: Last upload …", and the speech shows
 up under **Conversations** a few minutes after it is said. Pull the list down to refresh if a new
 conversation hasn't appeared.
@@ -200,8 +201,32 @@ allows plain `http://`, which carries your audio unencrypted: use it only on a n
   has no model set up, or is restarting.", "The model could not answer. Try again." and "The server
   took too long to answer. Try a shorter question." cover the server's own failures. Needs server
   0.8.0 or later; an older server says it needs an update.
-- **Device.** The pendant, its storage and settings, the server, the settings,
-  [Phone context](#phone-context), [Your voice](#your-voice) and the version.
+
+The bar at the bottom holds five tabs, each with its label: Conversations, Tasks, Ask, People and
+Memories (Памʼять in Ukrainian). People carries a saffron count of the name suggestions and other
+review items waiting for your answer; the review inbox icon on the People screen uses the same badge.
+
+**Capture status.** Every main screen shows what the pendant's audio is doing at the top, in four states
+that differ in shape and words, not only in colour, so none can be mistaken for another:
+
+| State | Glyph | Line under the top bar |
+|---|---|---|
+| **Recording** | Filled green disc | Solid, with a stitch travelling along it |
+| **Muted** | Two bars | Dashed |
+| **Waiting for pendant** | Broken ring, turning once in 4 s | Dotted |
+| **Recording off** | Ring with a slash | None |
+
+Green means only that audio is being captured now. With *Remove animations* on in Android's settings the
+ring and the stitch stand still; the shapes and words stay. TalkBack reads the state when it changes. The
+pendant's own light shows its link to the phone, not recording. Tap the capture status to open the
+**Device** screen: the pendant, its storage and settings, the server, the settings,
+[Phone context](#phone-context), [Your voice](#your-voice), **Appearance** and the version.
+
+**Appearance.** Nytka uses its own linen-and-ink colours in light and dark, with Onest for the interface,
+Literata for reading and JetBrains Mono for addresses and tokens, all bundled in the app.
+**Match wallpaper colours** (off by default) lets buttons and surfaces follow your wallpaper; recording
+green, the saffron of questions that need you and the red of failures keep their colours. The font
+licences (SIL Open Font License 1.1) are under Device → About → **Font licences**.
 
 **Search** opens from the magnifier above the conversation list. It looks through transcripts,
 titles, summaries and memories, in Ukrainian and English, while you type: from one letter or digit,
@@ -258,7 +283,7 @@ A failure of the list shows no row. A server without the feature shows none and 
 While the phone is out of range, the pendant stores what it hears on its own card. When the phone
 comes back, Nytka reads that storage and uploads it with the times the audio was recorded, so it
 lands in the right conversations. It needs pendant firmware 3.0.20 or later and server 0.4.0 or
-later. On anything else the **Pendant storage** card on the **Device** tab says why, or is not
+later. On anything else the **Pendant storage** card on the **Device** screen says why, or is not
 there, and live capture is not affected.
 
 A sync starts by itself whenever the pendant connects. The card shows it, and the recording
@@ -305,7 +330,7 @@ which takes a while, and **Discard…** frees it on the pendant unread, after a 
 
 ## Pendant settings
 
-While the pendant is connected, the **Device** tab has a **Pendant settings** card with two sliders,
+While the pendant is connected, the **Device** screen has a **Pendant settings** card with two sliders,
 for pendants that report the feature (firmware 3.0.21 does). **LED brightness** runs from 0 to 100 %
 and dims every status light; at 0 the link and charging lights stay dark too, and the card says so.
 **Microphone gain** has levels 0 to 8: 0 is mute, then -20, -10, 0, +6, +10, +20 (the default,
@@ -317,13 +342,13 @@ message and puts the slider back.
 
 ## Pendant firmware notice
 
-The **Pendant** card on the **Device** tab shows the firmware the connected pendant reports. Nytka
+The **Pendant** card on the **Device** screen shows the firmware the connected pendant reports. Nytka
 also tells you when Omi has published a newer one: the card then says "Firmware 3.0.21 is available
 (this pendant has 3.0.20)" with a **How to update** link to Omi's own instructions. Nytka only tells
 you. It never downloads or installs firmware; the official Omi app does that (install it, update,
 uninstall it again).
 
-- **When it asks.** At most once every 24 hours, and only while the Device tab shows a connected
+- **When it asks.** At most once every 24 hours, and only while the Device screen shows a connected
   pendant, Nytka asks GitHub for the newest release of `BasedHardware/omi` in the pendant's firmware
   stream (three or four requests, no token). Offline, it tries again an hour later at the earliest.
 - **Which pendants.** Only the consumer pendant, which reports the model "Omi CV 1" and a 3.x
@@ -332,11 +357,11 @@ uninstall it again).
   notice, because a wrong guess would send you to the wrong firmware. Pre-releases are ignored.
 - **What GitHub learns.** Your IP address, like any website you open. No account, token, cookie,
   pendant data, audio, or server address leaves the phone for this. Switch it off with **Check for
-  new pendant firmware** on the Device tab (on by default); then Nytka never contacts GitHub.
+  new pendant firmware** on the Device screen (on by default); then Nytka never contacts GitHub.
 
 ## Your voice
 
-With server 0.12 or later and its speaker model (`/api/v1/info` lists `voice`), the **Device** tab
+With server 0.12 or later and its speaker model (`/api/v1/info` lists `voice`), the **Device** screen
 has a **Your voice** card. It teaches the server your voice once, so it marks the lines you said as
 yours whatever the transcription service says. It needs an admin token.
 
@@ -363,7 +388,7 @@ made from them; your own marks stay. See the
 
 ## Phone context
 
-When the server lists `context-ranges` in `/api/v1/info`, the **Device** tab has a **Phone context** switch,
+When the server lists `context-ranges` in `/api/v1/info`, the **Device** screen has a **Phone context** switch,
 on by default: "Tell your server when this phone plays sound through its speaker or is in a call. Only times are
 sent, never what played." While capture runs, the app notes two kinds of stretch: **media**, when the phone plays
 music or video through its built-in speaker at a volume above 0 (it ends 2 seconds after the sound stops, or at
@@ -382,7 +407,7 @@ With the switch off, or on a server without `context-ranges`, nothing is recorde
 With a server that has a calendar feed (`Nytka__Calendar__IcsUrl`, see the
 [server README](https://github.com/nytka-app/server#calendar-briefs)), the server writes a short
 brief before a meeting with someone you named: who they are to you, what to remember, what is still
-open. Switch on **Meeting briefs** in the Device tab (off by default) and Nytka posts it as a
+open. Switch on **Meeting briefs** in the Device screen (off by default) and Nytka posts it as a
 notification. On Android 13 and later it asks to show notifications first; if you refuse twice, the
 switch offers **Open settings**. Under the switch, "Your server has no calendar feed" means the feed
 is not set, and "This server needs an update" means the server predates it.
@@ -400,10 +425,13 @@ is not set, and "This server needs an update" means the server predates it.
 
 - **Mute** with a double tap on the pendant: one long buzz means muted, two short buzzes mean
   recording again. **Mute** in the notification, on the status card and on the home-screen widget
-  does the same. While muted, Nytka hears nothing and the pendant discards its audio, and Nytka
+  does the same. The notification's title is the capture state, and its status-bar icon is the same
+  glyph as in the app, so the shape tells the state even in the status bar; **Open** opens the app. While muted, Nytka hears nothing and the pendant discards its audio, and Nytka
   stays muted when the pendant reconnects. What the pendant records while the phone is away is
   handled by [Offline sync](#offline-sync).
-- A **home-screen widget** shows recording or muted, pendant battery and the upload queue length;
+- A **home-screen widget** shows the capture state with its glyph (Recording, Muted, Waiting for
+  pendant or Recording off; only Recording is green), pendant battery and the upload queue length. It
+  follows your launcher's light or dark theme and your wallpaper's colours, and keeps the recording green;
   tap it to open the app, or tap **Mute**/**Unmute** to toggle recording without opening it.
 - **Bookmark** with a single tap on the pendant: one short buzz after about a second means it is kept.
   A double tap (or two quick single taps) mutes instead and keeps no bookmark. **Bookmark** in the
@@ -415,12 +443,12 @@ is not set, and "This server needs an update" means the server predates it.
   full, the oldest live audio goes first.
 - **Alerts** come when the pendant has been away for 5 minutes, the server has been unreachable
   for 15 minutes, the pendant battery reaches 20%, or the queue is 80% full.
-- **Consent chime** (Device tab, off by default): while the pendant records, the phone plays a short
+- **Consent chime** (Device screen, off by default): while the pendant records, the phone plays a short
   chime every 5 to 60 minutes (15 by default), at once when recording starts and not on each
   reconnect, so people nearby know. It is silent while muted, disconnected or during voice
   enrollment. It uses no microphone and no permission, and follows the notification volume: on
   silent, or when Do Not Disturb blocks notifications, you will not hear it.
-- **Language of summaries** (Device tab): English, Ukrainian or Follow the conversation, editing the
+- **Language of summaries** (Device screen): English, Ukrainian or Follow the conversation, editing the
   server's `llm.outputLanguage`. Shown locked, "Set by the server's environment", when the server's
   environment sets it.
 - **Delete** a conversation from its ⋮ menu: its transcript, audio, tasks and memories go from your
@@ -496,7 +524,7 @@ locked: "Set by the server's environment". API keys show only **Set** or **Not s
 live in the server's environment and the app can neither read nor change them. **Save** sends only
 what you changed, all or nothing, and an emptied field restores the default. The server uses a new
 value from its next job, with no restart. The `people` keys are also reachable from People → ⋮ → People settings,
-and `llm.outputLanguage` from the Device tab's [Language of summaries](#everyday-use). What each setting does is in the
+and `llm.outputLanguage` from the Device screen's [Language of summaries](#everyday-use). What each setting does is in the
 [server README](https://github.com/nytka-app/server#configuration).
 
 **Access tokens** lists the server's named tokens: name, scope, when it was made and last used, and

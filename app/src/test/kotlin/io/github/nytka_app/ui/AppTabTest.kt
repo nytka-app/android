@@ -12,17 +12,17 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 class AppTabTest {
     @Test
-    fun `the bar has the six tabs in that order`() {
+    fun `the bar has the five tabs in that order`() {
         assertEquals(
-            listOf("Conversations", "Tasks", "Memories", "People", "Ask", "Device"),
+            listOf("Conversations", "Tasks", "Ask", "People", "Memories"),
             AppTab.entries.map { label(it) },
         )
         assertEquals(AppTab.Conversations, AppTab.start)
     }
 
     @Test
-    fun `every tab has a route of its own`() {
-        val routes = AppTab.entries.map { it.route }
+    fun `every tab has a route of its own, and the device screen has none of theirs`() {
+        val routes = AppTab.entries.map { it.route } + DEVICE_ROUTE
 
         assertEquals(routes.distinct(), routes)
     }

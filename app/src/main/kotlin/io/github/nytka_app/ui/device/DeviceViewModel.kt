@@ -83,6 +83,8 @@ data class DeviceUiState(
     val consentChimeMinutes: Int = 15,
     /** Whether the phone tells the server when it plays sound through its speaker or is in a call (a setting). */
     val phoneContext: Boolean = true,
+    /** "Match wallpaper colours" (a setting, off by default). */
+    val wallpaperColors: Boolean = false,
     /** Whether /info lists `context-ranges`; null until it answers or after a failed check. */
     val serverContext: Boolean? = null,
     /** Whether meeting briefs post notifications (a setting, off by default). */
@@ -162,6 +164,7 @@ class DeviceViewModel
                     consentChime = current.consentChime,
                     consentChimeMinutes = current.consentChimeMinutes,
                     phoneContext = current.phoneContext,
+                    wallpaperColors = current.wallpaperColors,
                     briefNotifications = current.briefNotifications,
                 )
             }.stateIn(viewModelScope, SharingStarted.Eagerly, DeviceUiState())
@@ -377,6 +380,10 @@ class DeviceViewModel
 
         fun setPhoneContext(on: Boolean) {
             viewModelScope.launch { settings.update { it.copy(phoneContext = on) } }
+        }
+
+        fun setWallpaperColors(on: Boolean) {
+            viewModelScope.launch { settings.update { it.copy(wallpaperColors = on) } }
         }
 
         fun setConsentChimeMinutes(minutes: Int) {

@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.nytka_app.R
+import io.github.nytka_app.capture.CaptureState
 import io.github.nytka_app.pendant.PendantConnection
 
 @Composable
@@ -23,13 +24,10 @@ fun StatusCard(
 ) {
     ElevatedCard(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            val headline =
-                when {
-                    state.muted -> stringResource(R.string.muted)
-                    state.capture.recording -> stringResource(R.string.recording)
-                    else -> stringResource(R.string.not_recording)
-                }
-            Text(headline, style = MaterialTheme.typography.titleMedium)
+            CaptureStatusIndicator(
+                CaptureState.of(state.capture, state.muted),
+                style = CaptureStatusStyle.Strip,
+            )
             (state.capture.connection as? PendantConnection.Refused)?.let {
                 Text(it.reason, color = MaterialTheme.colorScheme.error)
             }
