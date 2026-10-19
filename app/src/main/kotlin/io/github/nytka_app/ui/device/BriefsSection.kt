@@ -3,20 +3,17 @@ package io.github.nytka_app.ui.device
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import io.github.nytka_app.R
-import io.github.nytka_app.ui.NytkaSwitch
 import io.github.nytka_app.ui.PermissionAnswer
+import io.github.nytka_app.ui.SettingsBlock
+import io.github.nytka_app.ui.SettingsToggleRow
 import io.github.nytka_app.ui.rememberPermissionRequest
 
 /** The Meeting briefs switch. On Android 13 and later it asks for notifications before it turns on. */
@@ -33,14 +30,12 @@ internal fun BriefsSection(
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
             PackageManager.PERMISSION_GRANTED
-    Section(stringResource(R.string.briefs_title)) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            NytkaSwitch(
-                checked = state.briefNotifications,
-                onCheckedChange = { on -> if (on && needsPermission) request() else onSwitch(on) },
-            )
-            Text(stringResource(R.string.briefs_label))
-        }
+    SettingsBlock(stringResource(R.string.briefs_title)) {
+        SettingsToggleRow(
+            stringResource(R.string.briefs_label),
+            checked = state.briefNotifications,
+            onCheckedChange = { on -> if (on && needsPermission) request() else onSwitch(on) },
+        )
         Text(stringResource(R.string.briefs_explanation), style = MaterialTheme.typography.bodySmall)
         when (state.calendarLine) {
             CalendarLine.NoFeed ->

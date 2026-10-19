@@ -4,15 +4,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -25,7 +23,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.pluralStringResource
@@ -40,11 +37,16 @@ import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.core.api.NytkaApi
 import io.github.nytka_app.firmware.FirmwareNotice
 import io.github.nytka_app.pendant.PendantConnection
+import io.github.nytka_app.ui.BatteryMeter
 import io.github.nytka_app.ui.LocalNetworkHint
 import io.github.nytka_app.ui.LocalNetworkPrompt
-import io.github.nytka_app.ui.NytkaSwitch
 import io.github.nytka_app.ui.PairButton
+import io.github.nytka_app.ui.SettingsBlock
+import io.github.nytka_app.ui.SettingsCard
+import io.github.nytka_app.ui.SettingsRow
+import io.github.nytka_app.ui.SettingsToggleRow
 import io.github.nytka_app.ui.StatusUiState
+import io.github.nytka_app.ui.theme.NytkaTheme
 
 @Composable
 fun DeviceScreen(
@@ -52,11 +54,13 @@ fun DeviceScreen(
     onMute: (Boolean) -> Unit,
     onOpenDeveloper: () -> Unit,
     onOpenVoice: () -> Unit,
+    onOpenPendant: () -> Unit,
+    onOpenSignals: () -> Unit,
+    onOpenAboutRecording: () -> Unit,
     viewModel: DeviceViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var pairError by rememberSaveable { mutableStateOf<String?>(null) }
-    var confirmForget by rememberSaveable { mutableStateOf(false) }
     var backlogDismissed by rememberSaveable { mutableStateOf(false) }
     var showFontLicenses by rememberSaveable { mutableStateOf(false) }
     // A later question is a new one: show it again.
@@ -73,109 +77,126 @@ fun DeviceScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            PendantSection(
-                state,
-                status,
-                pairError,
-                onPaired = viewModel::paired,
-                onPairError = { pairError = it },
-                onMute = onMute,
-                onForget = { confirmForget = true },
-                onFirmwareCheck = viewModel::setFirmwareCheck,
-            )
-        }
-        state.storage?.let { card ->
-            item {
-                PendantStorageCard(
-                    card,
-                    onSyncNow = viewModel::syncNow,
-                    onStop = viewModel::stopSync,
-                    onAnswerBacklog = { backlogDismissed = false },
+            SettingsCard(stringResource(R.string.pendant)) {
+                PendantBlock(
+                    state,
+                    status,
+                    pairError,
+                    onPaired = viewModel::paired,
+                    onPairError = { pairError = it },
+                    onMute = onMute,
+                    onFirmwareCheck = viewModel::setFirmwareCheck,
                 )
-            }
-        }
-        state.pendantSettings?.let { card ->
-            item { PendantSettingsCard(card, viewModel::commitLed, viewModel::commitGain) }
-        }
-        item {
-            MuteScheduleSection(
-                state.muteSchedule,
-                viewModel::setMuteSchedule,
-                state.muteServer,
-                state.timeZoneHint,
-                state.timeZoneError,
-                viewModel::setServerTimeZone,
-            )
-        }
-        item {
-            ConsentChimeSection(
-                state.consentChime,
-                state.consentChimeMinutes,
-                viewModel::setConsentChime,
-                viewModel::setConsentChimeMinutes,
-            )
-        }
-        item {
-            OutputLanguageSection(
-                state.outputLanguage,
-                state.outputLanguageLocked,
-                state.outputLanguageError,
-                viewModel::setOutputLanguage,
-            )
-        }
-        if (state.serverContext == true) {
-            item { PhoneContextSection(state.phoneContext, viewModel::setPhoneContext) }
-            item { AppearanceSection(state.wallpaperColors, viewModel::setWallpaperColors) }
-        }
-        item { ServerSection(state, status, viewModel::checkServer) }
-        item { SettingsSection(state, viewModel::save) }
-        item {
-            BriefsSection(
-                state,
-                onSwitch = viewModel::setBriefNotifications,
-                onPermission = viewModel::briefPermissionAnswered,
-                onOpenSettings = viewModel::openAppSettings,
-            )
-        }
-        item {
-            Section(stringResource(R.string.people)) {
-                Text(stringResource(R.string.people_description))
-            }
-        }
-        if (state.serverVoice == true) {
-            item {
-                Section(stringResource(R.string.voice_title)) {
-                    Text(stringResource(R.string.voice_entry_summary))
-                    OutlinedButton(onClick = onOpenVoice) { Text(stringResource(R.string.voice_entry_button)) }
-                }
-            }
-        }
-        item {
-            Section(stringResource(R.string.about)) {
-                Text(
-                    stringResource(R.string.app_version_format, state.version),
-                    modifier = Modifier.clickable(onClick = viewModel::tapVersion),
-                )
-                if (!state.developerMode && state.tapsToDeveloper in 1..3) {
-                    Text(
-                        pluralStringResource(
-                            R.plurals.taps_to_developer_format,
-                            state.tapsToDeveloper,
-                            state.tapsToDeveloper,
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
+                if (state.pendantAddress != null) {
+                    SettingsRow(
+                        stringResource(R.string.pendant_details),
+                        supporting = state.pendantName,
+                        onClick = onOpenPendant,
                     )
                 }
-                if (state.developerMode) {
-                    OutlinedButton(
-                        onClick = onOpenDeveloper,
-                    ) { Text(stringResource(R.string.developer_mode)) }
+                SettingsRow(stringResource(R.string.signals_title), onClick = onOpenSignals)
+                state.storage?.let { card ->
+                    HorizontalDivider()
+                    PendantStorageCard(
+                        card,
+                        onSyncNow = viewModel::syncNow,
+                        onStop = viewModel::stopSync,
+                        onAnswerBacklog = { backlogDismissed = false },
+                    )
                 }
+                state.pendantSettings?.let { card ->
+                    HorizontalDivider()
+                    PendantSettingsCard(card, viewModel::commitLed, viewModel::commitGain)
+                }
+            }
+        }
+        item {
+            SettingsCard(stringResource(R.string.on_this_phone)) {
+                MuteScheduleSection(
+                    state.muteSchedule,
+                    viewModel::setMuteSchedule,
+                    state.muteServer,
+                    state.timeZoneHint,
+                    state.timeZoneError,
+                    viewModel::setServerTimeZone,
+                )
+                HorizontalDivider()
+                ConsentChimeSection(
+                    state.consentChime,
+                    state.consentChimeMinutes,
+                    viewModel::setConsentChime,
+                    viewModel::setConsentChimeMinutes,
+                )
+                if (state.serverContext == true) {
+                    HorizontalDivider()
+                    PhoneContextSection(state.phoneContext, viewModel::setPhoneContext)
+                    HorizontalDivider()
+                    AppearanceSection(state.wallpaperColors, viewModel::setWallpaperColors)
+                }
+                HorizontalDivider()
+                BriefsSection(
+                    state,
+                    onSwitch = viewModel::setBriefNotifications,
+                    onPermission = viewModel::briefPermissionAnswered,
+                    onOpenSettings = viewModel::openAppSettings,
+                )
+            }
+        }
+        item {
+            SettingsCard(stringResource(R.string.your_server)) {
+                ServerSection(state, status, viewModel::checkServer)
+                HorizontalDivider()
+                SettingsSection(state, viewModel::save)
+                HorizontalDivider()
+                OutputLanguageSection(
+                    state.outputLanguage,
+                    state.outputLanguageLocked,
+                    state.outputLanguageError,
+                    viewModel::setOutputLanguage,
+                )
+                SettingsRow(
+                    stringResource(R.string.people),
+                    supporting = stringResource(R.string.people_description),
+                )
+                if (state.serverVoice == true) {
+                    SettingsRow(
+                        stringResource(R.string.voice_title),
+                        supporting = stringResource(R.string.voice_entry_summary),
+                        onClick = onOpenVoice,
+                    )
+                }
+            }
+        }
+        if (state.developerMode) {
+            item {
+                SettingsCard(stringResource(R.string.developer)) {
+                    SettingsRow(stringResource(R.string.developer_mode), onClick = onOpenDeveloper)
+                }
+            }
+        }
+        item {
+            SettingsCard(stringResource(R.string.about)) {
+                SettingsRow(
+                    stringResource(R.string.app_version_format, state.version),
+                    Modifier.clickable(onClick = viewModel::tapVersion),
+                    supporting =
+                        if (!state.developerMode && state.tapsToDeveloper in 1..3) {
+                            pluralStringResource(
+                                R.plurals.taps_to_developer_format,
+                                state.tapsToDeveloper,
+                                state.tapsToDeveloper,
+                            )
+                        } else {
+                            null
+                        },
+                )
+                SettingsRow(stringResource(R.string.about_recording), onClick = onOpenAboutRecording)
+                SettingsRow(stringResource(R.string.font_licenses), onClick = { showFontLicenses = true })
                 Text(
                     stringResource(R.string.about_affiliation),
                     style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                TextButton(onClick = { showFontLicenses = true }) { Text(stringResource(R.string.font_licenses)) }
             }
         }
     }
@@ -191,72 +212,46 @@ fun DeviceScreen(
     }
 
     if (showFontLicenses) FontLicensesDialog(onDismiss = { showFontLicenses = false })
-
-    if (confirmForget) {
-        AlertDialog(
-            onDismissRequest = { confirmForget = false },
-            title = { Text(stringResource(R.string.forget_pendant_title)) },
-            text = { Text(stringResource(R.string.forget_pendant_message)) },
-            confirmButton = {
-                TextButton(onClick = {
-                    confirmForget = false
-                    viewModel.forgetPendant()
-                }) { Text(stringResource(R.string.forget)) }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { confirmForget = false },
-                ) { Text(stringResource(R.string.action_cancel)) }
-            },
-        )
-    }
 }
 
 @Composable
-private fun PendantSection(
+private fun PendantBlock(
     state: DeviceUiState,
     status: StatusUiState,
     pairError: String?,
     onPaired: (PairedPendant) -> Unit,
     onPairError: (String) -> Unit,
     onMute: (Boolean) -> Unit,
-    onForget: () -> Unit,
     onFirmwareCheck: (Boolean) -> Unit,
 ) {
-    Section(stringResource(R.string.pendant)) {
+    SettingsBlock(null) {
         val connection = status.capture.connection
         val info = (connection as? PendantConnection.Connected)?.info
-        Text(state.pendantName ?: stringResource(R.string.no_pendant_paired))
-        Text(
-            when (connection) {
-                is PendantConnection.Connected -> stringResource(R.string.connected)
-                is PendantConnection.Connecting -> stringResource(R.string.connecting)
-                is PendantConnection.Refused -> connection.reason
-                PendantConnection.Disconnected -> stringResource(R.string.disconnected)
-            },
+        SettingsRow(
+            state.pendantName ?: stringResource(R.string.no_pendant_paired),
+            supporting =
+                when (connection) {
+                    is PendantConnection.Connected -> stringResource(R.string.connected)
+                    is PendantConnection.Connecting -> stringResource(R.string.connecting)
+                    is PendantConnection.Refused -> connection.reason
+                    PendantConnection.Disconnected -> stringResource(R.string.disconnected)
+                },
         )
-        status.capture.battery?.let { Text(stringResource(R.string.battery_percent_format, it)) }
-        info?.firmware?.let { Text(stringResource(R.string.firmware_format, it)) }
+        status.capture.battery?.let { BatteryMeter(it) }
+        info?.firmware?.let { SettingsRow(stringResource(R.string.firmware_format, it)) }
         state.firmwareNotice?.let { FirmwareNoticeText(it) }
         pairError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (state.pendantAddress == null) {
-                PairButton(label = stringResource(R.string.pair_pendant), onPaired = onPaired, onError = onPairError)
-            } else {
-                FilledTonalButton(
-                    onClick = { onMute(!status.muted) },
-                ) { Text(stringResource(if (status.muted) R.string.unmute else R.string.mute)) }
-                OutlinedButton(onClick = { onForget() }) { Text(stringResource(R.string.forget)) }
-            }
-        }
-        if (state.pendantAddress != null) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                NytkaSwitch(checked = state.firmwareCheck, onCheckedChange = onFirmwareCheck)
-                Text(stringResource(R.string.firmware_check_label))
-            }
-            Text(
-                stringResource(R.string.firmware_check_explanation),
-                style = MaterialTheme.typography.bodySmall,
+        if (state.pendantAddress == null) {
+            PairButton(label = stringResource(R.string.pair_pendant), onPaired = onPaired, onError = onPairError)
+        } else {
+            FilledTonalButton(
+                onClick = { onMute(!status.muted) },
+            ) { Text(stringResource(if (status.muted) R.string.unmute else R.string.mute)) }
+            SettingsToggleRow(
+                stringResource(R.string.firmware_check_label),
+                checked = state.firmwareCheck,
+                onCheckedChange = onFirmwareCheck,
+                supporting = stringResource(R.string.firmware_check_explanation),
             )
         }
     }
@@ -282,8 +277,12 @@ private fun ServerSection(
     status: StatusUiState,
     onCheck: () -> Unit,
 ) {
-    Section(stringResource(R.string.server)) {
-        Text(state.serverUrl.ifEmpty { stringResource(R.string.no_server_set) })
+    SettingsBlock(stringResource(R.string.server)) {
+        if (state.serverUrl.isEmpty()) {
+            Text(stringResource(R.string.no_server_set))
+        } else {
+            Text(state.serverUrl, style = NytkaTheme.typography.code)
+        }
         Text(state.serverState)
         state.apiVersion?.let { Text(stringResource(R.string.api_version_format, it)) }
         if (state.apiMismatch) {
@@ -310,12 +309,13 @@ private fun SettingsSection(
     var privateNetwork by rememberSaveable(state.privateNetwork) { mutableStateOf(state.privateNetwork) }
     var confirmPrivate by rememberSaveable { mutableStateOf(false) }
 
-    Section(stringResource(R.string.settings)) {
+    SettingsBlock(stringResource(R.string.settings)) {
         OutlinedTextField(
             value = url,
             onValueChange = { url = it },
             label = { Text(stringResource(R.string.server_url_label)) },
             singleLine = true,
+            textStyle = NytkaTheme.typography.code,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
             modifier = Modifier.fillMaxWidth(),
         )
@@ -330,17 +330,11 @@ private fun SettingsSection(
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
             modifier = Modifier.fillMaxWidth(),
         )
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            NytkaSwitch(checked = privateNetwork, onCheckedChange = {
-                if (it) {
-                    confirmPrivate = true
-                } else {
-                    privateNetwork =
-                        false
-                }
-            })
-            Text(stringResource(R.string.private_network_label))
-        }
+        SettingsToggleRow(
+            stringResource(R.string.private_network_label),
+            checked = privateNetwork,
+            onCheckedChange = { if (it) confirmPrivate = true else privateNetwork = false },
+        )
         state.saveError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         FilledTonalButton(onClick = {
             onSave(url, token, privateNetwork)
@@ -365,18 +359,5 @@ private fun SettingsSection(
                 TextButton(onClick = { confirmPrivate = false }) { Text(stringResource(R.string.action_cancel)) }
             },
         )
-    }
-}
-
-@Composable
-internal fun Section(
-    title: String,
-    content: @Composable () -> Unit,
-) {
-    ElevatedCard(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            content()
-        }
     }
 }

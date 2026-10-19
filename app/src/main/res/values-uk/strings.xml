@@ -142,8 +142,6 @@
     <string name="firmware_format">Прошивка %s</string>
     <string name="pair_pendant">Спарити кулон</string>
     <string name="forget">Забути</string>
-    <string name="forget_pendant_title">Забути цей кулон?</string>
-    <string name="forget_pendant_message">Запис припиниться, а кулон доведеться спарити знову. Аудіо в черзі все одно вивантажиться</string>
     <string name="mute">Без звуку</string>
     <string name="people">Люди</string>
     <string name="people_description">Люди мають власну вкладку</string>
@@ -490,7 +488,6 @@
     <string name="webhook_delivery_format">%1$s · %2$s</string>
     <string name="no_deliveries_yet">Доставок ще немає</string>
     <string name="delete_webhook_title">Видалити цей вебхук?</string>
-    <string name="delete_webhook_message">Його журнал доставок буде видалено разом із ним. Це не можна скасувати</string>
     <string name="webhook_url_label">URL</string>
     <string name="webhook_description_label">Опис (необов\'язково)</string>
     <string name="signing_secret_title">Секрет підпису</string>
@@ -500,7 +497,6 @@
     <string name="revoke_token_title_format">Скасувати «%s»?</string>
     <string name="revoke_token_message">Усе, що використовує цей токен, одразу перестане працювати. Це не можна скасувати</string>
     <string name="token_scope_format">Область: %s</string>
-    <string name="token_scope_hint_format">Область: %1$s, закінчується на %2$s</string>
     <string name="token_created_format">Створено %s</string>
     <string name="token_last_used_format">Востаннє використано %s</string>
     <string name="token_revoked_format">Скасовано %s</string>
@@ -676,4 +672,44 @@
     <string name="suggestion_skip">Пізніше</string>
     <string name="suggestion_skipped">Залишено на потім</string>
     <string name="action_undo">Скасувати</string>
+
+    <!-- Settings groups, pendant details, how people nearby know -->
+    <string name="on_this_phone">На цьому телефоні</string>
+    <string name="your_server">Ваш сервер</string>
+    <string name="developer">Розробник</string>
+    <string name="battery">Батарея</string>
+    <string name="battery_low_sentence">Менше 10%. Незабаром зарядіть кулон, інакше він перестане записувати.</string>
+    <string name="pendant_details">Про кулон</string>
+    <string name="pendant_address">Адреса</string>
+    <string name="forget_pendant_title_format">Забути «%s»?</string>
+    <string name="forget_pendant_message_format">%s буде прибрано з Nytka. Запис припиниться, а кулон доведеться спарити знову. Аудіо, що вже в черзі, все одно вивантажиться.</string>
+    <string name="token_revoked_short">Відкликано</string>
+    <string name="delete_webhook_message_format">%s більше не отримує подій, а його журнал доставок буде видалено. Це не можна скасувати.</string>
+    <string name="about_recording">Про запис</string>
+    <string name="signals_title">Як це знають люди поруч</string>
+    <string name="signals_device_omi">Кулон Omi, прошивка 3.0.x</string>
+    <string name="signals_truth">Світло ніколи не показує, що кулон записує або вимкнений. Поки телефона немає поруч, кулон і далі записує у власну пам’ять під червоним світлом, а Nytka відкидає вимкнені відрізки лише під час синхронізації. Люди поруч знають лише те, що ви їм скажете.</string>
+    <string name="signals_light_label">Світло</string>
+    <string name="signals_light_blue">Синє, постійне</string>
+    <string name="signals_light_blue_means">З’єднано з телефоном</string>
+    <string name="signals_light_red">Червоне, постійне</string>
+    <string name="signals_light_red_means">Немає з’єднання з телефоном</string>
+    <string name="signals_light_red_blink">Червоне, блимає</string>
+    <string name="signals_light_red_blink_means">Годинник кулона не встановлено</string>
+    <string name="signals_light_charging">Зелене блимає, чергуючись із синім або червоним</string>
+    <string name="signals_light_charging_means">Заряджається</string>
+    <string name="signals_light_green">Зелене, постійне</string>
+    <string name="signals_light_green_means">Заряджено</string>
+    <string name="signals_light_off">Світла немає</string>
+    <string name="signals_light_off_means">Вимкнено</string>
+    <string name="signals_light_boot">Один синій спалах, потім два зелені згасання</string>
+    <string name="signals_light_boot_means">Вмикається</string>
+    <string name="signals_button_label">Кнопка</string>
+    <string name="signals_button_double">Подвійне торкання</string>
+    <string name="signals_button_double_means">Вимикає або вмикає запис одним довгим дзижчанням</string>
+    <string name="signals_button_single">Одне торкання</string>
+    <string name="signals_button_single_means">Позначає момент одним коротким дзижчанням</string>
+    <string name="signals_button_hold">Утримувати 3 секунди</string>
+    <string name="signals_button_hold_means">Вимикає кулон</string>
+    <string name="signals_source_omi">З прошивки Omi (BasedHardware/omi, a82aab91e1): set_led_state() у main.c і lib/core/button.c.</string>
 </resources>

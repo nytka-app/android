@@ -128,7 +128,14 @@ private fun WebhookList(
             }
             items(state.webhooks, key = { it.id }) { hook ->
                 ListItem(
-                    headlineContent = { Text(hook.url, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    headlineContent = {
+                        Text(
+                            hook.url,
+                            style = NytkaTheme.typography.code,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
                     supportingContent = {
                         Text(stringResource(R.string.webhook_summary_format, eventsText(hook), lastDeliveryText(hook)))
                     },
@@ -170,7 +177,7 @@ private fun WebhookDetail(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         item {
-            Text(hook.url, style = MaterialTheme.typography.titleMedium)
+            Text(hook.url, style = NytkaTheme.typography.code)
             hook.description?.let { Text(it) }
             Text(eventsText(hook), style = MaterialTheme.typography.bodySmall)
         }
@@ -198,7 +205,7 @@ private fun WebhookDetail(
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text(stringResource(R.string.delete_webhook_title)) },
-            text = { Text(stringResource(R.string.delete_webhook_message)) },
+            text = { Text(stringResource(R.string.delete_webhook_message_format, hook.url)) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmDelete = false

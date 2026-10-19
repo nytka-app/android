@@ -140,8 +140,6 @@
     <string name="firmware_format">Firmware %s</string>
     <string name="pair_pendant">Pair pendant</string>
     <string name="forget">Forget</string>
-    <string name="forget_pendant_title">Forget this pendant?</string>
-    <string name="forget_pendant_message">Capture stops, and the pendant has to be paired again. Queued audio still uploads</string>
     <string name="mute">Mute</string>
     <string name="people">People</string>
     <string name="people_description">People has its own tab</string>
@@ -483,7 +481,6 @@
     <string name="webhook_delivery_format">%1$s · %2$s</string>
     <string name="no_deliveries_yet">No deliveries yet</string>
     <string name="delete_webhook_title">Delete this webhook?</string>
-    <string name="delete_webhook_message">Its delivery log goes with it. This cannot be undone</string>
     <string name="webhook_url_label">URL</string>
     <string name="webhook_description_label">Description (optional)</string>
     <string name="signing_secret_title">Signing secret</string>
@@ -493,7 +490,6 @@
     <string name="revoke_token_title_format">Revoke \"%s\"?</string>
     <string name="revoke_token_message">Anything that uses this token stops working at once. This cannot be undone</string>
     <string name="token_scope_format">Scope %s</string>
-    <string name="token_scope_hint_format">Scope %1$s, ends in %2$s</string>
     <string name="token_created_format">Created %s</string>
     <string name="token_last_used_format">Last used %s</string>
     <string name="token_revoked_format">Revoked %s</string>
@@ -667,4 +663,44 @@
     <string name="suggestion_skip">Later</string>
     <string name="suggestion_skipped">Left for later</string>
     <string name="action_undo">Undo</string>
+
+    <!-- Settings groups, pendant details, how people nearby know -->
+    <string name="on_this_phone">On this phone</string>
+    <string name="your_server">Your server</string>
+    <string name="developer">Developer</string>
+    <string name="battery">Battery</string>
+    <string name="battery_low_sentence">Under 10%. Charge the pendant soon, or it stops recording.</string>
+    <string name="pendant_details">Pendant details</string>
+    <string name="pendant_address">Address</string>
+    <string name="forget_pendant_title_format">Forget “%s”?</string>
+    <string name="forget_pendant_message_format">%s is removed from Nytka. Capture stops and the pendant has to be paired again. Audio already in the queue still uploads.</string>
+    <string name="token_revoked_short">Revoked</string>
+    <string name="delete_webhook_message_format">%s stops receiving events and its delivery log is removed. This cannot be undone.</string>
+    <string name="about_recording">About recording</string>
+    <string name="signals_title">How people nearby know</string>
+    <string name="signals_device_omi">Omi pendant, firmware 3.0.x</string>
+    <string name="signals_truth">The light never shows that the pendant is recording or muted. While the phone is away it keeps recording to its own memory under a red light, and Nytka drops muted stretches only when it syncs. People nearby know only what you tell them.</string>
+    <string name="signals_light_label">The light</string>
+    <string name="signals_light_blue">Blue, steady</string>
+    <string name="signals_light_blue_means">Connected to the phone</string>
+    <string name="signals_light_red">Red, steady</string>
+    <string name="signals_light_red_means">Not connected to the phone</string>
+    <string name="signals_light_red_blink">Red, blinking</string>
+    <string name="signals_light_red_blink_means">The pendant’s clock is not set</string>
+    <string name="signals_light_charging">Green blinking, alternating with blue or red</string>
+    <string name="signals_light_charging_means">Charging</string>
+    <string name="signals_light_green">Green, steady</string>
+    <string name="signals_light_green_means">Charged</string>
+    <string name="signals_light_off">No light</string>
+    <string name="signals_light_off_means">Powered off</string>
+    <string name="signals_light_boot">One blue pulse, then two green fades</string>
+    <string name="signals_light_boot_means">Starting up</string>
+    <string name="signals_button_label">The button</string>
+    <string name="signals_button_double">Double-tap</string>
+    <string name="signals_button_double_means">Mutes or unmutes, with one long buzz</string>
+    <string name="signals_button_single">Single tap</string>
+    <string name="signals_button_single_means">Marks the moment, with one short buzz</string>
+    <string name="signals_button_hold">Hold for 3 seconds</string>
+    <string name="signals_button_hold_means">Turns the pendant off</string>
+    <string name="signals_source_omi">From the Omi firmware (BasedHardware/omi, a82aab91e1): set_led_state() in main.c and lib/core/button.c.</string>
 </resources>

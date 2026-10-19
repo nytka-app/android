@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.SettingsBlock
 
 /** The Device tab's picker for `llm.outputLanguage`: summaries in English, Ukrainian or the conversation's language. */
 @Composable
@@ -20,7 +21,7 @@ internal fun OutputLanguageSection(
     error: String?,
     onSelect: (String) -> Unit,
 ) {
-    Section(stringResource(R.string.output_language_title)) {
+    SettingsBlock(stringResource(R.string.output_language_title)) {
         Column {
             OutputLanguageChoice(
                 DeviceViewModel.OUTPUT_LANGUAGE_AUTO,

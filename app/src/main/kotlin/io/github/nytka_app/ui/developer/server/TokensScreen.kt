@@ -3,12 +3,12 @@ package io.github.nytka_app.ui.developer.server
 import android.content.ClipData
 import android.content.ClipDescription.EXTRA_IS_SENSITIVE
 import android.os.PersistableBundle
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,7 +16,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -47,7 +46,10 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.AccessToken
+import io.github.nytka_app.ui.SettingsCard
+import io.github.nytka_app.ui.SettingsRow
 import io.github.nytka_app.ui.conversations.Formatting
+import io.github.nytka_app.ui.maskedToken
 import io.github.nytka_app.ui.theme.NytkaTheme
 import kotlinx.coroutines.launch
 import java.time.ZoneId
@@ -64,14 +66,17 @@ fun TokensScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var creating by rememberSaveable { mutableStateOf(false) }
     var revoking by remember { mutableStateOf<AccessToken?>(null) }
+    var detailId by rememberSaveable { mutableStateOf<String?>(null) }
+    val detail = state.tokens.firstOrNull { it.id == detailId }
+    BackHandler(enabled = detail != null) { detailId = null }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(R.string.access_tokens_title)) },
+                title = { Text(detail?.name ?: stringResource(R.string.access_tokens_title)) },
                 navigationIcon = {
                     IconButton(
-                        onClick = onBack,
+                        onClick = { if (detail != null) detailId = null else onBack() },
                     ) {
                         Icon(
                             Icons.AutoMirrored.Filled.ArrowBack,
@@ -82,28 +87,34 @@ fun TokensScreen(
             )
         },
     ) { padding ->
-        LazyColumn(
-            Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            item {
-                FilledTonalButton(onClick = {
-                    creating = true
-                }, enabled = state.error == null) { Text(stringResource(R.string.create_token)) }
+        if (detail != null) {
+            Column(Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+                TokenDetail(detail) { revoking = detail }
             }
-            if (state.loading) item { CircularProgressIndicator() }
-            state.error?.let { error ->
+        } else {
+            LazyColumn(
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 item {
-                    Column {
-                        Text(error, color = MaterialTheme.colorScheme.error)
-                        TextButton(onClick = viewModel::load) { Text(stringResource(R.string.action_retry)) }
+                    FilledTonalButton(onClick = {
+                        creating = true
+                    }, enabled = state.error == null) { Text(stringResource(R.string.create_token)) }
+                }
+                if (state.loading) item { CircularProgressIndicator() }
+                state.error?.let { error ->
+                    item {
+                        Column {
+                            Text(error, color = MaterialTheme.colorScheme.error)
+                            TextButton(onClick = viewModel::load) { Text(stringResource(R.string.action_retry)) }
+                        }
                     }
                 }
+                items(state.tokens, key = { it.id }) { token -> TokenCard(token) { detailId = token.id } }
             }
-            items(state.tokens, key = { it.id }) { token -> TokenCard(token) { revoking = token } }
         }
     }
 
@@ -130,6 +141,7 @@ fun TokensScreen(
             confirmButton = {
                 TextButton(onClick = {
                     revoking = null
+                    detailId = null
                     viewModel.revoke(token.id)
                 }) { Text(stringResource(R.string.revoke)) }
             },
@@ -145,37 +157,45 @@ fun TokensScreen(
 @Composable
 private fun TokenCard(
     token: AccessToken,
+    onOpen: () -> Unit,
+) {
+    SettingsCard(token.name) {
+        SettingsRow(
+            stringResource(R.string.token_scope_format, token.scope),
+            supporting = maskedToken(token.hint),
+            mono = true,
+            value = if (token.revokedAt != null) stringResource(R.string.token_revoked_short) else null,
+            onClick = onOpen,
+        )
+    }
+}
+
+/** One token: its masked form, when it was made and last used, and the one place that revokes it. */
+@Composable
+private fun TokenDetail(
+    token: AccessToken,
     onRevoke: () -> Unit,
 ) {
-    ElevatedCard(Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(token.name, style = MaterialTheme.typography.titleMedium)
+    SettingsCard(token.name) {
+        SettingsRow(
+            stringResource(R.string.token_scope_format, token.scope),
+            supporting = maskedToken(token.hint),
+            mono = true,
+        )
+        SettingsRow(stringResource(R.string.token_created_format, whenText(token.createdAt)))
+        SettingsRow(
+            stringResource(
+                R.string.token_last_used_format,
+                token.lastUsedAt?.let { whenText(it) } ?: stringResource(R.string.never),
+            ),
+        )
+        if (token.revokedAt != null) {
             Text(
-                if (token.hint.isNotEmpty()) {
-                    stringResource(R.string.token_scope_hint_format, token.scope, token.hint)
-                } else {
-                    stringResource(R.string.token_scope_format, token.scope)
-                },
+                stringResource(R.string.token_revoked_format, whenText(token.revokedAt)),
+                color = MaterialTheme.colorScheme.error,
             )
-            Text(
-                stringResource(R.string.token_created_format, whenText(token.createdAt)),
-                style = MaterialTheme.typography.bodySmall,
-            )
-            Text(
-                stringResource(
-                    R.string.token_last_used_format,
-                    token.lastUsedAt?.let { whenText(it) } ?: stringResource(R.string.never),
-                ),
-                style = MaterialTheme.typography.bodySmall,
-            )
-            if (token.revokedAt != null) {
-                Text(
-                    stringResource(R.string.token_revoked_format, whenText(token.revokedAt)),
-                    color = MaterialTheme.colorScheme.error,
-                )
-            } else {
-                OutlinedButton(onClick = onRevoke) { Text(stringResource(R.string.revoke)) }
-            }
+        } else {
+            OutlinedButton(onClick = onRevoke) { Text(stringResource(R.string.revoke)) }
         }
     }
 }
