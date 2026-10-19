@@ -1,12 +1,20 @@
 package io.github.nytka_app.capture
 
+import androidx.test.core.app.ApplicationProvider
 import io.github.nytka_app.core.queue.QueueUsage
 import io.github.nytka_app.pendant.PendantConnection
 import io.github.nytka_app.pendant.PendantInfo
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class CaptureNotificationTest {
+    private val resources = ApplicationProvider.getApplicationContext<android.app.Application>().resources
+
     private val connected = PendantConnection.Connected(PendantInfo("Omi"))
 
     @Test
@@ -33,6 +41,7 @@ class CaptureNotificationTest {
         assertEquals(
             "Pendant not supported · 0 queued",
             CaptureNotification.text(
+                resources,
                 CaptureStatus(running = true, connection = PendantConnection.Refused("old firmware")),
                 QueueUsage(),
             ),
@@ -43,18 +52,23 @@ class CaptureNotificationTest {
     fun `reads like the spec`() {
         assertEquals(
             "82% · 0 queued",
-            CaptureNotification.text(CaptureStatus(running = true, connection = connected, battery = 82), QueueUsage()),
+            CaptureNotification.text(
+                resources,
+                CaptureStatus(running = true, connection = connected, battery = 82),
+                QueueUsage(),
+            ),
         )
         assertEquals(
             "82% · 3 queued",
             CaptureNotification.text(
+                resources,
                 CaptureStatus(running = true, connection = connected, muted = true, battery = 82),
                 QueueUsage(chunks = 3),
             ),
         )
         assertEquals(
             "0 queued",
-            CaptureNotification.text(CaptureStatus(running = true), QueueUsage()),
+            CaptureNotification.text(resources, CaptureStatus(running = true), QueueUsage()),
         )
     }
 
@@ -65,11 +79,12 @@ class CaptureNotificationTest {
 
         assertEquals(
             "82% · 0 queued · syncing 42%",
-            CaptureNotification.text(status, QueueUsage(), syncing),
+            CaptureNotification.text(resources, status, QueueUsage(), syncing),
         )
         assertEquals(
             "82% · 0 queued · syncing 42%",
             CaptureNotification.text(
+                resources,
                 status,
                 QueueUsage(),
                 syncing.copy(state = SyncState.WaitingForUploads(0.6)),
@@ -77,11 +92,16 @@ class CaptureNotificationTest {
         )
         assertEquals(
             "82% · 0 queued",
-            CaptureNotification.text(status, QueueUsage(), StorageSyncStatus(state = SyncState.Idle)),
+            CaptureNotification.text(resources, status, QueueUsage(), StorageSyncStatus(state = SyncState.Idle)),
         )
         assertEquals(
             "82% · 0 queued",
-            CaptureNotification.text(status, QueueUsage(), syncing.copy(state = SyncState.Paused(PauseReason.Stopped))),
+            CaptureNotification.text(
+                resources,
+                status,
+                QueueUsage(),
+                syncing.copy(state = SyncState.Paused(PauseReason.Stopped)),
+            ),
         )
     }
 }

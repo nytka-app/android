@@ -730,4 +730,32 @@
     <string name="ask_asking">Searching your conversations…</string>
     <string name="ask_no_answer">Nothing in your conversations answers this.</string>
     <string name="ask_source_format">Source %1$d</string>
+
+    <!-- Notifications -->
+    <string name="notification_refused_prefix">"Pendant not supported · "</string>
+    <string name="notification_battery_prefix">"%1$d%% · "</string>
+    <plurals name="notification_queued_format">
+        <item quantity="one">%d queued</item>
+        <item quantity="other">%d queued</item>
+    </plurals>
+    <string name="notification_syncing_percent_format">" · syncing %1$d%%"</string>
+    <string name="notification_syncing">" · syncing"</string>
+    <plurals name="alert_pendant_away_format">
+        <item quantity="one">The pendant has been disconnected for %d minute.</item>
+        <item quantity="other">The pendant has been disconnected for %d minutes.</item>
+    </plurals>
+    <plurals name="alert_server_unreachable_format">
+        <item quantity="one">The server has been unreachable for %d minute. Audio waits in the queue.</item>
+        <item quantity="other">The server has been unreachable for %d minutes. Audio waits in the queue.</item>
+    </plurals>
+    <string name="alert_battery_low_format">The pendant battery is at %1$d%%.</string>
+    <string name="alert_queue_filling_format">The upload queue is %1$d%% full; the oldest audio goes first when it fills.</string>
+
+    <!-- Developer: tokens and webhooks -->
+    <string name="no_tokens_yet">No access tokens yet. A token lets another tool read your Nytka server</string>
+    <string name="webhook_http_format">HTTP %1$d</string>
+    <plurals name="webhook_attempts_format">
+        <item quantity="one">%d attempt</item>
+        <item quantity="other">%d attempts</item>
+    </plurals>
 </resources>

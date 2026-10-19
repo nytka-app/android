@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.res.Resources
 import androidx.core.app.NotificationCompat
 import io.github.nytka_app.MainActivity
 import io.github.nytka_app.R
@@ -21,26 +22,37 @@ object CaptureNotification {
 
     /** The line under the title: "82% · 0 queued", led by the reason when the pendant was refused. */
     fun text(
+        resources: Resources,
         status: CaptureStatus,
         usage: QueueUsage,
         sync: StorageSyncStatus? = null,
     ): String {
-        val refused = (status.connection as? PendantConnection.Refused)?.let { "Pendant not supported · " } ?: ""
-        val battery = status.battery?.let { "$it% · " } ?: ""
-        return "$refused$battery${usage.chunks} queued${syncSuffix(sync)}"
+        val refused =
+            if (status.connection is PendantConnection.Refused) {
+                resources.getString(
+                    R.string.notification_refused_prefix,
+                )
+            } else {
+                ""
+            }
+        val battery = status.battery?.let { resources.getString(R.string.notification_battery_prefix, it) } ?: ""
+        val queued = resources.getQuantityString(R.plurals.notification_queued_format, usage.chunks, usage.chunks)
+        return "$refused$battery$queued${syncSuffix(resources, sync)}"
     }
 
     /** " · syncing 42%" while a sync runs and knows its size, " · syncing" before that. */
-    private fun syncSuffix(sync: StorageSyncStatus?): String {
+    private fun syncSuffix(
+        resources: Resources,
+        sync: StorageSyncStatus?,
+    ): String {
         if (sync == null) return ""
         return when (sync.state) {
             SyncState.Syncing, is SyncState.WaitingForUploads ->
-                if (sync.runTotal >
-                    0
-                ) {
-                    " · syncing ${(sync.runDone * PERCENT / sync.runTotal).coerceIn(0, PERCENT)}%"
+                if (sync.runTotal > 0) {
+                    val percent = (sync.runDone * PERCENT / sync.runTotal).coerceIn(0, PERCENT).toInt()
+                    resources.getString(R.string.notification_syncing_percent_format, percent)
                 } else {
-                    " · syncing"
+                    resources.getString(R.string.notification_syncing)
                 }
 
             else -> ""
@@ -81,7 +93,7 @@ object CaptureNotification {
             // Android tints the small icon, so the glyph's shape alone tells the states apart.
             .setSmallIcon(state.iconRes)
             .setContentTitle(context.getString(state.wordRes))
-            .setContentText(text(status, usage, sync))
+            .setContentText(text(context.resources, status, usage, sync))
             .setContentIntent(open)
             .setOngoing(true)
             .setOnlyAlertOnce(true)

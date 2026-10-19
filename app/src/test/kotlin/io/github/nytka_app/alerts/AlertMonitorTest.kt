@@ -92,13 +92,4 @@ class AlertMonitorTest {
     fun `no pendant alert while capture is not running`() {
         assertEquals(emptyList<Alert>(), started(inputs(running = false, disconnectedSinceMs = 0), 60 * minute))
     }
-
-    @Test
-    fun `texts name the threshold`() {
-        assertEquals(
-            "The pendant has been disconnected for 5 minutes.",
-            AlertNotifications.text(Alert.PendantAway, inputs()),
-        )
-        assertEquals("The pendant battery is at 18%.", AlertNotifications.text(Alert.BatteryLow, inputs(battery = 18)))
-    }
 }

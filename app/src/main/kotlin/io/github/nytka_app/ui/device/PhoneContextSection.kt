@@ -1,7 +1,5 @@
 package io.github.nytka_app.ui.device
 
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import io.github.nytka_app.R
@@ -15,7 +13,11 @@ internal fun PhoneContextSection(
     onSwitch: (Boolean) -> Unit,
 ) {
     SettingsBlock(stringResource(R.string.phone_context_title)) {
-        SettingsToggleRow(stringResource(R.string.phone_context_label), checked = on, onCheckedChange = onSwitch)
-        Text(stringResource(R.string.phone_context_explanation), style = MaterialTheme.typography.bodySmall)
+        SettingsToggleRow(
+            stringResource(R.string.phone_context_label),
+            checked = on,
+            onCheckedChange = onSwitch,
+            supporting = stringResource(R.string.phone_context_explanation),
+        )
     }
 }

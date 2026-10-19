@@ -9,20 +9,23 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -40,12 +43,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.AccessToken
+import io.github.nytka_app.ui.ErrorLine
+import io.github.nytka_app.ui.ListFailure
+import io.github.nytka_app.ui.ListState
+import io.github.nytka_app.ui.ListStateKind
+import io.github.nytka_app.ui.NytkaTextField
 import io.github.nytka_app.ui.SettingsCard
 import io.github.nytka_app.ui.SettingsRow
 import io.github.nytka_app.ui.conversations.Formatting
@@ -54,7 +64,6 @@ import io.github.nytka_app.ui.theme.NytkaTheme
 import kotlinx.coroutines.launch
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 /** Named access tokens: create one (shown once), revoke one. Developer mode, admin token only. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,14 +113,12 @@ fun TokensScreen(
                         creating = true
                     }, enabled = state.error == null) { Text(stringResource(R.string.create_token)) }
                 }
-                if (state.loading) item { CircularProgressIndicator() }
+                if (state.loading) item { ListState(ListStateKind.Loading, stringResource(R.string.list_loading)) }
                 state.error?.let { error ->
-                    item {
-                        Column {
-                            Text(error, color = MaterialTheme.colorScheme.error)
-                            TextButton(onClick = viewModel::load) { Text(stringResource(R.string.action_retry)) }
-                        }
-                    }
+                    item { ListFailure(error, offline = false, onRetry = viewModel::load) }
+                }
+                if (state.tokens.isEmpty() && !state.loading && state.error == null) {
+                    item { ListState(ListStateKind.Empty, stringResource(R.string.no_tokens_yet)) }
                 }
                 items(state.tokens, key = { it.id }) { token -> TokenCard(token) { detailId = token.id } }
             }
@@ -190,10 +197,7 @@ private fun TokenDetail(
             ),
         )
         if (token.revokedAt != null) {
-            Text(
-                stringResource(R.string.token_revoked_format, whenText(token.revokedAt)),
-                color = MaterialTheme.colorScheme.error,
-            )
+            ErrorLine(stringResource(R.string.token_revoked_format, whenText(token.revokedAt)))
         } else {
             OutlinedButton(onClick = onRevoke) { Text(stringResource(R.string.revoke)) }
         }
@@ -213,16 +217,16 @@ private fun CreateDialog(
         title = { Text(stringResource(R.string.create_token)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
+                NytkaTextField(
                     value = name,
                     onValueChange = { name = it.take(MAX_NAME) },
-                    label = { Text(stringResource(R.string.name)) },
-                    singleLine = true,
-                    isError = error != null,
-                    supportingText = { error?.let { Text(it) } },
+                    label = stringResource(R.string.name),
+                    error = error,
                 )
-                ScopeChoice("read", stringResource(R.string.token_scope_read), scope) { scope = it }
-                ScopeChoice("admin", stringResource(R.string.token_scope_admin), scope) { scope = it }
+                Column(Modifier.selectableGroup()) {
+                    ScopeChoice("read", stringResource(R.string.token_scope_read), scope) { scope = it }
+                    ScopeChoice("admin", stringResource(R.string.token_scope_admin), scope) { scope = it }
+                }
             }
         },
         confirmButton = {
@@ -241,9 +245,16 @@ private fun ScopeChoice(
     selected: String,
     onSelect: (String) -> Unit,
 ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        RadioButton(selected == value, onClick = { onSelect(value) })
-        Text(label, style = MaterialTheme.typography.bodyMedium)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .selectable(selected == value, role = Role.RadioButton, onClick = { onSelect(value) }),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        RadioButton(selected == value, onClick = null)
+        Text(label, style = MaterialTheme.typography.bodyLarge)
     }
 }
 
@@ -262,7 +273,7 @@ private fun CreatedDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.token_copy_now_message))
-                Text(token, style = NytkaTheme.typography.code)
+                SelectionContainer { Text(token, style = NytkaTheme.typography.code) }
             }
         },
         confirmButton = { TextButton(onClick = onDone) { Text(stringResource(R.string.action_done)) } },
@@ -285,10 +296,10 @@ private fun CreatedDialog(
 
 private const val MAX_NAME = 64
 
-private val whenFormat = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.ENGLISH)
-
 @Composable
-private fun whenText(instant: String?): String =
-    instant
-        ?.let { Formatting.parse(it)?.let { at -> whenFormat.format(at.atZone(ZoneId.systemDefault())) } }
+private fun whenText(instant: String?): String {
+    val format = DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", LocalLocale.current.platformLocale)
+    return instant
+        ?.let { Formatting.parse(it)?.let { at -> format.format(at.atZone(ZoneId.systemDefault())) } }
         ?: stringResource(R.string.unknown)
+}

@@ -37,6 +37,7 @@ fun NytkaTextField(
     mono: Boolean = false,
     error: String? = null,
     isError: Boolean = error != null,
+    supporting: String? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     enabled: Boolean = true,
@@ -73,7 +74,16 @@ fun NytkaTextField(
                 isError = isError,
                 label = { Text(label) },
                 trailingIcon = trailingIcon,
-                supportingText = error?.let { { ErrorLine(it) } },
+                supportingText =
+                    when {
+                        error != null -> {
+                            { ErrorLine(error) }
+                        }
+                        supporting != null -> {
+                            { Text(supporting) }
+                        }
+                        else -> null
+                    },
                 colors = colors,
                 container = {
                     OutlinedTextFieldDefaults.Container(
