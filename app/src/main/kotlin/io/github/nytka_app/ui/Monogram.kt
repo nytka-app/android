@@ -14,23 +14,35 @@ import androidx.compose.ui.unit.dp
 
 /**
  * A person's first letter in a quiet disc. One colour for everyone: a person's colour would be a speaker
- * colour, which the design forbids. A name that is not a name yet shows `?`.
+ * colour, which the design forbids. A name that is not a name yet shows `?`; an [unknown] voice gets the same
+ * mark on the tertiary container, so it reads as a question and not as a person.
  */
 @Composable
 fun Monogram(
     name: String,
     modifier: Modifier = Modifier,
     size: Dp = 40.dp,
+    unknown: Boolean = false,
 ) {
     Surface(
         modifier.size(size),
         shape = CircleShape,
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+        color =
+            if (unknown) {
+                MaterialTheme.colorScheme.tertiaryContainer
+            } else {
+                MaterialTheme.colorScheme.secondaryContainer
+            },
+        contentColor =
+            if (unknown) {
+                MaterialTheme.colorScheme.onTertiaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSecondaryContainer
+            },
     ) {
         Box(contentAlignment = Alignment.Center) {
             Text(
-                initialOf(name),
+                if (unknown) "?" else initialOf(name),
                 style =
                     if (size >=
                         LARGE

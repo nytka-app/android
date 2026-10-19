@@ -71,7 +71,7 @@ class MemoriesViewModelTest {
 
         val rows = newViewModel().state.value.rows
 
-        assertEquals(MemoryRow("a", "Lives in Kyiv", "Lunch · Today", "c1"), rows[0])
+        assertEquals(MemoryRow("a", "Lives in Kyiv", "Lunch · Today", "c1", MemoryGroup.Today), rows[0])
         assertNull(rows[1].source)
         assertNull(rows[1].conversationId)
     }
@@ -171,17 +171,105 @@ class MemoriesViewModelTest {
     }
 
     @Test
-    fun `deleting removes the row, also when it is already gone`() {
+    fun `forgetting hides the row at once and asks the server only on commit`() {
         api.pages[null] = ApiResult.Ok(MemoryPage(listOf(memory("a", "one"), memory("b", "two"))))
         val viewModel = newViewModel()
 
-        viewModel.delete("a")
+        viewModel.forget("a")
+
+        assertEquals(
+            listOf("b"),
+            viewModel.state.value.rows
+                .map { it.id },
+        )
+        assertEquals("a", viewModel.state.value.forgotten)
+        assertTrue(api.deleted.isEmpty())
+
+        viewModel.commitForget("a")
+
+        assertEquals(listOf("a"), api.deleted)
+        assertNull(viewModel.state.value.forgotten)
+    }
+
+    @Test
+    fun `undo puts the row back in its place and sends nothing`() {
+        api.pages[null] = ApiResult.Ok(MemoryPage(listOf(memory("a", "one"), memory("b", "two"), memory("c", "three"))))
+        val viewModel = newViewModel()
+
+        viewModel.forget("b")
+        viewModel.undoForget("b")
+        viewModel.commitForget("b")
+
+        assertEquals(
+            listOf("a", "b", "c"),
+            viewModel.state.value.rows
+                .map { it.id },
+        )
+        assertTrue(api.deleted.isEmpty())
+    }
+
+    @Test
+    fun `a second forget commits the first`() {
+        api.pages[null] = ApiResult.Ok(MemoryPage(listOf(memory("a", "one"), memory("b", "two"))))
+        val viewModel = newViewModel()
+
+        viewModel.forget("a")
+        viewModel.forget("b")
+
+        assertEquals(listOf("a"), api.deleted)
+        assertEquals("b", viewModel.state.value.forgotten)
+    }
+
+    @Test
+    fun `a memory that is already gone stays gone`() {
+        api.pages[null] = ApiResult.Ok(MemoryPage(listOf(memory("a", "one"))))
+        val viewModel = newViewModel()
+
+        viewModel.forget("a")
         api.deleteResult = ApiResult.Failure(FailureKind.NotFound, "Not found.")
-        viewModel.delete("b")
+        viewModel.commitForget("a")
 
         assertTrue(
             viewModel.state.value.rows
                 .isEmpty(),
+        )
+        assertNull(viewModel.state.value.error)
+    }
+
+    @Test
+    fun `a refresh while a memory waits for Undo does not bring it back`() {
+        api.pages[null] = ApiResult.Ok(MemoryPage(listOf(memory("a", "one"), memory("b", "two"))))
+        val viewModel = newViewModel()
+
+        viewModel.forget("a")
+        viewModel.refresh()
+
+        assertEquals(
+            listOf("b"),
+            viewModel.state.value.rows
+                .map { it.id },
+        )
+    }
+
+    @Test
+    fun `memories are grouped by how long ago they were learned`() {
+        api.pages[null] =
+            ApiResult.Ok(
+                MemoryPage(
+                    listOf(
+                        memory("a", "one", created = "2026-09-29T08:00:00Z"),
+                        memory("b", "two", created = "2026-09-25T08:00:00Z"),
+                        memory("c", "three", created = "2026-09-10T08:00:00Z"),
+                        memory("d", "four", created = "2026-07-01T08:00:00Z"),
+                    ),
+                ),
+            )
+
+        assertEquals(
+            listOf(MemoryGroup.Today, MemoryGroup.ThisWeek, MemoryGroup.ThisMonth, MemoryGroup.Earlier),
+            newViewModel()
+                .state.value.rows
+                .map { it.group },
         )
     }
 
@@ -221,12 +309,13 @@ class MemoriesViewModelTest {
     }
 
     @Test
-    fun `a read token cannot delete`() {
+    fun `a read token cannot delete and the row comes back`() {
         api.pages[null] = ApiResult.Ok(MemoryPage(listOf(memory("a", "one"))))
         api.deleteResult = ApiResult.Failure(FailureKind.Forbidden, "no")
         val viewModel = newViewModel()
 
-        viewModel.delete("a")
+        viewModel.forget("a")
+        viewModel.commitForget("a")
 
         assertEquals("The app needs an admin token.", viewModel.state.value.error)
         assertEquals(1, viewModel.state.value.rows.size)
@@ -239,6 +328,7 @@ private fun memory(
     title: String? = null,
     started: String? = null,
     conversationId: String? = null,
+    created: String = "2026-09-29T10:00:00Z",
 ) = Memory(
     id = id,
     text = text,
@@ -246,6 +336,6 @@ private fun memory(
     conversationId = conversationId,
     conversationTitle = title,
     conversationStartedAt = started,
-    createdAt = "2026-09-29T10:00:00Z",
+    createdAt = created,
     updatedAt = "2026-09-29T10:00:00Z",
 )

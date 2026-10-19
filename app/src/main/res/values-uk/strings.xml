@@ -302,13 +302,6 @@
     <string name="brief_public_title">Підсумок зустрічі готовий</string>
 
     <!-- People: person page -->
-    <string name="person_voice_model_none">Моделі голосу ще немає</string>
-    <plurals name="person_voice_model">
-        <item quantity="one">Модель голосу: є, із %d репліки</item>
-        <item quantity="few">Модель голосу: є, із %d реплік</item>
-        <item quantity="many">Модель голосу: є, із %d реплік</item>
-        <item quantity="other">Модель голосу: є, із %d репліки</item>
-    </plurals>
     <string name="person_note_title">Нотатка</string>
     <string name="person_note_label">Ваша нотатка</string>
     <string name="person_note_hint">Пишете лише ви. Модель на вашому сервері її не читає і не змінює.</string>
@@ -320,9 +313,6 @@
     <string name="person_fact_edit">Змінити факт</string>
     <string name="person_fact_label">Факт</string>
     <string name="person_fact_exists">Цей факт про них уже є</string>
-    <string name="person_fact_delete_title">Видалити цей факт?</string>
-    <string name="person_fact_delete_text">З наступних розмов він не повернеться.</string>
-    <string name="person_fact_more">Дії з фактом</string>
     <string name="person_basis_said">Сказали самі</string>
     <string name="person_basis_about">Сказано про них</string>
     <string name="person_basis_mentioned">Згадано</string>
@@ -332,10 +322,26 @@
     <string name="person_conversations_title">Розмови</string>
     <string name="person_no_conversations">Розмов ще немає</string>
     <string name="person_conversation_untitled">Розмова без назви</string>
+    <string name="people_needs_answer">Чекає на вас</string>
+    <string name="person_forget_action">Забути цю людину</string>
+    <string name="person_forget_title_format">Забути %1$s?</string>
+    <string name="person_forget_text">Буде видалено відбиток голосу, тут і в службі транскрипції, факти, які Nytka зберігає про людину, та її імʼя. Репліки залишаться, але знову покажуть невідомий голос. Це не можна скасувати.</string>
+    <string name="person_forget_confirm">Забути</string>
+    <string name="person_voice_print_none">Відбитка голосу ще немає. Він зберігатиметься на вашому сервері</string>
+    <plurals name="person_voice_print">
+        <item quantity="one">Відбиток голосу на вашому сервері, із %d репліки</item>
+        <item quantity="few">Відбиток голосу на вашому сервері, із %d реплік</item>
+        <item quantity="many">Відбиток голосу на вашому сервері, із %d реплік</item>
+        <item quantity="other">Відбиток голосу на вашому сервері, із %d репліки</item>
+    </plurals>
+    <string name="memory_forgotten">Забуто. Видалено з вашого сервера</string>
+    <string name="memory_forget_named_format">Забути цей спогад: %1$s</string>
+    <string name="memory_edit_named_format">Змінити цей спогад: %1$s</string>
+    <string name="memories_group_today">Сьогодні</string>
+    <string name="memories_group_week">Цього тижня</string>
+    <string name="memories_group_month">Цього місяця</string>
+    <string name="memories_group_earlier">Раніше</string>
     <string name="person_merge_action">Об\'єднати з…</string>
-    <string name="person_delete_text">Їхні репліки залишаться, але знову покажуть невідомий голос. Власну модель голосу Nytka видаляє в будь-якому разі. Якщо забути голос, сервіс транскрибування теж видалить модель, яку зберігає. Це не можна скасувати.</string>
-    <string name="person_delete_forget">Видалити й забути голос</string>
-    <string name="person_delete_only">Видалити</string>
 
     <!-- People: name suggestions in conversations (A-P6) -->
     <string name="suggestion_banner_format">%1$s, імовірно, %2$s</string>
@@ -530,9 +536,6 @@
     <!-- Memories tab -->
     <string name="no_memories_yet">Спогадів ще немає. Спогади — це сталі факти про вас, наприклад де ви працюєте чи що любите. Вони беруться з підсумованих розмов, або ви можете додати власний</string>
     <string name="add_memory">Додати спогад</string>
-    <string name="delete_memory_title">Видалити цей спогад?</string>
-    <string name="delete_memory_message">Сервер більше не виводитиме цього з ваших розмов</string>
-    <string name="memory_options">Дії зі спогадом</string>
     <string name="edit_memory_title">Редагувати спогад</string>
     <string name="memory_label">Факт про вас</string>
 
