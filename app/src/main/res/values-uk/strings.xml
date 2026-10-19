@@ -723,4 +723,18 @@
     <string name="signals_button_hold">Утримувати 3 секунди</string>
     <string name="signals_button_hold_means">Вимикає кулон</string>
     <string name="signals_source_omi">З прошивки Omi (BasedHardware/omi, a82aab91e1): set_led_state() у main.c і lib/core/button.c.</string>
+    <string name="search_filter_all">Усе</string>
+    <string name="search_filter_conversations">Розмови</string>
+    <string name="search_filter_memories">Памʼять</string>
+    <string name="search_clear">Очистити пошук</string>
+    <string name="search_searching">Пошук</string>
+    <string name="search_prompt_title">Шукайте в історії</string>
+    <string name="search_prompt_body">Введіть слово або імʼя. Результати беруться з вашого сервера: розмови, спогади й люди.</string>
+    <string name="search_nothing_body_format">Жодна розмова, спогад чи людина не збігається з «%1$s». Спробуйте інше слово.</string>
+    <string name="review_empty_body">Тут зʼявляються питання, коли Nytka не певна щодо імені, голосу чи тегу.</string>
+    <string name="tag_proposal_reject_label">Не цей</string>
+    <string name="cards_heard_in_format">Звучало в розмові: %1$s</string>
+    <string name="ask_asking">Пошук у ваших розмовах…</string>
+    <string name="ask_no_answer">У ваших розмовах немає відповіді на це.</string>
+    <string name="ask_source_format">Джерело %1$d</string>
 </resources>

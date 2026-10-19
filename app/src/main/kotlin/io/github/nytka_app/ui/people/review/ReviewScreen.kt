@@ -4,8 +4,9 @@ import android.content.Context
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -17,7 +18,6 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -26,7 +26,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
@@ -36,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -45,11 +45,16 @@ import io.github.nytka_app.R
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.ReviewItem
 import io.github.nytka_app.ui.DecisionBadge
+import io.github.nytka_app.ui.DecisionCard
+import io.github.nytka_app.ui.ListFailure
+import io.github.nytka_app.ui.ListState
+import io.github.nytka_app.ui.ListStateKind
 import io.github.nytka_app.ui.people.AcceptAllButton
 import io.github.nytka_app.ui.people.SuggestionWording
 import io.github.nytka_app.ui.people.addedAllText
 import io.github.nytka_app.ui.people.lastSeenText
 import io.github.nytka_app.ui.people.question
+import io.github.nytka_app.ui.unreachable
 
 /** The People screen's inbox icon: hidden while the server has no review list or nothing waits. */
 @Composable
@@ -111,22 +116,31 @@ fun ReviewScreen(
                     .fillMaxSize()
                     .padding(padding),
         ) {
-            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
+            LazyColumn(
+                Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 state.error?.let { error ->
-                    item {
-                        Column(Modifier.padding(horizontal = 16.dp)) {
-                            Text(reviewNoticeText(context, error), color = MaterialTheme.colorScheme.error)
-                            TextButton(onClick = viewModel::refresh) { Text(stringResource(R.string.action_retry)) }
-                        }
+                    item(key = "error") {
+                        ListFailure(
+                            reviewNoticeText(context, error),
+                            offline = (error as? ReviewNotice.Failed)?.kind?.unreachable == true,
+                            onRetry = viewModel::refresh,
+                        )
                     }
                 }
-                if (state.error == null && state.items.isEmpty() && !state.loading) {
-                    item {
-                        Text(
-                            stringResource(R.string.review_empty),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                        )
+                if (state.error == null && state.items.isEmpty()) {
+                    item(key = "state") {
+                        if (state.loading) {
+                            ListState(ListStateKind.Loading, stringResource(R.string.list_loading))
+                        } else {
+                            ListState(
+                                ListStateKind.Empty,
+                                stringResource(R.string.review_empty),
+                                body = stringResource(R.string.review_empty_body),
+                            )
+                        }
                     }
                 }
                 items(state.items, key = { it.kind + "/" + it.id }) { item ->
@@ -143,7 +157,6 @@ fun ReviewScreen(
                         viewModel::reject,
                         viewModel::acceptAll,
                     )
-                    HorizontalDivider()
                 }
             }
         }
@@ -152,6 +165,7 @@ fun ReviewScreen(
 
 private const val SPEECH_LINES = 4
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ReviewRowView(
     item: ReviewItem,
@@ -181,17 +195,25 @@ private fun ReviewRowView(
             item.conversationTitle?.takeIf { it.isNotBlank() },
             lastSeenText(item.at.ifEmpty { null }),
         ).joinToString(" · ")
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clickable(enabled = opens != null) { opens?.invoke() }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Text(question, style = MaterialTheme.typography.titleMedium)
-        if (details.isNotEmpty()) Text(details, style = MaterialTheme.typography.bodySmall)
-        ReviewText(row, item.text)
-        Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    DecisionCard(question, Modifier.padding(horizontal = 16.dp)) {
+        Column(
+            Modifier.clickable(enabled = opens != null, role = Role.Button) { opens?.invoke() },
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (details.isNotEmpty()) {
+                Text(
+                    details,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            ReviewText(row, item.text)
+        }
+        FlowRow(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             Button(onClick = { onAccept(item) }) { Text(stringResource(R.string.review_yes)) }
             OutlinedButton(onClick = { onReject(item) }) {
                 Text(
@@ -212,7 +234,11 @@ private fun ReviewText(
     text: String,
 ) {
     if (row is ReviewRow.Speech) {
-        row.lines.take(SPEECH_LINES).forEach { Text(it, style = MaterialTheme.typography.bodyMedium, maxLines = 2) }
+        row.lines.take(SPEECH_LINES).forEach {
+            Text(stringResource(R.string.source_quote, it), style = MaterialTheme.typography.bodyMedium, maxLines = 2)
+        }
+    } else if (text.isNotBlank() && row !is ReviewRow.Tag) {
+        Text(stringResource(R.string.source_quote, text), style = MaterialTheme.typography.bodyMedium, maxLines = 4)
     } else if (text.isNotBlank()) {
         Text(text, style = MaterialTheme.typography.bodyMedium, maxLines = 4)
     }

@@ -1,31 +1,24 @@
 package io.github.nytka_app.ui.tags
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.TagSuggestion
 import io.github.nytka_app.core.api.TagsClient
+import io.github.nytka_app.ui.DecisionCard
 
 /** One proposed tag as the screen shows it. [busy] is true while its answer is on its way. */
 data class TagProposalState(
@@ -124,7 +117,10 @@ class TagProposalBook(
 /** The tags with a proposal's name added, in the order the server keeps them. */
 fun List<String>.withTag(tag: String): List<String> = (this + tag).distinct().sorted()
 
-/** "Suggested tags": each proposal is a chip with an Add and a Not this button. Nothing is sent until one is tapped. */
+/**
+ * "Suggested tags" under a saffron header (it waits for the owner): each proposal has an Add and a Not this button.
+ * Nothing is sent until one is tapped.
+ */
 @Composable
 fun TagProposalRow(
     proposals: List<TagProposalState>,
@@ -133,42 +129,31 @@ fun TagProposalRow(
     modifier: Modifier = Modifier,
 ) {
     if (proposals.isEmpty()) return
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(stringResource(R.string.tags_suggested), style = MaterialTheme.typography.labelLarge)
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            proposals.forEach { ProposalChip(it, onAccept, onReject) }
-        }
+    DecisionCard(stringResource(R.string.tags_suggested), modifier) {
+        proposals.forEach { ProposalLine(it, onAccept, onReject) }
     }
 }
 
 @Composable
-private fun ProposalChip(
+private fun ProposalLine(
     proposal: TagProposalState,
     onAccept: (String) -> Unit,
     onReject: (String) -> Unit,
 ) {
-    Surface(shape = MaterialTheme.shapes.small, color = MaterialTheme.colorScheme.tertiaryContainer) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                proposal.name,
-                style = MaterialTheme.typography.labelLarge,
-                modifier = Modifier.padding(start = 12.dp, top = 8.dp, bottom = 8.dp),
-            )
-            IconButton(onClick = { onAccept(proposal.id) }, enabled = !proposal.busy, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    Icons.Filled.Check,
-                    contentDescription = stringResource(R.string.tag_proposal_accept_format, proposal.name),
-                    modifier = Modifier.size(16.dp),
-                )
-            }
-            IconButton(onClick = { onReject(proposal.id) }, enabled = !proposal.busy, modifier = Modifier.size(36.dp)) {
-                Icon(
-                    Icons.Filled.Close,
-                    contentDescription = stringResource(R.string.tag_proposal_reject_format, proposal.name),
-                    modifier = Modifier.size(16.dp),
-                )
-            }
-        }
+    val accept = stringResource(R.string.tag_proposal_accept_format, proposal.name)
+    val reject = stringResource(R.string.tag_proposal_reject_format, proposal.name)
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(proposal.name, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+        TextButton(
+            onClick = { onReject(proposal.id) },
+            enabled = !proposal.busy,
+            modifier = Modifier.semantics { contentDescription = reject },
+        ) { Text(stringResource(R.string.tag_proposal_reject_label)) }
+        FilledTonalButton(
+            onClick = { onAccept(proposal.id) },
+            enabled = !proposal.busy,
+            modifier = Modifier.semantics { contentDescription = accept },
+        ) { Text(stringResource(R.string.action_add)) }
     }
 }
 

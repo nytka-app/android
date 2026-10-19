@@ -1,11 +1,17 @@
 package io.github.nytka_app.ui.people
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -15,10 +21,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.dp
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.Person
+import io.github.nytka_app.ui.ErrorLine
+import io.github.nytka_app.ui.Monogram
+import io.github.nytka_app.ui.NytkaTextField
 
 @Composable
 internal fun FactDialog(
@@ -33,12 +46,16 @@ internal fun FactDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(title)) },
         text = {
+            // A fact can run to several lines, which NytkaTextField (one line) cannot hold.
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it.take(PersonViewModel.MAX_FACT) },
                 label = { Text(stringResource(R.string.person_fact_label)) },
+                shape = MaterialTheme.shapes.small,
+                minLines = 2,
                 isError = error != null,
-                supportingText = error?.let { e -> { Text(personNoticeText(LocalContext.current, e)) } },
+                supportingText = error?.let { e -> { ErrorLine(personNoticeText(LocalContext.current, e)) } },
+                modifier = Modifier.fillMaxWidth(),
             )
         },
         confirmButton = {
@@ -63,13 +80,13 @@ internal fun RenameDialog(
         onDismissRequest = onDismiss,
         title = { Text(renameLabel(named)) },
         text = {
-            OutlinedTextField(
+            NytkaTextField(
                 value = text,
                 onValueChange = { text = it.take(PersonViewModel.MAX_NAME) },
-                label = { Text(stringResource(R.string.people_name_label)) },
-                isError = error != null,
-                supportingText = error?.let { e -> { Text(personNoticeText(LocalContext.current, e)) } },
-                singleLine = true,
+                label = stringResource(R.string.people_name_label),
+                error = error?.let { personNoticeText(LocalContext.current, it) },
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words),
+                modifier = Modifier.fillMaxWidth(),
             )
         },
         confirmButton = {
@@ -93,7 +110,10 @@ internal fun MergeDialog(
         title = { Text(stringResource(R.string.people_merge_title_format, name)) },
         text = {
             if (others == null) {
-                CircularProgressIndicator()
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LinearProgressIndicator(Modifier.fillMaxWidth())
+                    Text(stringResource(R.string.list_loading), style = MaterialTheme.typography.bodyMedium)
+                }
             } else if (others.isEmpty()) {
                 Text(stringResource(R.string.people_merge_nobody))
             } else {
@@ -102,7 +122,9 @@ internal fun MergeDialog(
                         ListItem(
                             headlineContent = { Text(other.name) },
                             supportingContent = { Text(linesText(other.segments)) },
-                            modifier = Modifier.clickable { onPick(other) },
+                            leadingContent = { Monogram(other.name) },
+                            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                            modifier = Modifier.clickable(role = Role.Button) { onPick(other) },
                         )
                     }
                 }

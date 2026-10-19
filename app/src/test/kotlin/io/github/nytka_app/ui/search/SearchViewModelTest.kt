@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -154,6 +155,38 @@ class SearchViewModelTest {
 
             assertEquals("This server needs an update", viewModel.state.value.error)
         }
+
+    @Test
+    fun `an unreachable server is offline, any other failure is not`() =
+        runTest {
+            api.pages += ApiResult.Failure(FailureKind.Network, "The server could not be reached.")
+            api.pages += ApiResult.Failure(FailureKind.Server, "The server answered 500.")
+            val viewModel = newViewModel()
+
+            viewModel.setQuery("kyiv")
+            advanceUntilIdle()
+            assertTrue(viewModel.state.value.offline)
+
+            viewModel.retry()
+            advanceUntilIdle()
+            assertFalse(viewModel.state.value.offline)
+            assertEquals("The server answered 500.", viewModel.state.value.error)
+
+            viewModel.setQuery("")
+            assertFalse(viewModel.state.value.offline)
+        }
+
+    @Test
+    fun `every filter has a label and All asks for no kind`() {
+        assertEquals(
+            3,
+            SearchFilter.entries
+                .map { it.label }
+                .distinct()
+                .size,
+        )
+        assertTrue(SearchFilter.All.kinds.isEmpty())
+    }
 
     @Test
     fun `a person hit opens that person, not a conversation`() =
