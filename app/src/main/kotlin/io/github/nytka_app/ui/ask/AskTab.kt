@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.theme.NytkaTheme
+import io.github.nytka_app.ui.theme.ReadingColumn
 
 /**
  * The Ask tab: a question about your history, answered with numbered sources. A source, or its `[n]` in the answer,
@@ -50,47 +52,66 @@ fun AskTab(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val linkColor = MaterialTheme.colorScheme.primary
 
-    LazyColumn(
-        Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        item {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = state.question,
-                    onValueChange = viewModel::setQuestion,
-                    label = { Text(stringResource(R.string.ask_hint)) },
-                    modifier = Modifier.weight(1f),
-                    maxLines = 4,
-                )
-                if (state.asking) {
-                    CircularProgressIndicator(
-                        Modifier
-                            .padding(start = 12.dp)
-                            .size(24.dp),
+    ReadingColumn {
+        LazyColumn(
+            Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            item {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = state.question,
+                        onValueChange = viewModel::setQuestion,
+                        label = { Text(stringResource(R.string.ask_hint)) },
+                        modifier = Modifier.weight(1f),
+                        maxLines = 4,
                     )
-                } else {
-                    IconButton(onClick = viewModel::ask, enabled = state.canAsk) {
-                        Icon(Icons.AutoMirrored.Filled.Send, contentDescription = stringResource(R.string.action_ask))
+                    if (state.asking) {
+                        CircularProgressIndicator(
+                            Modifier
+                                .padding(start = 12.dp)
+                                .size(24.dp),
+                        )
+                    } else {
+                        IconButton(onClick = viewModel::ask, enabled = state.canAsk) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.Send,
+                                contentDescription = stringResource(R.string.action_ask),
+                            )
+                        }
                     }
                 }
             }
-        }
-        state.error?.let { error ->
-            item { Text(error, color = MaterialTheme.colorScheme.error) }
-        }
-        state.result?.let { result ->
-            item { Text(answerText(result.parts, linkColor, onOpenConversation)) }
-            if (result.sources.isNotEmpty()) {
-                item { Text(stringResource(R.string.sources), style = MaterialTheme.typography.titleSmall) }
-                items(result.sources, key = { it.n }) { row ->
-                    ListItem(
-                        overlineContent = { Text(listOfNotNull("[${row.n}]", row.title).joinToString(" ")) },
-                        headlineContent = { Text(row.snippet, maxLines = 3, overflow = TextOverflow.Ellipsis) },
-                        supportingContent = { Text(row.date) },
-                        modifier = row.openId?.let { id -> Modifier.clickable { onOpenConversation(id) } } ?: Modifier,
+            state.error?.let { error ->
+                item { Text(error, color = MaterialTheme.colorScheme.error) }
+            }
+            state.result?.let { result ->
+                item {
+                    Text(
+                        answerText(result.parts, linkColor, onOpenConversation),
+                        style = NytkaTheme.typography.readingLead,
                     )
+                }
+                if (result.sources.isNotEmpty()) {
+                    item { Text(stringResource(R.string.sources), style = MaterialTheme.typography.titleSmall) }
+                    items(result.sources, key = { it.n }) { row ->
+                        ListItem(
+                            overlineContent = { Text(listOfNotNull("[${row.n}]", row.title).joinToString(" ")) },
+                            headlineContent = {
+                                Text(
+                                    stringResource(R.string.source_quote, row.snippet),
+                                    style = NytkaTheme.typography.readingQuote,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 3,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            },
+                            supportingContent = { Text(row.date) },
+                            modifier =
+                                row.openId?.let { id -> Modifier.clickable { onOpenConversation(id) } } ?: Modifier,
+                        )
+                    }
                 }
             }
         }

@@ -589,6 +589,7 @@
     <!-- Ask tab -->
     <string name="ask_hint">Ask about your conversations</string>
     <string name="sources">Sources</string>
+    <string name="source_quote">“%1$s”</string>
 
     <!-- Speech kind: marks -->
     <string name="speech_chip_media">Media</string>

@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.theme.NytkaTheme
+import io.github.nytka_app.ui.theme.ReadingColumn
 
 /**
  * The Memories tab: what the server has learned about you, newest first. A memory with a source opens that
@@ -50,7 +52,7 @@ fun MemoriesTab(
     val state by viewModel.state.collectAsStateWithLifecycle()
     var deleting by rememberSaveable { mutableStateOf<String?>(null) }
 
-    Box(Modifier.fillMaxSize()) {
+    ReadingColumn {
         PullToRefreshBox(isRefreshing = state.refreshing, onRefresh = viewModel::refresh) {
             LazyColumn(
                 Modifier.fillMaxSize(),
@@ -117,7 +119,7 @@ private fun MemoryItem(
 ) {
     var menuOpen by rememberSaveable { mutableStateOf(false) }
     ListItem(
-        headlineContent = { Text(row.text) },
+        headlineContent = { Text(row.text, style = NytkaTheme.typography.readingBody) },
         supportingContent =
             row.source?.let { source ->
                 { Text(source, maxLines = 1, overflow = TextOverflow.Ellipsis) }

@@ -596,6 +596,7 @@
     <!-- Ask tab -->
     <string name="ask_hint">Запитайте про свої розмови</string>
     <string name="sources">Джерела</string>
+    <string name="source_quote">«%1$s»</string>
 
     <!-- Speech kind: marks -->
     <string name="speech_chip_media">Медіа</string>
