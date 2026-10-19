@@ -23,7 +23,6 @@
     <string name="set">Задати</string>
     <string name="not_set">Не задано</string>
     <string name="testing">Перевірка…</string>
-    <string name="test_connection">Перевірити з\'єднання</string>
     <string name="continue_action">Продовжити</string>
     <string name="i_understand">Я розумію</string>
     <string name="regenerate_summary">Створити підсумок ще раз</string>
@@ -111,8 +110,6 @@
     <string name="nothing_found">Нічого не знайдено</string>
 
     <!-- First run -->
-    <string name="set_up_nytka">Налаштування Nytka</string>
-    <string name="step_of_format">Крок %1$d з %2$d</string>
     <string name="server_step_description">Адреса та токен вашого сервера Nytka з його файлу .env</string>
     <string name="server_url_hint">Адреса сервера, наприклад https://nytka.example.com</string>
     <string name="token_hint">Токен</string>
@@ -206,7 +203,6 @@
     <string name="voice_forget">Забути мій голос</string>
     <string name="voice_read_aloud">Прочитайте вголос</string>
     <string name="voice_elapsed">%1$d с із %2$d с</string>
-    <string name="voice_level">Рівень</string>
     <string name="voice_pendant_silent">Кулон не надсилає звук. Підключіть його й увімкніть мікрофон.</string>
     <string name="voice_full">Досягнуто межі у 120 секунд. Надішліть запис.</string>
     <string name="voice_send">Надіслати</string>
@@ -625,4 +621,41 @@
     <string name="speech_list_media_hidden">Медіа сховано</string>
     <string name="speech_list_show_media">Показати медіа знову</string>
     <string name="speech_list_only_media">Тут лише медіа</string>
+
+    <!-- First run (SetupStep, PermissionRow, ConsentNote) -->
+    <string-array name="first_run_step_labels">
+        <item>Крок перший із чотирьох</item>
+        <item>Крок другий із чотирьох</item>
+        <item>Крок третій із чотирьох</item>
+        <item>Крок четвертий із чотирьох</item>
+    </string-array>
+    <string name="setup_server_title">Підключіть сервер</string>
+    <string name="setup_connect">Підключити</string>
+    <string name="token_show">Показати</string>
+    <string name="token_hide">Сховати</string>
+    <string name="setup_permissions_title">Дозвольте потрібне для кулона</string>
+    <string name="permission_nearby_name">Пристрої поблизу</string>
+    <string name="permission_nearby_why">Звʼязок із кулоном через Bluetooth.</string>
+    <string name="permission_notifications_name">Сповіщення</string>
+    <string name="permission_notifications_why">Стан запису завжди на виду, поки працює Nytka.</string>
+    <string name="permission_allowed">Дозволено</string>
+    <string name="permission_not_yet">Ще не дозволено</string>
+    <string name="setup_consent_title">Люди поруч</string>
+    <string name="setup_consent_body">Прочитайте чотири пункти й поставте позначку.</string>
+    <string name="consent_point_who">Люди поруч потрапляють у запис. Попередьте їх і вимкніть кулон, якщо попросять.</string>
+    <string name="consent_point_stop">Щоб зупинити запис, вимкніть кулон. Будь-яку розмову можна видалити з вашого сервера.</string>
+    <string name="consent_point_data">Записи чекають на телефоні, доки не завантажаться на ваш сервер, а далі зберігаються на ньому.</string>
+    <string name="setup_pairing_title">З’єднайте кулон</string>
+    <string name="setup_pair">З’єднати</string>
+
+    <!-- Your voice: reading -->
+    <string name="voice_listening">Слухаю через кулон. Мікрофон телефона не використовується.</string>
+    <string name="voice_next_sentence">Наступне речення</string>
+    <string name="voice_enough">Достатньо, щоб надіслати. Більше краще, до 2 хвилин.</string>
+    <plurals name="voice_need_more">
+        <item quantity="one">Прочитайте ще %d секунду, щоб надіслати.</item>
+        <item quantity="few">Прочитайте ще %d секунди, щоб надіслати.</item>
+        <item quantity="many">Прочитайте ще %d секунд, щоб надіслати.</item>
+        <item quantity="other">Прочитайте ще %d секунди, щоб надіслати.</item>
+    </plurals>
 </resources>

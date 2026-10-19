@@ -67,22 +67,24 @@ same file the manual install step above uses, and offers the next one as it is p
 
 ## First run (about 5 minutes)
 
-Charge the pendant and keep it next to the phone. Open Nytka: its *Set up Nytka* screen has four
-steps.
+Charge the pendant and keep it next to the phone. Open Nytka: the setup has four steps, shown as four segments at the top with the step in words.
 
-1. **Server.** Enter the server's address (`https://…`) and an `admin` token, and tap **Test
-   connection** — or tap **Scan QR code** and point the camera at the QR code the server's setup page
-   shows, which fills both fields and runs the test for you. Scanning asks for the camera permission
+1. **Server.** Enter the server's address (`https://…`) and an `admin` token, and tap **Connect** — or tap **Scan QR code**
+   (offered first) and point the camera at the QR code the server's setup page shows, which fills both
+   fields and runs the test for you. The address and token are set in a monospace font, and **Show**
+   reveals the token. Scanning asks for the camera permission
    the first time; Nytka never uses it for anything else. The next step opens once the server answers
    and accepts the token. A `read` token stops here with "The app needs an admin token."
-2. **Permissions.** Tap **Allow**. Android shows a prompt for *Nearby devices*, so Nytka can reach
+2. **Permissions.** Two rows say what each permission is for and show a check and **Allowed** once it
+   is granted. Tap **Allow**. Android shows a prompt for *Nearby devices*, so Nytka can reach
    the pendant, and on Android 13 and later a second one for *Notifications*, for the recording
    notification and the alerts. There are no others, and Nytka never uses the phone's microphone or
    location.
-3. **Consent.** Read the note, which says that recording people without their consent is illegal in
-   some places, that you answer for following the law, and that the pendant also records while the
-   phone is away. Tick **I understand** and tap **Continue**.
-4. **Pairing.** Turn the pendant on, tap **Pair pendant** and pick it in the list that opens.
+3. **Consent.** Read the four points: people near you are recorded too, how to stop and delete, that
+   recording people without their consent is illegal in some places and you answer for following the
+   law (and the pendant also records while the phone is away), and where your recordings live. Tick
+   **I understand**, which starts unticked, and tap **Continue**.
+4. **Pairing.** Turn the pendant on, tap **Pair** and pick it in the list that opens.
    **Set up later** skips this; the **Device** screen has the same **Pair pendant** button.
 
 Nytka now opens on **Conversations**. The capture status at the top reads **Waiting for pendant**,
@@ -367,9 +369,9 @@ yours whatever the transcription service says. It needs an admin token.
 
 Choose the languages you speak (Ukrainian, Russian, English) and tap **Enroll**. The screen shows
 three short sentences per language: read them aloud with the pendant on, somewhere quiet, for at
-least 30 seconds in all (with one language, read them twice). A meter shows the pendant's level and
-a counter the seconds against the server's 120-second limit; recording stops by itself at the limit.
-**Send** gives the reading to the server, which answers with how much speech it used. It refuses a
+least 30 seconds in all (with one language, read them twice). One sentence shows at a time in large type; **Next sentence** moves on. A timer and a bar count the
+seconds against the server's 120-second limit, with a mark at 30 seconds; recording stops by itself at
+the limit. **Send** stays off until 30 seconds, and the screen says how many more to read. **Send** gives the reading to the server, which answers with how much speech it used. It refuses a
 reading with less than 20 seconds of speech, one too short to make 3 samples, or one whose samples
 do not sound like one voice (another speaker or noise), and the screen says which and what to do.
 

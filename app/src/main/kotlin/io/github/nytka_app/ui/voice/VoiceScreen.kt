@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.activity.compose.LocalActivity
 import androidx.annotation.ArrayRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -11,7 +12,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -22,7 +25,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -31,10 +33,17 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -46,11 +55,17 @@ import io.github.nytka_app.core.api.EnrollMode
 import io.github.nytka_app.core.api.EnrollRefusal
 import io.github.nytka_app.core.api.VoiceStatus
 import io.github.nytka_app.core.chunks.EnrollmentRecording
+import io.github.nytka_app.ui.ErrorLine
 import io.github.nytka_app.ui.conversations.Formatting
+import io.github.nytka_app.ui.theme.NytkaTheme
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import kotlin.math.ceil
 import kotlin.math.roundToInt
+
+/** The shortest reading the screen lets you send; the server needs 20 s of speech. */
+private const val MIN_SECONDS = 30
 
 /** Voice enrollment, reached from the Device tab when the server lists `voice` under `features`. */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -222,29 +237,77 @@ private fun RecordingCard(
     onSend: () -> Unit,
     onCancel: () -> Unit,
 ) = Card {
-    Text(stringResource(R.string.voice_read_aloud), style = MaterialTheme.typography.titleMedium)
-    PromptLanguage.entries.filter { it in state.languages }.forEach { language ->
-        Text(stringResource(language.label), style = MaterialTheme.typography.labelLarge)
-        stringArrayResource(language.prompts).forEach { Text(it, style = MaterialTheme.typography.bodyLarge) }
+    val context = LocalContext.current
+    val sentences =
+        PromptLanguage.entries
+            .filter { it in state.languages }
+            .flatMap { language ->
+                context.resources.getStringArray(language.prompts).map { language to it }
+            }
+    var index by rememberSaveable { mutableIntStateOf(0) }
+    val remaining = ceil(MIN_SECONDS - state.seconds).toInt()
+    val enough = remaining <= 0
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            painterResource(if (state.pendantReady) R.drawable.ic_capture_recording else R.drawable.ic_capture_waiting),
+            contentDescription = null,
+            tint = if (state.pendantReady) NytkaTheme.colors.capture else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
+        )
+        Text(
+            stringResource(R.string.voice_listening),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
-    Text(stringResource(R.string.voice_level), style = MaterialTheme.typography.labelMedium)
-    LinearProgressIndicator(progress = { state.level }, modifier = Modifier.fillMaxWidth())
-    Text(stringResource(R.string.voice_elapsed, state.seconds.roundToInt(), EnrollmentRecording.MAX_SECONDS))
-    LinearProgressIndicator(
-        progress = { (state.seconds / EnrollmentRecording.MAX_SECONDS).toFloat() },
-        modifier = Modifier.fillMaxWidth(),
+    sentences.getOrNull(index % sentences.size.coerceAtLeast(1))?.let { (language, sentence) ->
+        Text(stringResource(language.label), style = MaterialTheme.typography.labelLarge)
+        Text(sentence, style = NytkaTheme.typography.readingTitle)
+        if (sentences.size > 1) {
+            TextButton(onClick = { index = (index + 1) % sentences.size }) {
+                Text(stringResource(R.string.voice_next_sentence))
+            }
+        }
+    }
+    Text(
+        "%d:%02d".format(state.seconds.toInt() / 60, state.seconds.toInt() % 60),
+        style = MaterialTheme.typography.displaySmall,
+    )
+    EnrollmentTrack(state.seconds)
+    Text(
+        if (enough) {
+            stringResource(R.string.voice_enough)
+        } else {
+            pluralStringResource(R.plurals.voice_need_more, remaining, remaining)
+        },
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     when {
         state.full -> Text(stringResource(R.string.voice_full))
-        !state.pendantReady ->
-            Text(
-                stringResource(R.string.voice_pendant_silent),
-                color = MaterialTheme.colorScheme.error,
-            )
+        !state.pendantReady -> ErrorLine(stringResource(R.string.voice_pendant_silent))
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Button(onClick = onSend, enabled = state.seconds > 0) { Text(stringResource(R.string.voice_send)) }
+        Button(onClick = onSend, enabled = enough) { Text(stringResource(R.string.voice_send)) }
         OutlinedButton(onClick = onCancel) { Text(stringResource(R.string.action_cancel)) }
+    }
+}
+
+/** An 8dp track filling toward the 120 s goal, with a 2dp marker at the 30 s minimum. */
+@Composable
+private fun EnrollmentTrack(seconds: Double) {
+    val track = MaterialTheme.colorScheme.outlineVariant
+    val fill = MaterialTheme.colorScheme.primary
+    val marker = MaterialTheme.colorScheme.onSurface
+    Canvas(Modifier.fillMaxWidth().height(12.dp)) {
+        val bar = 8.dp.toPx()
+        val top = (size.height - bar) / 2
+        val round = CornerRadius(bar / 2)
+        drawRoundRect(track, Offset(0f, top), Size(size.width, bar), round)
+        val done = (seconds / EnrollmentRecording.MAX_SECONDS).toFloat().coerceIn(0f, 1f)
+        if (done > 0f) drawRoundRect(fill, Offset(0f, top), Size(size.width * done, bar), round)
+        val x = size.width * MIN_SECONDS / EnrollmentRecording.MAX_SECONDS
+        drawRect(marker, Offset(x - 1.dp.toPx(), 0f), Size(2.dp.toPx(), size.height))
     }
 }
 
