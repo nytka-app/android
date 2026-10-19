@@ -1,5 +1,7 @@
 package io.github.nytka_app.core.settings
 
+import io.github.nytka_app.core.location.SavedPlace
+
 /** The steps of first run in order; [Settings.firstRunStep] is the one the user has reached. */
 enum class FirstRunStep { Server, Permissions, Consent, Pairing }
 
@@ -39,6 +41,14 @@ data class Settings(
     val phoneContext: Boolean = true,
     /** Follow the wallpaper's colours instead of linen and ink; off until switched on. */
     val wallpaperColors: Boolean = false,
+    /** Tag each conversation with a coarse place (a saved place or a city-level label); off until switched on. */
+    val locationTags: Boolean = false,
+    /** Places the user has named, such as "Home" or "Office"; checked nearest-first by [locationTags]. */
+    val savedPlaces: List<SavedPlace> = emptyList(),
+    /** The place the last session recorded, waiting to be matched to the conversation it becomes; null when none is. */
+    val pendingLocationPlace: String? = null,
+    /** Epoch milliseconds the session that made [pendingLocationPlace] started; 0 when there is none. */
+    val pendingLocationAt: Long = 0,
 ) {
     /** What the uploader watches: a change here may end a pause. */
     val connectionKey: Triple<String, String, Boolean> get() = Triple(serverUrl, token, privateNetwork)
@@ -51,5 +61,6 @@ data class Settings(
             "alerts=$alertDisconnectedMinutes/$alertUnreachableMinutes/$alertBatteryPercent, " +
             "diagnosticsUpload=$diagnosticsUpload, muteWindows=${muteSchedule.windows.size}, " +
             "firmwareCheck=$firmwareCheck, highPriorityConnection=$highPriorityConnection, " +
-            "phoneContext=$phoneContext, wallpaperColors=$wallpaperColors)"
+            "phoneContext=$phoneContext, wallpaperColors=$wallpaperColors, " +
+            "locationTags=$locationTags, savedPlaces=${savedPlaces.size})"
 }

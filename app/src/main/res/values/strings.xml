@@ -299,6 +299,16 @@
     <string name="briefs_permission_blocked">Without notifications Nytka cannot show a brief. If Android does not ask again, allow notifications in the system settings for Nytka, then switch on again</string>
     <string name="brief_channel_name">Meeting briefs</string>
     <string name="brief_title">Brief: %1$s</string>
+
+    <!-- Location tags (NYTKA-62) -->
+    <string name="location_tags_title">Location tags</string>
+    <string name="location_tags_label">Tag conversations with a coarse place</string>
+    <string name="location_tags_explanation">Nytka reads a coarse location when a capture session starts and, once your server has a conversation for it, adds the name of a saved place or a city-level label as a tag suggestion. Your exact coordinates never leave the phone.</string>
+    <string name="location_tags_permission_denied">Without location Nytka cannot tag conversations. Switch on again to be asked</string>
+    <string name="location_tags_permission_blocked">Without location Nytka cannot tag conversations. If Android does not ask again, allow location in the system settings for Nytka, then switch on again</string>
+    <string name="location_tags_place_name">Place name</string>
+    <string name="location_tags_add_place">Save current place</string>
+    <string name="location_tags_remove_place">Remove</string>
     <string name="brief_starts_at">Starts at %1$s</string>
     <string name="brief_public_title">A meeting brief is ready</string>
 
