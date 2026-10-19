@@ -29,6 +29,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,6 +41,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,6 +51,9 @@ import io.github.nytka_app.R
 import io.github.nytka_app.ui.ListFailure
 import io.github.nytka_app.ui.ListState
 import io.github.nytka_app.ui.ListStateKind
+import io.github.nytka_app.ui.names.NameCompletions
+import io.github.nytka_app.ui.names.knownPeople
+import io.github.nytka_app.ui.names.rememberFieldValue
 import io.github.nytka_app.ui.theme.NytkaTheme
 import io.github.nytka_app.ui.theme.ReadingColumn
 import io.github.nytka_app.ui.theme.TABULAR
@@ -63,6 +68,12 @@ fun AskTab(
     viewModel: AskViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var question by rememberFieldValue(state.question)
+    val people = knownPeople()
+    val onQuestion = { value: TextFieldValue ->
+        question = value
+        viewModel.setQuestion(value.text)
+    }
 
     ReadingColumn {
         LazyColumn(
@@ -71,21 +82,29 @@ fun AskTab(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             item {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(
-                        value = state.question,
-                        onValueChange = viewModel::setQuestion,
-                        label = { Text(stringResource(R.string.ask_hint)) },
-                        shape = MaterialTheme.shapes.small,
-                        modifier = Modifier.weight(1f),
-                        maxLines = 4,
-                    )
-                    IconButton(onClick = viewModel::ask, enabled = state.canAsk) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.Send,
-                            contentDescription = stringResource(R.string.action_ask),
+                Column {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        OutlinedTextField(
+                            value = question,
+                            onValueChange = onQuestion,
+                            label = { Text(stringResource(R.string.ask_hint)) },
+                            shape = MaterialTheme.shapes.small,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 4,
                         )
+                        IconButton(onClick = viewModel::ask, enabled = state.canAsk) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.Send,
+                                contentDescription = stringResource(R.string.action_ask),
+                            )
+                        }
                     }
+                    NameCompletions(
+                        question,
+                        onValueChange = onQuestion,
+                        people = people,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
                 }
             }
             if (state.asking) {

@@ -31,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -42,6 +43,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -53,6 +55,9 @@ import io.github.nytka_app.ui.ListState
 import io.github.nytka_app.ui.ListStateKind
 import io.github.nytka_app.ui.Monogram
 import io.github.nytka_app.ui.NytkaTextField
+import io.github.nytka_app.ui.names.NameCompletions
+import io.github.nytka_app.ui.names.knownPeople
+import io.github.nytka_app.ui.names.rememberFieldValue
 
 /**
  * The Conversations tab's search icon shows only while this is true. A server without search answers 404 and the
@@ -73,6 +78,12 @@ fun SearchScreen(
     viewModel: SearchViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var query by rememberFieldValue(state.query)
+    val people = knownPeople()
+    val onQuery = { value: TextFieldValue ->
+        query = value
+        viewModel.setQuery(value.text)
+    }
     val focus = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     LaunchedEffect(Unit) { focus.requestFocus() }
@@ -102,13 +113,13 @@ fun SearchScreen(
         ) {
             item {
                 NytkaTextField(
-                    value = state.query,
-                    onValueChange = viewModel::setQuery,
+                    value = query,
+                    onValueChange = onQuery,
                     label = stringResource(R.string.search_hint),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
                     trailingIcon =
-                        if (state.query.isEmpty()) {
+                        if (query.text.isEmpty()) {
                             null
                         } else {
                             {
@@ -126,6 +137,15 @@ fun SearchScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
                             .focusRequester(focus),
+                )
+            }
+            item {
+                NameCompletions(
+                    query,
+                    onValueChange = onQuery,
+                    people = people,
+                    capitalOnly = false,
+                    modifier = Modifier.padding(horizontal = 16.dp).padding(top = 8.dp),
                 )
             }
             item {

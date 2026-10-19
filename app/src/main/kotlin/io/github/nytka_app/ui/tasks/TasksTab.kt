@@ -1,6 +1,8 @@
 package io.github.nytka_app.ui.tasks
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -38,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -46,6 +49,9 @@ import io.github.nytka_app.ui.ListFailure
 import io.github.nytka_app.ui.ListState
 import io.github.nytka_app.ui.ListStateKind
 import io.github.nytka_app.ui.NytkaTextField
+import io.github.nytka_app.ui.names.NameCompletions
+import io.github.nytka_app.ui.names.filled
+import io.github.nytka_app.ui.names.knownPeople
 
 /**
  * The Tasks tab: open tasks newest first, done ones below, collapsed. A task opens its conversation through
@@ -228,21 +234,25 @@ private fun EditDialog(
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
 ) {
-    var text by rememberSaveable { mutableStateOf(initial) }
+    var field by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(filled(initial)) }
+    val people = knownPeople()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.edit_task_title)) },
         text = {
-            NytkaTextField(
-                value = text,
-                onValueChange = { text = it.take(MAX_TEXT) },
-                label = stringResource(R.string.task_label),
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                NytkaTextField(
+                    value = field,
+                    onValueChange = { field = it.copy(text = it.text.take(MAX_TEXT)) },
+                    label = stringResource(R.string.task_label),
+                )
+                NameCompletions(field, onValueChange = { field = it }, people = people)
+            }
         },
         confirmButton = {
             TextButton(
-                onClick = { onSave(text) },
-                enabled = text.isNotBlank(),
+                onClick = { onSave(field.text) },
+                enabled = field.text.isNotBlank(),
             ) { Text(stringResource(R.string.action_save)) }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },

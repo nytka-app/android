@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import io.github.nytka_app.ui.theme.NytkaTheme
@@ -45,17 +46,12 @@ fun NytkaTextField(
     trailingIcon: @Composable (() -> Unit)? = null,
 ) {
     val interaction = remember { MutableInteractionSource() }
-    val colors = OutlinedTextFieldDefaults.colors()
-    val textStyle = (if (mono) NytkaTheme.typography.code else LocalTextStyle.current)
+    val look = FieldLook(label, error, isError, supporting, enabled, visualTransformation, trailingIcon)
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier =
-            modifier.defaultMinSize(
-                minWidth = OutlinedTextFieldDefaults.MinWidth,
-                minHeight = OutlinedTextFieldDefaults.MinHeight,
-            ),
-        textStyle = textStyle.copy(color = MaterialTheme.colorScheme.onSurface),
+        modifier = modifier.fieldSize(),
+        textStyle = fieldStyle(mono),
         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
@@ -63,39 +59,97 @@ fun NytkaTextField(
         singleLine = true,
         visualTransformation = visualTransformation,
         interactionSource = interaction,
-        decorationBox = { inner ->
-            OutlinedTextFieldDefaults.DecorationBox(
-                value = value,
-                innerTextField = inner,
-                enabled = enabled,
-                singleLine = true,
-                visualTransformation = visualTransformation,
+        decorationBox = { inner -> Decoration(value, inner, interaction, look) },
+    )
+}
+
+/** The same field holding a [TextFieldValue], for callers that move the cursor, as a picked name does. */
+@Composable
+fun NytkaTextField(
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    error: String? = null,
+    supporting: String? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    enabled: Boolean = true,
+    trailingIcon: @Composable (() -> Unit)? = null,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val look = FieldLook(label, error, error != null, supporting, enabled, VisualTransformation.None, trailingIcon)
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier.fieldSize(),
+        textStyle = fieldStyle(mono = false),
+        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        enabled = enabled,
+        singleLine = true,
+        interactionSource = interaction,
+        decorationBox = { inner -> Decoration(value.text, inner, interaction, look) },
+    )
+}
+
+private class FieldLook(
+    val label: String,
+    val error: String?,
+    val isError: Boolean,
+    val supporting: String?,
+    val enabled: Boolean,
+    val visualTransformation: VisualTransformation,
+    val trailingIcon: @Composable (() -> Unit)?,
+)
+
+private fun Modifier.fieldSize() =
+    defaultMinSize(minWidth = OutlinedTextFieldDefaults.MinWidth, minHeight = OutlinedTextFieldDefaults.MinHeight)
+
+@Composable
+private fun fieldStyle(mono: Boolean) =
+    (if (mono) NytkaTheme.typography.code else LocalTextStyle.current)
+        .copy(color = MaterialTheme.colorScheme.onSurface)
+
+@Composable
+private fun Decoration(
+    text: String,
+    inner: @Composable () -> Unit,
+    interaction: MutableInteractionSource,
+    look: FieldLook,
+) {
+    val colors = OutlinedTextFieldDefaults.colors()
+    OutlinedTextFieldDefaults.DecorationBox(
+        value = text,
+        innerTextField = inner,
+        enabled = look.enabled,
+        singleLine = true,
+        visualTransformation = look.visualTransformation,
+        interactionSource = interaction,
+        isError = look.isError,
+        label = { Text(look.label) },
+        trailingIcon = look.trailingIcon,
+        supportingText =
+            when {
+                look.error != null -> {
+                    { ErrorLine(look.error) }
+                }
+                look.supporting != null -> {
+                    { Text(look.supporting) }
+                }
+                else -> null
+            },
+        colors = colors,
+        container = {
+            OutlinedTextFieldDefaults.Container(
+                enabled = look.enabled,
+                isError = look.isError,
                 interactionSource = interaction,
-                isError = isError,
-                label = { Text(label) },
-                trailingIcon = trailingIcon,
-                supportingText =
-                    when {
-                        error != null -> {
-                            { ErrorLine(error) }
-                        }
-                        supporting != null -> {
-                            { Text(supporting) }
-                        }
-                        else -> null
-                    },
                 colors = colors,
-                container = {
-                    OutlinedTextFieldDefaults.Container(
-                        enabled = enabled,
-                        isError = isError,
-                        interactionSource = interaction,
-                        colors = colors,
-                        shape = MaterialTheme.shapes.small,
-                        focusedBorderThickness = 3.dp,
-                        unfocusedBorderThickness = if (isError) 2.dp else 1.dp,
-                    )
-                },
+                shape = MaterialTheme.shapes.small,
+                focusedBorderThickness = 3.dp,
+                unfocusedBorderThickness = if (look.isError) 2.dp else 1.dp,
             )
         },
     )

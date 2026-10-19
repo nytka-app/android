@@ -160,6 +160,7 @@ fun PeopleScreen(
                         .orEmpty(),
                 onDismiss = viewModel::dismissDialog,
                 onSave = { viewModel.nameVoice(dialog.voice, it) },
+                people = state.people,
             )
     }
 }

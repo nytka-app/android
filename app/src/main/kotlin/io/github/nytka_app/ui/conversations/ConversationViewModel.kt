@@ -323,6 +323,13 @@ class ConversationViewModel
             }
         }
 
+        /** The server's name suggestions for one voice here, the likeliest first; a role alone is left out. */
+        fun nameGuesses(speakerId: String): List<String> =
+            suggestions
+                .filter { it.speakerId == speakerId && it.named }
+                .sortedByDescending { it.confidence }
+                .map { it.name }
+
         /**
          * The server lists pending suggestions for every conversation (at most 200, no filter), so this keeps those of
          * this one. Any failure, an older server included, leaves no banner and no notice.
