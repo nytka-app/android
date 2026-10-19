@@ -110,13 +110,20 @@ Addresses, tokens and signing secrets are set in a monospaced font.
   grey placeholder cards. When your server cannot be reached the list says **Offline** and that your
   recordings stay on the phone; pull down to try again. Other failures say what failed and that your
   recordings are not affected, with **Retry**. Tasks, People, Memories and Ask use the same states. Open a conversation for its
-  summary, its tasks and the transcript, with the speaker's name in color above each run of words
-  when the transcription provider names speakers. Its ⋮ menu has **Rename** (an empty title restores
+  summary, its tasks and the transcript, with the speaker above each run of words when the
+  transcription provider names speakers. Speakers differ by shape, not colour: you are a **You** tag,
+  a named person is a name led by one of seven marks (disc, square, triangle, diamond, ring, plus,
+  bar) given in order of first appearance, and a voice nobody has named is a saffron **Voice 2** tag
+  with **Who is this?**, which opens the naming dialog. The paragraph being heard gets a darker ground
+  and a pause glyph. Its ⋮ menu has **Rename** (an empty title restores
   the generated one), **Regenerate summary** (not while the conversation is open) and **Delete**.
-  When the server kept the audio (14 days by default, and none for imported conversations), a play
-  bar sits above the transcript: play or pause, the position and length, and a slider. Tap the time
+  When the server kept the audio (14 days by default, and none for imported conversations), a player
+  is docked at the bottom: a plain track with a tick wherever the speaker changes, the position,
+  length and who is talking, **Follow** (the transcript scrolls to the paragraph being heard; on by
+  default), −10 and +10 seconds, play or pause, and the speed (1×, 1.25×, 1.5×, 2×). Tap the time
   beside a paragraph to play from there. Pauses between speech are not stored, so they are skipped.
-  Playback stops when you leave the screen or the app.
+  If the server cannot be reached the player says so in one line and stays. Playback stops when you
+  leave the screen or the app.
   Touch and hold a paragraph to say whose it is: **This is me**, **This is not me**, or **Clear**
   (only where you marked it). Your mark beats the server's guess and shows as "Me · marked"; a line
   the server's voice match or the provider calls yours shows "Me · voice" or "Me · provider". Needs
@@ -129,7 +136,8 @@ Addresses, tokens and signing secrets are set in a monospaced font.
   mark every line that is not yours and read the conversation again. Needs an admin token; without the
   feature there is no chip and no menu entry.
   When the server has a name suggestion for a voice in the conversation ("A voice may be Olena"), a
-  banner above the transcript shows the line that carries it with **Accept** and **Not Olena**.
+  saffron card above the transcript shows the line that carries it with **Accept**, **Not Olena** and
+  **Later**, which only hides the card on this screen (Undo in the snackbar brings it back).
   Accept names the voice, so every line of it shows the name; Not Olena keeps the name from being
   suggested again for that voice. Nothing is applied until you tap. Tap a person's name above a run
   to open their page in the People tab. Needs server 0.14.0 and an admin token.

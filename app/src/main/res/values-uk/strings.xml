@@ -592,7 +592,6 @@
     <string name="title_hint">Залиште порожнім, щоб використати створений заголовок</string>
     <string name="play">Відтворити</string>
     <string name="pause">Пауза</string>
-    <string name="audio_play_failed">Не вдалося відтворити аудіо</string>
 
     <!-- Ask tab -->
     <string name="ask_hint">Запитайте про свої розмови</string>
@@ -663,4 +662,18 @@
         <item quantity="many">Прочитайте ще %d секунд, щоб надіслати.</item>
         <item quantity="other">Прочитайте ще %d секунди, щоб надіслати.</item>
     </plurals>
+||||||| parent of 6830563 (feat: speaker marks, docked audio player and saffron suggestion card)
+    <string name="speaker_you">Ви</string>
+    <string name="speaker_voice_format">Голос %1$d</string>
+    <string name="audio_unreachable">Сервер недоступний, тож аудіо не відтворюється.</string>
+    <string name="audio_follow">Стежити</string>
+    <string name="audio_back_10">Назад на 10 секунд</string>
+    <string name="audio_forward_10">Уперед на 10 секунд</string>
+    <string name="audio_back_10_label">−10</string>
+    <string name="audio_forward_10_label">+10</string>
+    <string name="audio_speed_format">%1$s×</string>
+    <string name="audio_playing_here">Відтворюється тут</string>
+    <string name="suggestion_skip">Пізніше</string>
+    <string name="suggestion_skipped">Залишено на потім</string>
+    <string name="action_undo">Скасувати</string>
 </resources>

@@ -155,7 +155,7 @@ class ConversationViewModelTest {
         val paragraphs = viewModel().state.value.paragraphs
 
         assertEquals(listOf(true, false, true, true, false), paragraphs.map { it.showSpeaker })
-        assertEquals(listOf(0, 0, 1, 0, 0), paragraphs.map { it.speakerColor })
+        assertEquals(listOf(0, 0, 1, 0, 0), paragraphs.map { it.speakerMark })
         assertNull(paragraphs.last().speaker)
     }
 
@@ -349,14 +349,14 @@ class ConversationViewModelTest {
     }
 
     @Test
-    fun `a seventh speaker starts the colors over`() {
-        api.detail = ApiResult.Ok(detail(segments = (1L..7L).map { segment(it, "S$it") }))
+    fun `an eighth speaker starts the marks over`() {
+        api.detail = ApiResult.Ok(detail(segments = (1L..8L).map { segment(it, "S$it") }))
 
         assertEquals(
-            listOf(0, 1, 2, 3, 4, 5, 0),
+            listOf(0, 1, 2, 3, 4, 5, 6, 0),
             viewModel()
                 .state.value.paragraphs
-                .map { it.speakerColor },
+                .map { it.speakerMark },
         )
     }
 
@@ -627,7 +627,10 @@ class ConversationViewModelTest {
     fun `a play bar with the length when the index answers`() {
         withAudio()
 
-        assertEquals(Playback(durationMs = 20_000), viewModel().state.value.playback)
+        assertEquals(
+            Playback(durationMs = 20_000, paragraphStartsMs = listOf(5_000, 10_000)),
+            viewModel().state.value.playback,
+        )
     }
 
     @Test
@@ -637,7 +640,10 @@ class ConversationViewModelTest {
 
         model.rename("New title")
 
-        assertEquals(Playback(durationMs = 20_000), model.state.value.playback)
+        assertEquals(
+            Playback(durationMs = 20_000, paragraphStartsMs = listOf(5_000, 10_000)),
+            model.state.value.playback,
+        )
     }
 
     @Test
@@ -648,7 +654,42 @@ class ConversationViewModelTest {
         model.playFrom(1)
 
         assertEquals(listOf("seek 10000", "play"), player.calls)
-        assertEquals(Playback(20_000, positionMs = 10_000, playing = true), model.state.value.playback)
+        assertEquals(
+            Playback(20_000, 10_000, true, paragraphStartsMs = listOf(5_000, 10_000)),
+            model.state.value.playback,
+        )
+    }
+
+    @Test
+    fun `the speed button steps through 1, 1_25, 1_5 and 2 and wraps`() {
+        withAudio()
+        val model = viewModel()
+
+        repeat(5) { model.cycleSpeed() }
+
+        assertEquals(listOf("speed 1.25", "speed 1.5", "speed 2.0", "speed 1.0", "speed 1.25"), player.calls)
+        assertEquals(
+            1.25f,
+            model.state.value.playback
+                ?.speed,
+        )
+    }
+
+    @Test
+    fun `skip moves the playhead by the step and stays inside the audio`() {
+        withAudio()
+        val model = viewModel()
+
+        model.skip(-10_000)
+        model.skip(10_000)
+        model.skip(15_000)
+
+        assertEquals(listOf("seek 0", "seek 10000", "seek 20000"), player.calls)
+        assertEquals(
+            false,
+            model.state.value.playback
+                ?.playing,
+        )
     }
 
     @Test

@@ -40,6 +40,7 @@ class ExoAudioPlayer(
     override val state: StateFlow<PlayerState> = mutableState.asStateFlow()
     private var player: ExoPlayer? = null
     private var ticker: Job? = null
+    private var speed = 1f
 
     override suspend fun prepare(conversationId: String): Boolean {
         val request = audio.audioRequest(conversationId) ?: return false
@@ -61,6 +62,7 @@ class ExoAudioPlayer(
                 ).setHandleAudioBecomingNoisy(true)
                 .build()
         exo.addListener(listener)
+        exo.setPlaybackSpeed(speed)
         exo.setMediaItem(MediaItem.fromUri(request.url))
         exo.prepare()
         player = exo
@@ -112,6 +114,12 @@ class ExoAudioPlayer(
     override fun seekTo(positionMs: Long) {
         player?.seekTo(positionMs)
         publish()
+    }
+
+    override fun setSpeed(speed: Float) {
+        this.speed = speed
+        player?.setPlaybackSpeed(speed)
+        mutableState.value = mutableState.value.copy(speed = speed)
     }
 
     override fun release() {

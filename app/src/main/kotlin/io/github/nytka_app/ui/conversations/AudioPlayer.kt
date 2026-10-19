@@ -7,6 +7,7 @@ data class PlayerState(
     val playing: Boolean = false,
     val positionMs: Long = 0,
     val failed: Boolean = false,
+    val speed: Float = 1f,
 )
 
 /** The player of one conversation's audio, apart from ExoPlayer so the view model can be tested with a fake. */
@@ -21,6 +22,9 @@ interface AudioPlayer {
     fun pause()
 
     fun seekTo(positionMs: Long)
+
+    /** Plays at [speed] times the pace, pitch kept; it holds across [prepare]. */
+    fun setSpeed(speed: Float)
 
     /** Stops and frees the player; nothing works afterwards. */
     fun release()
