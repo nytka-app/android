@@ -12,7 +12,7 @@ import androidx.media3.datasource.HttpDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import io.github.nytka_app.core.api.CardsClient
+import io.github.nytka_app.core.api.AudioRequest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -25,16 +25,16 @@ import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 
 /**
- * ExoPlayer over the app's OkHttp client with the bearer header, for the clip of a card (`GET /people/cards/...`);
- * no cache, so the clip is never written to disk. The ExoPlayer setup repeats `ExoAudioPlayer.prepare` on purpose:
- * that class is bound to conversations and stays unchanged. Used on the main thread only. Nothing about the clip
- * or the token is logged.
+ * ExoPlayer over the app's OkHttp client with the bearer header, for the clip of a card (`GET /people/cards/...`) or
+ * of a review item (`GET /review/...`), whichever [requests] names; no cache, so the clip is never written to disk.
+ * The ExoPlayer setup repeats `ExoAudioPlayer.prepare` on purpose: that class is bound to conversations and stays
+ * unchanged. Used on the main thread only. Nothing about the clip or the token is logged.
  */
 @OptIn(UnstableApi::class)
 class ExoClipPlayer(
     private val context: Context,
     private val client: OkHttpClient,
-    private val cards: CardsClient,
+    private val requests: suspend (kind: String, id: String) -> AudioRequest?,
 ) : ClipPlayer {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutableState = MutableStateFlow(ClipState())
@@ -51,7 +51,7 @@ class ExoClipPlayer(
         mutableState.value = ClipState(key)
         starting =
             scope.launch {
-                val request = cards.clipRequest(kind, id)
+                val request = requests(kind, id)
                 if (request == null) {
                     mutableState.value = ClipState(key, failure = ClipFailure.Other)
                     return@launch

@@ -7,17 +7,23 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -36,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -43,6 +51,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.FailureKind
+import io.github.nytka_app.core.api.ReviewContextLine
 import io.github.nytka_app.core.api.ReviewItem
 import io.github.nytka_app.ui.DecisionBadge
 import io.github.nytka_app.ui.DecisionCard
@@ -52,6 +61,8 @@ import io.github.nytka_app.ui.ListStateKind
 import io.github.nytka_app.ui.people.AcceptAllButton
 import io.github.nytka_app.ui.people.SuggestionWording
 import io.github.nytka_app.ui.people.addedAllText
+import io.github.nytka_app.ui.people.cards.ClipState
+import io.github.nytka_app.ui.people.cards.clipKey
 import io.github.nytka_app.ui.people.lastSeenText
 import io.github.nytka_app.ui.people.question
 import io.github.nytka_app.ui.unreachable
@@ -83,8 +94,11 @@ fun ReviewScreen(
     viewModel: ReviewViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val clip by viewModel.clip.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val context = LocalContext.current
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.stopClip() }
+    DisposableEffect(Unit) { onDispose { viewModel.stopClip() } }
     LaunchedEffect(state.note) {
         state.note?.let {
             snackbar.showSnackbar(reviewNoticeText(context, it))
@@ -151,6 +165,7 @@ fun ReviewScreen(
                         state.speech,
                         if (state.acceptAllAvailable) state.sameNames[item.id] ?: 1 else 1,
                         !state.busy,
+                        ClipView(state.clips, clip, state.expiredClips, viewModel::toggleClip),
                         onOpenConversation,
                         onOpenPerson,
                         viewModel::accept,
@@ -165,6 +180,14 @@ fun ReviewScreen(
 
 private const val SPEECH_LINES = 4
 
+/** What a card needs of the inbox's clips: [on] is `review-clips` on the server. */
+private class ClipView(
+    val on: Boolean,
+    val state: ClipState,
+    val expired: Set<String>,
+    val onToggle: (ReviewItem) -> Unit,
+)
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ReviewRowView(
@@ -174,6 +197,7 @@ private fun ReviewRowView(
     speech: Boolean,
     sameName: Int,
     acceptAllEnabled: Boolean,
+    clips: ClipView,
     onOpenConversation: (String) -> Unit,
     onOpenPerson: (String) -> Unit,
     onAccept: (ReviewItem) -> Unit,
@@ -207,8 +231,9 @@ private fun ReviewRowView(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            ReviewText(row, item.text)
+            ReviewText(row, item.text, if (clips.on) item.context else emptyList())
         }
+        ReviewClipRow(item, clips)
         FlowRow(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -227,13 +252,74 @@ private fun ReviewRowView(
     }
 }
 
-/** A stretch of speech shows its lines; any other row the text of its line. */
+/** The play button, or the words for audio past retention. A tag rests on no line, so it has no audio to miss. */
+@Composable
+private fun ReviewClipRow(
+    item: ReviewItem,
+    clips: ClipView,
+) {
+    if (!clips.on || item.kind == ReviewItem.KIND_TAG) return
+    val key = clipKey(item.kind, item.id)
+    if (item.clip != null && key !in clips.expired) {
+        ClipButton(clips.state.key == key && clips.state.playing) { clips.onToggle(item) }
+    } else {
+        Text(
+            stringResource(R.string.review_clip_expired),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun ClipButton(
+    playing: Boolean,
+    onClick: () -> Unit,
+) {
+    FilledTonalButton(onClick = onClick) {
+        Icon(
+            if (playing) Icons.Filled.Close else Icons.Filled.PlayArrow,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(stringResource(if (playing) R.string.cards_stop_clip else R.string.cards_play_clip))
+    }
+}
+
+/** The lines around the evidence, oldest first; the evidence line stands out. */
+@Composable
+private fun ContextLines(lines: List<ReviewContextLine>) {
+    val someone = stringResource(R.string.review_unknown_speaker)
+    val colors = MaterialTheme.colorScheme
+    lines.forEach { line ->
+        val speaker =
+            line.personName?.takeIf(String::isNotBlank)
+                ?: line.speaker?.takeIf(String::isNotBlank)
+                ?: someone
+        Text(
+            stringResource(R.string.review_context_line_format, speaker, line.text),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = if (line.evidence) FontWeight.SemiBold else null,
+            color = if (line.evidence) colors.primary else colors.onSurfaceVariant,
+            maxLines = if (line.evidence) 4 else 2,
+        )
+    }
+}
+
+/**
+ * The lines around the evidence where the server sends them; else a stretch of speech shows its lines, any other row
+ * the text of its line.
+ */
 @Composable
 private fun ReviewText(
     row: ReviewRow,
     text: String,
+    context: List<ReviewContextLine>,
 ) {
-    if (row is ReviewRow.Speech) {
+    if (context.isNotEmpty()) {
+        ContextLines(context)
+    } else if (row is ReviewRow.Speech) {
         row.lines.take(SPEECH_LINES).forEach {
             Text(stringResource(R.string.source_quote, it), style = MaterialTheme.typography.bodyMedium, maxLines = 2)
         }
@@ -282,6 +368,7 @@ internal fun reviewNoticeText(
         is ReviewNotice.MergedInto -> context.getString(R.string.role_merged_format, notice.name)
         is ReviewNotice.AddedAll -> addedAllText(context, notice.name, notice.accepted, notice.skipped)
         ReviewNotice.AcceptAllDisagree -> context.getString(R.string.accept_all_disagree)
+        ReviewNotice.ClipFailed -> context.getString(R.string.cards_clip_failed)
         is ReviewNotice.Failed ->
             when {
                 notice.kind == FailureKind.NotFound && notice.item -> context.getString(R.string.item_no_longer_exists)

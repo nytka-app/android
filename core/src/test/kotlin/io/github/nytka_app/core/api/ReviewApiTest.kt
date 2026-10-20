@@ -73,6 +73,38 @@ class ReviewApiTest {
         }
 
     @Test
+    fun `review decodes the clip and the context lines`() =
+        runTest {
+            answer(
+                200,
+                """{"items":[{"kind":"name","id":"s1","text":"I am Olena","proposal":{"name":"Olena"},
+                "clip":{"url":"/api/v1/review/name/s1/clip","startMs":1000,"endMs":9000},
+                "context":[{"speaker":"Voice A","personName":null,"text":"Hi","startedAt":"2026-10-04T09:00:00Z","evidence":false},
+                {"speaker":"Voice B","personName":"Olena","text":"I am Olena","startedAt":"2026-10-04T09:00:02Z","evidence":true}]},
+                {"kind":"tag","id":"t1","clip":null,"context":[]}]}""",
+            )
+
+            val items = ok(api.review(200))
+
+            assertEquals(ReviewClip("/api/v1/review/name/s1/clip", 1000, 9000), items[0].clip)
+            assertEquals(listOf(false, true), items[0].context.map { it.evidence })
+            assertEquals("Voice A", items[0].context[0].speaker)
+            assertEquals("Olena", items[0].context[1].personName)
+            assertNull(items[1].clip)
+            assertEquals(emptyList<ReviewContextLine>(), items[1].context)
+        }
+
+    @Test
+    fun `the clip request names the item's route and makes no call`() =
+        runTest {
+            val request = api.clipRequest("name", "s1")!!
+
+            assertEquals(server.url("/api/v1/review/name/s1/clip").toString(), request.url)
+            assertEquals("Bearer token-1", request.authorization)
+            assertEquals(0, server.requestCount)
+        }
+
+    @Test
     fun `an item with its optional fields missing still decodes`() =
         runTest {
             answer(200, """{"items":[{"kind":"label","id":"42"}]}""")

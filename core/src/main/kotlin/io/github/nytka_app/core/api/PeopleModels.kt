@@ -158,7 +158,31 @@ data class SpeechLine(
     val text: String = "",
 )
 
-/** One thing waiting for an answer. [id] is a guid, or a segment number for a `label`. */
+/** The stretch of audio a review item's clip covers; the app fetches the clip by the item's route, not by [url]. */
+@Serializable
+data class ReviewClip(
+    val url: String = "",
+    val startMs: Long = 0,
+    val endMs: Long = 0,
+)
+
+/**
+ * A line around the one a review item rests on ([evidence] true). [personName] is set once the speaker is named,
+ * else [speaker] holds the speaker's label.
+ */
+@Serializable
+data class ReviewContextLine(
+    val speaker: String? = null,
+    val personName: String? = null,
+    val text: String = "",
+    val startedAt: String = "",
+    val evidence: Boolean = false,
+)
+
+/**
+ * One thing waiting for an answer. [id] is a guid, or a segment number for a `label`. [clip] and [context] come from
+ * a server that lists `review-clips`; [clip] is null there once the audio is past retention.
+ */
 @Serializable
 data class ReviewItem(
     val kind: String,
@@ -168,6 +192,8 @@ data class ReviewItem(
     val at: String = "",
     val text: String = "",
     val proposal: ReviewProposal = ReviewProposal(),
+    val clip: ReviewClip? = null,
+    val context: List<ReviewContextLine> = emptyList(),
 ) {
     companion object {
         const val KIND_NAME = "name"

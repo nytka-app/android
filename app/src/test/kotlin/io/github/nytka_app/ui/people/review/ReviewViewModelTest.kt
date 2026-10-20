@@ -7,10 +7,13 @@ import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.NameSuggestion
 import io.github.nytka_app.core.api.ReviewClient
+import io.github.nytka_app.core.api.ReviewClip
 import io.github.nytka_app.core.api.ReviewItem
 import io.github.nytka_app.core.api.ReviewProposal
 import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.SpeechLine
+import io.github.nytka_app.ui.people.cards.ClipFailure
+import io.github.nytka_app.ui.people.cards.FakeClipPlayer
 import io.github.nytka_app.ui.tags.FakeTags
 import io.github.nytka_app.ui.tags.proposal
 import org.junit.Assert.assertEquals
@@ -86,7 +89,9 @@ class ReviewViewModelTest {
 
     private val tags = FakeTags()
 
-    private fun newViewModel() = ReviewViewModel(api, InfoClient { info }, tags)
+    private val player = FakeClipPlayer()
+
+    private fun newViewModel() = ReviewViewModel(api, InfoClient { info }, tags, player)
 
     private fun failure(kind: FailureKind) = ApiResult.Failure(kind, "The server answered.")
 
@@ -593,5 +598,69 @@ class ReviewViewModelTest {
             viewModel.state.value.items
                 .isEmpty(),
         )
+    }
+
+    private val clipped = name.copy(clip = ReviewClip("/api/v1/review/name/g1/clip", 0, 8000))
+
+    @Test
+    fun `clips are on only where the server lists review-clips`() {
+        api.list = ApiResult.Ok(listOf(clipped))
+        assertFalse(newViewModel().state.value.clips)
+
+        info = ApiResult.Ok(ServerInfo("0.30.0", 1, features = listOf("review", "review-clips")))
+        assertTrue(newViewModel().state.value.clips)
+    }
+
+    @Test
+    fun `toggling plays an item's clip, stops it, and one clip plays at a time`() {
+        api.list = ApiResult.Ok(listOf(clipped, voice))
+        val viewModel = newViewModel()
+
+        viewModel.toggleClip(clipped)
+        assertEquals("name/g1", viewModel.clip.value.key)
+        viewModel.toggleClip(voice)
+        assertEquals("voice/g2", viewModel.clip.value.key)
+        viewModel.toggleClip(voice)
+        assertNull(viewModel.clip.value.key)
+        assertEquals(listOf("play name/g1", "stop", "play voice/g2", "stop"), player.calls)
+    }
+
+    @Test
+    fun `a 404 at play time marks the item's audio as past retention, without a notice`() {
+        api.list = ApiResult.Ok(listOf(clipped))
+        val viewModel = newViewModel()
+        viewModel.toggleClip(clipped)
+
+        player.fail(ClipFailure.Gone)
+
+        assertEquals(setOf("name/g1"), viewModel.state.value.expiredClips)
+        assertNull(viewModel.state.value.note)
+        assertNull(viewModel.clip.value.key)
+    }
+
+    @Test
+    fun `any other clip failure is a notice`() {
+        api.list = ApiResult.Ok(listOf(clipped))
+        val viewModel = newViewModel()
+        viewModel.toggleClip(clipped)
+
+        player.fail(ClipFailure.Other)
+
+        assertEquals(ReviewNotice.ClipFailed, viewModel.state.value.note)
+        assertTrue(
+            viewModel.state.value.expiredClips
+                .isEmpty(),
+        )
+    }
+
+    @Test
+    fun `answering the item that plays stops its clip`() {
+        api.list = ApiResult.Ok(listOf(clipped, voice))
+        val viewModel = newViewModel()
+        viewModel.toggleClip(clipped)
+
+        viewModel.accept(clipped)
+
+        assertNull(viewModel.clip.value.key)
     }
 }
