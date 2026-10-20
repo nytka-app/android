@@ -80,7 +80,8 @@ class ReviewApiTest {
                 """{"items":[{"kind":"name","id":"s1","text":"I am Olena","proposal":{"name":"Olena"},
                 "clip":{"url":"/api/v1/review/name/s1/clip","startMs":1000,"endMs":9000},
                 "context":[{"speaker":"Voice A","personName":null,"text":"Hi","startedAt":"2026-10-04T09:00:00Z","evidence":false},
-                {"speaker":"Voice B","personName":"Olena","text":"I am Olena","startedAt":"2026-10-04T09:00:02Z","evidence":true}]},
+                {"segmentId":8,"speaker":"SPEAKER_4","personName":"Olena","isUser":false,"text":"I am Olena",
+                "startedAt":"2026-10-04T09:00:02Z","evidence":true}]},
                 {"kind":"tag","id":"t1","clip":null,"context":[]}]}""",
             )
 
@@ -90,6 +91,7 @@ class ReviewApiTest {
             assertEquals(listOf(false, true), items[0].context.map { it.evidence })
             assertEquals("Voice A", items[0].context[0].speaker)
             assertEquals("Olena", items[0].context[1].personName)
+            assertEquals(8L, items[0].context[1].segmentId)
             assertNull(items[1].clip)
             assertEquals(emptyList<ReviewContextLine>(), items[1].context)
         }

@@ -287,16 +287,18 @@ private fun ClipButton(
     }
 }
 
-/** The lines around the evidence, oldest first; the evidence line stands out. */
+/** The lines around the evidence, oldest first; the evidence lines stand out. */
 @Composable
 private fun ContextLines(lines: List<ReviewContextLine>) {
-    val someone = stringResource(R.string.review_unknown_speaker)
     val colors = MaterialTheme.colorScheme
-    lines.forEach { line ->
+    lines.zip(ContextSpeaker.of(lines)).forEach { (line, who) ->
         val speaker =
-            line.personName?.takeIf(String::isNotBlank)
-                ?: line.speaker?.takeIf(String::isNotBlank)
-                ?: someone
+            when (who) {
+                ContextSpeaker.You -> stringResource(R.string.speaker_you)
+                is ContextSpeaker.Person -> who.name
+                is ContextSpeaker.Voice -> stringResource(R.string.speaker_voice_format, who.number)
+                ContextSpeaker.Someone -> stringResource(R.string.review_unknown_speaker)
+            }
         Text(
             stringResource(R.string.review_context_line_format, speaker, line.text),
             style = MaterialTheme.typography.bodyMedium,
