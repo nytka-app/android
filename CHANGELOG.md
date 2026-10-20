@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.22.0](https://github.com/nytka-app/android/compare/v0.21.0...v0.22.0) (2026-10-20)
+
+
+### Features
+
+* **people:** show names the server applied itself, with one-tap Undo ([#126](https://github.com/nytka-app/android/issues/126)) ([d4965ef](https://github.com/nytka-app/android/commit/d4965ef58d603d72b14a83643560b543e29a2c3e))
+* **review:** play each inbox card's clip and show the lines around it ([#125](https://github.com/nytka-app/android/issues/125)) ([8088082](https://github.com/nytka-app/android/commit/8088082d2bfba3078b661bad9f4840ebd4688a28))
+
 ## [0.21.0](https://github.com/nytka-app/android/compare/v0.20.0...v0.21.0) (2026-10-20)
 
 
