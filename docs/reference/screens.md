@@ -20,7 +20,9 @@ Addresses, tokens and signing secrets are set in a monospaced font.
   transcription provider names speakers. Speakers differ by shape, not colour: you are a **You** tag,
   a named person is a name led by one of seven marks (disc, square, triangle, diamond, ring, plus,
   bar) given in order of first appearance, and a voice nobody has named is a saffron **Voice 2** tag
-  with **Who is this?**, which opens the naming dialog. The paragraph being heard gets a darker ground
+  with **Who is this?**, which opens the naming dialog. On a server that lists `auto-names`, a speaker
+  the server named by itself carries "· named for you" and **Undo**: one tap takes the name back, reads
+  the transcript again and confirms in a snackbar. The paragraph being heard gets a darker ground
   and a pause glyph. Its ⋮ menu has **Rename** (an empty title restores
   the generated one), **Regenerate summary** (not while the conversation is open) and **Delete**.
   When the server kept the audio (14 days by default, and none for imported conversations), a player
@@ -109,6 +111,11 @@ Addresses, tokens and signing secrets are set in a monospaced font.
   to three lines before and after it with who said each, the line itself in bold. Once the audio is past
   the server's retention, the card says "The audio is past retention." in place of the button. Tags
   rest on no line and have neither.
+  A server that lists `auto-names` names a voice by itself when someone introduces themselves or is
+  addressed by name with enough confidence. Those names of the last 7 days sit above the questions under
+  **Named for you**: the name, when, the line that carried it, **Play clip** where the server lists
+  `review-clips`, and **Undo**, one tap, confirmed in a snackbar ("Took back the name Olena."). The
+  inbox icon shows while any are there, with a count only for what waits for an answer.
   **Known by a role.** A person who has a role and no name yet shows their role as the name with a
   second line "Name not known yet", in the list and on their page, whose ⋮ then has **Add name** in
   place of Rename. It opens the usual rename dialog, empty; saving sets the name. A name someone else
@@ -129,7 +136,9 @@ Addresses, tokens and signing secrets are set in a monospaced font.
   **Skip** (hidden for 7 days) or **Not a person**. On a match ("Is this Olena?") tap **Yes**,
   **Not them** or **Skip**. Nothing is named until you tap. Needs an admin token.
   **⋮ → People settings** edits the server's `people` settings (`people.suggestNames`, `people.facts`,
-  `people.voiceMatching`, `people.voiceThreshold`) without developer mode; it needs an admin token.
+  `people.voiceMatching`, `people.voiceThreshold`, and on a server with `auto-names`
+  `people.autoApplyNames` and `people.autoApplyConfidence`, 0.5 to 1, with a decimal keyboard) without
+  developer mode; it needs an admin token. Under `people.autoApplyNames` it says where those names show.
   Under `people.voiceMatching` it says that recording people without their consent is illegal in some
   places, and the server's refusal (such as "Enroll your voice first.") shows under the switch in the
   server's English. The same screen has **Delete all voice groups and voiceprints**, which asks first and

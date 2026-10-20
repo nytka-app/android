@@ -88,7 +88,15 @@ data class NameSuggestion(
      * sends none.
      */
     val sameName: Int = 1,
-)
+    /** When it was answered; for an auto-applied one, when the server applied it (`auto-names`). */
+    val decidedAt: String? = null,
+    /** The audio around [evidence] (`review-clips`), fetched by the inbox route of kind `name`. */
+    val clip: ReviewClip? = null,
+) {
+    companion object {
+        const val TARGET_SPEAKER = "speaker"
+    }
+}
 
 /** What accepting every suggestion of a name did: [personId] is the one person; [skipped] no longer applied. */
 data class AcceptedByName(

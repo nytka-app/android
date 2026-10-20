@@ -123,6 +123,7 @@ private fun SettingRow(
                 listOfNotNull(
                     stringResource(R.string.set_by_server_env).takeIf { locked },
                     stringResource(R.string.people_voice_matching_duty).takeIf { setting.key == VOICE_MATCHING_KEY },
+                    stringResource(R.string.people_auto_apply_note).takeIf { setting.key == AUTO_APPLY_KEY },
                 )
             Column {
                 SettingsRow(
@@ -161,9 +162,13 @@ private fun fieldHint(setting: ServerSetting): String? =
 /** The setting whose switch carries the legal-duty sentence. */
 private const val VOICE_MATCHING_KEY = "people.voiceMatching"
 
+/** The setting whose switch says where auto-applied names show. */
+private const val AUTO_APPLY_KEY = "people.autoApplyNames"
+
 private fun keyboardFor(type: String): KeyboardType =
     when (type) {
         ServerSetting.TYPE_INT -> KeyboardType.Number
+        ServerSetting.TYPE_NUMBER -> KeyboardType.Decimal
         "url" -> KeyboardType.Uri
         else -> KeyboardType.Text
     }

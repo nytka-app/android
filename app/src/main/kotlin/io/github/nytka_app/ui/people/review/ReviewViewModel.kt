@@ -6,21 +6,26 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.InfoClient
+import io.github.nytka_app.core.api.NameSuggestion
 import io.github.nytka_app.core.api.ReviewClient
 import io.github.nytka_app.core.api.ReviewItem
 import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.TagsClient
 import io.github.nytka_app.di.ReviewClips
+import io.github.nytka_app.ui.people.AutoNameBook
+import io.github.nytka_app.ui.people.UndoNotice
 import io.github.nytka_app.ui.people.cards.ClipFailure
 import io.github.nytka_app.ui.people.cards.ClipPlayer
 import io.github.nytka_app.ui.people.cards.ClipState
 import io.github.nytka_app.ui.people.cards.clipKey
 import io.github.nytka_app.ui.people.merged
+import io.github.nytka_app.ui.people.recent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Clock
 import javax.inject.Inject
 import kotlin.math.roundToInt
 
@@ -155,6 +160,10 @@ data class ReviewUiState(
     val clips: Boolean = false,
     /** [clipKey] of items whose clip answered `404` while this screen was open: their audio is past retention. */
     val expiredClips: Set<String> = emptySet(),
+    /** Names the server applied by itself lately (`auto-names`), newest first, for "Named for you". */
+    val autoNamed: List<NameSuggestion> = emptyList(),
+    /** The result of the last undo, for a snackbar. */
+    val undoNotice: UndoNotice? = null,
     /** `sameName` of each name item that shares its name with another, by item id. */
     val sameNames: Map<String, Int> = emptyMap(),
     /** False once the server answered 404 to "accept all" while the rows were pending: it lacks the route. */
@@ -176,12 +185,15 @@ class ReviewViewModel
         private val info: InfoClient,
         private val tags: TagsClient,
         @ReviewClips private val player: ClipPlayer,
+        private val clock: Clock,
     ) : ViewModel() {
         private val mutableState = MutableStateFlow(ReviewUiState())
         val state: StateFlow<ReviewUiState> = mutableState.asStateFlow()
 
         /** Items whose answer is on its way: a read in between must not bring them back. */
         private val pending = mutableSetOf<String>()
+
+        private val autoNames = AutoNameBook(api) { it.recent(clock) }
 
         val clip: StateFlow<ClipState> = player.state
 
@@ -217,11 +229,15 @@ class ReviewViewModel
                         }
                     val people = if (tagsOn) personNames(items) else emptyMap()
                     val same = sameNames(items)
+                    if (features.has(ServerInfo.FEATURE_AUTO_NAMES)) autoNames.load() else autoNames.clear()
+                    val named = autoNames.named
                     val playing = player.state.value.key
-                    if (playing != null && items.none { key(it) == playing }) player.stop()
+                    val keys = items.map(::key) + named.map { clipKey(ReviewItem.KIND_NAME, it.id) }
+                    if (playing != null && playing !in keys) player.stop()
                     mutableState.update {
                         it.copy(
                             items = items,
+                            autoNamed = named,
                             tagPeople = people,
                             sameNames = same,
                             loading = false,
@@ -236,6 +252,20 @@ class ReviewViewModel
                 is ApiResult.Failure -> unavailable(result)
             }
         }
+
+        /** Takes back a name the server applied; the card goes at once and its clip stops. Only a tap gets here. */
+        fun undo(suggestion: NameSuggestion) {
+            viewModelScope.launch {
+                val notice =
+                    autoNames.undo(suggestion) {
+                        if (player.state.value.key == clipKey(ReviewItem.KIND_NAME, suggestion.id)) player.stop()
+                        mutableState.update { it.copy(autoNamed = autoNames.named) }
+                    } ?: return@launch
+                mutableState.update { it.copy(autoNamed = autoNames.named, undoNotice = notice) }
+            }
+        }
+
+        fun undoNoticeShown() = mutableState.update { it.copy(undoNotice = null) }
 
         /**
          * The inbox row of a person's tag names the person, which the review list does not carry but the list of
@@ -277,14 +307,21 @@ class ReviewViewModel
         }
 
         /** Plays the item's clip, or stops it when it already plays; another item's clip stops first. */
-        fun toggleClip(item: ReviewItem) {
-            val key = key(item)
+        fun toggleClip(item: ReviewItem) = toggleClip(item.kind, item.id)
+
+        /** As for an item: an auto-applied name's clip is that of the inbox's `name` item of the same id. */
+        fun toggleClip(suggestion: NameSuggestion) = toggleClip(ReviewItem.KIND_NAME, suggestion.id)
+
+        private fun toggleClip(
+            kind: String,
+            id: String,
+        ) {
             val current = player.state.value
-            if (current.key == key && current.failure == null) {
+            if (current.key == clipKey(kind, id) && current.failure == null) {
                 player.stop()
             } else {
                 if (current.key != null) player.stop()
-                player.play(item.kind, item.id)
+                player.play(kind, id)
             }
         }
 

@@ -107,6 +107,42 @@ class ReviewApiTest {
         }
 
     @Test
+    fun `auto-applied names ask for their status and limit and decode the apply time and clip`() =
+        runTest {
+            answer(
+                200,
+                """{"items":[{"id":"s1","conversationId":"c1","target":"speaker","speakerId":"sp1","name":"Olena",
+                "personId":"p1","confidence":0.92,
+                "evidence":{"segmentId":7,"startedAt":"2026-10-20T09:00:00Z","text":"I am Olena"},
+                "decidedAt":"2026-10-20T09:05:00Z",
+                "clip":{"url":"/api/v1/review/name/s1/clip","startMs":0,"endMs":6000}}]}""",
+            )
+
+            val item = ok(api.autoApplied(50)).single()
+
+            assertEquals("2026-10-20T09:05:00Z", item.decidedAt)
+            assertEquals("sp1", item.speakerId)
+            assertEquals(6000L, item.clip?.endMs)
+            val request = server.takeRequest()
+            assertEquals("/api/v1/people/suggestions", request.url.encodedPath)
+            assertEquals("auto_applied", request.url.queryParameter("status"))
+            assertEquals("50", request.url.queryParameter("limit"))
+        }
+
+    @Test
+    fun `undo posts to the suggestion's route and tells a 409 apart`() =
+        runTest {
+            answer(204)
+            answer(409)
+
+            assertEquals(Unit, ok(api.undo("s1")))
+            assertEquals(FailureKind.Conflict, kind(api.undo("s1")))
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertEquals("/api/v1/people/suggestions/s1/undo", request.url.encodedPath)
+        }
+
+    @Test
     fun `an item with its optional fields missing still decodes`() =
         runTest {
             answer(200, """{"items":[{"kind":"label","id":"42"}]}""")

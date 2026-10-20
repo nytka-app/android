@@ -385,6 +385,13 @@
     <string name="review_someone">someone</string>
     <string name="review_clip_expired">The audio is past retention.</string>
     <string name="review_unknown_speaker">Someone</string>
+    <string name="auto_named_title">Named for you</string>
+    <string name="auto_named_body">Nytka named these voices itself. Undo any that are wrong.</string>
+    <string name="auto_named_card_format">Named %1$s</string>
+    <string name="auto_named_marker">named for you</string>
+    <string name="auto_named_undo_format">Undo the name %1$s</string>
+    <string name="auto_named_undone_format">Took back the name %1$s.</string>
+    <string name="auto_named_already_undone">This name was already taken back.</string>
     <string name="review_context_line_format">%1$s: %2$s</string>
     <string name="review_name_question_format">Is this %1$s?</string>
     <string name="review_label_yours">Did you say this?</string>
@@ -408,6 +415,7 @@
     <!-- People: settings (A-P7) -->
     <string name="people_settings_title">People settings</string>
     <string name="people_voice_matching_duty">Recording people without their consent is illegal in some places. Grouping voices keeps a voice model of each person you name; turn it on only where you may.</string>
+    <string name="people_auto_apply_note">Nytka names a voice itself when it hears a name with at least people.autoApplyConfidence (0.5 to 1). Each one shows under Named for you in the review inbox, with Undo.</string>
     <string name="voice_models_title">Voice models in Nytka</string>
     <string name="voice_models_explanation">Nytka keeps voice groups and a voiceprint for each person you named, on your server. This deletes all of them. It does not touch the voice models the transcription service keeps; to remove one of those, delete the person and choose to remove the voice model.</string>
     <string name="voice_models_delete">Delete all voice groups and voiceprints</string>

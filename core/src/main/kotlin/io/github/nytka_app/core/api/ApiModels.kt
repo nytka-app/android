@@ -27,6 +27,7 @@ data class ServerInfo(
         const val FEATURE_TASK_CREATE = "task-create"
         const val FEATURE_LEDGER = "ledger"
         const val FEATURE_REVIEW_CLIPS = "review-clips"
+        const val FEATURE_AUTO_NAMES = "auto-names"
 
         const val SCOPE_ADMIN = "admin"
         const val SCOPE_READ = "read"
@@ -184,6 +185,7 @@ data class ServerSetting(
         const val TYPE_SECRET = "secret"
         const val TYPE_INT = "int"
         const val TYPE_BOOL = "bool"
+        const val TYPE_NUMBER = "number"
     }
 }
 

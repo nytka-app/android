@@ -57,6 +57,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
@@ -65,6 +68,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
+import io.github.nytka_app.core.api.NameSuggestion
 import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.ui.NytkaTextField
 import io.github.nytka_app.ui.names.NameChips
@@ -73,6 +77,8 @@ import io.github.nytka_app.ui.names.filled
 import io.github.nytka_app.ui.names.knownPeople
 import io.github.nytka_app.ui.names.nameSuggestions
 import io.github.nytka_app.ui.people.RoleNoticeEffect
+import io.github.nytka_app.ui.people.UndoNoticeEffect
+import io.github.nytka_app.ui.people.names
 import io.github.nytka_app.ui.tags.TagNoticeEffect
 import io.github.nytka_app.ui.tags.tagChipsItem
 import io.github.nytka_app.ui.tags.tagProposalsItem
@@ -105,6 +111,7 @@ fun ConversationScreen(
     RoleNoticeEffect(state.roleNotice, snackbar, viewModel::roleNoticeShown)
     TagNoticeEffect(state.tagNotice, snackbar, viewModel::tagNoticeShown)
     SpeechNoticeEffect(state.speechNotice, snackbar, viewModel::speechNoticeShown)
+    UndoNoticeEffect(state.undoNotice, snackbar, viewModel::undoNoticeShown)
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.pause() }
     val playback = state.playback
     val heard = playback.heardParagraph()
@@ -225,6 +232,7 @@ fun ConversationScreen(
                 items(state.looseBookmarks) { mark -> BookmarkLine(mark, viewModel::setBookmarkNote) }
                 transcript(
                     state.paragraphs,
+                    AutoNamedMarks(state.autoNamed, viewModel::undoAutoName),
                     playingIndex = heard,
                     canPlay = state.playback != null,
                     onName = { naming = it },
@@ -290,6 +298,7 @@ fun ConversationScreen(
 /** The paragraphs; the time of one plays from there when [canPlay], and the one at [playingIndex] is marked. */
 private fun LazyListScope.transcript(
     paragraphs: List<Paragraph>,
+    autoNamed: AutoNamedMarks,
     playingIndex: Int?,
     canPlay: Boolean,
     onName: (Pair<String, String>) -> Unit,
@@ -305,6 +314,7 @@ private fun LazyListScope.transcript(
     itemsIndexed(paragraphs) { i, paragraph ->
         ParagraphItem(
             paragraph,
+            autoNamed,
             voiceNumber = unknown.indexOf(paragraph.speaker) + 1,
             playing = i == playingIndex,
             onName,
@@ -344,6 +354,7 @@ private fun InfoCard(
 @Composable
 private fun SpeakerLabel(
     paragraph: Paragraph,
+    autoNamed: AutoNamedMarks,
     voiceNumber: Int,
     onName: (Pair<String, String>) -> Unit,
     onOpenPerson: (String) -> Unit,
@@ -402,6 +413,7 @@ private fun SpeakerLabel(
                     )
                 }
         }
+        if (paragraph.isUser != true) autoNamed.of(paragraph)?.let { AutoNamedMarker(it, autoNamed.onUndo) }
         paragraph.sourceNote?.let {
             val note =
                 when (it) {
@@ -417,6 +429,37 @@ private fun SpeakerLabel(
             )
         }
     }
+}
+
+/** The auto-applied names of this conversation and how to take one back. */
+private class AutoNamedMarks(
+    val named: List<NameSuggestion>,
+    val onUndo: (NameSuggestion) -> Unit,
+) {
+    fun of(paragraph: Paragraph) = named.firstOrNull { it.names(paragraph.voiceId, paragraph.personId) }
+}
+
+/** "named for you" beside a speaker the server named by itself, with a one-tap Undo. */
+@Composable
+private fun AutoNamedMarker(
+    suggestion: NameSuggestion,
+    onUndo: (NameSuggestion) -> Unit,
+) {
+    Text(
+        "· " + stringResource(R.string.auto_named_marker),
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    val undoLabel = stringResource(R.string.auto_named_undo_format, suggestion.name)
+    Text(
+        stringResource(R.string.action_undo),
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier =
+            Modifier
+                .clickable(role = Role.Button) { onUndo(suggestion) }
+                .semantics { contentDescription = undoLabel },
+    )
 }
 
 @Composable
@@ -439,6 +482,7 @@ private fun SpeakerTag(
 @Composable
 private fun ParagraphItem(
     paragraph: Paragraph,
+    autoNamed: AutoNamedMarks,
     voiceNumber: Int,
     playing: Boolean,
     onName: (Pair<String, String>) -> Unit,
@@ -459,7 +503,7 @@ private fun ParagraphItem(
         },
     ) {
         if (paragraph.showSpeaker) {
-            SpeakerLabel(paragraph, voiceNumber, onName = onName, onOpenPerson = onOpenPerson)
+            SpeakerLabel(paragraph, autoNamed, voiceNumber, onName = onName, onOpenPerson = onOpenPerson)
         }
         Row {
             Column(
