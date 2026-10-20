@@ -23,14 +23,14 @@ class MuteFilterTest {
     ) = TimedFrames(frames, TimeState(session, nextFrame = nextFrame))
 
     @Test
-    fun `covers a muted stretch and 2 seconds either side`() {
+    fun `covers a muted stretch and 6 seconds either side, past the 5 s of clock skew left uncorrected`() {
         val filter = MuteFilter(listOf(MuteChange(10_000, true), MuteChange(20_000, false)))
 
-        assertFalse(filter.covers(7_999))
-        assertTrue(filter.covers(8_000))
+        assertFalse(filter.covers(3_999))
+        assertTrue(filter.covers(4_000))
         assertTrue(filter.covers(15_000))
-        assertTrue(filter.covers(22_000))
-        assertFalse(filter.covers(22_001))
+        assertTrue(filter.covers(26_000))
+        assertFalse(filter.covers(26_001))
     }
 
     @Test
@@ -43,7 +43,7 @@ class MuteFilterTest {
     @Test
     fun `nothing is muted before the first change or with no log`() {
         assertFalse(MuteFilter(emptyList()).covers(5))
-        assertFalse(MuteFilter(listOf(MuteChange(10_000, false), MuteChange(20_000, true))).covers(15_000))
+        assertFalse(MuteFilter(listOf(MuteChange(10_000, false), MuteChange(20_000, true))).covers(13_999))
     }
 
     @Test

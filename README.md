@@ -355,7 +355,7 @@ which takes a while, and **Discard…** frees it on the pendant unread, after a 
   refuses (`400`, `409` or `413`) stays parked on the phone, and the pendant keeps its copy.
 - **Muted stretches are dropped.** The pendant keeps no mute state, so it records while the phone is
   away whatever you chose. Nytka logs every mute change and, before it uploads anything, drops each
-  stored frame within 2 seconds of a muted stretch. A mute stays open until you unmute, so it covers
+  stored frame within 6 seconds of a muted stretch. A mute stays open until you unmute, so it covers
   a whole absence, and muted audio never reaches the server.
 - **The pendant's clock.** At each connection to a pendant that supports offline sync, Nytka sets
   its clock from the phone. The pendant stamps stored audio with that clock.
