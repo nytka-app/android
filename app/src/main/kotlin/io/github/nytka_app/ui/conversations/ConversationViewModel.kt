@@ -707,7 +707,7 @@ class ConversationViewModel
             viewModelScope.launch {
                 when (val result = api.deleteConversation(id)) {
                     is ApiResult.Ok -> mutableState.update { it.copy(deleted = true) }
-                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.message) }
+                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.itemNotice()) }
                 }
             }
         }
@@ -716,7 +716,7 @@ class ConversationViewModel
             viewModelScope.launch {
                 when (val result = api.transcriptionsJson(id)) {
                     is ApiResult.Ok -> mutableState.update { it.copy(raw = result.value) }
-                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.message) }
+                    is ApiResult.Failure -> mutableState.update { it.copy(error = result.itemNotice()) }
                 }
             }
         }

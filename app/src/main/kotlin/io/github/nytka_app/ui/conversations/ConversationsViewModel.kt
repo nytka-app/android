@@ -15,6 +15,7 @@ import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.SpeechClient
 import io.github.nytka_app.core.api.StatusClient
 import io.github.nytka_app.core.api.TagsClient
+import io.github.nytka_app.ui.notice
 import io.github.nytka_app.ui.tags.ListEmpty
 import io.github.nytka_app.ui.tags.listEmpty
 import io.github.nytka_app.ui.unreachable
@@ -292,7 +293,7 @@ class ConversationsViewModel
                                 it.copy(
                                     loading = false,
                                     refreshing = false,
-                                    error = result.message,
+                                    error = result.notice(),
                                     offline = result.kind.unreachable,
                                 )
                             }

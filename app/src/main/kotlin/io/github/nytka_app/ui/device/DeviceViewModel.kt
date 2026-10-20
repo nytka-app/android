@@ -31,6 +31,7 @@ import io.github.nytka_app.ui.PermissionAnswer
 import io.github.nytka_app.ui.after
 import io.github.nytka_app.ui.firstrun.READ_TOKEN_REFUSED
 import io.github.nytka_app.ui.mustAskForLocalNetwork
+import io.github.nytka_app.ui.notice
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -246,7 +247,7 @@ class DeviceViewModel
                 is ApiResult.Failure ->
                     local.update {
                         it.copy(
-                            serverState = result.message,
+                            serverState = result.notice(),
                             apiVersion = null,
                             apiMismatch = false,
                             serverSync = null,
