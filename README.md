@@ -352,7 +352,7 @@ which takes a while, and **Discard…** frees it on the pendant unread, after a 
   discard. If you kill Nytka or switch Bluetooth off in the middle of a sync, the next sync carries on
   without repeating text. Firmware 3.0.21 also frees a little on its own during a transfer, so an
   interruption can cost a few seconds, which the card counts as *Lost*. Stored audio your server
-  refuses (`400`, `409` or `413`) stays parked on the phone, and the pendant keeps its copy.
+  refuses for good (`400`, `409`, `413`, or a `4xx` from a proxy in front of the server) stays parked on the phone, and the pendant keeps its copy.
 - **Muted stretches are dropped.** The pendant keeps no mute state, so it records while the phone is
   away whatever you chose. Nytka logs every mute change and, before it uploads anything, drops each
   stored frame within 2 seconds of a muted stretch. A mute stays open until you unmute, so it covers

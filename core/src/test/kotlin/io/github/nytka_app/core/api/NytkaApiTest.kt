@@ -71,6 +71,17 @@ class NytkaApiTest {
         }
 
     @Test
+    fun `a 4xx the server does not use drops one chunk, unless it hits every chunk alike`() =
+        runTest {
+            listOf(415, 422, 404, 405, 408, 425, 429).forEach { answer(it) }
+
+            val results = List(7) { api.upload(byteArrayOf(1)) }
+
+            assertEquals(listOf(415, 422), results.take(2).map { (it as UploadResult.Dropped).code })
+            results.drop(2).forEach { assertTrue(it is UploadResult.Retry) }
+        }
+
+    @Test
     fun `a dead server is a retry`() =
         runTest {
             server.close()

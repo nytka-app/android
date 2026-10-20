@@ -8,6 +8,7 @@ import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Dao
+@Suppress("TooManyFunctions") // one query per table operation of the queue
 abstract class QueueDao {
     @Query("select max(id) from frames")
     abstract suspend fun lastFrameId(): Long?
@@ -121,6 +122,9 @@ abstract class QueueDao {
         deleteChunk(chunkId)
     }
 
+    @Query("select coalesce(sum(length(body)), 0) from parked_chunks")
+    abstract suspend fun parkedBytes(): Long
+
     @Query("select count(*) from parked_chunks")
     abstract suspend fun parkedCount(): Int
 
@@ -140,6 +144,13 @@ abstract class QueueDao {
 
     @Insert
     abstract suspend fun insertMute(change: MuteLogRow)
+
+    /** Drops changes older than [cutoffMs] but the newest of them, which still says whether the mute was on then. */
+    @Query(
+        "delete from mute_log where atMs < :cutoffMs and id not in " +
+            "(select id from mute_log where atMs < :cutoffMs order by atMs desc, id desc limit 1)",
+    )
+    abstract suspend fun pruneMuteLog(cutoffMs: Long)
 
     @Query("select * from mute_log order by atMs, id")
     abstract suspend fun muteChanges(): List<MuteLogRow>

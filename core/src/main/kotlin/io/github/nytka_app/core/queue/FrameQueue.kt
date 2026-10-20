@@ -91,7 +91,10 @@ class FrameQueue(
     override suspend fun recordMute(
         atMs: Long,
         muted: Boolean,
-    ) = dao.insertMute(MuteLogRow(atMs = atMs, muted = muted))
+    ) {
+        dao.insertMute(MuteLogRow(atMs = atMs, muted = muted))
+        dao.pruneMuteLog(atMs - MUTE_LOG_KEEP_MS)
+    }
 
     override suspend fun muteChanges(): List<MuteChange> = dao.muteChanges().map { MuteChange(it.atMs, it.muted) }
 
@@ -146,7 +149,7 @@ class FrameQueue(
     suspend fun refreshUsage() {
         state.value =
             QueueUsage(
-                bytes = dao.chunkBytes() + dao.frameBytes(),
+                bytes = dao.chunkBytes() + dao.frameBytes() + dao.parkedBytes(),
                 chunks = dao.chunkCount(),
                 frames = dao.frameCount(),
                 capBytes = capBytes,
@@ -204,17 +207,19 @@ class FrameQueue(
     }
 
     /**
-     * Drops the oldest live chunks until the queue fits its cap (open question 2). A stored chunk is never
-     * deleted: the pendant may free its ring range once nothing holds it back, so when only stored chunks are left
-     * over the cap they are parked (code 0), which keeps their range in `ackedThrough`.
+     * Drops the oldest live chunks until the queue and the parked chunks fit the cap (open question 2). A stored
+     * chunk is never deleted: the pendant may free its ring range once nothing holds it back, so when only stored
+     * chunks are left over the cap they are parked (code 0), which keeps their range in `ackedThrough`. Parked
+     * chunks count toward the cap but are kept: when they alone fill it, new live chunks go first.
      */
     private suspend fun enforceCap() {
-        while (dao.chunkBytes() + dao.frameBytes() > capBytes) {
+        while (dao.chunkBytes() + dao.frameBytes() + dao.parkedBytes() > capBytes) {
             val live = dao.firstChunk(stored = false)
             if (live != null) {
                 dao.deleteChunk(live.id)
                 droppedChunks++
             } else {
+                if (dao.chunkBytes() + dao.frameBytes() <= capBytes) return
                 val stored = dao.firstChunk(stored = true) ?: return
                 dao.park(stored.id, 0, "over the queue cap", now())
             }
@@ -223,6 +228,9 @@ class FrameQueue(
 
     companion object {
         const val CAP_BYTES = 1L shl 30
+
+        /** The pendant's ring holds days, not months; a mute change older than this cannot matter to any audio. */
+        private const val MUTE_LOG_KEEP_MS = 90L * 24 * 60 * 60 * 1000
         const val ALERT_FRACTION = 0.8
         private const val U32_MAX = 0xFFFF_FFFFL
     }
