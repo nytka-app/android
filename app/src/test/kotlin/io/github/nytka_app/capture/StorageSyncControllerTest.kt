@@ -339,26 +339,26 @@ class StorageSyncControllerTest {
     fun `records covered by a mute are consumed and freed but never queued`() =
         runTest {
             val rig = rig()
-            rig.ring.fill(120) // stamps STAMP_S to STAMP_S + 9
-            // Muted from 4 s into the stored stretch until 6 s in (frames within 2 s of it go too).
+            rig.ring.fill(360) // stamps STAMP_S to STAMP_S + 29
+            // Muted from 12 s into the stored stretch until 14 s in (frames within 6 s of it go too).
             rig.sink.mutes =
-                listOf(MuteChange((STAMP_S + 4) * 1000, true), MuteChange((STAMP_S + 6) * 1000, false))
+                listOf(MuteChange((STAMP_S + 12) * 1000, true), MuteChange((STAMP_S + 14) * 1000, false))
 
             rig.connect()
             settle()
 
-            assertEquals(120L, rig.sink.stored?.committedNext)
-            assertTrue(rig.sink.committedFrames.size < 480)
+            assertEquals(360L, rig.sink.stored?.committedNext)
+            assertTrue(rig.sink.committedFrames.size < 1440)
             assertTrue(rig.status.mutedFrames > 0)
             assertEquals(
-                480L - rig.status.mutedFrames,
+                1440L - rig.status.mutedFrames,
                 rig.sink.committedFrames.size
                     .toLong(),
             )
             assertTrue(
                 rig.sink.committedFrames.none {
                     it.capturedAtMs in
-                        ((STAMP_S + 3) * 1000 + 1)..<(STAMP_S + 7) * 1000
+                        ((STAMP_S + 12) * 1000 - 5_999)..<(STAMP_S + 14) * 1000 + 6_000
                 },
             )
             // Numbered without holes, since a hole makes the server wait ten minutes.
@@ -368,9 +368,9 @@ class StorageSyncControllerTest {
             assertEquals(expected, actual)
 
             // Nothing of the muted part is in the queue, so once the rest is accepted the whole ring is freed.
-            rig.sink.accept(120)
+            rig.sink.accept(360)
             settle()
-            assertEquals(120L, rig.advances.last())
+            assertEquals(360L, rig.advances.last())
         }
 
     @Test

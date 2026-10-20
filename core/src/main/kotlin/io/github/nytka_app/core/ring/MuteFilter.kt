@@ -62,6 +62,10 @@ class MuteFilter(
     }
 
     companion object {
-        const val MARGIN_MS = 2_000L
+        /**
+         * [RingTimes.SKEW_LIMIT_S] of pendant clock skew is left uncorrected and stamps are whole seconds, so a
+         * frame's time can be off by that plus one second; a smaller margin lets audio just inside a mute upload.
+         */
+        const val MARGIN_MS = (RingTimes.SKEW_LIMIT_S + 1) * 1_000L
     }
 }
