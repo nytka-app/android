@@ -173,7 +173,7 @@ after a short pause. **All**, **Conversations** and **Memories** (chips with a c
 (a server with the People tab), and a person opens their page in the People tab. A hit shows the title or
 the memory and a snippet with the matches in bold, and opens its conversation when it has one. Before you type, with no hits, offline and on a failure the list says so. Every
 word must match, exactly or as the start of a word. Endings of Ukrainian words need the server's optional dictionary:
-see the [server README](https://github.com/nytka-app/server#ukrainian-search-optional).
+see the [server docs](https://github.com/nytka-app/server/blob/main/docs/explanation/features.md#ukrainian-search-optional).
 
 **Tag chips.** Tapping a tag on a conversation opens the Conversations list with only the conversations
 that have it, and tapping one on a person page does the same in People (the unnamed voices, which carry

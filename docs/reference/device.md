@@ -85,7 +85,7 @@ voiceprint learned from since. **Re-enroll** starts over, **Add more** blends a 
 example another language), **Forget what it learned** goes back to the enrolled voiceprint, and
 **Forget my voice** (asked first) deletes the voiceprint, every segment fingerprint and the labels
 made from them; your own marks stay. See the
-[server README](https://github.com/nytka-app/server#your-voice).
+[server docs](https://github.com/nytka-app/server/blob/main/docs/explanation/features.md#your-voice).
 
 ## Phone context
 
@@ -106,7 +106,7 @@ With the switch off, or on a server without `context-ranges`, nothing is recorde
 ## Meeting briefs
 
 With a server that has a calendar feed (`Nytka__Calendar__IcsUrl`, see the
-[server README](https://github.com/nytka-app/server#calendar-briefs)), the server writes a short
+[server docs](https://github.com/nytka-app/server/blob/main/docs/explanation/features.md#calendar-briefs)), the server writes a short
 brief before a meeting with someone you named: who they are to you, what to remember, what is still
 open. Switch on **Meeting briefs** in the Device screen (off by default) and Nytka posts it as a
 notification. On Android 13 and later it asks to show notifications first; if you refuse twice, the

@@ -21,16 +21,16 @@ live in the server's environment and the app can neither read nor change them. *
 what you changed, all or nothing, and an emptied field restores the default. The server uses a new
 value from its next job, with no restart. The `people` keys are also reachable from People → ⋮ → People settings,
 and `llm.outputLanguage` from the Device screen's [Language of summaries](../how-to/everyday-use.md#everyday-use). What each setting does is in the
-[server README](https://github.com/nytka-app/server#configuration).
+[server docs](https://github.com/nytka-app/server/blob/main/docs/reference/configuration.md#configuration).
 
 **Access tokens** lists the server's named tokens: name, scope, when it was made and last used, and
 whether it is revoked. **Create token** asks for a name and a scope, **Read** (conversations, tasks,
 memories and search over the API, and MCP for agents) or **Admin** (everything, this app included).
 The token shows once, with **Copy**; Nytka cannot show it again. **Revoke** ends a token at once. Give
-[MCP clients](https://github.com/nytka-app/server#mcp) a read token.
+[MCP clients](https://github.com/nytka-app/server/blob/main/docs/reference/api.md#mcp) a read token.
 
 **Webhooks** lists the server's webhooks, each with an on and off switch and the status of its last
 delivery. **+** adds one: a URL, the events (a conversation is summarized, a task is created, a task
 is completed, a memory is created, or all of them) and a description. The signing secret shows once,
 with **Copy**. A webhook's own screen has **Send test**, its last 30 deliveries and **Delete**. How a
-receiver checks the signature is in the [server README](https://github.com/nytka-app/server#webhooks).
+receiver checks the signature is in the [server docs](https://github.com/nytka-app/server/blob/main/docs/reference/api.md#webhooks).

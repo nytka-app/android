@@ -55,7 +55,7 @@ the app never asks for `RECORD_AUDIO`.
 ## Quick start
 
 You need a phone on Android 12 or later, an Omi pendant on firmware 3.0.x, and a Nytka server with an `admin`
-token ([server install](https://github.com/nytka-app/server#install-in-15-minutes), about 15 minutes). Download
+token ([server install](https://github.com/nytka-app/server/blob/main/docs/how-to/install.md#install-in-15-minutes), about 15 minutes). Download
 `nytka-<version>.apk` from [Releases](https://github.com/nytka-app/android/releases/latest) and open it on the
 phone, or build it yourself with JDK 21 and the Android SDK (platform 37):
 
