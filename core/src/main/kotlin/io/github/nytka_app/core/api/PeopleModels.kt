@@ -166,7 +166,10 @@ data class SpeechLine(
     val text: String = "",
 )
 
-/** The stretch of audio a review item's clip covers; the app fetches the clip by the item's route, not by [url]. */
+/**
+ * The stretch of capture a review item's clip covers, in Unix epoch milliseconds (not offsets into the audio); the
+ * app fetches the clip by the item's route, not by [url].
+ */
 @Serializable
 data class ReviewClip(
     val url: String = "",
@@ -175,12 +178,14 @@ data class ReviewClip(
 )
 
 /**
- * A line around the one a review item rests on ([evidence] true). [personName] is set once the speaker is named,
- * else [speaker] holds the speaker's label.
+ * A line around the one a review item rests on ([evidence] true; a `speech` item has several). [speaker] is the
+ * provider's label ("SPEAKER_4"), for telling voices apart only; [personName] is set once the speaker is named.
  */
 @Serializable
 data class ReviewContextLine(
+    val segmentId: Long = 0,
     val speaker: String? = null,
+    val isUser: Boolean = false,
     val personName: String? = null,
     val text: String = "",
     val startedAt: String = "",
