@@ -20,7 +20,7 @@ class FakeRing(
     private val scope: CoroutineScope,
     var firmware: String = "3.0.21",
     var features: Long = (1L shl 6) or (1L shl 7) or (1L shl 8),
-    /** 3.0.21's PR #9954: the firmware moves `readSeq` to what it sent, at DONE, at stop and at disconnect. */
+    /** 3.0.21 moves `readSeq` to what it sent at DONE and at disconnect, not at stop (`storage.c`). */
     var autoAdvance: Boolean = true,
     val capacityPackets: Long = 1_000,
     var mtu: Int = 247,
@@ -248,8 +248,9 @@ class FakeRing(
         readSeq = seq
     }
 
+    /** The firmware resets the transfer and saves nothing: `CMD_STOP_SYNC` to `reset_transfer_state`, `storage.c`. */
     private fun stop() {
-        endTransfer(saveProgress = true)
+        endTransfer(saveProgress = false)
         ack(RingStatus.OK)
         repeat(strayDataAfterStop) { notify(byteArrayOf(NOTIFY_DATA.toByte(), 9, 9, 9)) }
     }

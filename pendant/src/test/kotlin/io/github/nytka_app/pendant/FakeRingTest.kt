@@ -77,22 +77,30 @@ class FakeRingTest {
         }
 
     @Test
-    fun `an interrupted read costs 3_0_21 what it advanced past and 3_0_20 nothing`() =
+    fun `stopping a read frees nothing, and a link drop mid-read costs 3_0_21 what it sent`() =
         runTest {
-            for ((firmware, auto, expected) in listOf(Triple("3.0.20", false, 0L), Triple("3.0.21", true, 3L))) {
-                val (ring, storage) = setUp(firmware, auto)
-                ring.store(1_800_000_000L, List(40) { frame(97, 1) }) // 10 records
-                ring.stallAfterBytes = 444 * 3 + 10L
-                val got = mutableListOf<RingRecord>()
-                val job =
-                    backgroundScope.launch {
-                        storage.read(0, 0).collect { if (it is RingEvent.Records) got += it.records }
+            for ((firmware, auto, dropped) in listOf(Triple("3.0.20", false, 0L), Triple("3.0.21", true, 3L))) {
+                for (viaStop in listOf(true, false)) {
+                    val (ring, storage) = setUp(firmware, auto)
+                    ring.store(1_800_000_000L, List(40) { frame(97, 1) }) // 10 records
+                    ring.stallAfterBytes = 444 * 3 + 10L
+                    val got = mutableListOf<RingRecord>()
+                    val job =
+                        backgroundScope.launch {
+                            storage.read(0, 0).collect { if (it is RingEvent.Records) got += it.records }
+                        }
+                    runCurrent()
+                    assertEquals(listOf(0L, 1L, 2L), got.map { it.seq })
+                    if (viaStop) {
+                        job.cancel() // the app cancels: STOP, and the firmware saves nothing
+                        runCurrent()
+                    } else {
+                        ring.disconnect()
+                        job.cancel()
+                        runCurrent()
                     }
-                runCurrent()
-                assertEquals(listOf(0L, 1L, 2L), got.map { it.seq })
-                job.cancel() // the app stops; the ring was left where the firmware put it
-                runCurrent()
-                assertEquals(firmware, expected, ring.readSeq)
+                    assertEquals("$firmware stop=$viaStop", if (viaStop) 0L else dropped, ring.readSeq)
+                }
             }
         }
 
