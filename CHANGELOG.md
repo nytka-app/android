@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.21.0](https://github.com/nytka-app/android/compare/v0.20.0...v0.21.0) (2026-10-20)
+
+
+### Features
+
+* add tasks with a due date; promises on the person page ([#115](https://github.com/nytka-app/android/issues/115)) ([5f775c3](https://github.com/nytka-app/android/commit/5f775c3b5eff2f3f70bb07089091cb88212b7ed0))
+* save a transcript line as a memory; Ask offers questions ([#113](https://github.com/nytka-app/android/issues/113)) ([62e106b](https://github.com/nytka-app/android/commit/62e106bf8fdf0b3b143a00b32ae4cf937314ef5c))
+
+
+### Bug Fixes
+
+* drop stored audio within 6 s of a mute, past the 5 s of clock skew left uncorrected ([#118](https://github.com/nytka-app/android/issues/118)) ([ca4780b](https://github.com/nytka-app/android/commit/ca4780bdb672b07ab04628139a2398036ffb3937))
+* four screens say fixed server notices instead of raw messages ([#120](https://github.com/nytka-app/android/issues/120)) ([eaeef7f](https://github.com/nytka-app/android/commit/eaeef7fb8016f9fb65b1126a16cd14cd844a9e09))
+* keep server text and tokens out of errors and toString (invariant 6) ([#116](https://github.com/nytka-app/android/issues/116)) ([f0a688a](https://github.com/nytka-app/android/commit/f0a688a27aa3f3df23a70e60d91dfb930681d7e6))
+* one refused chunk no longer blocks the queue; parked chunks count toward the cap ([#117](https://github.com/nytka-app/android/issues/117)) ([866fd52](https://github.com/nytka-app/android/commit/866fd52457f58b62370d7d80026c2e38bf5c03c3))
+
 ## [0.20.0](https://github.com/nytka-app/android/compare/v0.19.0...v0.20.0) (2026-10-19)
 
 
