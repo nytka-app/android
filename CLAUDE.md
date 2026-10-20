@@ -16,8 +16,8 @@ Robolectric, MockWebServer, Turbine · ktlint, detekt.
 | Module | Holds |
 |---|---|
 | `:pendant` | `Pendant`, `FrameAssembler`, `OmiPendant` (Bluetooth), the storage service (`OmiStorage`, `RingProtocol`, `RingRecords`), the settings service (`OmiSettings`: LED brightness, mic gain), `FirmwareVersion`, `FirmwareStream`, `FakePendant` with `FakeRing`; no UI |
-| `:core` | chunk format, `FrameQueue` (Room), capture times and the mute filter (`ring/`), settings, `NytkaApi` and its clients, `Uploader`; tested on the JVM |
-| `:app` | Hilt wiring, `CaptureController`, `StorageSyncController`, `PendantSettingsController`, `firmware/` (release check) and the services, alerts, Compose screens |
+| `:core` | chunk format, `FrameQueue` (Room), capture times and the mute filter (`ring/`), settings, `NytkaApi` and its clients, `Uploader`, `diagnostics/` (event log, samples, upload), `location/` (saved places, location tags), `context/` (context ranges); tested on the JVM |
+| `:app` | Hilt wiring, `CaptureController`, `StorageSyncController`, `PendantSettingsController`, `firmware/` (release check) and the services; `capture/` also holds the home-screen widget, the companion-device service, the phone-context recorder, `MuteLogRecorder` and `DiagnosticsRecorder`; `briefs/` (morning brief notifications), alerts, Compose screens |
 
 ## Commands
 
@@ -58,10 +58,13 @@ Robolectric, MockWebServer, Turbine · ktlint, detekt.
 8. **Real voices never enter this repository.** The fake pendant replays text-to-speech;
    developer-mode fixtures stay on the phone or go to the private research repository.
 9. **A stored chunk is never deleted until the server answers.** Only `200` or `202` removes one
-   from the queue. On `400`, `409` or `413` it is parked, and its ring range still counts in
-   `ackedThrough`, so `ADVANCE` never passes it. The app never sends `CLEAR`, and writes nothing to
-   the storage service until `OmiStorage` reports support (firmware 3.0.20 or later, feature bit 6).
-   A sync starts only when `/api/v1/info` lists `offline-sync`.
+   from the queue. On a refusal (`400`, `409`, `413`, or any other `4xx` except `401`, `403`, `404`, `405`,
+   `408`, `425` and `429`) it is parked, and its ring range still counts in `ackedThrough`, so `ADVANCE`
+   never passes it. The app never sends `CLEAR`, and writes nothing to the storage service until `OmiStorage`
+   reports support (firmware 3.0.20 or later, feature bit 6). A sync starts only when `/api/v1/info` lists
+   `offline-sync`. **This covers stored chunks only.** A live chunk has no second copy: the same refusals
+   delete it, and the 1 GiB cap deletes the oldest live chunks first (parked chunks count toward the cap
+   but are kept).
 
 ## Pendant settings
 
@@ -102,7 +105,7 @@ or flash firmware.
   a feature, not a release, so a missing route still answers `404`: show "This server needs an update",
   never "This item no longer exists".
 - Room schemas under `core/schemas/` are committed. A schema change bumps the database version (now
-  5) and adds a migration, never a destructive fallback: the queue holds audio nobody can record
+  6) and adds a migration, never a destructive fallback: the queue holds audio nobody can record
   again.
 - Pendant facts (UUIDs, packet header, button codes, the storage service) come from
   `BasedHardware/omi` at a pinned commit; name the file when adding one.

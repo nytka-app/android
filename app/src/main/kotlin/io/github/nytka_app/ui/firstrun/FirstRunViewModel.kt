@@ -56,7 +56,10 @@ data class FirstRunUiState(
     val consentChecked: Boolean = false,
     val pairError: String? = null,
     val done: Boolean = false,
-)
+) {
+    override fun toString() =
+        "FirstRunUiState(step=$step, url=$url, token=${if (token.isEmpty()) "unset" else "set"}, done=$done)"
+}
 
 @HiltViewModel
 class FirstRunViewModel

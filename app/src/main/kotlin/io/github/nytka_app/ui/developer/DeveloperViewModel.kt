@@ -16,6 +16,7 @@ import io.github.nytka_app.core.diagnostics.DiagnosticsUploader
 import io.github.nytka_app.core.settings.SettingsSource
 import io.github.nytka_app.core.upload.ChunkSource
 import io.github.nytka_app.core.upload.Uploader
+import io.github.nytka_app.ui.notice
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -129,7 +130,7 @@ class DeveloperViewModel
                                     )
                             }
 
-                        is ApiResult.Failure -> result.message
+                        is ApiResult.Failure -> result.notice()
                     }
                 local.update { it.copy(serverStatus = text) }
             }

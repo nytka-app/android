@@ -14,6 +14,7 @@ class FakeConversations : ConversationsClient {
     var raw: ApiResult<String> = ApiResult.Ok("{}")
     val requestedBefore = mutableListOf<String?>()
     val deleted = mutableListOf<String>()
+    var deleteAnswer: ApiResult<Unit> = ApiResult.Ok(Unit)
     val renamed = mutableListOf<Pair<String, String?>>()
     val enriched = mutableListOf<String>()
     val named = mutableListOf<Pair<String, String>>()
@@ -61,7 +62,7 @@ class FakeConversations : ConversationsClient {
 
     override suspend fun enrichConversation(id: String): ApiResult<Unit> = enrichAnswer.also { enriched += id }
 
-    override suspend fun deleteConversation(id: String): ApiResult<Unit> = ApiResult.Ok(Unit).also { deleted += id }
+    override suspend fun deleteConversation(id: String): ApiResult<Unit> = deleteAnswer.also { deleted += id }
 
     override suspend fun transcriptionsJson(id: String) = raw
 

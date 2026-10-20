@@ -71,6 +71,17 @@ class NytkaApiTest {
         }
 
     @Test
+    fun `a 4xx the server does not use drops one chunk, unless it hits every chunk alike`() =
+        runTest {
+            listOf(415, 422, 404, 405, 408, 425, 429).forEach { answer(it) }
+
+            val results = List(7) { api.upload(byteArrayOf(1)) }
+
+            assertEquals(listOf(415, 422), results.take(2).map { (it as UploadResult.Dropped).code })
+            results.drop(2).forEach { assertTrue(it is UploadResult.Retry) }
+        }
+
+    @Test
     fun `a dead server is a retry`() =
         runTest {
             server.close()
@@ -152,14 +163,17 @@ class NytkaApiTest {
             answer(400)
             answer(413)
             answer(503)
-            answer(200, "not json")
+            answer(200, "not json secret-excerpt")
 
             assertEquals(DiagnosticsResult.NotSupported, api.uploadDiagnostics("[]"))
             assertEquals(DiagnosticsResult.Unauthorized, api.uploadDiagnostics("[]"))
             assertEquals(DiagnosticsResult.BadRequest, api.uploadDiagnostics("[]"))
             assertEquals(DiagnosticsResult.TooLarge, api.uploadDiagnostics("[]"))
             assertEquals(DiagnosticsResult.Retry("The server answered 503."), api.uploadDiagnostics("[]"))
-            assertTrue(api.uploadDiagnostics("[]") is DiagnosticsResult.Retry)
+            assertEquals(
+                DiagnosticsResult.Retry("Unexpected answer from the server"),
+                api.uploadDiagnostics("[]"),
+            )
         }
 
     @Test
