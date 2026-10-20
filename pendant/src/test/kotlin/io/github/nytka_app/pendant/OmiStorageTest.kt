@@ -365,7 +365,7 @@ class OmiStorageTest {
             val end = events.single() as RingEvent.Done
             assertEquals(RingStatus.TIMEOUT, end.status)
             assertEquals(100L, end.nextSeq)
-            assertEquals(listOf(0x11), opcodes()) // a stop would free what the firmware sent, not what was read
+            assertEquals(listOf(0x11), opcodes()) // nothing to stop: the window never began
         }
 
     @Test

@@ -138,8 +138,9 @@ class OmiStorage(
 
     /**
      * Emits one window's events; false when no stop is needed: the firmware ended it, the link is gone, or it went
-     * quiet. A STOP after silence would let firmware 3.0.21 free everything it sent, though the phone read only
-     * part of it; the caller reads again from what it holds, and that READ replaces the transfer.
+     * quiet. STOP frees nothing on firmware 3.0.21 (`storage.c`: `CMD_STOP_SYNC` resets the transfer without a
+     * checkpoint), so a quiet link just skips waiting for its ACK; the caller reads again from what it holds, and
+     * that READ replaces the transfer.
      */
     private suspend fun FlowCollector<RingEvent>.transfer(
         box: Channel<ByteArray>,
