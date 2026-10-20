@@ -26,6 +26,7 @@ data class ServerInfo(
         const val FEATURE_CONTEXT_RANGES = "context-ranges"
         const val FEATURE_TASK_CREATE = "task-create"
         const val FEATURE_LEDGER = "ledger"
+        const val FEATURE_REVIEW_CLIPS = "review-clips"
 
         const val SCOPE_ADMIN = "admin"
         const val SCOPE_READ = "read"

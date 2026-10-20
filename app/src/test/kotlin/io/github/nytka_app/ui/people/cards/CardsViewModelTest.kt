@@ -11,8 +11,6 @@ import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.VoiceCard
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -41,34 +39,6 @@ class CardsViewModelTest {
             kind: String,
             id: String,
         ): AudioRequest? = null
-    }
-
-    private class FakeClipPlayer : ClipPlayer {
-        val mutable = MutableStateFlow(ClipState())
-        override val state: StateFlow<ClipState> = mutable
-        val calls = mutableListOf<String>()
-        var released = false
-
-        override fun play(
-            kind: String,
-            id: String,
-        ) {
-            calls += "play $kind/$id"
-            mutable.value = ClipState(clipKey(kind, id), playing = true)
-        }
-
-        override fun stop() {
-            calls += "stop"
-            mutable.value = ClipState()
-        }
-
-        override fun release() {
-            released = true
-        }
-
-        fun fail(failure: ClipFailure) {
-            mutable.value = mutable.value.copy(playing = false, failure = failure)
-        }
     }
 
     private val api = FakeCards()

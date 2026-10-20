@@ -386,6 +386,9 @@
     <string name="review_inbox_content_description">Вхідні на перевірку</string>
     <string name="review_empty">Ніщо не чекає на вашу відповідь.</string>
     <string name="review_someone">хтось</string>
+    <string name="review_clip_expired">Запис уже видалено: минув термін зберігання.</string>
+    <string name="review_unknown_speaker">Хтось</string>
+    <string name="review_context_line_format">%1$s: %2$s</string>
     <string name="review_name_question_format">Це %1$s?</string>
     <string name="review_label_yours">Це ви сказали?</string>
     <string name="review_label_other">Це хтось інший?</string>

@@ -10,6 +10,11 @@ import io.github.nytka_app.core.api.ReviewClient
 import io.github.nytka_app.core.api.ReviewItem
 import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.TagsClient
+import io.github.nytka_app.di.ReviewClips
+import io.github.nytka_app.ui.people.cards.ClipFailure
+import io.github.nytka_app.ui.people.cards.ClipPlayer
+import io.github.nytka_app.ui.people.cards.ClipState
+import io.github.nytka_app.ui.people.cards.clipKey
 import io.github.nytka_app.ui.people.merged
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -130,6 +135,9 @@ sealed interface ReviewNotice {
 
     /** A `409` on accepting by name: the pending ones disagree, and every row stays. */
     data object AcceptAllDisagree : ReviewNotice
+
+    /** A clip failed for a reason other than its audio being gone. */
+    data object ClipFailed : ReviewNotice
 }
 
 data class ReviewUiState(
@@ -143,6 +151,10 @@ data class ReviewUiState(
     val roles: Boolean = false,
     /** `/info` lists `speech-kind`: speech rows are shown. */
     val speech: Boolean = false,
+    /** `/info` lists `review-clips`: cards carry a play button and the lines around their evidence. */
+    val clips: Boolean = false,
+    /** [clipKey] of items whose clip answered `404` while this screen was open: their audio is past retention. */
+    val expiredClips: Set<String> = emptySet(),
     /** `sameName` of each name item that shares its name with another, by item id. */
     val sameNames: Map<String, Int> = emptyMap(),
     /** False once the server answered 404 to "accept all" while the rows were pending: it lacks the route. */
@@ -163,6 +175,7 @@ class ReviewViewModel
         private val api: ReviewClient,
         private val info: InfoClient,
         private val tags: TagsClient,
+        @ReviewClips private val player: ClipPlayer,
     ) : ViewModel() {
         private val mutableState = MutableStateFlow(ReviewUiState())
         val state: StateFlow<ReviewUiState> = mutableState.asStateFlow()
@@ -170,8 +183,11 @@ class ReviewViewModel
         /** Items whose answer is on its way: a read in between must not bring them back. */
         private val pending = mutableSetOf<String>()
 
+        val clip: StateFlow<ClipState> = player.state
+
         init {
             refresh()
+            viewModelScope.launch { player.state.collect(::onClip) }
         }
 
         fun refresh() {
@@ -201,6 +217,8 @@ class ReviewViewModel
                         }
                     val people = if (tagsOn) personNames(items) else emptyMap()
                     val same = sameNames(items)
+                    val playing = player.state.value.key
+                    if (playing != null && items.none { key(it) == playing }) player.stop()
                     mutableState.update {
                         it.copy(
                             items = items,
@@ -210,6 +228,7 @@ class ReviewViewModel
                             available = true,
                             roles = features.has(ServerInfo.FEATURE_ROLES),
                             speech = speechOn,
+                            clips = features.has(ServerInfo.FEATURE_REVIEW_CLIPS),
                         )
                     }
                 }
@@ -254,6 +273,35 @@ class ReviewViewModel
                     available = it.available && !missing,
                     error = ReviewNotice.Failed(failure.kind, failure.message, item = false),
                 )
+            }
+        }
+
+        /** Plays the item's clip, or stops it when it already plays; another item's clip stops first. */
+        fun toggleClip(item: ReviewItem) {
+            val key = key(item)
+            val current = player.state.value
+            if (current.key == key && current.failure == null) {
+                player.stop()
+            } else {
+                if (current.key != null) player.stop()
+                player.play(item.kind, item.id)
+            }
+        }
+
+        /** The inbox left the screen. */
+        fun stopClip() = player.stop()
+
+        /** A `404` marks the item's audio as past retention, as a null `clip` does; anything else is a notice. */
+        private fun onClip(clip: ClipState) {
+            val failure = clip.failure ?: return
+            val key = clip.key
+            player.stop()
+            mutableState.update {
+                if (failure == ClipFailure.Gone && key != null) {
+                    it.copy(expiredClips = it.expiredClips + key)
+                } else {
+                    it.copy(note = ReviewNotice.ClipFailed)
+                }
             }
         }
 
@@ -340,6 +388,7 @@ class ReviewViewModel
             val index = state.value.items.indexOf(item)
             if (index < 0) return
             pending += key(item)
+            if (player.state.value.key == key(item)) player.stop()
             mutableState.update { it.copy(items = it.items - item) }
             viewModelScope.launch {
                 val result = if (accept) api.acceptReview(item.kind, item.id) else api.answer(item.kind, item.id, false)
@@ -391,7 +440,11 @@ class ReviewViewModel
             mutableState.update { it.copy(note = if (stays) ReviewNotice.TagLimit else ReviewNotice.AlreadyAnswered) }
         }
 
-        private fun key(item: ReviewItem) = item.kind + "/" + item.id
+        private fun key(item: ReviewItem) = clipKey(item.kind, item.id)
+
+        override fun onCleared() {
+            player.release()
+        }
 
         companion object {
             const val LIMIT = 200

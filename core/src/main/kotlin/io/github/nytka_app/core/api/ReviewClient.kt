@@ -70,6 +70,15 @@ interface ReviewClient {
         id: String,
     ): ApiResult<String?> =
         answer(kind, id, accept = true).let { if (it is ApiResult.Failure) it else ApiResult.Ok(null) }
+
+    /**
+     * The clip of the inbox item [kind] and [id] (`review-clips`), for the player to fetch; null when no server
+     * address or token is set. The route answers `404` once the audio is past retention.
+     */
+    suspend fun clipRequest(
+        kind: String,
+        id: String,
+    ): AudioRequest? = null
 }
 
 class ReviewApi(
@@ -113,6 +122,11 @@ class ReviewApi(
         kind: String,
         id: String,
     ): ApiResult<String?> = api.request("POST", "api/v1/review/$kind/$id/accept") { personId(it) }
+
+    override suspend fun clipRequest(
+        kind: String,
+        id: String,
+    ): AudioRequest? = api.authorized("api/v1/review/$kind/$id/clip")
 
     private fun personId(body: String): String? =
         runCatching { api.json.decodeFromString<PersonRef>(body).id }.getOrNull()

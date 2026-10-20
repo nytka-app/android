@@ -104,6 +104,11 @@ Addresses, tokens and signing secrets are set in a monospaced font.
   this?"), each as a card with a saffron question on top (a decision, not a failure) and **Yes** and **No**. Nothing is applied until you tap; the row goes at once and
   comes back if the server refuses. Tap the text of a card to open its conversation. An empty inbox, a loading list, an offline server and a failure each say so in words. Needs an admin token.
   A role reads "Is this the repairman?" or "Is this Mykola, the repairman?".
+  A server that lists `review-clips` lets you judge a card by ear: **Play clip** plays the stretch of
+  audio the card rests on (one clip at a time; it stops when you leave the screen), and the card shows up
+  to three lines before and after it with who said each, the line itself in bold. Once the audio is past
+  the server's retention, the card says "The audio is past retention." in place of the button. Tags
+  rest on no line and have neither.
   **Known by a role.** A person who has a role and no name yet shows their role as the name with a
   second line "Name not known yet", in the list and on their page, whose ⋮ then has **Add name** in
   place of Rename. It opens the usual rename dialog, empty; saving sets the name. A name someone else
