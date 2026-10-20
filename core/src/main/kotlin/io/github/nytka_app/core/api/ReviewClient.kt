@@ -72,6 +72,18 @@ interface ReviewClient {
         answer(kind, id, accept = true).let { if (it is ApiResult.Failure) it else ApiResult.Ok(null) }
 
     /**
+     * Names the server applied by itself (`auto-names`), newest first; [limit] is 1 to 200. A server without the
+     * feature answers [FailureKind.NotFound] or the list without them.
+     */
+    suspend fun autoApplied(limit: Int): ApiResult<List<NameSuggestion>>
+
+    /**
+     * Takes back an auto-applied name (admin). [FailureKind.Conflict] when it is no longer auto-applied (undone
+     * already), [FailureKind.NotFound] for an unknown id or a server without the route.
+     */
+    suspend fun undo(id: String): ApiResult<Unit>
+
+    /**
      * The clip of the inbox item [kind] and [id] (`review-clips`), for the player to fetch; null when no server
      * address or token is set. The route answers `404` once the audio is past retention.
      */
@@ -99,6 +111,16 @@ class ReviewApi(
         api.request("GET", "api/v1/people/suggestions", mapOf("status" to "pending")) {
             api.json.decodeFromString<SuggestionList>(it).items
         }
+
+    override suspend fun autoApplied(limit: Int): ApiResult<List<NameSuggestion>> =
+        api.request(
+            "GET",
+            "api/v1/people/suggestions",
+            mapOf("status" to "auto_applied", "limit" to limit.toString()),
+        ) { api.json.decodeFromString<SuggestionList>(it).items }
+
+    override suspend fun undo(id: String): ApiResult<Unit> =
+        api.request("POST", "api/v1/people/suggestions/$id/undo") { }
 
     override suspend fun answerSuggestion(
         id: String,

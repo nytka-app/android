@@ -388,6 +388,13 @@
     <string name="review_someone">хтось</string>
     <string name="review_clip_expired">Запис уже видалено: минув термін зберігання.</string>
     <string name="review_unknown_speaker">Хтось</string>
+    <string name="auto_named_title">Названо за вас</string>
+    <string name="auto_named_body">Nytka назвала ці голоси сама. Скасуйте хибні.</string>
+    <string name="auto_named_card_format">Названо: %1$s</string>
+    <string name="auto_named_marker">названо за вас</string>
+    <string name="auto_named_undo_format">Скасувати ім’я %1$s</string>
+    <string name="auto_named_undone_format">Ім’я %1$s скасовано.</string>
+    <string name="auto_named_already_undone">Це ім’я вже скасовано.</string>
     <string name="review_context_line_format">%1$s: %2$s</string>
     <string name="review_name_question_format">Це %1$s?</string>
     <string name="review_label_yours">Це ви сказали?</string>
@@ -411,6 +418,7 @@
     <!-- People: settings (A-P7) -->
     <string name="people_settings_title">Налаштування людей</string>
     <string name="people_voice_matching_duty">Записувати людей без їхньої згоди в деяких місцях незаконно. Групування голосів зберігає модель голосу кожного, кого ви назвали; вмикайте його лише там, де це дозволено.</string>
+    <string name="people_auto_apply_note">Nytka сама називає голос, коли чує ім’я з упевненістю не менше people.autoApplyConfidence (від 0,5 до 1). Кожне таке ім’я є в «Названо за вас» у вхідних на перевірку, з кнопкою «Скасувати».</string>
     <string name="voice_models_title">Моделі голосів у Nytka</string>
     <string name="voice_models_explanation">Nytka зберігає на вашому сервері групи голосів і відбиток голосу кожної названої людини. Ця дія видаляє їх усі. Моделі голосів, які тримає служба транскрипції, вона не чіпає; щоб прибрати таку модель, видаліть людину й оберіть видалення моделі голосу.</string>
     <string name="voice_models_delete">Видалити всі групи голосів і відбитки</string>

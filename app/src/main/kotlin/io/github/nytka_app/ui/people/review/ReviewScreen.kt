@@ -1,6 +1,7 @@
 package io.github.nytka_app.ui.people.review
 
 import android.content.Context
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -28,6 +30,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -43,6 +46,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -51,6 +57,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.FailureKind
+import io.github.nytka_app.core.api.NameSuggestion
 import io.github.nytka_app.core.api.ReviewContextLine
 import io.github.nytka_app.core.api.ReviewItem
 import io.github.nytka_app.ui.DecisionBadge
@@ -60,6 +67,7 @@ import io.github.nytka_app.ui.ListState
 import io.github.nytka_app.ui.ListStateKind
 import io.github.nytka_app.ui.people.AcceptAllButton
 import io.github.nytka_app.ui.people.SuggestionWording
+import io.github.nytka_app.ui.people.UndoNoticeEffect
 import io.github.nytka_app.ui.people.addedAllText
 import io.github.nytka_app.ui.people.cards.ClipState
 import io.github.nytka_app.ui.people.cards.clipKey
@@ -67,7 +75,7 @@ import io.github.nytka_app.ui.people.lastSeenText
 import io.github.nytka_app.ui.people.question
 import io.github.nytka_app.ui.unreachable
 
-/** The People screen's inbox icon: hidden while the server has no review list or nothing waits. */
+/** The People screen's inbox icon: hidden while the server has no review list, nothing waits and nothing was named. */
 @Composable
 fun ReviewInboxAction(
     onClick: () -> Unit,
@@ -76,9 +84,10 @@ fun ReviewInboxAction(
     val state by viewModel.state.collectAsStateWithLifecycle()
     // The inbox is answered on its own screen: read the count again when the list is back in front.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
-    if (!state.available || state.count == 0) return
+    if (!state.available || (state.count == 0 && state.autoNamed.isEmpty())) return
     IconButton(onClick = onClick) {
-        BadgedBox(badge = { DecisionBadge(state.count) }) {
+        // Only what waits for an answer counts; names applied already open the inbox without a badge.
+        BadgedBox(badge = { if (state.count > 0) DecisionBadge(state.count) }) {
             Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.review_inbox_content_description))
         }
     }
@@ -105,6 +114,8 @@ fun ReviewScreen(
             viewModel.noteShown()
         }
     }
+    UndoNoticeEffect(state.undoNotice, snackbar, viewModel::undoNoticeShown)
+    val clips = ClipView(state.clips, clip, state.expiredClips, viewModel::toggleClip)
 
     Scaffold(
         topBar = {
@@ -144,6 +155,7 @@ fun ReviewScreen(
                         )
                     }
                 }
+                autoNamedSection(state.autoNamed, clips, onOpenConversation, viewModel::toggleClip, viewModel::undo)
                 if (state.error == null && state.items.isEmpty()) {
                     item(key = "state") {
                         if (state.loading) {
@@ -165,7 +177,7 @@ fun ReviewScreen(
                         state.speech,
                         if (state.acceptAllAvailable) state.sameNames[item.id] ?: 1 else 1,
                         !state.busy,
-                        ClipView(state.clips, clip, state.expiredClips, viewModel::toggleClip),
+                        clips,
                         onOpenConversation,
                         onOpenPerson,
                         viewModel::accept,
@@ -187,6 +199,96 @@ private class ClipView(
     val expired: Set<String>,
     val onToggle: (ReviewItem) -> Unit,
 )
+
+/** "Named for you": names the server applied by itself lately, each with its evidence, its clip and Undo. */
+private fun LazyListScope.autoNamedSection(
+    named: List<NameSuggestion>,
+    clips: ClipView,
+    onOpenConversation: (String) -> Unit,
+    onClip: (NameSuggestion) -> Unit,
+    onUndo: (NameSuggestion) -> Unit,
+) {
+    if (named.isEmpty()) return
+    item(key = "auto-named") {
+        Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                stringResource(R.string.auto_named_title),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(
+                stringResource(R.string.auto_named_body),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+    items(named, key = { "auto/" + it.id }) { suggestion ->
+        AutoNamedCard(suggestion, clips, onOpenConversation, onClip, onUndo)
+    }
+}
+
+@Composable
+private fun AutoNamedCard(
+    suggestion: NameSuggestion,
+    clips: ClipView,
+    onOpenConversation: (String) -> Unit,
+    onClip: (NameSuggestion) -> Unit,
+    onUndo: (NameSuggestion) -> Unit,
+) {
+    val key = clipKey(ReviewItem.KIND_NAME, suggestion.id)
+    OutlinedCard(
+        Modifier
+            .padding(horizontal = 16.dp)
+            .fillMaxWidth(),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                Modifier.clickable(enabled = suggestion.conversationId.isNotEmpty(), role = Role.Button) {
+                    onOpenConversation(suggestion.conversationId)
+                },
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    stringResource(R.string.auto_named_card_format, suggestion.name),
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                lastSeenText(suggestion.decidedAt)?.let {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                suggestion.evidence?.text?.takeIf(String::isNotBlank)?.let {
+                    Text(stringResource(R.string.source_quote, it), style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+            FlowRow(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                if (clips.on && suggestion.clip != null && key !in clips.expired) {
+                    ClipButton(clips.state.key == key && clips.state.playing) { onClip(suggestion) }
+                }
+                val undoLabel = stringResource(R.string.auto_named_undo_format, suggestion.name)
+                OutlinedButton(
+                    onClick = { onUndo(suggestion) },
+                    modifier = Modifier.semantics { contentDescription = undoLabel },
+                ) { Text(stringResource(R.string.action_undo)) }
+            }
+            if (clips.on && (suggestion.clip == null || key in clips.expired)) {
+                Text(
+                    stringResource(R.string.review_clip_expired),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

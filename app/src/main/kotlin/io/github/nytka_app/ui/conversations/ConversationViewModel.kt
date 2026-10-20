@@ -23,8 +23,10 @@ import io.github.nytka_app.core.api.TasksClient
 import io.github.nytka_app.ui.ITEM_GONE
 import io.github.nytka_app.ui.itemNotice
 import io.github.nytka_app.ui.people.AcceptAllNotice
+import io.github.nytka_app.ui.people.AutoNameBook
 import io.github.nytka_app.ui.people.RoleNotice
 import io.github.nytka_app.ui.people.SuggestionWording
+import io.github.nytka_app.ui.people.UndoNotice
 import io.github.nytka_app.ui.people.acceptAllFailure
 import io.github.nytka_app.ui.people.merged
 import io.github.nytka_app.ui.tags.ProposalOutcome
@@ -159,6 +161,9 @@ data class ConversationUiState(
     /** True when the server lists `speech-kind`: chips and marks show. */
     val speechAccess: Boolean = false,
     val speechNotice: SpeechNotice? = null,
+    /** Names the server applied here by itself (`auto-names`); their speakers carry a marker with Undo. */
+    val autoNamed: List<NameSuggestion> = emptyList(),
+    val undoNotice: UndoNotice? = null,
 )
 
 @Suppress("TooManyFunctions") // one screen, one function per action
@@ -189,6 +194,7 @@ class ConversationViewModel
         /** The route answered 404 while its rows were still pending: an older server, so no button this time. */
         private var acceptAllMissing = false
         private var answering = false
+        private val autoNames = AutoNameBook(review) { all -> all.filter { it.conversationId == id } }
         private val proposals = TagProposalBook(tagsClient) { it.conversationId == id && it.personId == null }
         private var roles = false
         private val prepareLock = Mutex()
@@ -489,7 +495,30 @@ class ConversationViewModel
                 proposals.load()
                 showProposals()
             }
+            // The server lists auto-applied names for every conversation; this keeps those of this one.
+            if (server?.has(ServerInfo.FEATURE_AUTO_NAMES) == true) {
+                autoNames.load()
+                mutableState.update { it.copy(autoNamed = autoNames.named) }
+            }
         }
+
+        /**
+         * Takes back a name the server applied here. Only a tap gets here. The marker goes at once; the transcript is
+         * read again so the lines show the voice unnamed.
+         */
+        fun undoAutoName(suggestion: NameSuggestion) {
+            viewModelScope.launch {
+                val notice =
+                    autoNames.undo(suggestion) { mutableState.update { it.copy(autoNamed = autoNames.named) } }
+                        ?: return@launch
+                if (notice is UndoNotice.Undone) {
+                    (api.conversation(id) as? ApiResult.Ok)?.let { mutableState.value = show(it.value) }
+                }
+                mutableState.update { it.copy(autoNamed = autoNames.named, undoNotice = notice) }
+            }
+        }
+
+        fun undoNoticeShown() = mutableState.update { it.copy(undoNotice = null) }
 
         private fun showProposals() = mutableState.update { it.copy(tagProposals = proposals.views()) }
 
@@ -754,6 +783,7 @@ class ConversationViewModel
                 tagAccess = mutableState.value.tagAccess,
                 tagProposals = mutableState.value.tagProposals,
                 speechAccess = mutableState.value.speechAccess,
+                autoNamed = mutableState.value.autoNamed,
             )
         }
 

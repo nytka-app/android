@@ -22,6 +22,21 @@ class FakeReview : ReviewClient {
     var acceptAll: ApiResult<AcceptedByName> = ApiResult.Ok(AcceptedByName("p1", 2, 0))
     val acceptedAll = mutableListOf<String>()
 
+    /** What `autoApplied` lists, and what `undo` answers; an `Ok` undo drops the name from the list. */
+    var autoApplied: ApiResult<List<NameSuggestion>> = ApiResult.Ok(emptyList())
+    var undoAnswer: ApiResult<Unit> = ApiResult.Ok(Unit)
+    val undone = mutableListOf<String>()
+
+    override suspend fun autoApplied(limit: Int): ApiResult<List<NameSuggestion>> = autoApplied
+
+    override suspend fun undo(id: String): ApiResult<Unit> {
+        undone += id
+        if (undoAnswer is ApiResult.Ok) {
+            (autoApplied as? ApiResult.Ok)?.let { a -> autoApplied = ApiResult.Ok(a.value.filterNot { it.id == id }) }
+        }
+        return undoAnswer
+    }
+
     override suspend fun review(limit: Int): ApiResult<List<ReviewItem>> = error("Not used.")
 
     override suspend fun answer(
@@ -70,10 +85,13 @@ class FakeReview : ReviewClient {
             named: Boolean = true,
             personId: String? = null,
             sameName: Int = 1,
+            target: String = "speaker",
+            decidedAt: String? = null,
         ) = NameSuggestion(
             id = id,
             conversationId = conversationId,
-            target = "speaker",
+            target = target,
+            decidedAt = decidedAt,
             speakerId = "sp1",
             name = name,
             confidence = confidence,

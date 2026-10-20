@@ -12,6 +12,7 @@ import io.github.nytka_app.core.api.ReviewItem
 import io.github.nytka_app.core.api.ReviewProposal
 import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.SpeechLine
+import io.github.nytka_app.ui.people.UndoNotice
 import io.github.nytka_app.ui.people.cards.ClipFailure
 import io.github.nytka_app.ui.people.cards.FakeClipPlayer
 import io.github.nytka_app.ui.tags.FakeTags
@@ -22,6 +23,9 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 
 class ReviewViewModelTest {
     @get:Rule
@@ -68,6 +72,14 @@ class ReviewViewModelTest {
             id: String,
             accept: Boolean,
         ): ApiResult<Unit> = ApiResult.Ok(Unit)
+
+        var autoApplied: ApiResult<List<NameSuggestion>> = ApiResult.Ok(emptyList())
+        var undoAnswer: ApiResult<Unit> = ApiResult.Ok(Unit)
+        val undone = mutableListOf<String>()
+
+        override suspend fun autoApplied(limit: Int) = autoApplied
+
+        override suspend fun undo(id: String) = undoAnswer.also { undone += id }
     }
 
     private val api = FakeReview()
@@ -91,7 +103,9 @@ class ReviewViewModelTest {
 
     private val player = FakeClipPlayer()
 
-    private fun newViewModel() = ReviewViewModel(api, InfoClient { info }, tags, player)
+    private val clock = Clock.fixed(Instant.parse("2026-10-20T12:00:00Z"), ZoneOffset.UTC)
+
+    private fun newViewModel() = ReviewViewModel(api, InfoClient { info }, tags, player, clock)
 
     private fun failure(kind: FailureKind) = ApiResult.Failure(kind, "The server answered.")
 
@@ -661,6 +675,103 @@ class ReviewViewModelTest {
 
         viewModel.accept(clipped)
 
+        assertNull(viewModel.clip.value.key)
+    }
+
+    private val olena =
+        NameSuggestion(
+            "a1",
+            conversationId = "c1",
+            target = "speaker",
+            speakerId = "sp1",
+            name = "Olena",
+            decidedAt = "2026-10-20T09:00:00Z",
+            clip = ReviewClip("/api/v1/review/name/a1/clip", 0, 5000),
+        )
+    private val old = olena.copy(id = "a2", name = "Petro", decidedAt = "2026-10-01T09:00:00Z")
+
+    private fun autoNames() {
+        info = ApiResult.Ok(ServerInfo("0.30.0", 1, features = listOf("review", "review-clips", "auto-names")))
+        api.autoApplied = ApiResult.Ok(listOf(olena, old))
+    }
+
+    @Test
+    fun `named for you lists the last week's auto-applied names, only where the server lists auto-names`() {
+        api.autoApplied = ApiResult.Ok(listOf(olena, old))
+        assertTrue(
+            newViewModel()
+                .state.value.autoNamed
+                .isEmpty(),
+        )
+
+        autoNames()
+        assertEquals(listOf(olena), newViewModel().state.value.autoNamed)
+    }
+
+    @Test
+    fun `a failed list of auto-applied names leaves the inbox as it is`() {
+        autoNames()
+        api.list = ApiResult.Ok(listOf(name))
+        api.autoApplied = failure(FailureKind.Server)
+        val state = newViewModel().state.value
+        assertEquals(listOf(name), state.items)
+        assertTrue(state.autoNamed.isEmpty())
+        assertNull(state.error)
+    }
+
+    @Test
+    fun `undo takes the name back in one call and confirms it`() {
+        autoNames()
+        val viewModel = newViewModel()
+
+        viewModel.undo(olena)
+
+        assertEquals(listOf("a1"), api.undone)
+        assertTrue(
+            viewModel.state.value.autoNamed
+                .isEmpty(),
+        )
+        assertEquals(UndoNotice.Undone("Olena"), viewModel.state.value.undoNotice)
+    }
+
+    @Test
+    fun `a 409 on undo says it was taken back already and the card stays away`() {
+        autoNames()
+        api.undoAnswer = failure(FailureKind.Conflict)
+        val viewModel = newViewModel()
+
+        viewModel.undo(olena)
+
+        assertTrue(
+            viewModel.state.value.autoNamed
+                .isEmpty(),
+        )
+        assertEquals(UndoNotice.AlreadyUndone, viewModel.state.value.undoNotice)
+    }
+
+    @Test
+    fun `a failed undo puts the card back with a notice`() {
+        autoNames()
+        api.undoAnswer = failure(FailureKind.Forbidden)
+        val viewModel = newViewModel()
+
+        viewModel.undo(olena)
+
+        assertEquals(listOf(olena), viewModel.state.value.autoNamed)
+        assertEquals(
+            UndoNotice.Failed(FailureKind.Forbidden, "The server answered."),
+            viewModel.state.value.undoNotice,
+        )
+    }
+
+    @Test
+    fun `an auto-applied name plays the clip of its name item, and undoing it stops the clip`() {
+        autoNames()
+        val viewModel = newViewModel()
+
+        viewModel.toggleClip(olena)
+        assertEquals("name/a1", viewModel.clip.value.key)
+        viewModel.undo(olena)
         assertNull(viewModel.clip.value.key)
     }
 }
