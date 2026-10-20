@@ -152,14 +152,17 @@ class NytkaApiTest {
             answer(400)
             answer(413)
             answer(503)
-            answer(200, "not json")
+            answer(200, "not json secret-excerpt")
 
             assertEquals(DiagnosticsResult.NotSupported, api.uploadDiagnostics("[]"))
             assertEquals(DiagnosticsResult.Unauthorized, api.uploadDiagnostics("[]"))
             assertEquals(DiagnosticsResult.BadRequest, api.uploadDiagnostics("[]"))
             assertEquals(DiagnosticsResult.TooLarge, api.uploadDiagnostics("[]"))
             assertEquals(DiagnosticsResult.Retry("The server answered 503."), api.uploadDiagnostics("[]"))
-            assertTrue(api.uploadDiagnostics("[]") is DiagnosticsResult.Retry)
+            assertEquals(
+                DiagnosticsResult.Retry("Unexpected answer from the server"),
+                api.uploadDiagnostics("[]"),
+            )
         }
 
     @Test
