@@ -491,6 +491,17 @@ class ConversationViewModelTest {
     }
 
     @Test
+    fun `a delete the server refuses says so in fixed words`() {
+        api.deleteAnswer = ApiResult.Failure(FailureKind.Forbidden, "raw server text")
+        val viewModel = viewModel()
+
+        viewModel.delete()
+
+        assertEquals("The app needs an admin token.", viewModel.state.value.error)
+        assertFalse(viewModel.state.value.deleted)
+    }
+
+    @Test
     fun `raw transcription loads on request`() {
         api.raw = ApiResult.Ok("""[{"id":1}]""")
         val viewModel = viewModel()

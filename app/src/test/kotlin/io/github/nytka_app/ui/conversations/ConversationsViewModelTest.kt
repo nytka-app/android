@@ -403,6 +403,16 @@ class ConversationsViewModelTest {
         }
 
     @Test
+    fun `a list the server has no route for says it needs an update`() =
+        runTest {
+            api.pages[null] = ApiResult.Failure(FailureKind.NotFound, "raw server text")
+
+            val viewModel = newViewModel()
+
+            assertEquals("This server needs an update", viewModel.state.value.error)
+        }
+
+    @Test
     fun `a refresh in the background recovers a list that failed to load`() =
         runTest {
             api.pages[null] = ApiResult.Failure(FailureKind.Network, "timeout")
@@ -654,7 +664,7 @@ class ConversationsViewModelTest {
         viewModel.showTag("work")
 
         assertEquals("work", viewModel.state.value.tag)
-        assertEquals("The server answered.", viewModel.state.value.error)
+        assertEquals("This server needs an update", viewModel.state.value.error)
         assertTrue(viewModel.ids().isEmpty())
     }
 
