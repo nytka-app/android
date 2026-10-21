@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.23.0](https://github.com/nytka-app/android/compare/v0.22.0...v0.23.0) (2026-10-21)
+
+
+### Features
+
+* **transcribe:** optional on-device draft transcription with sherpa-onnx ([#128](https://github.com/nytka-app/android/issues/128)) ([60f5354](https://github.com/nytka-app/android/commit/60f5354958c7e7819cc76daf473b38794da9f30b))
+
 ## [0.22.0](https://github.com/nytka-app/android/compare/v0.21.0...v0.22.0) (2026-10-20)
 
 
