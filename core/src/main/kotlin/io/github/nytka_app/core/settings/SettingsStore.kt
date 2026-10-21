@@ -65,6 +65,9 @@ class SettingsStore(
             next.pendingLocationPlace?.let { preferences[PENDING_LOCATION_PLACE] = it }
                 ?: preferences.remove(PENDING_LOCATION_PLACE)
             preferences[PENDING_LOCATION_AT] = next.pendingLocationAt
+            preferences[PHONE_TRANSCRIPTION] = next.phoneTranscription
+            preferences[PHONE_TRANSCRIPTION_ON_BATTERY] = next.phoneTranscriptionOnBattery
+            preferences[PHONE_TRANSCRIPTION_BATTERY] = next.phoneTranscriptionBatteryPercent
         }
     }
 
@@ -101,6 +104,10 @@ class SettingsStore(
             savedPlaces = SavedPlace.decodeList(preferences[SAVED_PLACES]),
             pendingLocationPlace = preferences[PENDING_LOCATION_PLACE],
             pendingLocationAt = preferences[PENDING_LOCATION_AT] ?: 0,
+            phoneTranscription = preferences[PHONE_TRANSCRIPTION] ?: false,
+            phoneTranscriptionOnBattery = preferences[PHONE_TRANSCRIPTION_ON_BATTERY] ?: false,
+            phoneTranscriptionBatteryPercent =
+                preferences[PHONE_TRANSCRIPTION_BATTERY] ?: Settings().phoneTranscriptionBatteryPercent,
         )
 
     /** Stored by name, so reordering the steps moves no one; a name no longer known starts over. */
@@ -138,6 +145,9 @@ class SettingsStore(
         private val SAVED_PLACES = stringPreferencesKey("saved_places")
         private val PENDING_LOCATION_PLACE = stringPreferencesKey("pending_location_place")
         private val PENDING_LOCATION_AT = longPreferencesKey("pending_location_at")
+        private val PHONE_TRANSCRIPTION = booleanPreferencesKey("phone_transcription")
+        private val PHONE_TRANSCRIPTION_ON_BATTERY = booleanPreferencesKey("phone_transcription_on_battery")
+        private val PHONE_TRANSCRIPTION_BATTERY = intPreferencesKey("phone_transcription_battery_percent")
 
         fun create(
             context: Context,

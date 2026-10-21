@@ -38,7 +38,11 @@ android {
     flavorDimensions += "store"
     productFlavors {
         create("oss") { dimension = "store" }
-        create("play") { dimension = "store" }
+        create("play") {
+            dimension = "store"
+            // Only the on-device recogniser is native. Phones are arm64; other ABIs install without it.
+            ndk { abiFilters += "arm64-v8a" }
+        }
     }
 
     // Release signing comes from the environment (CI decodes the keystore from a secret);
@@ -73,6 +77,11 @@ android {
     }
 
     testOptions { unitTests.isIncludeAndroidResources = true }
+
+    // sherpa-onnx's JNI library needs only ONNX Runtime; its C and C++ APIs are for other callers (about 5 MB).
+    packaging {
+        jniLibs { excludes += setOf("**/libsherpa-onnx-c-api.so", "**/libsherpa-onnx-cxx-api.so") }
+    }
 }
 
 detekt {
@@ -109,6 +118,8 @@ dependencies {
     implementation(libs.serialization.json)
     implementation(libs.coroutines.android)
     implementation(libs.zxing.android.embedded)
+    // A prebuilt native library, which F-Droid does not build from source: the play flavor only (README).
+    "playImplementation"(libs.sherpa.onnx)
 
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
