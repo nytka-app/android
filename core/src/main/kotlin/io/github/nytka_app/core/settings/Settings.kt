@@ -12,6 +12,8 @@ data class Settings(
     val muted: Boolean = false,
     val pendantAddress: String? = null,
     val pendantName: String? = null,
+    /** The paired recorder's `RecorderModel.id`; null, from installs before models, reads as Omi. */
+    val pendantModel: String? = null,
     val consentGiven: Boolean = false,
     val onboarded: Boolean = false,
     val firstRunStep: FirstRunStep = FirstRunStep.Server,
@@ -61,6 +63,7 @@ data class Settings(
     override fun toString() =
         "Settings(serverUrl=$serverUrl, token=${if (token.isEmpty()) "unset" else "set"}, " +
             "privateNetwork=$privateNetwork, muted=$muted, pendant=${pendantName ?: "none"}, " +
+            "pendantModel=${pendantModel ?: "unset"}, " +
             "consentGiven=$consentGiven, onboarded=$onboarded, firstRunStep=$firstRunStep, " +
             "developerMode=$developerMode, fakePendant=$fakePendant, " +
             "alerts=$alertDisconnectedMinutes/$alertUnreachableMinutes/$alertBatteryPercent, " +

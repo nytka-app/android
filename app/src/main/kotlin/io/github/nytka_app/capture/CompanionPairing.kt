@@ -12,15 +12,16 @@ import android.content.Intent
 import android.content.IntentSender
 import android.os.Build
 import android.os.ParcelUuid
-import io.github.nytka_app.pendant.OmiUuids
+import io.github.nytka_app.pendant.RecorderModel
 
 data class PairedPendant(
     val address: String,
     val name: String,
+    val model: RecorderModel,
 )
 
 /**
- * Pairing through the system's companion-device chooser, filtered on the Omi audio service. An
+ * Pairing through the system's companion-device chooser, filtered on the chosen model's service only. An
  * association lets the app see the pendant come into range and start capture from the background.
  */
 class CompanionPairing(
@@ -29,18 +30,19 @@ class CompanionPairing(
     private val manager = context.getSystemService(CompanionDeviceManager::class.java)
     private val executor = context.mainExecutor
 
-    fun request(): AssociationRequest =
+    fun request(model: RecorderModel): AssociationRequest =
         AssociationRequest
             .Builder()
             .addDeviceFilter(
                 BluetoothLeDeviceFilter
                     .Builder()
-                    .setScanFilter(ScanFilter.Builder().setServiceUuid(ParcelUuid(OmiUuids.AUDIO_SERVICE)).build())
+                    .setScanFilter(ScanFilter.Builder().setServiceUuid(ParcelUuid(model.serviceUuid)).build())
                     .build(),
             ).build()
 
     /** Opens the chooser through [onChooser] (launch it with an IntentSenderRequest). */
     fun associate(
+        model: RecorderModel,
         onChooser: (IntentSender) -> Unit,
         onError: (String) -> Unit,
     ) {
@@ -54,15 +56,18 @@ class CompanionPairing(
                 override fun onFailure(error: CharSequence?) = onError(error?.toString() ?: "Pairing failed.")
             }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            manager.associate(request(), executor, callback)
+            manager.associate(request(model), executor, callback)
         } else {
             @Suppress("DEPRECATION")
-            manager.associate(request(), callback, null)
+            manager.associate(request(model), callback, null)
         }
     }
 
     /** Reads the chosen pendant from the chooser's result and starts watching for it. */
-    fun complete(data: Intent?): PairedPendant? {
+    fun complete(
+        data: Intent?,
+        model: RecorderModel,
+    ): PairedPendant? {
         val paired =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val association =
@@ -71,14 +76,15 @@ class CompanionPairing(
                     info.deviceMacAddress?.toString()?.uppercase()?.let {
                         PairedPendant(
                             it,
-                            info.displayName?.toString() ?: "Omi",
+                            info.displayName?.toString() ?: model.displayName,
+                            model,
                         )
                     }
                 }
             } else {
                 @Suppress("DEPRECATION")
                 data?.getParcelableExtra<ScanResult>(CompanionDeviceManager.EXTRA_DEVICE)?.device?.let {
-                    PairedPendant(it.address, nameOf(it))
+                    PairedPendant(it.address, nameOf(it) ?: model.displayName, model)
                 }
             }
         paired?.let { observe(it.address) }
@@ -86,12 +92,12 @@ class CompanionPairing(
     }
 
     /** Before Android 13 reading the name needs BLUETOOTH_CONNECT, which the user may not have granted yet. */
-    private fun nameOf(device: BluetoothDevice): String =
+    private fun nameOf(device: BluetoothDevice): String? =
         try {
             device.name
         } catch (_: SecurityException) {
             null
-        } ?: "Omi"
+        }
 
     /**
      * Idempotent; also called after a reboot. Deprecated on Android 16 in favour of a request

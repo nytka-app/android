@@ -21,6 +21,7 @@ import io.github.nytka_app.core.settings.Settings
 import io.github.nytka_app.firmware.FirmwareNotice
 import io.github.nytka_app.pendant.FirmwareVersion
 import io.github.nytka_app.pendant.PendantInfo
+import io.github.nytka_app.pendant.RecorderModel
 import io.github.nytka_app.ui.PermissionAnswer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -42,6 +43,7 @@ class DeviceViewModelTest {
                 token = "t".repeat(40),
                 pendantAddress = "AA:BB",
                 pendantName = "Omi",
+                pendantModel = "omi",
             ),
         )
     private val actions = FakeDeviceActions()
@@ -155,9 +157,10 @@ class DeviceViewModelTest {
     fun `pairing stores the pendant and restarts capture`() {
         val viewModel = viewModel()
 
-        viewModel.paired(PairedPendant("CC:DD", "Omi 2"))
+        viewModel.paired(PairedPendant("CC:DD", "Omi 2", RecorderModel.Omi))
 
         assertEquals("CC:DD", settings.state.value.pendantAddress)
+        assertEquals("omi", settings.state.value.pendantModel)
         assertEquals(listOf("restart"), actions.calls)
     }
 
@@ -168,6 +171,7 @@ class DeviceViewModelTest {
         viewModel.forgetPendant()
 
         assertNull(settings.state.value.pendantAddress)
+        assertNull(settings.state.value.pendantModel)
         assertEquals(listOf("stop", "forget AA:BB"), actions.calls)
     }
 
