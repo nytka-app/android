@@ -813,4 +813,36 @@
     <string name="ask_idea_promised_format">Мої обіцянки — %1$s</string>
     <string name="ask_idea_yesterday">Що сталося вчора?</string>
     <string name="ask_idea_open">Що в мене ще не зроблено?</string>
+
+    <!-- Transcribe on this phone -->
+    <string name="phone_transcription_title">Розпізнавати на цьому телефоні</string>
+    <string name="phone_transcription_entry_summary">Безкоштовна чернетка тексту, офлайн на телефоні</string>
+    <string name="phone_transcription_model">Модель розпізнавання</string>
+    <string name="phone_transcription_drafts">Чернетки</string>
+    <string name="phone_transcription_benchmark">Бенчмарк</string>
+    <string name="phone_transcription_unavailable">У цій збірці немає розпізнавання на телефоні. Воно є лише у збірці для Google Play: його рушій — готова нативна бібліотека, яку F-Droid не приймає.</string>
+    <string name="phone_transcription_needs_model">Спершу виберіть модель нижче, потім увімкніть це.</string>
+    <string name="phone_transcription_label">Розпізнавати на цьому телефоні</string>
+    <string name="phone_transcription_explanation">Розпізнавати мовлення ще й на телефоні, безкоштовно й офлайн. Текст лишається на телефоні як чернетка; основним записом і далі є транскрипт вашого сервера.</string>
+    <string name="phone_transcription_on_battery">Також від батареї</string>
+    <string name="phone_transcription_charging_only">Працює лише під час заряджання.</string>
+    <string name="phone_transcription_battery_format">Коли заряд %1$d%% або більше</string>
+    <string name="phone_transcription_waiting_format">Чекає близько %1$d хв аудіо</string>
+    <string name="phone_transcription_copying_format">Скопійовано %1$s. Не закривайте цей екран.</string>
+    <string name="phone_transcription_pick">Вибрати теку моделі</string>
+    <string name="phone_transcription_delete_model">Видалити модель</string>
+    <string name="phone_transcription_model_help">Застосунок ніколи не завантажує моделей. На комп\'ютері завантажте модель sherpa-onnx (Parakeet TDT 0.6B v3 int8, близько 670 МБ, — ту, що працює на вашому сервері, або меншу NeMo FastConformer, близько 110 МБ), розпакуйте, скопіюйте теку на телефон і виберіть її тут.</string>
+    <string name="phone_transcription_no_drafts">Чернеток ще немає.</string>
+    <string name="phone_transcription_delete_drafts">Видалити чернетки</string>
+    <string name="phone_transcription_drafts_note">Чернетки зберігаються на телефоні 7 днів і ніколи не вивантажуються.</string>
+    <string name="phone_transcription_benchmark_note">Вимірює модель на синтетичному записі фейкового кулона: швидкість, пам\'ять і батарею.</string>
+    <string name="phone_transcription_benchmark_run">Запустити бенчмарк</string>
+    <string name="phone_transcription_benchmark_no_battery">Не виміряно: телефон заряджається або не повідомляє струм</string>
+    <string name="phone_transcription_import_title">Скопіювати цю модель?</string>
+    <string name="phone_transcription_import_text_format">%1$s, %2$s. Вільно на телефоні: %3$s.</string>
+    <string name="phone_transcription_import_confirm">Скопіювати</string>
+    <string name="phone_transcription_no_room">На телефоні замало місця для цієї моделі.</string>
+    <string name="phone_transcription_no_model_in_folder">У цій теці немає моделі: потрібні tokens.txt і файли .onnx моделі.</string>
+    <string name="phone_transcription_import_failed">Не вдалося скопіювати модель. Спробуйте ще раз.</string>
+    <string name="phone_transcription_benchmark_failed">Бенчмарк не зміг запустити цю модель.</string>
 </resources>

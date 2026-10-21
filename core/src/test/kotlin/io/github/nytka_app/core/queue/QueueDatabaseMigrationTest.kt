@@ -167,6 +167,36 @@ class QueueDatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun `version 6 to 7 keeps the queue and adds the phone's draft tables`() {
+        helper.createDatabase(NAME, 6).use { db ->
+            db.execSQL(
+                "insert into chunks (id, session, firstSeq, frameCount, createdAtMs, body) " +
+                    "values (1, 's', 0, 1, 5, x'0304')",
+            )
+        }
+
+        helper.runMigrationsAndValidate(NAME, 7, true).use { db ->
+            db.query("select length(body) from chunks where id = 1").use {
+                assertTrue(it.moveToFirst())
+                assertEquals(2, it.getInt(0))
+            }
+            db.execSQL(
+                "insert into draft_audio (chunkId, session, firstSeq, frameCount, body, createdAtMs) " +
+                    "values (1, 's', 0, 1, x'0304', 5)",
+            )
+            db.execSQL(
+                "insert into draft_texts (session, firstSeq, startMs, endMs, text, model, createdAtMs) " +
+                    "values ('s', 0, 1, 2, 't', 'm', 3)",
+            )
+            db.query("select (select count(*) from draft_audio), (select count(*) from draft_texts)").use {
+                assertTrue(it.moveToFirst())
+                assertEquals(1, it.getInt(0))
+                assertEquals(1, it.getInt(1))
+            }
+        }
+    }
+
     private companion object {
         const val NAME = "migration-test"
     }

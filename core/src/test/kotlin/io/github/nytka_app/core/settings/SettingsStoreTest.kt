@@ -84,6 +84,9 @@ class SettingsStoreTest {
                         ),
                     pendingLocationPlace = "Home",
                     pendingLocationAt = 1_760_000_000_000,
+                    phoneTranscription = true,
+                    phoneTranscriptionOnBattery = true,
+                    phoneTranscriptionBatteryPercent = 60,
                     muteSchedule =
                         MuteSchedule(
                             listOf(

@@ -11,6 +11,7 @@ import io.github.nytka_app.ui.developer.DeveloperScreen
 import io.github.nytka_app.ui.developer.server.ServerSettingsScreen
 import io.github.nytka_app.ui.developer.server.TokensScreen
 import io.github.nytka_app.ui.developer.server.WebhooksScreen
+import io.github.nytka_app.ui.transcribe.PhoneTranscriptionScreen
 import io.github.nytka_app.ui.voice.VoiceScreen
 
 /**
@@ -33,6 +34,7 @@ fun DeviceTab(
                 onOpenPendant = { navController.navigate("pendant") },
                 onOpenSignals = { navController.navigate("signals") },
                 onOpenAboutRecording = { navController.navigate("about-recording") },
+                onOpenPhoneTranscription = { navController.navigate("phone-transcription") },
             )
         }
         composable("pendant") { entry ->
@@ -47,6 +49,7 @@ fun DeviceTab(
                 onOpenSignals = { navController.navigate("signals") },
             )
         }
+        composable("phone-transcription") { PhoneTranscriptionScreen(onBack = { navController.popBackStack() }) }
         composable("voice") { VoiceScreen(onBack = { navController.popBackStack() }) }
         composable("developer") {
             DeveloperScreen(

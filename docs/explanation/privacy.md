@@ -4,7 +4,7 @@ What the app keeps, what it sends, and to whom. Back to the [README](../../READM
 
 Audio waiting to upload, in the app's private storage, until the server has it; the settings; the
 token, encrypted with a key that never leaves the Android Keystore; how far the pendant's storage
-has been read; the time and result of the last firmware check; the ids (not the text) of the meeting briefs already posted, at most 50; the [phone-context](../reference/device.md#phone-context) stretches not yet sent (kind, route, two times); the names and coordinates of your [saved places](../reference/device.md#location-tags) and the one coarse reading still waiting to be tagged; and a log of when you muted and unmuted (times and on or off, nothing else). Android
+has been read; the time and result of the last firmware check; the ids (not the text) of the meeting briefs already posted, at most 50; the [phone-context](../reference/device.md#phone-context) stretches not yet sent (kind, route, two times); the names and coordinates of your [saved places](../reference/device.md#location-tags) and the one coarse reading still waiting to be tagged; a log of when you muted and unmuted (times and on or off, nothing else); and, only with [Transcribe on this phone](../reference/device.md#transcribe-on-this-phone) on, the model you copied, copies of the audio still waiting for it and the draft text it made, kept 7 days and never uploaded. Android
 backups and phone-to-phone transfers skip all of it, so a new phone starts with first run. The
 pendant keeps the audio it stored until your server has it. The app talks to your server and nothing
 else, apart from the once-a-day [firmware notice](../reference/device.md#pendant-firmware-notice) (GitHub, switchable): no

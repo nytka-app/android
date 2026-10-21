@@ -8,6 +8,7 @@ import io.github.nytka_app.alerts.Notifier
 import io.github.nytka_app.briefs.BriefWorker
 import io.github.nytka_app.capture.UploadDrainWorker
 import io.github.nytka_app.core.settings.SettingsSource
+import io.github.nytka_app.transcribe.PhoneTranscriptionController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,10 +27,14 @@ class NytkaApp :
     @Inject
     lateinit var settings: SettingsSource
 
+    @Inject
+    lateinit var phoneTranscription: PhoneTranscriptionController
+
     override fun onCreate() {
         super.onCreate()
         Notifier.createChannels(this)
         UploadDrainWorker.schedule(this)
+        phoneTranscription.start()
         // KEEP makes this a no-op when the job is already queued.
         CoroutineScope(Dispatchers.Default).launch {
             if (settings.current().briefNotifications) BriefWorker.schedule(this@NytkaApp)

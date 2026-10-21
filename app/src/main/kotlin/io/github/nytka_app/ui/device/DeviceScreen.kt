@@ -57,6 +57,7 @@ fun DeviceScreen(
     onOpenPendant: () -> Unit,
     onOpenSignals: () -> Unit,
     onOpenAboutRecording: () -> Unit,
+    onOpenPhoneTranscription: () -> Unit,
     viewModel: DeviceViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -148,6 +149,12 @@ fun DeviceScreen(
                     onOpenSettings = viewModel::openAppSettings,
                     onAddPlace = viewModel::addSavedPlace,
                     onRemovePlace = viewModel::removeSavedPlace,
+                )
+                HorizontalDivider()
+                SettingsRow(
+                    stringResource(R.string.phone_transcription_title),
+                    supporting = stringResource(R.string.phone_transcription_entry_summary),
+                    onClick = onOpenPhoneTranscription,
                 )
             }
         }

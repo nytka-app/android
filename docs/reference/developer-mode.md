@@ -11,7 +11,8 @@ segments. It has a fake pendant that replays a bundled text-to-speech recording,
 a **Request high-priority connection** switch (off by default; capture restarts, and each connection then asks
 Android for a 11.25 to 15 ms interval, to compare how often the link drops with and without it),
 a button that saves the next 60 seconds of frames as a test fixture, and **Copy debug report** for
-bug reports, which never includes the token. A saved fixture holds the voices of whoever spoke: keep
+bug reports, which never includes the token. With a model imported, the
+[Transcribe on this phone](device.md#transcribe-on-this-phone) screen gains a **Benchmark**. A saved fixture holds the voices of whoever spoke: keep
 it private. Its **Server** section holds three screens.
 
 **Server settings** edits the settings your server keeps in its database, grouped by prefix: `stt`,

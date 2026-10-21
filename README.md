@@ -39,6 +39,9 @@ server; this app is its phone half. [How Nytka compares](docs/explanation/compar
   [Offline sync](docs/explanation/offline-sync.md) explains it.
 - **Shows what the server makes of it:** conversations with titles, summaries and transcripts, tasks, memories,
   people and their voices, search, and Ask, a question answered from your conversations with numbered sources.
+- **Can transcribe on the phone too** (Google Play build, off by default): free, private and offline draft text
+  from a model you copy to the phone yourself, made only while it charges unless you allow battery use.
+  [Transcribe on this phone](docs/reference/device.md#transcribe-on-this-phone).
 - **Runs the server from the phone:** its settings, access tokens and webhooks, plus the pendant's LED brightness
   and microphone gain.
 - **Talks to your server and nothing else**, apart from a once-a-day firmware check against GitHub that you can
@@ -98,7 +101,7 @@ clients; `:app` is the Compose UI and the background services. Four rules hold e
 - [Get started](docs/tutorial.md): what you need, install, the first run
 - [The screens](docs/reference/screens.md): every tab, search, appearance, tags
 - [The Device screen](docs/reference/device.md): pendant, its settings and firmware notice, your voice, phone
-  context, meeting briefs, location tags
+  context, meeting briefs, location tags, transcribe on this phone
 - [Everyday use](docs/how-to/everyday-use.md) · [When something is off](docs/how-to/troubleshooting.md)
 - [Offline sync](docs/explanation/offline-sync.md) · [What stays on the phone](docs/explanation/privacy.md) ·
   [How Nytka compares](docs/explanation/comparison.md)

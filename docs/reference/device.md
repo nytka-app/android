@@ -139,3 +139,37 @@ dropped rather than tagging whatever is newest.
 "Office") and Nytka remembers it; a reading within about 150 m of a saved place uses its name
 instead of the city-level label. Saved places stay on the phone and are never sent to the server by
 themselves, only as the tag a session's place becomes.
+
+## Transcribe on this phone
+
+**Transcribe on this phone** (Device tab, under *On this phone*; off by default) recognises speech on the phone as
+well as on your server: free, private and offline. The result is draft text that stays on the phone; the server's
+transcript is still the record, and nothing the phone recognises is uploaded yet.
+
+- **Which build.** Only the Google Play build (`play` flavor, `./gradlew installPlayDebug`) has the recogniser,
+  [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx) 1.13.8 (Apache-2.0) over ONNX Runtime (MIT), for arm64
+  phones. It is a prebuilt native library that F-Droid does not build from source, so the `oss` build, which is
+  also the APK on GitHub Releases, shows the setting with a note and nothing else.
+- **The model.** The app never downloads one: its only call to a host that is not your server is the firmware
+  check. On a computer, download a sherpa-onnx model and unpack it, for example
+  `sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8` (487 MB download, about 670 MB unpacked, CC-BY-4.0, the model the
+  server's recogniser runs, 25 European languages including Ukrainian and Russian), or the smaller
+  `sherpa-onnx-nemo-fast-conformer-transducer-be-de-en-es-fr-hr-it-pl-ru-uk-20k-int8` (about 110 MB). Copy the
+  folder to the phone and tap **Choose model folder**. The app shows the model's size and the free space before it
+  copies anything, refuses a copy that would leave less than 200 MB free, and keeps one model at a time. A folder
+  needs `tokens.txt` and either `encoder`, `decoder` and `joiner` `.onnx` files (a transducer) or one `.onnx`
+  (a NeMo CTC model); int8 files win over full-precision ones.
+- **When it runs.** Every 15 minutes while the phone charges, for at most 8 minutes a time. **Also on battery**
+  lets it run when the battery is at or above a level you pick (20 to 100 %, 80 by default).
+- **What it reads.** While the switch is on, each chunk the queue seals is copied for the recogniser (the newest
+  2,000, about 16 hours of speech); uploads are not delayed and nothing about how the queue stores or deletes audio
+  changes. Only speech is decoded: the pendant's Opus frames are small when it is quiet, so silence is skipped
+  without decoding. Stretches of speech up to 30 s are decoded to 16 kHz with Android's own Opus decoder and
+  recognised; each copy is deleted once its text is saved. Switching off deletes the copies still waiting.
+- **Drafts** show on the setting's screen, newest first, with their time, and stay on the phone for 7 days.
+  **Delete drafts** removes them at once. Their text never goes into the app's log, the debug report or the
+  diagnostics upload.
+- **Benchmark** (developer mode): times the installed model on the fake pendant's synthetic recording and shows the
+  real-time factor, load time, peak memory, battery per hour of recognising (when not charging) and the word error
+  rate against the sentence the recording was made from.
+

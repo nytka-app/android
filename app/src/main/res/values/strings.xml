@@ -796,4 +796,36 @@
     <string name="ask_idea_promised_format">What did I promise %1$s?</string>
     <string name="ask_idea_yesterday">What happened yesterday?</string>
     <string name="ask_idea_open">What is still open on my plate?</string>
+
+    <!-- Transcribe on this phone -->
+    <string name="phone_transcription_title">Transcribe on this phone</string>
+    <string name="phone_transcription_entry_summary">Free draft text, made offline on the phone</string>
+    <string name="phone_transcription_model">Recognition model</string>
+    <string name="phone_transcription_drafts">Drafts</string>
+    <string name="phone_transcription_benchmark">Benchmark</string>
+    <string name="phone_transcription_unavailable">This build has no on-device recogniser. Only the Google Play build has it: its engine is a prebuilt native library, which F-Droid does not accept.</string>
+    <string name="phone_transcription_needs_model">Choose a model below, then switch this on.</string>
+    <string name="phone_transcription_label">Transcribe on this phone</string>
+    <string name="phone_transcription_explanation">Recognise speech on the phone too, free and offline. The text stays on this phone as a draft; your server\'s transcript is still the record.</string>
+    <string name="phone_transcription_on_battery">Also on battery</string>
+    <string name="phone_transcription_charging_only">Runs only while the phone charges.</string>
+    <string name="phone_transcription_battery_format">When the battery is at %1$d%% or more</string>
+    <string name="phone_transcription_waiting_format">About %1$d min of audio waiting</string>
+    <string name="phone_transcription_copying_format">Copied %1$s. Keep this screen open.</string>
+    <string name="phone_transcription_pick">Choose model folder</string>
+    <string name="phone_transcription_delete_model">Delete model</string>
+    <string name="phone_transcription_model_help">The app never downloads a model. On a computer, download a sherpa-onnx model (Parakeet TDT 0.6B v3 int8, about 670 MB, the model your server runs, or a smaller NeMo FastConformer, about 110 MB), unpack it, copy the folder to this phone and choose it here.</string>
+    <string name="phone_transcription_no_drafts">No drafts yet.</string>
+    <string name="phone_transcription_delete_drafts">Delete drafts</string>
+    <string name="phone_transcription_drafts_note">Drafts stay on this phone for 7 days and are never uploaded.</string>
+    <string name="phone_transcription_benchmark_note">Times the model on the fake pendant\'s synthetic recording: speed, memory and battery.</string>
+    <string name="phone_transcription_benchmark_run">Run benchmark</string>
+    <string name="phone_transcription_benchmark_no_battery">Not measured: the phone charges or reports no current</string>
+    <string name="phone_transcription_import_title">Copy this model?</string>
+    <string name="phone_transcription_import_text_format">%1$s, %2$s. Free on this phone: %3$s.</string>
+    <string name="phone_transcription_import_confirm">Copy</string>
+    <string name="phone_transcription_no_room">There is not enough room on this phone for this model.</string>
+    <string name="phone_transcription_no_model_in_folder">This folder holds no model: it needs tokens.txt and the model\'s .onnx files.</string>
+    <string name="phone_transcription_import_failed">The model could not be copied. Try again.</string>
+    <string name="phone_transcription_benchmark_failed">The benchmark could not run this model.</string>
 </resources>

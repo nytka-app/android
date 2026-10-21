@@ -49,6 +49,11 @@ data class Settings(
     val pendingLocationPlace: String? = null,
     /** Epoch milliseconds the session that made [pendingLocationPlace] started; 0 when there is none. */
     val pendingLocationAt: Long = 0,
+    /** Recognise speech on the phone too, as local draft text; off until switched on. Needs an imported model. */
+    val phoneTranscription: Boolean = false,
+    /** Also recognise on battery at [phoneTranscriptionBatteryPercent] or more; otherwise only on a charger. */
+    val phoneTranscriptionOnBattery: Boolean = false,
+    val phoneTranscriptionBatteryPercent: Int = 80,
 ) {
     /** What the uploader watches: a change here may end a pause. */
     val connectionKey: Triple<String, String, Boolean> get() = Triple(serverUrl, token, privateNetwork)
@@ -62,5 +67,6 @@ data class Settings(
             "diagnosticsUpload=$diagnosticsUpload, muteWindows=${muteSchedule.windows.size}, " +
             "firmwareCheck=$firmwareCheck, highPriorityConnection=$highPriorityConnection, " +
             "phoneContext=$phoneContext, wallpaperColors=$wallpaperColors, " +
-            "locationTags=$locationTags, savedPlaces=${savedPlaces.size})"
+            "locationTags=$locationTags, savedPlaces=${savedPlaces.size}, " +
+            "phoneTranscription=$phoneTranscription/$phoneTranscriptionOnBattery/$phoneTranscriptionBatteryPercent)"
 }
