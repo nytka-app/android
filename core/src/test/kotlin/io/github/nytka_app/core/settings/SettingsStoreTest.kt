@@ -57,6 +57,7 @@ class SettingsStoreTest {
                     muted = true,
                     pendantAddress = "AA:BB:CC:DD:EE:FF",
                     pendantName = "Omi",
+                    pendantModel = "omi",
                     consentGiven = true,
                     onboarded = true,
                     firstRunStep = FirstRunStep.Consent,
@@ -103,6 +104,16 @@ class SettingsStoreTest {
             store.update { wanted }
 
             assertEquals(wanted, store.current())
+        }
+
+    @Test
+    fun `a pendant paired before models has no model, which the app reads as Omi`() =
+        runTest {
+            val store = store()
+
+            store.update { it.copy(pendantAddress = "AA:BB:CC:DD:EE:FF", pendantName = "Omi") }
+
+            assertEquals(null, store.current().pendantModel)
         }
 
     @Test

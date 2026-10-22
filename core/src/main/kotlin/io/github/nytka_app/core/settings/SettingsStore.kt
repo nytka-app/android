@@ -40,6 +40,7 @@ class SettingsStore(
             preferences[MUTED] = next.muted
             next.pendantAddress?.let { preferences[PENDANT_ADDRESS] = it } ?: preferences.remove(PENDANT_ADDRESS)
             next.pendantName?.let { preferences[PENDANT_NAME] = it } ?: preferences.remove(PENDANT_NAME)
+            next.pendantModel?.let { preferences[PENDANT_MODEL] = it } ?: preferences.remove(PENDANT_MODEL)
             preferences[CONSENT_GIVEN] = next.consentGiven
             preferences[ONBOARDED] = next.onboarded
             preferences[FIRST_RUN_STEP] = next.firstRunStep.name
@@ -80,6 +81,7 @@ class SettingsStore(
             muted = preferences[MUTED] ?: false,
             pendantAddress = preferences[PENDANT_ADDRESS],
             pendantName = preferences[PENDANT_NAME],
+            pendantModel = preferences[PENDANT_MODEL],
             consentGiven = preferences[CONSENT_GIVEN] ?: false,
             onboarded = preferences[ONBOARDED] ?: false,
             firstRunStep = readStep(preferences),
@@ -121,6 +123,7 @@ class SettingsStore(
         private val MUTED = booleanPreferencesKey("muted")
         private val PENDANT_ADDRESS = stringPreferencesKey("pendant_address")
         private val PENDANT_NAME = stringPreferencesKey("pendant_name")
+        private val PENDANT_MODEL = stringPreferencesKey("pendant_model")
         private val CONSENT_GIVEN = booleanPreferencesKey("consent_given")
         private val ONBOARDED = booleanPreferencesKey("onboarded")
         private val FIRST_RUN_STEP = stringPreferencesKey("first_run_step")

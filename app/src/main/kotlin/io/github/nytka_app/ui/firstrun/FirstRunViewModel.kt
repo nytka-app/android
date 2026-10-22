@@ -235,6 +235,7 @@ class FirstRunViewModel
                     it.copy(
                         pendantAddress = pendant.address,
                         pendantName = pendant.name,
+                        pendantModel = pendant.model.id,
                         fakePendant = false,
                         onboarded = true,
                     )

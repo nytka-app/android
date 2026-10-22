@@ -541,6 +541,7 @@ class DeviceViewModel
                     it.copy(
                         pendantAddress = pendant.address,
                         pendantName = pendant.name,
+                        pendantModel = pendant.model.id,
                         fakePendant = false,
                     )
                 }
@@ -553,7 +554,7 @@ class DeviceViewModel
                 val address = settings.current().pendantAddress ?: return@launch
                 actions.stopCapture()
                 actions.forgetPendant(address)
-                settings.update { it.copy(pendantAddress = null, pendantName = null) }
+                settings.update { it.copy(pendantAddress = null, pendantName = null, pendantModel = null) }
             }
         }
 

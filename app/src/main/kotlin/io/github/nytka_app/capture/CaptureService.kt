@@ -30,12 +30,14 @@ import io.github.nytka_app.core.queue.BookmarkOutbox
 import io.github.nytka_app.core.queue.ContextOutbox
 import io.github.nytka_app.core.queue.FrameQueue
 import io.github.nytka_app.core.ring.CaptureTimes
+import io.github.nytka_app.core.settings.Settings
 import io.github.nytka_app.core.settings.SettingsStore
 import io.github.nytka_app.core.upload.BookmarkUploader
 import io.github.nytka_app.core.upload.ContextUploader
 import io.github.nytka_app.core.upload.Uploader
 import io.github.nytka_app.di.ApplicationScope
 import io.github.nytka_app.pendant.Pendant
+import io.github.nytka_app.pendant.RecorderModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
@@ -182,7 +184,7 @@ class CaptureService : LifecycleService() {
         }
         logRun = appLog.start()
         power.start()
-        val pendant = pendants.create(scope, current.fakePendant, current.highPriorityConnection)
+        val pendant = pendantFor(current)
         val capture =
             CaptureController(
                 pendant,
@@ -233,6 +235,14 @@ class CaptureService : LifecycleService() {
                 CaptureWidgetProvider.refresh(this)
             }
     }
+
+    private fun pendantFor(current: Settings): Pendant =
+        pendants.create(
+            scope,
+            RecorderModel.of(current.pendantModel),
+            current.fakePendant,
+            current.highPriorityConnection,
+        )
 
     private fun startSideUploads() {
         scope.launch { bookmarkUploader.run() }

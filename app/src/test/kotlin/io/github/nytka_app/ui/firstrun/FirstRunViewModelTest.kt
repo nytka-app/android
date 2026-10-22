@@ -9,6 +9,7 @@ import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.settings.FirstRunStep
 import io.github.nytka_app.core.settings.Settings
+import io.github.nytka_app.pendant.RecorderModel
 import io.github.nytka_app.ui.PermissionAnswer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -403,11 +404,12 @@ class FirstRunViewModelTest {
 
     @Test
     fun `pairing finishes first run and starts capture`() {
-        viewModel.paired(PairedPendant("AA:BB:CC:DD:EE:FF", "Omi"))
+        viewModel.paired(PairedPendant("AA:BB:CC:DD:EE:FF", "Omi", RecorderModel.Omi))
 
         assertTrue(viewModel.state.value.done)
         assertTrue(settings.state.value.onboarded)
         assertEquals("AA:BB:CC:DD:EE:FF", settings.state.value.pendantAddress)
+        assertEquals("omi", settings.state.value.pendantModel)
         assertEquals(listOf("start"), actions.calls)
     }
 

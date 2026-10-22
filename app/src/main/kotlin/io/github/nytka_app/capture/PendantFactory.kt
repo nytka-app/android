@@ -8,6 +8,7 @@ import io.github.nytka_app.pendant.FakePendant
 import io.github.nytka_app.pendant.OmiPendant
 import io.github.nytka_app.pendant.Pendant
 import io.github.nytka_app.pendant.PendantLogger
+import io.github.nytka_app.pendant.RecorderModel
 import kotlinx.coroutines.CoroutineScope
 import javax.inject.Inject
 
@@ -19,6 +20,7 @@ class PendantFactory
     ) {
         fun create(
             scope: CoroutineScope,
+            model: RecorderModel,
             fake: Boolean,
             highPriority: Boolean = false,
         ): Pendant =
@@ -28,7 +30,10 @@ class PendantFactory
                     scope,
                 )
             } else {
-                OmiPendant(context, scope, logger = PendantLogger(log::log), highPriority = highPriority)
+                when (model) {
+                    RecorderModel.Omi ->
+                        OmiPendant(context, scope, logger = PendantLogger(log::log), highPriority = highPriority)
+                }
             }
 
         /** The bundled synthetic recording (Task 8), frame payloads in order. */
