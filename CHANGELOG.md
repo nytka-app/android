@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.0](https://github.com/nytka-app/android/compare/v0.23.0...v0.24.0) (2026-10-22)
+
+
+### Features
+
+* **pendant:** recorder model, stored with the pairing and used to filter the chooser ([#130](https://github.com/nytka-app/android/issues/130)) ([94d18e5](https://github.com/nytka-app/android/commit/94d18e50da42037667ce474d8c741df1307cb27e))
+
 ## [0.23.0](https://github.com/nytka-app/android/compare/v0.22.0...v0.23.0) (2026-10-21)
 
 
