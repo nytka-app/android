@@ -14,6 +14,12 @@ interface ContextSource {
 
     suspend fun oldest(limit: Int): List<ContextRow>
 
+    /** The oldest of the given kinds only: ranges a server cannot take yet wait for one that can. */
+    suspend fun oldest(
+        limit: Int,
+        kinds: List<String>,
+    ): List<ContextRow>
+
     suspend fun remove(ids: List<String>)
 
     /** Ranges that ended before [cutoffMs] and never went out are no use to the server any more. */
@@ -30,6 +36,11 @@ class ContextOutbox(
     override suspend fun add(row: ContextRow) = dao.insert(row)
 
     override suspend fun oldest(limit: Int): List<ContextRow> = dao.oldest(limit)
+
+    override suspend fun oldest(
+        limit: Int,
+        kinds: List<String>,
+    ): List<ContextRow> = dao.oldest(limit, kinds)
 
     override suspend fun remove(ids: List<String>) = dao.delete(ids)
 

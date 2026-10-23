@@ -24,6 +24,9 @@ data class ServerInfo(
         const val FEATURE_ROLES = "roles"
         const val FEATURE_SPEECH_KIND = "speech-kind"
         const val FEATURE_CONTEXT_RANGES = "context-ranges"
+
+        /** `screen` and `headphones` context ranges. */
+        const val FEATURE_CONTEXT_DEVICE = "context-device"
         const val FEATURE_TASK_CREATE = "task-create"
         const val FEATURE_LEDGER = "ledger"
         const val FEATURE_REVIEW_CLIPS = "review-clips"

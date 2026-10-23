@@ -1,6 +1,9 @@
 package io.github.nytka_app.capture
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.media.AudioAttributes
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
@@ -9,6 +12,7 @@ import android.media.AudioPlaybackConfiguration
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import android.os.SystemClock
 import androidx.core.content.ContextCompat
 import io.github.nytka_app.core.context.ContextRange
@@ -23,10 +27,11 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 /**
- * Feeds the [ContextRangeTracker] from `AudioManager` callbacks between [start] and [stop]: which kinds of players
- * are active, the call mode and the communication device. It needs no permission, never polls (the volume and the
- * route are read inside a callback, and the one timer is the tracker's grace after the sound stops) and keeps no
- * app name, title or number: a range is a kind, a route and two times. The capture service starts and stops it.
+ * Feeds the [ContextRangeTracker] from `AudioManager` callbacks and the screen broadcasts between [start] and [stop]:
+ * which kinds of players are active, the call mode, the communication device, whether media goes to headphones and
+ * whether the screen is on. It needs no permission, never polls (the volume and the routes are read inside a
+ * callback, and the one timer is the tracker's grace after the sound stops) and keeps no app name, title or number:
+ * a range is a kind, a route and two times. The capture service starts and stops it.
  */
 class PhoneContextRecorder(
     private val context: Context,
@@ -35,6 +40,7 @@ class PhoneContextRecorder(
     private val wallClock: () -> Long = System::currentTimeMillis,
 ) {
     private val audio = context.getSystemService(AudioManager::class.java)
+    private val power = context.getSystemService(PowerManager::class.java)
     private val main = Handler(Looper.getMainLooper())
     private val executor = ContextCompat.getMainExecutor(context)
 
@@ -55,6 +61,13 @@ class PhoneContextRecorder(
 
             override fun onAudioDevicesRemoved(removed: Array<out AudioDeviceInfo>) = feedPlayback(null)
         }
+    private val screen =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context,
+                intent: Intent,
+            ) = tracker.onScreen(intent.action == Intent.ACTION_SCREEN_ON)
+        }
     private var lastUsages: Set<Usage> = emptySet()
 
     /** Registers the callbacks and takes the call mode as it is, so a call already running is not missed. */
@@ -66,8 +79,19 @@ class PhoneContextRecorder(
             audio.registerAudioDeviceCallback(devices, main)
             audio.addOnModeChangedListener(executor, modes)
             audio.addOnCommunicationDeviceChangedListener(executor, communication)
+            val screenEvents = IntentFilter(Intent.ACTION_SCREEN_ON).apply { addAction(Intent.ACTION_SCREEN_OFF) }
+            ContextCompat.registerReceiver(
+                context,
+                screen,
+                screenEvents,
+                null,
+                main,
+                ContextCompat.RECEIVER_NOT_EXPORTED,
+            )
+            tracker.onScreen(power.isInteractive)
             feedCommunication(audio.communicationDevice)
             feedMode(audio.mode)
+            feedPlayback(null)
         }
     }
 
@@ -80,6 +104,7 @@ class PhoneContextRecorder(
             audio.unregisterAudioDeviceCallback(devices)
             audio.removeOnModeChangedListener(modes)
             audio.removeOnCommunicationDeviceChangedListener(communication)
+            context.unregisterReceiver(screen)
             main.removeCallbacks(timer)
             tracker.onStop()
         }
@@ -88,7 +113,9 @@ class PhoneContextRecorder(
     private fun feedPlayback(configs: List<AudioPlaybackConfiguration>?) {
         // A device change brings no player list: the last one still says what plays.
         if (configs != null) lastUsages = configs.mapTo(mutableSetOf()) { usageOf(it.audioAttributes.usage) }
-        tracker.onPlayback(lastUsages, mediaOnSpeaker(), audio.getStreamVolume(AudioManager.STREAM_MUSIC))
+        val outputs = mediaOutputs()
+        tracker.onPlayback(lastUsages, onSpeaker(outputs), audio.getStreamVolume(AudioManager.STREAM_MUSIC))
+        tracker.onHeadphones(headphonesOf(outputs))
         scheduleTimer()
     }
 
@@ -118,21 +145,31 @@ class PhoneContextRecorder(
         writes.launch { sink.add(row) }
     }
 
-    /** Where music would play now: the built-in speaker and nothing external. */
-    private fun mediaOnSpeaker(): Boolean {
-        val outputs =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                audio.getAudioDevicesForAttributes(
-                    AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build(),
-                )
-            } else {
-                audio.getDevices(AudioManager.GET_DEVICES_OUTPUTS).toList()
-            }
-        return outputs.any { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER } &&
-            outputs.none { it.type in EXTERNAL_TYPES }
-    }
+    /** Where music would play now; before Android 13, every connected output. */
+    private fun mediaOutputs(): List<AudioDeviceInfo> =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            audio.getAudioDevicesForAttributes(AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_MEDIA).build())
+        } else {
+            audio.getDevices(AudioManager.GET_DEVICES_OUTPUTS).toList()
+        }
 
     private companion object {
+        val WIRED_HEADPHONES =
+            setOf(
+                AudioDeviceInfo.TYPE_WIRED_HEADSET,
+                AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
+                AudioDeviceInfo.TYPE_USB_HEADSET,
+            )
+
+        // An A2DP output may be headphones, a speaker or a car; AudioDeviceInfo does not say: it counts as headphones.
+        val BLUETOOTH_HEADPHONES =
+            setOf(
+                AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+                AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
+                AudioDeviceInfo.TYPE_BLE_HEADSET,
+                AudioDeviceInfo.TYPE_HEARING_AID,
+            )
+
         val EXTERNAL_TYPES =
             setOf(
                 AudioDeviceInfo.TYPE_WIRED_HEADSET,
@@ -151,6 +188,18 @@ class PhoneContextRecorder(
                 AudioDeviceInfo.TYPE_BLE_BROADCAST,
                 AudioDeviceInfo.TYPE_HEARING_AID,
             )
+
+        /** The built-in speaker and nothing external. */
+        fun onSpeaker(outputs: List<AudioDeviceInfo>) =
+            outputs.any { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER } &&
+                outputs.none { it.type in EXTERNAL_TYPES }
+
+        fun headphonesOf(outputs: List<AudioDeviceInfo>) =
+            when {
+                outputs.any { it.type in WIRED_HEADPHONES } -> Route.HEADSET
+                outputs.any { it.type in BLUETOOTH_HEADPHONES } -> Route.BLUETOOTH
+                else -> null
+            }
 
         fun usageOf(usage: Int) =
             when (usage) {

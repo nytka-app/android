@@ -5,6 +5,7 @@ import io.github.nytka_app.core.api.ContextClient
 import io.github.nytka_app.core.api.FailureKind
 import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.ServerInfo
+import io.github.nytka_app.core.context.RangeKind
 import io.github.nytka_app.core.queue.ContextSource
 import io.github.nytka_app.core.settings.Settings
 import kotlinx.coroutines.CancellationException
@@ -16,8 +17,9 @@ import kotlinx.coroutines.sync.withLock
 
 /**
  * Sends the phone-context outbox to the server in batches of up to 500, oldest first, every 60 s while the
- * "Phone context" switch is on and `/info` lists `context-ranges`. A range leaves the outbox only when the server
- * answers 200; a lost answer makes the retry count as skipped, since the server keeps the client's id.
+ * "Phone context" switch is on and `/info` lists `context-ranges`. Only the kinds `/info` admits go out (see
+ * [kindsFor]); the rest wait, up to [KEEP_MS], for a server that takes them. A range leaves the outbox only when the
+ * server answers 200; a lost answer makes the retry count as skipped, since the server keeps the client's id.
  */
 class ContextUploader(
     private val source: ContextSource,
@@ -40,12 +42,14 @@ class ContextUploader(
     private suspend fun drainLocked(): DrainResult {
         source.removeEndedBefore(clock() - KEEP_MS)
         if (!settings.first().phoneContext) return DrainResult.Empty
-        var batch = source.oldest(BATCH)
-        if (batch.isEmpty()) return DrainResult.Empty
-        when (val result = info.info()) {
-            is ApiResult.Ok -> if (!result.value.has(ServerInfo.FEATURE_CONTEXT_RANGES)) return DrainResult.Empty
-            is ApiResult.Failure -> return failed(result)
-        }
+        if (source.oldest(1).isEmpty()) return DrainResult.Empty
+        val kinds =
+            when (val result = info.info()) {
+                is ApiResult.Ok -> kindsFor(result.value)
+                is ApiResult.Failure -> return failed(result)
+            }
+        if (kinds.isEmpty()) return DrainResult.Empty
+        var batch = source.oldest(BATCH, kinds)
         while (batch.isNotEmpty()) {
             when (val result = client.sendRanges(batch)) {
                 is ApiResult.Ok -> failures = 0
@@ -54,7 +58,7 @@ class ContextUploader(
                     if (result.kind != FailureKind.Invalid) return failed(result)
             }
             source.remove(batch.map { it.id })
-            batch = source.oldest(BATCH)
+            batch = source.oldest(BATCH, kinds)
         }
         return DrainResult.Empty
     }
@@ -98,6 +102,19 @@ class ContextUploader(
 
     companion object {
         const val BATCH = 500
+
+        /** The kinds a server takes: one with a kind it does not know refuses the whole batch with a 400. */
+        fun kindsFor(info: ServerInfo): List<String> =
+            buildList {
+                if (!info.has(ServerInfo.FEATURE_CONTEXT_RANGES)) return@buildList
+                add(RangeKind.MEDIA.wire)
+                add(RangeKind.CALL.wire)
+                if (info.has(ServerInfo.FEATURE_CONTEXT_DEVICE)) {
+                    add(RangeKind.SCREEN.wire)
+                    add(RangeKind.HEADPHONES.wire)
+                }
+            }
+
         const val TICK_MS = 60_000L
         const val KEEP_MS = 7L * 24 * 60 * 60 * 1_000
     }
