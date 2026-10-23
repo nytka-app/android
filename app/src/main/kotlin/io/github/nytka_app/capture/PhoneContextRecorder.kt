@@ -161,7 +161,7 @@ class PhoneContextRecorder(
                 AudioDeviceInfo.TYPE_USB_HEADSET,
             )
 
-        // A2DP cannot tell headphones from a Bluetooth speaker or a car without a permission; it counts as headphones.
+        // An A2DP output may be headphones, a speaker or a car; AudioDeviceInfo does not say, so it counts as headphones.
         val BLUETOOTH_HEADPHONES =
             setOf(
                 AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,

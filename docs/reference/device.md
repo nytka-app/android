@@ -99,8 +99,8 @@ server uses them to tell a conversation in the room from a television, a video o
 
 On a server that also lists `context-device`, two more: **screen**, while the screen is on, and **headphones**,
 while the phone's media output goes to wired or USB headphones (route headset) or to Bluetooth (route Bluetooth).
-Android cannot tell Bluetooth headphones from a Bluetooth speaker or a car without a permission the app does not ask
-for, so all three count as headphones. A server without `context-device` gets only media and call; the other
+Android's list of audio outputs does not tell Bluetooth headphones from a Bluetooth speaker or a car, so all three
+count as headphones. A server without `context-device` gets only media and call; the other
 stretches wait on the phone, as below, for one that takes them.
 
 What the app sends is the kind, the route and two times for each stretch, in batches of up to 500 once a minute.
