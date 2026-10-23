@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A sun: Today. Drawn for Nytka (Apache-2.0). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="@android:color/white"
+        android:fillType="evenOdd"
+        android:pathData="M12,7.5a4.5,4.5 0 1,0 0,9a4.5,4.5 0 1,0 0,-9ZM12,9a3,3 0 1,1 0,6a3,3 0 1,1 0,-6Z" />
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M11.25,2h1.5v3h-1.5zM11.25,19h1.5v3h-1.5zM2,11.25h3v1.5H2zM19,11.25h3v1.5h-3z" />
+    <group
+        android:pivotX="12"
+        android:pivotY="12"
+        android:rotation="45">
+        <path
+            android:fillColor="@android:color/white"
+            android:pathData="M11.25,2.5h1.5v2.5h-1.5zM11.25,19h1.5v2.5h-1.5zM2.5,11.25h2.5v1.5H2.5zM19,11.25h2.5v1.5H19z" />
+    </group>
+</vector>

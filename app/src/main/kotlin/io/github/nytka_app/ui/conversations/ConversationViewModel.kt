@@ -163,10 +163,12 @@ data class ConversationUiState(
     val speechNotice: SpeechNotice? = null,
     /** Names the server applied here by itself (`auto-names`); their speakers carry a marker with Undo. */
     val autoNamed: List<NameSuggestion> = emptyList(),
+    /** The paragraph a link to a moment asked for (`?at=`); the screen scrolls to it once and clears it. */
+    val focus: Int? = null,
     val undoNotice: UndoNotice? = null,
 )
 
-@Suppress("TooManyFunctions") // one screen, one function per action
+@Suppress("TooManyFunctions", "LargeClass") // one screen, one function per action
 @HiltViewModel
 class ConversationViewModel
     @Inject
@@ -184,6 +186,9 @@ class ConversationViewModel
         private val speech: SpeechClient,
     ) : ViewModel() {
         private val id: String = checkNotNull(savedState["id"]) { "The conversation route carries an id." }
+
+        /** A link to a moment (`?at=`): focused, and the playhead moved there, once each ([MomentLink]). */
+        private val link = MomentLink(savedState["at"])
         private val mutableState = MutableStateFlow(ConversationUiState())
         val state: StateFlow<ConversationUiState> = mutableState.asStateFlow()
         private var index: AudioIndex? = null
@@ -224,6 +229,7 @@ class ConversationViewModel
             val loaded = (audio.audioIndex(id) as? ApiResult.Ok)?.value ?: return
             index = loaded
             mutableState.update { it.copy(playback = Playback(loaded.durationMs, paragraphStartsMs = startsMs())) }
+            link.position(segmentStarts, loaded)?.let(::seekTo)
             player.state.collect { s ->
                 mutableState.update {
                     it.copy(
@@ -243,6 +249,8 @@ class ConversationViewModel
             val playback = mutableState.value.playback ?: return
             if (playback.playing) player.pause() else start(null, play = true)
         }
+
+        fun focusShown() = mutableState.update { it.copy(focus = null) }
 
         /** Moves the playhead without changing whether it plays. */
         fun seekTo(positionMs: Long) = start(positionMs, play = false)
@@ -759,6 +767,7 @@ class ConversationViewModel
             val title = detail.title?.takeIf(String::isNotBlank)
             val paragraphs = paragraphsOf(detail.segments)
             val marks = place(detail)
+            link.position(segmentStarts, index)?.let(::seekTo)
             return ConversationUiState(
                 title = title ?: Formatting.dayTitle(start.atZone(zone).toLocalDate(), LocalDate.now(clock)),
                 currentTitle = title,
@@ -784,6 +793,7 @@ class ConversationViewModel
                 tagProposals = mutableState.value.tagProposals,
                 speechAccess = mutableState.value.speechAccess,
                 autoNamed = mutableState.value.autoNamed,
+                focus = link.focus(segmentStarts) ?: mutableState.value.focus,
             )
         }
 
