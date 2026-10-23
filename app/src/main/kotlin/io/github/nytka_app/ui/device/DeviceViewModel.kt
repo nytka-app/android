@@ -26,6 +26,7 @@ import io.github.nytka_app.core.settings.Settings
 import io.github.nytka_app.core.settings.SettingsSource
 import io.github.nytka_app.firmware.FirmwareNotice
 import io.github.nytka_app.firmware.FirmwareNotices
+import io.github.nytka_app.pendant.Capabilities
 import io.github.nytka_app.pendant.PendantInfo
 import io.github.nytka_app.ui.PermissionAnswer
 import io.github.nytka_app.ui.after
@@ -373,11 +374,14 @@ class DeviceViewModel
         private var firmwareJob: Job? = null
 
         /** The connected pendant's info, or null when none is connected; may ask GitHub, at most once a day. */
-        fun pendantSeen(info: PendantInfo?) {
+        fun pendantSeen(
+            info: PendantInfo?,
+            capabilities: Capabilities?,
+        ) {
             firmwareJob?.cancel()
             firmwareJob =
                 viewModelScope.launch {
-                    val notice = info?.let { firmware.notice(it) }
+                    val notice = if (info != null && capabilities != null) firmware.notice(info, capabilities) else null
                     local.update { it.copy(firmwareNotice = notice) }
                 }
         }
@@ -537,6 +541,7 @@ class DeviceViewModel
 
         fun paired(pendant: PairedPendant) {
             viewModelScope.launch {
+                val previous = settings.current().pendantAddress
                 settings.update {
                     it.copy(
                         pendantAddress = pendant.address,
@@ -545,6 +550,11 @@ class DeviceViewModel
                         fakePendant = false,
                     )
                 }
+                // A second recorder replaces the first; Android keeps watching the old one until it is forgotten.
+                // After the save, so a failing disassociate cannot lose the new pairing.
+                previous
+                    ?.takeIf { !it.equals(pendant.address, ignoreCase = true) }
+                    ?.let { runCatching { actions.forgetPendant(it) } }
                 actions.restartCapture()
             }
         }

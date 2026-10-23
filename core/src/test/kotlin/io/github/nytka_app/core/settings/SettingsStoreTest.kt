@@ -107,7 +107,7 @@ class SettingsStoreTest {
         }
 
     @Test
-    fun `a pendant paired before models has no model, which the app reads as Omi`() =
+    fun `a pendant paired before models keeps no model id`() =
         runTest {
             val store = store()
 

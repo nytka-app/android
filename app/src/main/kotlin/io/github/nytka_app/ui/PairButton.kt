@@ -16,12 +16,12 @@ import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.pendant.RecorderModel
 
 /**
- * Opens the system's companion-device chooser, filtered on [model]'s service. With one model there is
- * nothing to ask, so [model] defaults to it; a second model needs a picker before this button.
+ * Opens the system's companion-device chooser, filtered on [model]'s service. The default is the model
+ * an install without a saved one means; a screen with a model picker passes the chosen one.
  */
 @Composable
 fun PairButton(
-    model: RecorderModel = RecorderModel.entries.single(),
+    model: RecorderModel = RecorderModel.of(null),
     label: String = stringResource(R.string.pair_pendant),
     onPaired: (PairedPendant) -> Unit,
     onError: (String) -> Unit,

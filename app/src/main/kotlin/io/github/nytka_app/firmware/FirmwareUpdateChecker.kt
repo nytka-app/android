@@ -1,6 +1,7 @@
 package io.github.nytka_app.firmware
 
 import io.github.nytka_app.core.settings.SettingsSource
+import io.github.nytka_app.pendant.Capabilities
 import io.github.nytka_app.pendant.FirmwareStream
 import io.github.nytka_app.pendant.FirmwareVersion
 import io.github.nytka_app.pendant.PendantInfo
@@ -19,14 +20,17 @@ data class FirmwareNotice(
 
 /** What the Device tab asks for once a pendant is connected; null means nothing to tell. */
 fun interface FirmwareNotices {
-    suspend fun notice(info: PendantInfo): FirmwareNotice?
+    suspend fun notice(
+        info: PendantInfo,
+        capabilities: Capabilities,
+    ): FirmwareNotice?
 }
 
 /**
  * Asks [releases] for the newest firmware at most once every [CHECK_INTERVAL], and only while the setting is on and
- * the pendant maps to a [FirmwareStream]. The newest known tag is kept in the settings, so a notice shows without a
- * request in between. An answer from GitHub, even an error, uses up the day (a rate limit must not be hammered); a
- * failure to reach it does not, but is not retried within [RETRY_AFTER_UNREACHABLE].
+ * the recorder offers a [FirmwareStream] that the pendant matches. The newest known tag is kept in the settings, so
+ * a notice shows without a request in between. An answer from GitHub, even an error, uses up the day (a rate limit
+ * must not be hammered); a failure to reach it does not, but is not retried within [RETRY_AFTER_UNREACHABLE].
  */
 class FirmwareUpdateChecker(
     private val settings: SettingsSource,
@@ -36,11 +40,15 @@ class FirmwareUpdateChecker(
     private val lock = Mutex()
     private var unreachableAt: Long? = null
 
-    override suspend fun notice(info: PendantInfo): FirmwareNotice? =
+    override suspend fun notice(
+        info: PendantInfo,
+        capabilities: Capabilities,
+    ): FirmwareNotice? =
         lock.withLock {
             val saved = settings.current()
             if (!saved.firmwareCheck) return null
-            val stream = FirmwareStream.of(info.model, info.firmware) ?: return null
+            val offered = capabilities.firmware ?: return null
+            val stream = FirmwareStream.of(info.model, info.firmware)?.takeIf { it == offered } ?: return null
             val current = FirmwareVersion.parse(info.firmware) ?: return null
             val now = clock.millis()
             if (isDue(saved.firmwareCheckedAt, now) && !recentlyUnreachable(now)) {
