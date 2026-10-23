@@ -15,7 +15,10 @@ data class DayLevel(
     val quiet: Boolean,
 )
 
-/** The quiet-day signal of a server that lists `audio-level`; a day with no wearer speech answers [FailureKind.NotFound]. */
+/**
+ * The quiet-day signal of a server that lists `audio-level`; a day with no wearer speech answers
+ * [FailureKind.NotFound].
+ */
 interface AudioLevelClient {
     suspend fun level(day: LocalDate): ApiResult<DayLevel>
 }

@@ -61,7 +61,8 @@ class SettingsStore(
             preferences[CONSENT_CHIME_MINUTES] = next.consentChimeMinutes
             preferences[PHONE_CONTEXT] = next.phoneContext
             preferences[ACTIVITY_CONTEXT] = next.activityContext
-            next.quietNoticeDay?.let { preferences[QUIET_NOTICE_DAY] = it } ?: preferences.remove(QUIET_NOTICE_DAY)
+            // Empty for none, so this adds no branch to an already long function.
+            preferences[QUIET_NOTICE_DAY] = next.quietNoticeDay.orEmpty()
             preferences[NOW_PLAYING_CONTEXT] = next.nowPlayingContext
             preferences[WALLPAPER_COLORS] = next.wallpaperColors
             preferences[LOCATION_TAGS] = next.locationTags
@@ -105,7 +106,7 @@ class SettingsStore(
             consentChimeMinutes = preferences[CONSENT_CHIME_MINUTES] ?: Settings().consentChimeMinutes,
             phoneContext = preferences[PHONE_CONTEXT] ?: true,
             activityContext = preferences[ACTIVITY_CONTEXT] ?: false,
-            quietNoticeDay = preferences[QUIET_NOTICE_DAY],
+            quietNoticeDay = preferences[QUIET_NOTICE_DAY]?.takeIf { it.isNotEmpty() },
             nowPlayingContext = preferences[NOW_PLAYING_CONTEXT] ?: false,
             wallpaperColors = preferences[WALLPAPER_COLORS] ?: false,
             locationTags = preferences[LOCATION_TAGS] ?: false,

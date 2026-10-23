@@ -16,10 +16,11 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * Sends the phone-context outbox to the server in batches of up to 500, oldest first, every 60 s while the
- * "Phone context" switch is on and `/info` lists `context-ranges`; with the switch off, only the pendant's gain ranges. Only the kinds `/info` admits go out (see
- * [kindsFor]); the rest wait, up to [KEEP_MS], for a server that takes them. A range leaves the outbox only when the
- * server answers 200; a lost answer makes the retry count as skipped, since the server keeps the client's id.
+ * Sends the phone-context outbox to the server in batches of up to 500, oldest first, every 60 s while `/info` lists
+ * `context-ranges`: everything while the "Phone context" switch is on, only the pendant's gain ranges while it is off.
+ * Only the kinds `/info` admits go out (see [kindsFor]); the rest wait, up to [KEEP_MS], for a server that takes
+ * them. A range leaves the outbox only when the server answers 200; a lost answer makes the retry count as skipped,
+ * since the server keeps the client's id.
  */
 class ContextUploader(
     private val source: ContextSource,
