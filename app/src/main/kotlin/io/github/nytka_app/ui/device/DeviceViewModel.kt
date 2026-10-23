@@ -541,12 +541,7 @@ class DeviceViewModel
 
         fun paired(pendant: PairedPendant) {
             viewModelScope.launch {
-                // A second recorder replaces the first; Android keeps watching the old one until it is forgotten.
-                settings
-                    .current()
-                    .pendantAddress
-                    ?.takeIf { it != pendant.address }
-                    ?.let(actions::forgetPendant)
+                val previous = settings.current().pendantAddress
                 settings.update {
                     it.copy(
                         pendantAddress = pendant.address,
@@ -555,6 +550,11 @@ class DeviceViewModel
                         fakePendant = false,
                     )
                 }
+                // A second recorder replaces the first; Android keeps watching the old one until it is forgotten.
+                // After the save, so a failing disassociate cannot lose the new pairing.
+                previous
+                    ?.takeIf { !it.equals(pendant.address, ignoreCase = true) }
+                    ?.let { runCatching { actions.forgetPendant(it) } }
                 actions.restartCapture()
             }
         }

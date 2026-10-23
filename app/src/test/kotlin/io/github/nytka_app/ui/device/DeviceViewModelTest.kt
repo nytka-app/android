@@ -19,6 +19,7 @@ import io.github.nytka_app.core.settings.MuteSchedule
 import io.github.nytka_app.core.settings.MuteWindow
 import io.github.nytka_app.core.settings.Settings
 import io.github.nytka_app.firmware.FirmwareNotice
+import io.github.nytka_app.pendant.Capabilities
 import io.github.nytka_app.pendant.FirmwareVersion
 import io.github.nytka_app.pendant.OmiDriver
 import io.github.nytka_app.pendant.PendantInfo
@@ -33,6 +34,7 @@ import org.junit.Test
 import java.time.DayOfWeek
 import java.time.LocalTime
 
+@Suppress("LargeClass")
 class DeviceViewModelTest {
     @get:Rule
     val main = MainDispatcherRule()
@@ -102,12 +104,12 @@ class DeviceViewModelTest {
         DeviceViewModel(settings, {
             infoCalls++
             info
-        }, actions, sync, server, { phoneZone }, pendantSettings, { _, capabilities ->
-            notice.takeIf {
-                capabilities.firmware !=
-                    null
-            }
-        }, briefs, { null })
+        }, actions, sync, server, { phoneZone }, pendantSettings, ::noticeFor, briefs, { null })
+
+    private fun noticeFor(
+        @Suppress("UNUSED_PARAMETER") info: PendantInfo,
+        capabilities: Capabilities,
+    ) = notice.takeIf { capabilities.firmware != null }
 
     private fun saveServerOnTheLocalNetwork() {
         settings.state.value = settings.state.value.copy(serverUrl = "http://192.168.1.10:8080/", privateNetwork = true)
@@ -177,6 +179,15 @@ class DeviceViewModelTest {
         viewModel.paired(PairedPendant("CC:DD", "Other", RecorderModel.Omi))
 
         assertEquals(listOf("forget AA:BB", "restart"), actions.calls)
+    }
+
+    @Test
+    fun `an address that differs only in case is the same recorder`() {
+        val viewModel = viewModel()
+
+        viewModel.paired(PairedPendant("aa:bb", "Omi", RecorderModel.Omi))
+
+        assertEquals(listOf("restart"), actions.calls)
     }
 
     @Test

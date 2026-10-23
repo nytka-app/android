@@ -86,6 +86,13 @@ class CaptureControllerTest {
         }
     }
 
+    /** A recorder with no audio switch: it keeps sending whatever the app asks. */
+    private class StreamsRegardless(
+        private val inner: FakePendant,
+    ) : Pendant by inner {
+        override suspend fun setAudio(enabled: Boolean) = inner.setAudio(true)
+    }
+
     private class Rig(
         val controller: CaptureController,
         val pendant: FakePendant,
@@ -249,25 +256,43 @@ class CaptureControllerTest {
         }
 
     @Test
-    fun `a recorder without an audio switch writes no frame while muted`() =
+    fun `a recorder that streams while muted has its frames dropped by the controller`() =
         runTest {
-            val rig = rig(muted = true, capabilities = OmiDriver.capabilities.copy(audioSwitch = false))
-            rig.controller.start("fake")
+            val inner =
+                FakePendant(
+                    listOf(byteArrayOf(1)),
+                    backgroundScope,
+                    capabilities = OmiDriver.capabilities.copy(audioSwitch = false),
+                ) { testScheduler.currentTime }
+            val sink = FakeSink()
+            val settings = FakeSettings(true)
+            val controller =
+                CaptureController(
+                    StreamsRegardless(inner),
+                    sink,
+                    settings,
+                    backgroundScope,
+                    { testScheduler.currentTime },
+                    log = FakeEventLog(),
+                    zone = { ZoneOffset.UTC },
+                )
+            controller.start("fake")
             runCurrent()
 
             advanceTimeBy(1_000)
 
-            assertTrue(rig.sink.frames.isEmpty())
+            assertTrue(inner.audioEnabled)
+            assertTrue(sink.frames.isEmpty())
             assertEquals(
                 false,
-                rig.controller.status.value.capabilities
+                controller.status.value.capabilities
                     ?.audioSwitch,
             )
 
-            rig.controller.setMuted(false, MuteSource.App)
+            controller.setMuted(false, MuteSource.App)
             advanceTimeBy(1_000)
 
-            assertTrue(rig.sink.frames.isNotEmpty())
+            assertTrue(sink.frames.isNotEmpty())
         }
 
     @Test

@@ -15,7 +15,7 @@ Robolectric, MockWebServer, Turbine · ktlint, detekt.
 
 | Module | Holds |
 |---|---|
-| `:pendant` | `Pendant` with its `Capabilities` (storage, buttons, haptic, audio switch, settings, firmware stream, codec; the app reads these and never asks which model), `RecorderModel`, `FrameAssembler`, `OmiPendant` (Bluetooth) and `OmiDriver` (Omi's capabilities, button codes, haptic codes), the storage service (`OmiStorage`, `RingProtocol`, `RingRecords`), the settings service (`OmiSettings`: LED brightness, mic gain), `FirmwareVersion`, `FirmwareStream`, `FakePendant` with `FakeRing`; no UI |
+| `:pendant` | `Pendant` with its `Capabilities` (storage, buttons, haptic, audio switch, settings, firmware stream, codec; the app reads haptic, audio switch and firmware stream so far, the rest are declared but not wired yet), `RecorderModel`, `FrameAssembler`, `OmiPendant` (Bluetooth) and `OmiDriver` (Omi's capabilities, button codes, haptic codes), the storage service (`OmiStorage`, `RingProtocol`, `RingRecords`), the settings service (`OmiSettings`: LED brightness, mic gain), `FirmwareVersion`, `FirmwareStream`, `FakePendant` with `FakeRing`; no UI |
 | `:core` | chunk format, `FrameQueue` (Room), capture times and the mute filter (`ring/`), settings, `NytkaApi` and its clients, `Uploader`, `diagnostics/` (event log, samples, upload), `location/` (saved places, location tags), `context/` (context ranges), `transcribe/` (on-device draft text: the `OnDeviceTranscriber` seam, `DraftAudioTap`, `SpeechSegments`, `DraftTranscription`); tested on the JVM |
 | `:app` | Hilt wiring, `CaptureController`, `StorageSyncController`, `PendantSettingsController`, `firmware/` (release check) and the services; `capture/` also holds the home-screen widget, the companion-device service, the phone-context recorder, `MuteLogRecorder` and `DiagnosticsRecorder`; `briefs/` (morning brief notifications), `transcribe/` (model import, Opus decoder, worker, benchmark), alerts, Compose screens; `src/play` holds the sherpa-onnx engine, `src/oss` a stand-in without it |
 
@@ -42,7 +42,9 @@ Robolectric, MockWebServer, Turbine · ktlint, detekt.
 2. **`CaptureController` alone turns the pendant's audio on or off.** It calls `setAudio(!muted)`
    whenever the connection becomes `Connected` or the muted setting changes, so a reconnect never
    resubscribes while muted. The pendant records to its ring while the phone is away whatever the
-   setting says: `MuteLogRecorder` and `MuteFilter` keep the promise when the ring is read.
+   setting says: `MuteLogRecorder` and `MuteFilter` keep the promise when the ring is read. A recorder
+   without an audio switch (`Capabilities.audioSwitch`) keeps streaming while muted: the controller
+   drops its frames while muted, and the Device screen says the recorder still hears.
 3. **A live capture session is one run of the capture service:** a new UUID, sequence numbers from 0
    without holes, and a capture time that is the phone's clock when a frame's last fragment arrived.
    Stored frames get one session per sync run and per pendant clock restart, times rebuilt from the
