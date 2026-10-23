@@ -29,6 +29,8 @@ class ContextApi(
         val route: String,
         val startedAt: String,
         val endedAt: String,
+        // Left out of the JSON when null: a server without the field still takes media and call.
+        val detail: String? = null,
     )
 
     @Serializable
@@ -42,7 +44,9 @@ class ContextApi(
             "api/v1/context/ranges",
             body =
                 Json.encodeToString(
-                    Body(items.map { Item(it.id, it.kind, it.route, instant(it.startMs), instant(it.endMs)) }),
+                    Body(
+                        items.map { Item(it.id, it.kind, it.route, instant(it.startMs), instant(it.endMs), it.detail) },
+                    ),
                 ),
         ) { api.json.decodeFromString(it) }
 

@@ -44,6 +44,10 @@ server; this app is its phone half. [How Nytka compares](docs/explanation/compar
   [Transcribe on this phone](docs/reference/device.md#transcribe-on-this-phone).
 - **Runs the server from the phone:** its settings, access tokens and webhooks, plus the pendant's LED brightness
   and microphone gain.
+- **Tells the server what the phone was doing**, so it can tell a television or a call from a conversation:
+  speaker playback, calls, the screen and headphones, as times only. Activity (walking, driving, still) and the kind
+  of app that plays are separate switches, off by default; no app name, title or artist leaves the phone.
+  [Phone context](docs/reference/device.md#phone-context).
 - **Talks to your server and nothing else**, apart from a once-a-day firmware check against GitHub that you can
   switch off. No analytics, no crash reporting, no Omi cloud. [What stays on the phone](docs/explanation/privacy.md).
 

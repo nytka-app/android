@@ -11,4 +11,6 @@ data class ContextRow(
     val route: String,
     val startMs: Long,
     val endMs: Long,
+    /** A word from a fixed list for activity and now-playing ranges; null for the other kinds. */
+    val detail: String? = null,
 )

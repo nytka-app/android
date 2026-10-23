@@ -286,4 +286,54 @@ class ContextRangeTrackerTest {
             ranges.toSet(),
         )
     }
+
+    @Test
+    fun `walking then driving gives an activity range each, dated by the transitions`() {
+        val start = now
+        tracker.onActivity(Activity.WALKING, start)
+        advance(600)
+        // Android reports the change a little late, dated when it happened.
+        tracker.onActivity(Activity.VEHICLE, now - 30_000)
+        advance(60)
+        tracker.onActivity(null)
+
+        assertEquals(
+            listOf(
+                ContextRange(RangeKind.ACTIVITY, Route.OTHER, start, start + 570_000, "walking"),
+                ContextRange(RangeKind.ACTIVITY, Route.OTHER, start + 570_000, start + 660_000, "vehicle"),
+            ),
+            ranges,
+        )
+    }
+
+    @Test
+    fun `a transition dated before the open range began counts from its start`() {
+        val start = now
+        tracker.onActivity(Activity.STILL, start)
+        advance(10)
+        tracker.onActivity(Activity.WALKING, start - 5_000)
+        advance(10)
+        tracker.onStop()
+
+        assertEquals(listOf(ContextRange(RangeKind.ACTIVITY, Route.OTHER, start, start + 20_000, "walking")), ranges)
+    }
+
+    @Test
+    fun `now playing ends when the session pauses and restarts on a new route`() {
+        val start = now
+        tracker.onNowPlaying(MediaCategory.VIDEO, Route.SPEAKER)
+        advance(20)
+        tracker.onNowPlaying(MediaCategory.VIDEO, Route.SPEAKER)
+        tracker.onNowPlaying(MediaCategory.VIDEO, Route.BLUETOOTH)
+        advance(10)
+        tracker.onNowPlaying(null, Route.BLUETOOTH)
+
+        assertEquals(
+            listOf(
+                ContextRange(RangeKind.NOW_PLAYING, Route.SPEAKER, start, start + 20_000, "video"),
+                ContextRange(RangeKind.NOW_PLAYING, Route.BLUETOOTH, start + 20_000, start + 30_000, "video"),
+            ),
+            ranges,
+        )
+    }
 }

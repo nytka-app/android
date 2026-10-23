@@ -275,9 +275,12 @@ class CaptureService : LifecycleService() {
             delay(INFO_RETRY_MS)
         }
         settings.settings
-            .map { it.phoneContext }
+            .map { Triple(it.phoneContext, it.activityContext, it.nowPlayingContext) }
             .distinctUntilChanged()
-            .collect { if (it) phoneContext.start() else phoneContext.stop() }
+            .collect { (on, activity, playing) ->
+                phoneContext.setExtras(activity, playing)
+                if (on) phoneContext.start() else phoneContext.stop()
+            }
     }
 
     private fun watchCapture(capture: CaptureController) {

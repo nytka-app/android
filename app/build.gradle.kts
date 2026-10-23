@@ -120,6 +120,8 @@ dependencies {
     implementation(libs.zxing.android.embedded)
     // A prebuilt native library, which F-Droid does not build from source: the play flavor only (README).
     "playImplementation"(libs.sherpa.onnx)
+    // Activity transitions come from Google Play services, which F-Droid does not ship: the play flavor only.
+    "playImplementation"(libs.play.services.location)
 
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)

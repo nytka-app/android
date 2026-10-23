@@ -41,6 +41,10 @@ data class Settings(
     val consentChimeMinutes: Int = 15,
     /** Tell the server when the phone plays sound through its speaker or is in a call: times only; on by default. */
     val phoneContext: Boolean = true,
+    /** With [phoneContext]: also tell it when you walk, drive or sit still; off until switched on (a permission). */
+    val activityContext: Boolean = false,
+    /** With [phoneContext]: also tell it what kind of app plays media; off until switched on (notification access). */
+    val nowPlayingContext: Boolean = false,
     /** Follow the wallpaper's colours instead of linen and ink; off until switched on. */
     val wallpaperColors: Boolean = false,
     /** Tag each conversation with a coarse place (a saved place or a city-level label); off until switched on. */
@@ -69,7 +73,7 @@ data class Settings(
             "alerts=$alertDisconnectedMinutes/$alertUnreachableMinutes/$alertBatteryPercent, " +
             "diagnosticsUpload=$diagnosticsUpload, muteWindows=${muteSchedule.windows.size}, " +
             "firmwareCheck=$firmwareCheck, highPriorityConnection=$highPriorityConnection, " +
-            "phoneContext=$phoneContext, wallpaperColors=$wallpaperColors, " +
+            "phoneContext=$phoneContext/$activityContext/$nowPlayingContext, wallpaperColors=$wallpaperColors, " +
             "locationTags=$locationTags, savedPlaces=${savedPlaces.size}, " +
             "phoneTranscription=$phoneTranscription/$phoneTranscriptionOnBattery/$phoneTranscriptionBatteryPercent)"
 }

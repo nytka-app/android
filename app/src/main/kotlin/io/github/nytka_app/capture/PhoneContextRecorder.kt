@@ -15,8 +15,10 @@ import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
 import androidx.core.content.ContextCompat
+import io.github.nytka_app.core.context.Activity
 import io.github.nytka_app.core.context.ContextRange
 import io.github.nytka_app.core.context.ContextRangeTracker
+import io.github.nytka_app.core.context.MediaCategory
 import io.github.nytka_app.core.context.Mode
 import io.github.nytka_app.core.context.Route
 import io.github.nytka_app.core.context.Usage
@@ -32,11 +34,16 @@ import java.util.UUID
  * whether the screen is on. It needs no permission, never polls (the volume and the routes are read inside a
  * callback, and the one timer is the tracker's grace after the sound stops) and keeps no app name, title or number:
  * a range is a kind, a route and two times. The capture service starts and stops it.
+ *
+ * Two extras run only while their switch is on ([setExtras]): activity transitions from [activities] (a permission)
+ * and what kind of app plays a media session, from [nowPlaying] (notification access). Each adds a one-word detail
+ * from a fixed list, never a name.
  */
 class PhoneContextRecorder(
     private val context: Context,
     private val sink: ContextSink,
     private val writes: CoroutineScope,
+    private val activities: ActivityWatcher = TransitionWatcher(context),
     private val wallClock: () -> Long = System::currentTimeMillis,
 ) {
     private val audio = context.getSystemService(AudioManager::class.java)
@@ -69,6 +76,10 @@ class PhoneContextRecorder(
             ) = tracker.onScreen(intent.action == Intent.ACTION_SCREEN_ON)
         }
     private var lastUsages: Set<Usage> = emptySet()
+    private val nowPlaying = NowPlayingWatcher(context, main)
+    private var lastPlaying: MediaCategory? = null
+    private var wantActivity = false
+    private var wantNowPlaying = false
 
     /** Registers the callbacks and takes the call mode as it is, so a call already running is not missed. */
     fun start() {
@@ -92,7 +103,30 @@ class PhoneContextRecorder(
             feedCommunication(audio.communicationDevice)
             feedMode(audio.mode)
             feedPlayback(null)
+            applyExtras()
         }
+    }
+
+    /** The activity and now-playing switches; each runs only while the recorder does and its switch is on. */
+    fun setExtras(
+        activity: Boolean,
+        playing: Boolean,
+    ) {
+        main.post {
+            wantActivity = activity
+            wantNowPlaying = playing
+            if (running) applyExtras()
+        }
+    }
+
+    private fun applyExtras() {
+        if (wantActivity) {
+            activities.start { activity, atMs -> main.post { feedActivity(activity, atMs) } }
+        } else {
+            activities.stop()
+            tracker.onActivity(null)
+        }
+        if (wantNowPlaying) nowPlaying.start(::feedNowPlaying) else nowPlaying.stop()
     }
 
     /** Unregisters everything and closes what is open at this moment. */
@@ -106,16 +140,34 @@ class PhoneContextRecorder(
             audio.removeOnCommunicationDeviceChangedListener(communication)
             context.unregisterReceiver(screen)
             main.removeCallbacks(timer)
+            activities.stop()
+            nowPlaying.stop()
             tracker.onStop()
         }
     }
 
     private fun feedPlayback(configs: List<AudioPlaybackConfiguration>?) {
+        // Notification access may have been granted since the switch went on; a player starting is when it matters.
+        if (running && wantNowPlaying && !nowPlaying.listening) nowPlaying.start(::feedNowPlaying)
         // A device change brings no player list: the last one still says what plays.
         if (configs != null) lastUsages = configs.mapTo(mutableSetOf()) { usageOf(it.audioAttributes.usage) }
         val outputs = mediaOutputs()
         tracker.onPlayback(lastUsages, onSpeaker(outputs), audio.getStreamVolume(AudioManager.STREAM_MUSIC))
         tracker.onHeadphones(headphonesOf(outputs))
+        tracker.onNowPlaying(lastPlaying, routeOf(outputs))
+        scheduleTimer()
+    }
+
+    private fun feedActivity(
+        activity: Activity?,
+        atMs: Long,
+    ) {
+        if (running && wantActivity) tracker.onActivity(activity, atMs)
+    }
+
+    private fun feedNowPlaying(category: MediaCategory?) {
+        lastPlaying = category
+        tracker.onNowPlaying(category, routeOf(mediaOutputs()))
         scheduleTimer()
     }
 
@@ -141,6 +193,7 @@ class PhoneContextRecorder(
                 range.route.wire,
                 range.startMs + offset,
                 range.endMs + offset,
+                range.detail,
             )
         writes.launch { sink.add(row) }
     }
@@ -193,6 +246,15 @@ class PhoneContextRecorder(
         fun onSpeaker(outputs: List<AudioDeviceInfo>) =
             outputs.any { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER } &&
                 outputs.none { it.type in EXTERNAL_TYPES }
+
+        /** Where media plays: the speaker, headphones, or something else (a TV, a USB or HDMI output). */
+        fun routeOf(outputs: List<AudioDeviceInfo>) =
+            if (onSpeaker(outputs)) {
+                Route.SPEAKER
+            } else {
+                headphonesOf(outputs)
+                    ?: Route.OTHER
+            }
 
         fun headphonesOf(outputs: List<AudioDeviceInfo>) =
             when {

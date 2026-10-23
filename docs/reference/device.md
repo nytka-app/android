@@ -103,7 +103,21 @@ Android's list of audio outputs does not tell Bluetooth headphones from a Blueto
 count as headphones. A server without `context-device` gets only media and call; the other
 stretches wait on the phone, as below, for one that takes them.
 
-What the app sends is the kind, the route and two times for each stretch, in batches of up to 500 once a minute.
+Two more switches sit under it, both off until you turn them on:
+
+- **Also say when I walk, drive or sit still** (Google Play build only, since it needs Google Play services): an
+  **activity** stretch while Android's activity recognition reports still, walking, running, cycling or in a vehicle,
+  from when it begins to when it ends. Turning it on asks for the physical activity permission; without it the switch
+  stays off. Sent to a server that lists `context-activity`.
+- **Also say what kind of app plays**: a **now-playing** stretch while an app's media session plays, with where it
+  plays (speaker, headset, Bluetooth or other) and one word for the kind of app: video, music, podcast, messenger,
+  browser or other. The phone works the word out from the app's package against a fixed list; the app's name, the
+  title, the artist and the sender of a voice message stay on the phone. It needs notification access, which Android
+  grants in its own settings (the switch shows a button for it); Nytka reads no notification, the access is only what
+  lets an app see media sessions. Sent to a server that lists `context-now-playing`.
+
+What the app sends is the kind, the route and two times for each stretch, plus the one word above for activity and
+now-playing, in batches of up to 500 once a minute.
 Never an app, a title, a contact or a number, and nothing from the microphone: the app listens to Android's
 playback, call-state and audio-device callbacks and the screen on and off broadcasts, which need no permission, and
 does not poll. A stretch under 3 seconds is

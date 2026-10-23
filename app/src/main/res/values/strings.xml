@@ -639,6 +639,15 @@
     <!-- Speech kind: phone context -->
     <string name="phone_context_title">Phone context</string>
     <string name="phone_context_label">Tell my server when this phone plays sound</string>
+    <string name="activity_context_label">Also say when I walk, drive or sit still</string>
+    <string name="activity_context_explanation">Android\'s activity recognition marks when walking, running, cycling, being in a vehicle or sitting still begins and ends. Only the activity and its times are sent. Needs the physical activity permission.</string>
+    <string name="activity_context_denied">Nytka needs the physical activity permission for this.</string>
+    <string name="activity_context_blocked">Android no longer asks for the physical activity permission. Allow it in the app\'s settings.</string>
+    <string name="now_playing_context_label">Also say what kind of app plays</string>
+    <string name="now_playing_context_explanation">While an app plays media, tell your server its kind: video, music, podcast, messenger, browser or other. The app\'s name, the title and the artist stay on this phone. Needs notification access; no notification is read.</string>
+    <string name="now_playing_context_access">Notification access is off, so nothing is recorded yet.</string>
+    <string name="now_playing_context_open">Allow notification access</string>
+    <string name="now_playing_listener_label">Nytka: what kind of app plays</string>
     <string name="phone_context_explanation">Tell your server when this phone plays sound through its speaker, is in a call, has its screen on or plays to headphones. Only times are sent, never what played.</string>
     <!-- Speech kind: review -->
     <string name="review_speech_media">Was this a TV or a video?</string>

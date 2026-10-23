@@ -113,6 +113,8 @@ class ContextUploader(
                     add(RangeKind.SCREEN.wire)
                     add(RangeKind.HEADPHONES.wire)
                 }
+                if (info.has(ServerInfo.FEATURE_CONTEXT_ACTIVITY)) add(RangeKind.ACTIVITY.wire)
+                if (info.has(ServerInfo.FEATURE_CONTEXT_NOW_PLAYING)) add(RangeKind.NOW_PLAYING.wire)
             }
 
         const val TICK_MS = 60_000L

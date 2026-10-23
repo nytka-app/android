@@ -12,6 +12,19 @@ enum class RangeKind(
     CALL("call"),
     SCREEN("screen"),
     HEADPHONES("headphones"),
+    ACTIVITY("activity"),
+    NOW_PLAYING("now-playing"),
+}
+
+/** What Android's activity transitions say the phone's owner is doing; sent as a range's detail. */
+enum class Activity(
+    val wire: String,
+) {
+    STILL("still"),
+    WALKING("walking"),
+    RUNNING("running"),
+    CYCLING("cycling"),
+    VEHICLE("vehicle"),
 }
 
 enum class Route(
@@ -33,6 +46,8 @@ data class ContextRange(
     val route: Route,
     val startMs: Long,
     val endMs: Long,
+    /** One word from a fixed list for [RangeKind.ACTIVITY] and [RangeKind.NOW_PLAYING]; null for the rest. */
+    val detail: String? = null,
 )
 
 /**
@@ -56,6 +71,10 @@ class ContextRangeTracker(
     private var screenStart: Long? = null
     private var headphones: Route? = null
     private var headphonesStart = 0L
+    private var activity: Activity? = null
+    private var activityStart = 0L
+    private var playing: Pair<MediaCategory, Route>? = null
+    private var playingStart = 0L
 
     /** The time [onTimer] should run at, or null when no range waits to close. */
     val pendingCloseAtMs: Long? get() = mediaStoppedAt?.plus(MEDIA_GRACE_MS)
@@ -129,6 +148,36 @@ class ContextRangeTracker(
         headphonesStart = now
     }
 
+    /**
+     * The activity Android reports as entered at [atMs] (on the tracker's clock), or null when it reports leaving
+     * [current] or the switch goes off. A transition dated before the open range began counts from that start.
+     */
+    fun onActivity(
+        next: Activity?,
+        atMs: Long = clock(),
+    ) {
+        settle(clock())
+        if (next == activity) return
+        val at = maxOf(atMs, activityStart)
+        activity?.let { close(RangeKind.ACTIVITY, Route.OTHER, activityStart, at, it.wire) }
+        activity = next
+        activityStart = at
+    }
+
+    /** What a media session plays and where, or null when nothing plays or the switch goes off. */
+    fun onNowPlaying(
+        category: MediaCategory?,
+        route: Route,
+    ) {
+        val now = clock()
+        settle(now)
+        val next = category?.let { it to route }
+        if (next == playing) return
+        closeNowPlaying(now)
+        playing = next
+        playingStart = now
+    }
+
     /** Closes a media range whose grace has run out. */
     fun onTimer() = settle(clock())
 
@@ -142,6 +191,9 @@ class ContextRangeTracker(
         screenStart?.let { closeScreen(it, now) }
         closeHeadphones(now)
         headphones = null
+        onActivity(null, now)
+        closeNowPlaying(now)
+        playing = null
     }
 
     private fun settle(now: Long) {
@@ -182,14 +234,19 @@ class ContextRangeTracker(
         headphones?.let { close(RangeKind.HEADPHONES, it, headphonesStart, now) }
     }
 
+    private fun closeNowPlaying(now: Long) {
+        playing?.let { (category, route) -> close(RangeKind.NOW_PLAYING, route, playingStart, now, category.wire) }
+    }
+
     private fun close(
         kind: RangeKind,
         route: Route,
         start: Long,
         end: Long,
+        detail: String? = null,
     ) {
         val cut = minOf(end, start + MAX_MS)
-        if (cut - start >= MIN_MS) emit(ContextRange(kind, route, start, cut))
+        if (cut - start >= MIN_MS) emit(ContextRange(kind, route, start, cut, detail))
     }
 
     private fun Mode.isCall() =
