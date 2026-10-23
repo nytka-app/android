@@ -90,16 +90,23 @@ made from them; your own marks stay. See the
 ## Phone context
 
 When the server lists `context-ranges` in `/api/v1/info`, the **Device** screen has a **Phone context** switch,
-on by default: "Tell your server when this phone plays sound through its speaker or is in a call. Only times are
-sent, never what played." While capture runs, the app notes two kinds of stretch: **media**, when the phone plays
-music or video through its built-in speaker at a volume above 0 (it ends 2 seconds after the sound stops, or at
-once when the sound moves to headphones), and **call**, when the phone is in a call or a voice or video chat, with
-the route it held longest: speaker, earpiece, headset, Bluetooth or other. The server uses them to tell a
-conversation in the room from a television, a video or a call.
+on by default: "Tell your server when this phone plays sound through its speaker, is in a call, has its screen on
+or plays to headphones. Only times are sent, never what played." While capture runs, the app notes these kinds of
+stretch: **media**, when the phone plays music or video through its built-in speaker at a volume above 0 (it ends 2
+seconds after the sound stops, or at once when the sound moves to headphones), and **call**, when the phone is in a
+call or a voice or video chat, with the route it held longest: speaker, earpiece, headset, Bluetooth or other. The
+server uses them to tell a conversation in the room from a television, a video or a call.
+
+On a server that also lists `context-device`, two more: **screen**, while the screen is on, and **headphones**,
+while the phone's media output goes to wired or USB headphones (route headset) or to Bluetooth (route Bluetooth).
+Android cannot tell Bluetooth headphones from a Bluetooth speaker or a car without a permission the app does not ask
+for, so all three count as headphones. A server without `context-device` gets only media and call; the other
+stretches wait on the phone, as below, for one that takes them.
 
 What the app sends is the kind, the route and two times for each stretch, in batches of up to 500 once a minute.
 Never an app, a title, a contact or a number, and nothing from the microphone: the app listens to Android's
-playback and call-state callbacks, which need no permission, and does not poll. A stretch under 3 seconds is
+playback, call-state and audio-device callbacks and the screen on and off broadcasts, which need no permission, and
+does not poll. A stretch under 3 seconds is
 dropped. Stretches wait on the phone until the server has them and are deleted after 7 days if they never go out.
 With the switch off, or on a server without `context-ranges`, nothing is recorded or sent.
 

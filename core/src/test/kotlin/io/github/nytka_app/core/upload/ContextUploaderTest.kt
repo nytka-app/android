@@ -64,7 +64,8 @@ class ContextUploaderTest {
         id: String,
         startMs: Long = NOW - 60_000,
         endMs: Long = startMs + 10_000,
-    ) = ContextRow(id, "media", "speaker", startMs, endMs)
+        kind: String = "media",
+    ) = ContextRow(id, kind, if (kind == "media") "speaker" else "other", startMs, endMs)
 
     private fun answer(
         code: Int,
@@ -183,6 +184,33 @@ class ContextUploaderTest {
 
             assertEquals(0, server.requestCount)
             assertEquals(1, outbox.oldest(10).size)
+        }
+
+    @Test
+    fun `screen ranges wait for a server with context-device`() =
+        runTest {
+            outbox.add(row("m"))
+            outbox.add(row("s", kind = "screen"))
+            answer(200)
+
+            assertEquals(DrainResult.Empty, uploader.drain())
+
+            assertTrue(
+                server
+                    .takeRequest()
+                    .body!!
+                    .utf8()
+                    .let { "\"m\"" in it && "screen" !in it },
+            )
+            assertEquals(listOf("s"), outbox.oldest(10).map { it.id })
+
+            features = listOf(ServerInfo.FEATURE_CONTEXT_RANGES, ServerInfo.FEATURE_CONTEXT_DEVICE)
+            answer(200)
+
+            assertEquals(DrainResult.Empty, uploader.drain())
+
+            assertTrue("screen" in server.takeRequest().body!!.utf8())
+            assertTrue(outbox.oldest(10).isEmpty())
         }
 
     @Test

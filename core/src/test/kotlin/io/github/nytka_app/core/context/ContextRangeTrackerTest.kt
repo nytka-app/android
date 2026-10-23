@@ -228,4 +228,62 @@ class ContextRangeTrackerTest {
 
         assertEquals(listOf(ContextRange(RangeKind.MEDIA, Route.SPEAKER, start, start + 12 * 3_600_000)), ranges)
     }
+
+    @Test
+    fun `screen on then off gives one screen range`() {
+        val start = now
+        tracker.onScreen(true)
+        advance(20)
+        tracker.onScreen(true)
+        advance(5)
+        tracker.onScreen(false)
+
+        assertEquals(listOf(ContextRange(RangeKind.SCREEN, Route.OTHER, start, start + 25_000)), ranges)
+    }
+
+    @Test
+    fun `a screen glance under 3 s is dropped`() {
+        tracker.onScreen(true)
+        advance(2)
+        tracker.onScreen(false)
+
+        assertTrue(ranges.isEmpty())
+    }
+
+    @Test
+    fun `headphones moving from wired to Bluetooth give two ranges`() {
+        val start = now
+        tracker.onHeadphones(Route.HEADSET)
+        advance(30)
+        tracker.onHeadphones(Route.HEADSET)
+        tracker.onHeadphones(Route.BLUETOOTH)
+        advance(40)
+        tracker.onHeadphones(null)
+
+        assertEquals(
+            listOf(
+                ContextRange(RangeKind.HEADPHONES, Route.HEADSET, start, start + 30_000),
+                ContextRange(RangeKind.HEADPHONES, Route.BLUETOOTH, start + 30_000, start + 70_000),
+            ),
+            ranges,
+        )
+    }
+
+    @Test
+    fun `stop closes an open screen and headphones range`() {
+        val start = now
+        tracker.onScreen(true)
+        tracker.onHeadphones(Route.BLUETOOTH)
+        advance(10)
+        tracker.onStop()
+        tracker.onStop()
+
+        assertEquals(
+            setOf(
+                ContextRange(RangeKind.SCREEN, Route.OTHER, start, start + 10_000),
+                ContextRange(RangeKind.HEADPHONES, Route.BLUETOOTH, start, start + 10_000),
+            ),
+            ranges.toSet(),
+        )
+    }
 }

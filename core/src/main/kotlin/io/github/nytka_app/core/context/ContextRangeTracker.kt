@@ -10,6 +10,8 @@ enum class RangeKind(
 ) {
     MEDIA("media"),
     CALL("call"),
+    SCREEN("screen"),
+    HEADPHONES("headphones"),
 }
 
 enum class Route(
@@ -22,7 +24,10 @@ enum class Route(
     OTHER("other"),
 }
 
-/** A stretch of time with sound from the phone: kind, route and two times, never what played or who called. */
+/**
+ * A stretch of time with sound from the phone, its screen on, or its sound going to headphones: kind, route and two
+ * times, never what played or who called.
+ */
 data class ContextRange(
     val kind: RangeKind,
     val route: Route,
@@ -48,6 +53,9 @@ class ContextRangeTracker(
     private var route = Route.OTHER
     private var routeSince = 0L
     private val held = mutableMapOf<Route, Long>()
+    private var screenStart: Long? = null
+    private var headphones: Route? = null
+    private var headphonesStart = 0L
 
     /** The time [onTimer] should run at, or null when no range waits to close. */
     val pendingCloseAtMs: Long? get() = mediaStoppedAt?.plus(MEDIA_GRACE_MS)
@@ -101,6 +109,26 @@ class ContextRangeTracker(
         routeSince = now
     }
 
+    fun onScreen(on: Boolean) {
+        val now = clock()
+        settle(now)
+        val start = screenStart
+        when {
+            on && start == null -> screenStart = now
+            !on && start != null -> closeScreen(start, now)
+        }
+    }
+
+    /** Where media plays when it goes to headphones, [Route.HEADSET] or [Route.BLUETOOTH]; null when it does not. */
+    fun onHeadphones(next: Route?) {
+        val now = clock()
+        settle(now)
+        if (next == headphones) return
+        closeHeadphones(now)
+        headphones = next
+        headphonesStart = now
+    }
+
     /** Closes a media range whose grace has run out. */
     fun onTimer() = settle(clock())
 
@@ -111,6 +139,9 @@ class ContextRangeTracker(
         mediaStart = null
         mediaStoppedAt = null
         callStart?.let { closeCall(it, now) }
+        screenStart?.let { closeScreen(it, now) }
+        closeHeadphones(now)
+        headphones = null
     }
 
     private fun settle(now: Long) {
@@ -137,6 +168,18 @@ class ContextRangeTracker(
         callStart = null
         held.clear()
         close(RangeKind.CALL, longest, start, now)
+    }
+
+    private fun closeScreen(
+        start: Long,
+        now: Long,
+    ) {
+        screenStart = null
+        close(RangeKind.SCREEN, Route.OTHER, start, now)
+    }
+
+    private fun closeHeadphones(now: Long) {
+        headphones?.let { close(RangeKind.HEADPHONES, it, headphonesStart, now) }
     }
 
     private fun close(

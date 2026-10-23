@@ -639,7 +639,7 @@
     <!-- Speech kind: phone context -->
     <string name="phone_context_title">Phone context</string>
     <string name="phone_context_label">Tell my server when this phone plays sound</string>
-    <string name="phone_context_explanation">Tell your server when this phone plays sound through its speaker or is in a call. Only times are sent, never what played.</string>
+    <string name="phone_context_explanation">Tell your server when this phone plays sound through its speaker, is in a call, has its screen on or plays to headphones. Only times are sent, never what played.</string>
     <!-- Speech kind: review -->
     <string name="review_speech_media">Was this a TV or a video?</string>
     <string name="review_speech_call">Was this a call?</string>

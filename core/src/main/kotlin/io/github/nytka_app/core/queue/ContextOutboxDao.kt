@@ -14,6 +14,12 @@ interface ContextOutboxDao {
     @Query("select * from context_outbox order by startMs, id limit :limit")
     suspend fun oldest(limit: Int): List<ContextRow>
 
+    @Query("select * from context_outbox where kind in (:kinds) order by startMs, id limit :limit")
+    suspend fun oldest(
+        limit: Int,
+        kinds: List<String>,
+    ): List<ContextRow>
+
     @Query("delete from context_outbox where id in (:ids)")
     suspend fun delete(ids: List<String>)
 
