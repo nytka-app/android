@@ -14,7 +14,7 @@ import io.github.nytka_app.core.transcribe.DraftsDao
 // Version 2 adds the diagnostic samples, version 3 their kind (sample or log), version 4 the ring sync (stored
 // frames and chunks, the position, parked chunks, the mute log), version 5 the bookmark outbox, version 6 the
 // phone-context outbox, version 7 the phone's own transcription (audio copies and draft text), version 8 a detail on
-// context ranges; version 1 held the queue only.
+// context ranges, version 9 the capture source of frames and chunks (pendant or phone microphone); version 1 held the queue only.
 // Never a destructive fallback: the queue holds audio nobody can record again.
 @Database(
     entities =
@@ -30,7 +30,7 @@ import io.github.nytka_app.core.transcribe.DraftsDao
             DraftAudioRow::class,
             DraftTextRow::class,
         ],
-    version = 8,
+    version = 9,
     autoMigrations =
         [
             AutoMigration(from = 1, to = 2),
@@ -40,6 +40,7 @@ import io.github.nytka_app.core.transcribe.DraftsDao
             AutoMigration(from = 5, to = 6),
             AutoMigration(from = 6, to = 7),
             AutoMigration(from = 7, to = 8),
+            AutoMigration(from = 8, to = 9),
         ],
 )
 abstract class QueueDatabase : RoomDatabase() {

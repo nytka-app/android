@@ -60,7 +60,7 @@ class Uploader(
     private suspend fun drainLocked(): DrainResult {
         while (true) {
             val chunk = chunks.oldest() ?: return DrainResult.Empty
-            when (val result = client.upload(chunk.body)) {
+            when (val result = client.upload(chunk.body, chunk.source)) {
                 is UploadResult.Accepted -> {
                     chunks.remove(chunk.id)
                     val stored = "202: stored through ${result.throughSeq}"

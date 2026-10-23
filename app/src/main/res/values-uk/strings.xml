@@ -646,6 +646,19 @@
     <string name="speech_others_people">Інші голоси — люди</string>
     <string name="speech_mark_failed">Не вдалося зберегти позначку</string>
     <!-- Speech kind: phone context -->
+    <string name="phone_mic_channel">Мікрофон телефона</string>
+    <string name="phone_mic_recording">Мікрофон телефона записує</string>
+    <string name="phone_mic_paused">Мікрофон телефона на паузі (вимкнено звук)</string>
+    <string name="phone_mic_notification_text">Записується кожен поруч із телефоном. «Зупинити» вимикає запис.</string>
+    <string name="phone_mic_stop">Зупинити</string>
+    <string name="phone_mic_cannot_start">Мікрофон телефона не запустився: немає дозволу або мікрофон зайнятий.</string>
+    <string name="phone_mic_title">Мікрофон телефона</string>
+    <string name="phone_mic_label">Записувати мікрофоном цього телефона</string>
+    <string name="phone_mic_explanation">Записує кожного поруч із телефоном, поки це ввімкнено, з постійним сповіщенням. Типово вимкнено; Nytka ніколи не вмикає його сама, і після перезапуску воно знову вимкнене. Його аудіо йде на ваш сервер окремо від кулона й ніколи не потрапляє в розмову кулона. Вимкнення звуку теж ставить його на паузу.</string>
+    <string name="phone_mic_no_encoder">У цьому телефоні немає кодера Opus, тож він не може записувати у форматі, який приймає ваш сервер.</string>
+    <string name="phone_mic_denied">Для цього Nytka потрібні дозволи на мікрофон і сповіщення.</string>
+    <string name="phone_mic_blocked">Android більше не питає цих дозволів. Надайте мікрофон і сповіщення в налаштуваннях застосунку.</string>
+    <string name="phone_mic_failed">Зупинено: %1$s</string>
     <string name="phone_context_title">Контекст телефона</string>
     <string name="phone_context_label">Повідомляти сервер, коли телефон відтворює звук</string>
     <string name="activity_context_label">Також повідомляти, коли я йду, їду чи сиджу</string>

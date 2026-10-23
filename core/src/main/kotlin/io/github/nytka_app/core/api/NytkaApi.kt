@@ -1,6 +1,7 @@
 package io.github.nytka_app.core.api
 
 import io.github.nytka_app.core.chunks.ChunkFormat
+import io.github.nytka_app.core.queue.CaptureSource
 import io.github.nytka_app.core.settings.Settings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -36,7 +37,10 @@ class NytkaApi(
             coerceInputValues = true
         }
 
-    override suspend fun upload(body: ByteArray): UploadResult {
+    override suspend fun upload(
+        body: ByteArray,
+        source: String,
+    ): UploadResult {
         val target =
             when (val t = target()) {
                 is Target.Missing -> return UploadResult.NotConfigured(t.reason)
@@ -44,7 +48,9 @@ class NytkaApi(
             }
         return try {
             val requestBody = body.toRequestBody(ChunkFormat.MEDIA_TYPE.toMediaType())
-            execute(target, "POST", "api/v1/chunks", requestBody).use { response ->
+            // A pendant chunk goes without the header, as it always has, so an older server sees no change.
+            val headers = if (source == CaptureSource.PENDANT) emptyMap() else mapOf(SOURCE_HEADER to source)
+            execute(target, "POST", "api/v1/chunks", requestBody, headers = headers).use { response ->
                 when (response.code) {
                     200, 202 ->
                         UploadResult.Accepted(
@@ -263,6 +269,7 @@ class NytkaApi(
         path: String,
         body: RequestBody?,
         query: Map<String, String?> = emptyMap(),
+        headers: Map<String, String> = emptyMap(),
     ): Response {
         val url =
             target.base
@@ -276,6 +283,7 @@ class NytkaApi(
                 .Builder()
                 .url(url)
                 .header("Authorization", "Bearer ${target.token}")
+                .apply { headers.forEach { (name, value) -> header(name, value) } }
                 .method(method, body)
                 .build()
         return withContext(Dispatchers.IO) { client.newCall(request).execute() }
@@ -304,5 +312,6 @@ class NytkaApi(
     companion object {
         const val API_VERSION = 1
         private val RETRY_4XX = setOf(404, 405, 408, 425, 429)
+        const val SOURCE_HEADER = "X-Nytka-Source"
     }
 }

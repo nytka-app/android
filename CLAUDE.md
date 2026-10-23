@@ -1,6 +1,6 @@
 # Nytka for Android
 
-Android app for the Omi pendant: reassembles its Opus frames from Bluetooth notifications, queues
+Android app for the Omi pendant (and, only while you switch it on, the phone's own microphone): reassembles its Opus frames from Bluetooth notifications, queues
 them in Room, uploads them as chunks to a Nytka server, copies the audio the pendant stored while the
 phone was away, and shows what the server makes of it: conversations with titles, summaries and
 tasks, memories and search. It also edits the server's settings, tokens and webhooks. What each
@@ -17,7 +17,7 @@ Robolectric, MockWebServer, Turbine · ktlint, detekt.
 |---|---|
 | `:pendant` | `Pendant` with its `Capabilities` (storage, buttons, haptic, audio switch, settings, firmware stream, codec; the app reads haptic, audio switch and firmware stream so far, the rest are declared but not wired yet), `RecorderModel`, `FrameAssembler`, `OmiPendant` (Bluetooth) and `OmiDriver` (Omi's capabilities, button codes, haptic codes), the storage service (`OmiStorage`, `RingProtocol`, `RingRecords`), the settings service (`OmiSettings`: LED brightness, mic gain), `FirmwareVersion`, `FirmwareStream`, `FakePendant` with `FakeRing`; no UI |
 | `:core` | chunk format, `FrameQueue` (Room), capture times and the mute filter (`ring/`), settings, `NytkaApi` and its clients, `Uploader`, `diagnostics/` (event log, samples, upload), `location/` (saved places, location tags), `context/` (context ranges), `transcribe/` (on-device draft text: the `OnDeviceTranscriber` seam, `DraftAudioTap`, `SpeechSegments`, `DraftTranscription`); tested on the JVM |
-| `:app` | Hilt wiring, `CaptureController`, `StorageSyncController`, `PendantSettingsController`, `firmware/` (release check) and the services; `capture/` also holds the home-screen widget, the companion-device service, the phone-context recorder, `MuteLogRecorder` and `DiagnosticsRecorder`; `briefs/` (morning brief notifications), `transcribe/` (model import, Opus decoder, worker, benchmark), alerts, Compose screens; `src/play` holds the sherpa-onnx engine, `src/oss` a stand-in without it |
+| `:app` | Hilt wiring, `CaptureController`, `StorageSyncController`, `PendantSettingsController`, `firmware/` (release check) and the services; `capture/` also holds the home-screen widget, the companion-device service, the phone-context recorder, `MuteLogRecorder` and `DiagnosticsRecorder`; `briefs/` (morning brief notifications), `phonemic/` (Phone microphone: `PhoneMicService`, `PhoneMicRecorder`, `OpusEncoder`), `quiet/` (quiet-day notice), `transcribe/` (model import, Opus decoder, worker, benchmark), alerts, Compose screens; `src/play` holds the sherpa-onnx engine, `src/oss` a stand-in without it |
 
 ## Commands
 
@@ -58,7 +58,12 @@ Robolectric, MockWebServer, Turbine · ktlint, detekt.
    `CreatedWebhook` mask their secrets, clipboard entries that hold one are flagged sensitive, and
    OkHttp has no logging interceptor. A failure carries a fixed sentence or the system's own
    message, never the server's response text, except the field messages of a `400`.
-7. **Never `RECORD_AUDIO`.** The app hears only the pendant.
+7. **The phone's microphone records only while you switched Phone microphone on.** Off by default; the app never
+   turns it on by itself, never at boot, never from a schedule or the companion service, and it is off after a
+   restart (`START_NOT_STICKY`, no stored setting). While it records, `PhoneMicService`, a foreground service of type
+   `microphone`, shows an ongoing notification with Stop, and Android's privacy dot is on. Its audio is its own
+   capture source (`CaptureSource.PHONE_MIC`): it never enters a pendant session, and it goes to the server with
+   `X-Nytka-Source: phone-mic`, only to a server that lists `phone-mic`. Both builds work without the permission.
 8. **Real voices never enter this repository.** The fake pendant replays text-to-speech;
    developer-mode fixtures stay on the phone or go to the private research repository.
 9. **A stored chunk is never deleted until the server answers.** Only `200` or `202` removes one
@@ -96,10 +101,10 @@ or flash firmware.
 
 - AGP's built-in Kotlin: never apply `org.jetbrains.kotlin.android`; KSP, never kapt.
 - Hand-written fakes, no mocking library (`FakePendant`, `FakeRing`, `FakeSettings`,
-  `FakeDeviceActions`, `FakeSyncControls`). View models take interfaces (`SettingsSource`,
+  `FakeDeviceActions`, `FakeSyncControls`, `FakePhoneMicControls`). View models take interfaces (`SettingsSource`,
   `InfoClient`, `ConversationsClient`, `TasksClient`, `MemoriesClient`, `SearchClient`,
   `ServerSettingsClient`, `TokensClient`, `WebhooksClient`, `PeopleClient`, `PersonPageClient`,
-  `ReviewClient`, `CardsClient`, `BriefsClient`, `VoiceprintsClient`, `DeviceActions`, `SyncControls`),
+  `ReviewClient`, `CardsClient`, `BriefsClient`, `VoiceprintsClient`, `DeviceActions`, `SyncControls`, `PhoneMicControls`),
   so their tests need no Android.
 - A server call is a client interface in `:core` (`core/api`) with its Hilt module in
   `app/di/<Area>Module.kt`; `AppModule.kt` stays as it is. Screens turn a `404` or `405` on a list or
@@ -110,7 +115,7 @@ or flash firmware.
   a feature, not a release, so a missing route still answers `404`: show "This server needs an update",
   never "This item no longer exists".
 - Room schemas under `core/schemas/` are committed. A schema change bumps the database version (now
-  7) and adds a migration, never a destructive fallback: the queue holds audio nobody can record
+  9) and adds a migration, never a destructive fallback: the queue holds audio nobody can record
   again.
 - Pendant facts (UUIDs, packet header, button codes, the storage service) come from
   `BasedHardware/omi` at a pinned commit; name the file when adding one.

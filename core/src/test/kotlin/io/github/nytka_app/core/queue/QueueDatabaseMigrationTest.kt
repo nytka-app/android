@@ -219,6 +219,25 @@ class QueueDatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun `version 8 to 9 marks the queued frames and chunks as the pendant's`() {
+        helper.createDatabase(NAME, 8).use { db ->
+            db.execSQL("insert into frames (session, seq, capturedAtMs, payload) values ('s', 0, 1, x'01')")
+            db.execSQL(
+                "insert into chunks (id, session, firstSeq, frameCount, createdAtMs, body) " +
+                    "values (1, 's', 0, 1, 5, x'0304')",
+            )
+        }
+
+        helper.runMigrationsAndValidate(NAME, 9, true).use { db ->
+            db.query("select (select source from frames), (select source from chunks)").use {
+                assertTrue(it.moveToFirst())
+                assertEquals("pendant", it.getString(0))
+                assertEquals("pendant", it.getString(1))
+            }
+        }
+    }
+
     private companion object {
         const val NAME = "migration-test"
     }

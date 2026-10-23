@@ -143,6 +143,15 @@ fun DeviceScreen(
                     HorizontalDivider()
                     AppearanceSection(state.wallpaperColors, viewModel::setWallpaperColors)
                 }
+                if (state.serverPhoneMic == true) {
+                    HorizontalDivider()
+                    PhoneMicSection(
+                        state,
+                        onSwitch = viewModel::setPhoneMic,
+                        onPermission = viewModel::phoneMicPermissionAnswered,
+                        onOpenSettings = viewModel::openAppSettings,
+                    )
+                }
                 HorizontalDivider()
                 BriefsSection(
                     state,

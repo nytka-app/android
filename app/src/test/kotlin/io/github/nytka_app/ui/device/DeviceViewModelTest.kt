@@ -2,6 +2,7 @@ package io.github.nytka_app.ui.device
 
 import io.github.nytka_app.FakeDeviceActions
 import io.github.nytka_app.FakePendantSettingsControls
+import io.github.nytka_app.FakePhoneMicControls
 import io.github.nytka_app.FakeSettings
 import io.github.nytka_app.FakeSyncControls
 import io.github.nytka_app.MainDispatcherRule
@@ -24,6 +25,7 @@ import io.github.nytka_app.pendant.FirmwareVersion
 import io.github.nytka_app.pendant.OmiDriver
 import io.github.nytka_app.pendant.PendantInfo
 import io.github.nytka_app.pendant.RecorderModel
+import io.github.nytka_app.phonemic.PhoneMicStatus
 import io.github.nytka_app.ui.PermissionAnswer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -92,6 +94,8 @@ class DeviceViewModelTest {
     }
 
     private val briefs = FakeBriefScheduler()
+
+    private val phoneMic = FakePhoneMicControls()
     private var phoneZone = "Europe/Kyiv"
     private var notice: FirmwareNotice? = null
     private val weekdays =
@@ -104,7 +108,7 @@ class DeviceViewModelTest {
         DeviceViewModel(settings, {
             infoCalls++
             info
-        }, actions, sync, server, { phoneZone }, pendantSettings, ::noticeFor, briefs, { null })
+        }, actions, sync, server, { phoneZone }, pendantSettings, ::noticeFor, briefs, { null }, phoneMic)
 
     private fun noticeFor(
         @Suppress("UNUSED_PARAMETER") info: PendantInfo,
@@ -367,6 +371,31 @@ class DeviceViewModelTest {
 
         viewModel.setActivityContext(false)
         assertFalse(settings.state.value.activityContext)
+    }
+
+    @Test
+    fun `the phone microphone never starts by itself, shows only on a phone-mic server, and starts after the permission`() {
+        val first = viewModel()
+        assertEquals(PhoneMicStatus.Off, first.state.value.phoneMic)
+        assertEquals(false, first.state.value.serverPhoneMic)
+        assertTrue(phoneMic.calls.isEmpty())
+
+        info = ApiResult.Ok(ServerInfo("0.34.0", 1, features = listOf(ServerInfo.FEATURE_PHONE_MIC)))
+        val viewModel = viewModel()
+        assertEquals(true, viewModel.state.value.serverPhoneMic)
+        assertTrue(phoneMic.calls.isEmpty())
+
+        viewModel.phoneMicPermissionAnswered(PermissionAnswer.Denied)
+        assertEquals(PermissionAnswer.Denied, viewModel.state.value.phoneMicPermission)
+        assertTrue(phoneMic.calls.isEmpty())
+
+        viewModel.phoneMicPermissionAnswered(PermissionAnswer.Granted)
+        assertEquals(listOf("start"), phoneMic.calls)
+        assertEquals(PhoneMicStatus.Recording, viewModel.state.value.phoneMic)
+
+        viewModel.setPhoneMic(false)
+        assertEquals(listOf("start", "stop"), phoneMic.calls)
+        assertEquals(PhoneMicStatus.Off, viewModel.state.value.phoneMic)
     }
 
     @Test

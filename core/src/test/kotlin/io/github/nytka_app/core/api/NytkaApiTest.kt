@@ -1,5 +1,6 @@
 package io.github.nytka_app.core.api
 
+import io.github.nytka_app.core.queue.CaptureSource
 import io.github.nytka_app.core.chunks.ChunkFormat
 import io.github.nytka_app.core.settings.Settings
 import kotlinx.coroutines.test.runTest
@@ -8,6 +9,7 @@ import mockwebserver3.MockWebServer
 import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -42,7 +44,7 @@ class NytkaApiTest {
         runTest {
             answer(202, """{"acceptedThroughSeq":9}""")
 
-            val result = api.upload(byteArrayOf(1, 2, 3))
+            val result = api.upload(byteArrayOf(1, 2, 3), CaptureSource.PENDANT)
 
             assertEquals(UploadResult.Accepted(9, duplicate = false), result)
             val request = server.takeRequest()
@@ -50,6 +52,19 @@ class NytkaApiTest {
             assertEquals("Bearer token-1", request.headers["Authorization"])
             assertEquals(ChunkFormat.MEDIA_TYPE, request.headers["Content-Type"])
             assertEquals(3L, request.body?.size?.toLong())
+        }
+
+    @Test
+    fun `a phone microphone chunk names its source and a pendant chunk sends no source header`() =
+        runTest {
+            answer(202, """{"acceptedThroughSeq":1}""")
+            answer(202, """{"acceptedThroughSeq":1}""")
+
+            api.upload(byteArrayOf(1), CaptureSource.PHONE_MIC)
+            api.upload(byteArrayOf(1), CaptureSource.PENDANT)
+
+            assertEquals("phone-mic", server.takeRequest().headers["X-Nytka-Source"])
+            assertNull(server.takeRequest().headers["X-Nytka-Source"])
         }
 
     @Test
@@ -62,7 +77,7 @@ class NytkaApiTest {
             answer(401)
             answer(500)
 
-            val results = List(6) { api.upload(byteArrayOf(1)) }
+            val results = List(6) { api.upload(byteArrayOf(1), CaptureSource.PENDANT) }
 
             assertEquals(UploadResult.Accepted(4, duplicate = true), results[0])
             assertEquals(listOf(409, 400, 413), results.subList(1, 4).map { (it as UploadResult.Dropped).code })
@@ -75,7 +90,7 @@ class NytkaApiTest {
         runTest {
             listOf(415, 422, 404, 405, 408, 425, 429).forEach { answer(it) }
 
-            val results = List(7) { api.upload(byteArrayOf(1)) }
+            val results = List(7) { api.upload(byteArrayOf(1), CaptureSource.PENDANT) }
 
             assertEquals(listOf(415, 422), results.take(2).map { (it as UploadResult.Dropped).code })
             results.drop(2).forEach { assertTrue(it is UploadResult.Retry) }
@@ -86,7 +101,7 @@ class NytkaApiTest {
         runTest {
             server.close()
 
-            assertTrue(api.upload(byteArrayOf(1)) is UploadResult.Retry)
+            assertTrue(api.upload(byteArrayOf(1), CaptureSource.PENDANT) is UploadResult.Retry)
         }
 
     @Test
@@ -94,7 +109,7 @@ class NytkaApiTest {
         runTest {
             settings = settings.copy(privateNetwork = false)
 
-            val result = api.upload(byteArrayOf(1))
+            val result = api.upload(byteArrayOf(1), CaptureSource.PENDANT)
 
             assertTrue(result is UploadResult.NotConfigured)
             assertEquals(0, server.requestCount)
