@@ -230,7 +230,7 @@ class ContextUploaderTest {
         }
 
     @Test
-    fun `nothing is sent, not even an info call, with the switch off`() =
+    fun `nothing is sent, not even an info call, with the switch off and no gain waiting`() =
         runTest {
             settings.value = settings.value.copy(phoneContext = false)
             outbox.add(row("a"))
@@ -240,6 +240,22 @@ class ContextUploaderTest {
             assertEquals(0, server.requestCount)
             assertEquals(0, infoCalls)
             assertEquals(1, outbox.oldest(10).size)
+        }
+
+    @Test
+    fun `with the switch off only gain ranges go, to a server with context-gain`() =
+        runTest {
+            settings.value = settings.value.copy(phoneContext = false)
+            features = listOf(ServerInfo.FEATURE_CONTEXT_RANGES, ServerInfo.FEATURE_CONTEXT_GAIN)
+            outbox.add(row("m"))
+            outbox.add(ContextRow("g", "gain", "other", NOW - 60_000, NOW - 30_000, "3"))
+            answer(200)
+
+            assertEquals(DrainResult.Empty, uploader.drain())
+
+            val body = server.takeRequest().body!!.utf8()
+            assertTrue(body, ""","kind":"gain",""" in body && ""","detail":"3"}""" in body && "media" !in body)
+            assertEquals(listOf("m"), outbox.oldest(10).map { it.id })
         }
 
     @Test

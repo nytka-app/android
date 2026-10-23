@@ -172,6 +172,7 @@ class CaptureService : LifecycleService() {
         val pendantSettings = PendantSettingsController(pendant, scope)
         hub.attachSettings(pendantSettings)
         scope.launch { pendantSettings.state.collect(hub::publishSettings) }
+        scope.launch { GainRecorder(contextOutbox, applicationScope).record(pendantSettings.state.map { it.gain }) }
     }
 
     @OptIn(FlowPreview::class)

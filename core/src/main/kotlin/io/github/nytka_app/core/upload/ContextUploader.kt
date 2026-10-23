@@ -17,7 +17,7 @@ import kotlinx.coroutines.sync.withLock
 
 /**
  * Sends the phone-context outbox to the server in batches of up to 500, oldest first, every 60 s while the
- * "Phone context" switch is on and `/info` lists `context-ranges`. Only the kinds `/info` admits go out (see
+ * "Phone context" switch is on and `/info` lists `context-ranges`; with the switch off, only the pendant's gain ranges. Only the kinds `/info` admits go out (see
  * [kindsFor]); the rest wait, up to [KEEP_MS], for a server that takes them. A range leaves the outbox only when the
  * server answers 200; a lost answer makes the retry count as skipped, since the server keeps the client's id.
  */
@@ -35,17 +35,19 @@ class ContextUploader(
     /**
      * Uploads until the outbox is empty or one batch does not go through. A 400 means the server can never take
      * the batch, so it is dropped; a 401, 403, 404, 405 or a missing setup pauses; anything else waits for the
-     * backoff. With the switch off, or on a server without the feature, nothing is sent.
+     * backoff. On a server without the feature nothing is sent; with the switch off, only gain ranges.
      */
     suspend fun drain(): DrainResult = lock.withLock { drainLocked() }
 
     private suspend fun drainLocked(): DrainResult {
         source.removeEndedBefore(clock() - KEEP_MS)
-        if (!settings.first().phoneContext) return DrainResult.Empty
-        if (source.oldest(1).isEmpty()) return DrainResult.Empty
+        // The pendant's gain is about the audio, not the phone: it goes out with the switch off too.
+        val phoneContext = settings.first().phoneContext
+        val waiting = if (phoneContext) source.oldest(1) else source.oldest(1, listOf(RangeKind.GAIN.wire))
+        if (waiting.isEmpty()) return DrainResult.Empty
         val kinds =
             when (val result = info.info()) {
-                is ApiResult.Ok -> kindsFor(result.value)
+                is ApiResult.Ok -> kindsFor(result.value).filter { phoneContext || it == RangeKind.GAIN.wire }
                 is ApiResult.Failure -> return failed(result)
             }
         if (kinds.isEmpty()) return DrainResult.Empty
@@ -115,6 +117,7 @@ class ContextUploader(
                 }
                 if (info.has(ServerInfo.FEATURE_CONTEXT_ACTIVITY)) add(RangeKind.ACTIVITY.wire)
                 if (info.has(ServerInfo.FEATURE_CONTEXT_NOW_PLAYING)) add(RangeKind.NOW_PLAYING.wire)
+                if (info.has(ServerInfo.FEATURE_CONTEXT_GAIN)) add(RangeKind.GAIN.wire)
             }
 
         const val TICK_MS = 60_000L

@@ -77,8 +77,9 @@ service `19b10010` in `BasedHardware/omi` at `2e34261` (`omi/firmware/omi/src/li
 `omi/firmware/omi/src/settings.c`).
 The firmware saves each write to flash, so `PendantSettingsController` writes each control at most once
 per 2 s, after the slider is released. Gain 0 is mute and levels 1 to 8 are -20, -10, 0, +6, +10, +20,
-+30, +40 dB. `OmiSettings` writes only after `19b10021` reports bit 7 (LED) or bit 8 (gain). Nothing
-about them goes to the server.
++30, +40 dB. `OmiSettings` writes only after `19b10021` reports bit 7 (LED) or bit 8 (gain). The gain level the
+pendant reports goes to the server as `gain` context ranges (`GainRecorder`, `GainRanges`), so it can correct levels and
+voice scores; the LED does not. The app never changes the gain by itself.
 
 ## Firmware notice
 

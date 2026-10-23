@@ -14,6 +14,7 @@ enum class RangeKind(
     HEADPHONES("headphones"),
     ACTIVITY("activity"),
     NOW_PLAYING("now-playing"),
+    GAIN("gain"),
 }
 
 /** What Android's activity transitions say the phone's owner is doing; sent as a range's detail. */
@@ -46,7 +47,10 @@ data class ContextRange(
     val route: Route,
     val startMs: Long,
     val endMs: Long,
-    /** One word from a fixed list for [RangeKind.ACTIVITY] and [RangeKind.NOW_PLAYING]; null for the rest. */
+    /**
+     * One word from a fixed list for [RangeKind.ACTIVITY] and [RangeKind.NOW_PLAYING], the level for [RangeKind.GAIN];
+     * null for the rest.
+     */
     val detail: String? = null,
 )
 
