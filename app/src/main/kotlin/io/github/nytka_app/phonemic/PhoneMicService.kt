@@ -7,7 +7,6 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.nytka_app.MainActivity
@@ -109,7 +108,13 @@ class PhoneMicService : Service() {
                     failed(getString(R.string.phone_mic_cannot_start))
                     return@collect
                 }
-                NotificationManagerCompat.from(this@PhoneMicService).notify(ID, notification(paused))
+                // Starting in the foreground again replaces the notice; it needs no notification permission.
+                ServiceCompat.startForeground(
+                    this@PhoneMicService,
+                    ID,
+                    notification(paused),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE,
+                )
             }
         }
         scope.launch {
