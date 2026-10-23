@@ -4,6 +4,7 @@ import io.github.nytka_app.FakeSettings
 import io.github.nytka_app.core.settings.Settings
 import io.github.nytka_app.pendant.FirmwareStream
 import io.github.nytka_app.pendant.FirmwareVersion
+import io.github.nytka_app.pendant.OmiDriver
 import io.github.nytka_app.pendant.PendantInfo
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -51,7 +52,7 @@ class FirmwareUpdateCheckerTest {
     @Test
     fun `a newer release gives a notice with both versions`() =
         runTest {
-            val notice = checker.notice(omi)
+            val notice = checker.notice(omi, OmiDriver.capabilities)
 
             assertEquals(FirmwareNotice(FirmwareVersion(3, 0, 20), FirmwareVersion(3, 0, 21)), notice)
             assertEquals("Omi_CV1_v3.0.21", settings.state.value.firmwareLatest)
@@ -61,22 +62,22 @@ class FirmwareUpdateCheckerTest {
     @Test
     fun `the same or a newer pendant firmware gives no notice`() =
         runTest {
-            assertNull(checker.notice(omi.copy(firmware = "3.0.21")))
-            assertNull(checker.notice(omi.copy(firmware = "3.1.0")))
+            assertNull(checker.notice(omi.copy(firmware = "3.0.21"), OmiDriver.capabilities))
+            assertNull(checker.notice(omi.copy(firmware = "3.1.0"), OmiDriver.capabilities))
         }
 
     @Test
     fun `asks GitHub once a day, however often the screen asks`() =
         runTest {
-            checker.notice(omi)
+            checker.notice(omi, OmiDriver.capabilities)
             clock.advance(Duration.ofHours(23))
-            val again = checker.notice(omi)
+            val again = checker.notice(omi, OmiDriver.capabilities)
 
             assertEquals(1, releases.calls)
             assertEquals(FirmwareVersion(3, 0, 21), again?.latest) // from the saved tag, with no request
 
             clock.advance(Duration.ofHours(1))
-            checker.notice(omi)
+            checker.notice(omi, OmiDriver.capabilities)
             assertEquals(2, releases.calls)
         }
 
@@ -90,8 +91,8 @@ class FirmwareUpdateCheckerTest {
                 )
             releases.answer = ReleaseAnswer.NoRelease
 
-            val notice = checker.notice(omi)
-            checker.notice(omi)
+            val notice = checker.notice(omi, OmiDriver.capabilities)
+            checker.notice(omi, OmiDriver.capabilities)
 
             assertEquals(1, releases.calls)
             assertEquals(clock.millis(), settings.state.value.firmwareCheckedAt)
@@ -103,14 +104,14 @@ class FirmwareUpdateCheckerTest {
         runTest {
             releases.answer = ReleaseAnswer.Unreachable
 
-            assertNull(checker.notice(omi))
-            assertNull(checker.notice(omi))
+            assertNull(checker.notice(omi, OmiDriver.capabilities))
+            assertNull(checker.notice(omi, OmiDriver.capabilities))
             assertEquals(1, releases.calls)
             assertEquals(0L, settings.state.value.firmwareCheckedAt)
 
             clock.advance(Duration.ofMinutes(61))
             releases.answer = ReleaseAnswer.Latest(FirmwareVersion(3, 0, 21))
-            assertEquals(FirmwareVersion(3, 0, 21), checker.notice(omi)?.latest)
+            assertEquals(FirmwareVersion(3, 0, 21), checker.notice(omi, OmiDriver.capabilities)?.latest)
             assertEquals(2, releases.calls)
         }
 
@@ -119,16 +120,27 @@ class FirmwareUpdateCheckerTest {
         runTest {
             settings.state.value = Settings(firmwareCheck = false, firmwareLatest = "Omi_CV1_v3.0.21")
 
-            assertNull(checker.notice(omi))
+            assertNull(checker.notice(omi, OmiDriver.capabilities))
             assertEquals(0, releases.calls)
         }
 
     @Test
     fun `a pendant that maps to no stream is never checked`() =
         runTest {
-            assertNull(checker.notice(PendantInfo("Omi", model = "Omi DevKit 2", firmware = "2.0.9")))
-            assertNull(checker.notice(PendantInfo("Fake pendant", model = "Fake", firmware = "fake")))
-            assertNull(checker.notice(PendantInfo("Omi", model = null, firmware = null)))
+            assertNull(
+                checker.notice(PendantInfo("Omi", model = "Omi DevKit 2", firmware = "2.0.9"), OmiDriver.capabilities),
+            )
+            assertNull(
+                checker.notice(PendantInfo("Fake pendant", model = "Fake", firmware = "fake"), OmiDriver.capabilities),
+            )
+            assertNull(checker.notice(PendantInfo("Omi", model = null, firmware = null), OmiDriver.capabilities))
+            assertEquals(0, releases.calls)
+        }
+
+    @Test
+    fun `a recorder whose capabilities offer no stream is never checked`() =
+        runTest {
+            assertNull(checker.notice(omi, OmiDriver.capabilities.copy(firmware = null)))
             assertEquals(0, releases.calls)
         }
 
@@ -138,7 +150,7 @@ class FirmwareUpdateCheckerTest {
             settings.state.value =
                 Settings(firmwareCheckedAt = clock.millis(), firmwareLatest = "Omi_DK2_v2.0.10")
 
-            assertNull(checker.notice(omi))
+            assertNull(checker.notice(omi, OmiDriver.capabilities))
         }
 
     @Test

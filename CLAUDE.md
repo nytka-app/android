@@ -15,7 +15,7 @@ Robolectric, MockWebServer, Turbine · ktlint, detekt.
 
 | Module | Holds |
 |---|---|
-| `:pendant` | `Pendant`, `FrameAssembler`, `OmiPendant` (Bluetooth), the storage service (`OmiStorage`, `RingProtocol`, `RingRecords`), the settings service (`OmiSettings`: LED brightness, mic gain), `FirmwareVersion`, `FirmwareStream`, `FakePendant` with `FakeRing`; no UI |
+| `:pendant` | `Pendant` with its `Capabilities` (storage, buttons, haptic, audio switch, settings, firmware stream, codec; the app reads these and never asks which model), `RecorderModel`, `FrameAssembler`, `OmiPendant` (Bluetooth) and `OmiDriver` (Omi's capabilities, button codes, haptic codes), the storage service (`OmiStorage`, `RingProtocol`, `RingRecords`), the settings service (`OmiSettings`: LED brightness, mic gain), `FirmwareVersion`, `FirmwareStream`, `FakePendant` with `FakeRing`; no UI |
 | `:core` | chunk format, `FrameQueue` (Room), capture times and the mute filter (`ring/`), settings, `NytkaApi` and its clients, `Uploader`, `diagnostics/` (event log, samples, upload), `location/` (saved places, location tags), `context/` (context ranges), `transcribe/` (on-device draft text: the `OnDeviceTranscriber` seam, `DraftAudioTap`, `SpeechSegments`, `DraftTranscription`); tested on the JVM |
 | `:app` | Hilt wiring, `CaptureController`, `StorageSyncController`, `PendantSettingsController`, `firmware/` (release check) and the services; `capture/` also holds the home-screen widget, the companion-device service, the phone-context recorder, `MuteLogRecorder` and `DiagnosticsRecorder`; `briefs/` (morning brief notifications), `transcribe/` (model import, Opus decoder, worker, benchmark), alerts, Compose screens; `src/play` holds the sherpa-onnx engine, `src/oss` a stand-in without it |
 

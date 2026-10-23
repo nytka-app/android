@@ -25,32 +25,20 @@ data class PendantInfo(
     val hardware: String? = null,
 )
 
-/** The events the consumer firmware sends (`src/lib/core/button.c`); 3 and 4 are defined but never sent. */
+/** What a recorder's button can say. Each driver maps its own codes to these; Omi's are in [OmiDriver]. */
 enum class ButtonEvent {
     SingleTap,
     DoubleTap,
     Release,
-    ;
-
-    companion object {
-        fun fromCode(code: Int): ButtonEvent? =
-            when (code) {
-                1 -> SingleTap
-                2 -> DoubleTap
-                5 -> Release
-                else -> null
-            }
-    }
 }
 
-/** The values the haptic characteristic takes (`src/haptic.c`). */
+/** A buzz the phone may ask for; each driver maps it to its own command, or ignores it without a haptic motor. */
 enum class Haptic(
-    val code: Byte,
     val durationMs: Long,
 ) {
-    Short(1, 100),
-    Medium(2, 300),
-    Long(3, 500),
+    Short(100),
+    Medium(300),
+    Long(500),
 }
 
 data class LinkStats(
@@ -123,11 +111,16 @@ interface PendantStorage {
 }
 
 /**
- * An Omi pendant, or something that behaves like one. A lost link loses every subscription, but
+ * A recorder: an Omi pendant, or something that behaves like one. A lost link loses every subscription, but
  * not the caller's intent: after a reconnect the pendant subscribes to audio again by itself if the
  * last [setAudio] said true. [disconnect] clears the intent.
  */
 interface Pendant {
+    val model: RecorderModel
+
+    /** What this recorder can do; the app offers and uses nothing outside it. */
+    val capabilities: Capabilities
+
     val connection: StateFlow<PendantConnection>
 
     /** Percent, or null while unknown. */

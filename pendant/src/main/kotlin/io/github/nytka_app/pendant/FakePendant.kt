@@ -11,11 +11,15 @@ import kotlinx.coroutines.launch
 
 /**
  * Replays Opus payloads in a loop, one frame every 20 ms, stamped with the current time. Drives
- * the capture path in tests and in developer mode ("fake pendant").
+ * the capture path in tests and in developer mode ("fake pendant"). It stands in for any [model] and honours
+ * [capabilities]: a button it cannot send is dropped, a missing haptic makes [buzz] a no-op, and without an
+ * audio switch it keeps streaming while audio is off but drops the frames, as a driver must.
  */
 class FakePendant(
     private val payloads: List<ByteArray>,
     private val scope: CoroutineScope,
+    override val model: RecorderModel = RecorderModel.Omi,
+    override val capabilities: Capabilities = model.capabilities,
     private val now: () -> Long = System::currentTimeMillis,
 ) : Pendant {
     private val mutableConnection = MutableStateFlow<PendantConnection>(PendantConnection.Disconnected)
@@ -74,15 +78,17 @@ class FakePendant(
     private fun applyAudio() {
         audioEnabled = audioWanted && mutableConnection.value is PendantConnection.Connected
         streaming?.cancel()
-        streaming = if (audioEnabled) scope.launch { stream() } else null
+        val connected = mutableConnection.value is PendantConnection.Connected
+        streaming = if (audioEnabled || (connected && !capabilities.audioSwitch)) scope.launch { stream() } else null
     }
 
     override suspend fun buzz(haptic: Haptic) {
+        if (!capabilities.haptic) return
         recordedHaptics += haptic
     }
 
     fun press(event: ButtonEvent) {
-        mutableButtons.tryEmit(event)
+        if (event in capabilities.buttons) mutableButtons.tryEmit(event)
     }
 
     /** The pendant walked out of range: the link and its subscriptions are gone, the audio intent is not. */
@@ -106,10 +112,12 @@ class FakePendant(
 
     private suspend fun stream() {
         while (true) { // ends when setAudio or dropLink cancels the job
-            val frame = AudioFrame(payloads[next++ % payloads.size], now())
-            mutableFrames.emit(frame)
-            mutableStats.value =
-                mutableStats.value.let { it.copy(notifications = it.notifications + 1, frames = it.frames + 1) }
+            if (audioWanted) {
+                val frame = AudioFrame(payloads[next++ % payloads.size], now())
+                mutableFrames.emit(frame)
+                mutableStats.value =
+                    mutableStats.value.let { it.copy(notifications = it.notifications + 1, frames = it.frames + 1) }
+            }
             delay(FRAME_MS)
         }
     }

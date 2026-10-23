@@ -62,6 +62,8 @@ class OmiPendant(
     private val mutableFrames = MutableSharedFlow<AudioFrame>(extraBufferCapacity = 1024)
     private val mutableButtons = MutableSharedFlow<ButtonEvent>(extraBufferCapacity = 8)
 
+    override val model = RecorderModel.Omi
+    override val capabilities = OmiDriver.capabilities
     override val connection: StateFlow<PendantConnection> = mutableConnection
     override val battery: StateFlow<Int?> = mutableBattery
     override val stats: StateFlow<LinkStats> = mutableStats
@@ -171,7 +173,9 @@ class OmiPendant(
     override suspend fun buzz(haptic: Haptic) {
         val current = gatt ?: return
         val characteristic = find(current, OmiUuids.HAPTIC) ?: return
-        operation(OperationKind.Write, OmiUuids.HAPTIC) { write(current, characteristic, byteArrayOf(haptic.code)) }
+        operation(OperationKind.Write, OmiUuids.HAPTIC) {
+            write(current, characteristic, byteArrayOf(OmiDriver.hapticCode(haptic)))
+        }
     }
 
     private fun info(message: String) = logger.log(Log.INFO, TAG, message)

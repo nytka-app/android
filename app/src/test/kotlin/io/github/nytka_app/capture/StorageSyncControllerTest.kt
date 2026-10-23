@@ -161,7 +161,7 @@ class StorageSyncControllerTest {
         start: Boolean = true,
     ): Rig {
         val now = { BASE_MS + testScheduler.currentTime }
-        val pendant = FakePendant(listOf(byteArrayOf(1)), backgroundScope, now)
+        val pendant = FakePendant(listOf(byteArrayOf(1)), backgroundScope, now = now)
         pendant.ring.firmware = firmware
         pendant.ring.autoAdvance = firmware == "3.0.21"
         val steered = SteeredPendant(pendant)

@@ -12,8 +12,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FakePendantTest {
-    private fun TestScope.pendant() =
-        FakePendant(listOf(byteArrayOf(1), byteArrayOf(2)), backgroundScope) { testScheduler.currentTime }
+    private fun TestScope.pendant(capabilities: Capabilities = RecorderModel.Omi.capabilities) =
+        FakePendant(
+            listOf(byteArrayOf(1), byteArrayOf(2)),
+            backgroundScope,
+            capabilities = capabilities,
+        ) { testScheduler.currentTime }
 
     @Test
     fun `streams frames only while audio is on`() =
@@ -82,6 +86,56 @@ class FakePendantTest {
         }
 
     @Test
+    fun `without a haptic motor a buzz does nothing`() =
+        runTest {
+            val pendant = pendant(OmiDriver.capabilities.copy(haptic = false))
+
+            pendant.buzz(Haptic.Long)
+
+            assertTrue(pendant.haptics.isEmpty())
+        }
+
+    @Test
+    fun `a button the recorder cannot send is never emitted`() =
+        runTest {
+            val pendant = pendant(OmiDriver.capabilities.copy(buttons = setOf(ButtonEvent.DoubleTap)))
+
+            pendant.buttons.test {
+                pendant.press(ButtonEvent.SingleTap)
+                pendant.press(ButtonEvent.DoubleTap)
+                assertEquals(ButtonEvent.DoubleTap, awaitItem())
+            }
+        }
+
+    @Test
+    fun `without an audio switch the frames are dropped while audio is off`() =
+        runTest {
+            val pendant = pendant(OmiDriver.capabilities.copy(audioSwitch = false))
+            val received = mutableListOf<AudioFrame>()
+            backgroundScope.launch { pendant.frames.collect { received += it } }
+            pendant.connect("fake")
+            runCurrent()
+
+            advanceTimeBy(100)
+            assertEquals(0, received.size)
+
+            pendant.setAudio(true)
+            advanceTimeBy(100)
+            assertEquals(5, received.size)
+
+            pendant.setAudio(false)
+            advanceTimeBy(100)
+            assertEquals(5, received.size)
+        }
+
+    @Test
+    fun `the fake takes its capabilities from the model unless given others`() =
+        runTest {
+            assertEquals(RecorderModel.Omi, pendant().model)
+            assertEquals(OmiDriver.capabilities, pendant().capabilities)
+        }
+
+    @Test
     fun `a refused pendant never streams`() =
         runTest {
             val pendant = pendant()
@@ -97,7 +151,7 @@ class FakePendantTest {
     fun `button codes map to events`() {
         assertEquals(
             listOf(ButtonEvent.SingleTap, ButtonEvent.DoubleTap, ButtonEvent.Release, null),
-            listOf(1, 2, 5, 3).map(ButtonEvent::fromCode),
+            listOf(1, 2, 5, 3).map(OmiDriver::button),
         )
     }
 

@@ -69,7 +69,9 @@ fun DeviceScreen(
 
     val pendantInfo = (status.capture.connection as? PendantConnection.Connected)?.info
     // Also runs again when the switch changes: the checker reads the setting.
-    LaunchedEffect(pendantInfo, state.firmwareCheck) { viewModel.pendantSeen(pendantInfo) }
+    LaunchedEffect(pendantInfo, state.firmwareCheck) {
+        viewModel.pendantSeen(pendantInfo, status.capture.capabilities)
+    }
 
     LocalNetworkPrompt(state.askLocalNetwork, viewModel::localNetworkAnswered)
     LazyColumn(
@@ -263,6 +265,13 @@ private fun PendantBlock(
             FilledTonalButton(
                 onClick = { onMute(!status.muted) },
             ) { Text(stringResource(if (status.muted) R.string.unmute else R.string.mute)) }
+            if (status.capture.capabilities?.audioSwitch == false) {
+                Text(
+                    stringResource(R.string.mute_still_hears),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             SettingsToggleRow(
                 stringResource(R.string.firmware_check_label),
                 checked = state.firmwareCheck,

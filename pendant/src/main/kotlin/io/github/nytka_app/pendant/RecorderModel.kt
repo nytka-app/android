@@ -12,6 +12,7 @@ enum class RecorderModel(
     val serviceUuid: UUID,
     /** Where the protocol comes from. */
     val source: String,
+    val capabilities: Capabilities,
 ) {
     /** The service is declared in `transport.c:135-136` and advertised at `:298`. */
     Omi(
@@ -19,6 +20,7 @@ enum class RecorderModel(
         displayName = "Omi",
         serviceUuid = OmiUuids.AUDIO_SERVICE,
         source = "BasedHardware/omi at 2e34261, omi/firmware/omi/src/lib/core/transport.c",
+        capabilities = OmiDriver.capabilities,
     ),
     ;
 

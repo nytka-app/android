@@ -9,6 +9,7 @@ import io.github.nytka_app.core.settings.MuteSchedule
 import io.github.nytka_app.core.settings.SettingsStore
 import io.github.nytka_app.pendant.AudioFrame
 import io.github.nytka_app.pendant.ButtonEvent
+import io.github.nytka_app.pendant.Capabilities
 import io.github.nytka_app.pendant.Haptic
 import io.github.nytka_app.pendant.LinkStats
 import io.github.nytka_app.pendant.Pendant
@@ -69,6 +70,8 @@ data class CaptureStatus(
     val session: String? = null,
     val framesQueued: Long = 0,
     val disconnectedSinceMs: Long? = null,
+    /** What the paired recorder can do; null while capture is off. */
+    val capabilities: Capabilities? = null,
 ) {
     val recording: Boolean get() = running && !muted && connection is PendantConnection.Connected
 }
@@ -164,7 +167,7 @@ class CaptureController(
         val job = SupervisorJob(scope.coroutineContext[Job])
         jobs = job
         val inner = CoroutineScope(scope.coroutineContext + job)
-        mutableStatus.value = CaptureStatus(running = true, session = session.toString(), disconnectedSinceMs = now())
+        mutableStatus.value = startedStatus()
 
         inner.launch {
             val inputs = combine(pendant.connection, effectiveMuted) { connection, isMuted -> connection to isMuted }
@@ -295,7 +298,7 @@ class CaptureController(
             }
         if (!saved) return
         log.i(TAG, "bookmark kept")
-        if (pendant.connection.value is PendantConnection.Connected) pendant.buzz(Haptic.Short)
+        buzzIfConnected(Haptic.Short)
     }
 
     /**
@@ -325,14 +328,27 @@ class CaptureController(
         log.i(TAG, "${if (muted) "muted" else "unmuted"} by ${source.label}")
         this.muted = muted
         settings.setMuted(muted)
-        if (pendant.connection.value !is PendantConnection.Connected) return
         if (muted) {
-            pendant.buzz(Haptic.Long)
-        } else {
-            pendant.buzz(Haptic.Short)
+            buzzIfConnected(Haptic.Long)
+        } else if (buzzIfConnected(Haptic.Short)) {
             delay(Haptic.Short.durationMs + LIVE_BUZZ_GAP_MS)
-            pendant.buzz(Haptic.Short)
+            buzzIfConnected(Haptic.Short)
         }
+    }
+
+    private fun startedStatus() =
+        CaptureStatus(
+            running = true,
+            session = session.toString(),
+            disconnectedSinceMs = now(),
+            capabilities = pendant.capabilities,
+        )
+
+    /** Without a haptic the confirmation is the notification and the widget, which follow the mute setting. */
+    private suspend fun buzzIfConnected(haptic: Haptic): Boolean {
+        if (!pendant.capabilities.haptic || pendant.connection.value !is PendantConnection.Connected) return false
+        pendant.buzz(haptic)
+        return true
     }
 
     suspend fun stop() {

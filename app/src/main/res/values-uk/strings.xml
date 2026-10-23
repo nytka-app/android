@@ -738,6 +738,7 @@
     <string name="signals_light_boot">Один синій спалах, потім два зелені згасання</string>
     <string name="signals_light_boot_means">Вмикається</string>
     <string name="signals_button_label">Кнопка</string>
+    <string name="mute_still_hears">Цей рекордер слухає і під час вимкнення звуку. Nytka відкидає аудіо на телефоні й нічого не зберігає</string>
     <string name="signals_button_double">Подвійне торкання</string>
     <string name="signals_button_double_means">Вимикає або вмикає запис одним довгим дзижчанням</string>
     <string name="signals_button_single">Одне торкання</string>

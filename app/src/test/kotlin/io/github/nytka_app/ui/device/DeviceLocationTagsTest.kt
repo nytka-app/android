@@ -49,7 +49,7 @@ class DeviceLocationTagsTest {
             noServerSettings,
             { "UTC" },
             FakePendantSettingsControls(),
-            { null },
+            { _, _ -> null },
             noBriefs,
             { location },
         )

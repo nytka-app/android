@@ -731,6 +731,7 @@
     <string name="signals_light_boot">One blue pulse, then two green fades</string>
     <string name="signals_light_boot_means">Starting up</string>
     <string name="signals_button_label">The button</string>
+    <string name="mute_still_hears">This recorder keeps listening while muted. Nytka throws the audio away on the phone and keeps none of it</string>
     <string name="signals_button_double">Double-tap</string>
     <string name="signals_button_double_means">Mutes or unmutes, with one long buzz</string>
     <string name="signals_button_single">Single tap</string>

@@ -18,7 +18,7 @@ object OmiParsing {
         ) {
             null
         } else {
-            ButtonEvent.fromCode(ByteBuffer.wrap(value, 0, 4).order(ByteOrder.LITTLE_ENDIAN).int)
+            OmiDriver.button(ByteBuffer.wrap(value, 0, 4).order(ByteOrder.LITTLE_ENDIAN).int)
         }
 
     fun text(value: ByteArray?): String? =

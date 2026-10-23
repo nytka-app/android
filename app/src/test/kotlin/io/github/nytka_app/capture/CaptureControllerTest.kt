@@ -6,8 +6,10 @@ import io.github.nytka_app.core.queue.FrameSink
 import io.github.nytka_app.core.settings.MuteSchedule
 import io.github.nytka_app.core.settings.MuteWindow
 import io.github.nytka_app.pendant.ButtonEvent
+import io.github.nytka_app.pendant.Capabilities
 import io.github.nytka_app.pendant.FakePendant
 import io.github.nytka_app.pendant.Haptic
+import io.github.nytka_app.pendant.OmiDriver
 import io.github.nytka_app.pendant.Pendant
 import io.github.nytka_app.pendant.PendantConnection
 import kotlinx.coroutines.CompletableDeferred
@@ -97,9 +99,10 @@ class CaptureControllerTest {
         muted: Boolean = false,
         schedule: MuteSchedule = MuteSchedule(),
         startMs: Long = 0,
+        capabilities: Capabilities = OmiDriver.capabilities,
     ): Rig {
         val now = { startMs + testScheduler.currentTime }
-        val pendant = FakePendant(listOf(byteArrayOf(1)), backgroundScope, now)
+        val pendant = FakePendant(listOf(byteArrayOf(1)), backgroundScope, capabilities = capabilities, now = now)
         val sink = FakeSink()
         val settings = FakeSettings(muted).also { it.scheduleState.value = schedule }
         val log = FakeEventLog()
@@ -190,6 +193,81 @@ class CaptureControllerTest {
             assertEquals(listOf(Haptic.Long), rig.pendant.haptics)
             assertTrue(rig.settings.state.value)
             assertFalse(rig.pendant.audioEnabled)
+        }
+
+    @Test
+    fun `a recorder without a haptic is muted by a double tap and the status says so, with no buzz`() =
+        runTest {
+            val rig = rig(capabilities = OmiDriver.capabilities.copy(haptic = false))
+            rig.controller.start("fake")
+            runCurrent()
+            advanceTimeBy(100)
+
+            rig.pendant.press(ButtonEvent.DoubleTap)
+            runCurrent()
+            advanceTimeBy(1_000)
+
+            assertTrue(rig.settings.state.value)
+            assertTrue(rig.pendant.haptics.isEmpty())
+            assertEquals(CaptureState.Muted, CaptureState.of(rig.controller.status.value))
+        }
+
+    @Test
+    fun `a recorder without a haptic still keeps a bookmark, with no buzz`() =
+        runTest {
+            val rig = rig(capabilities = OmiDriver.capabilities.copy(haptic = false))
+            rig.controller.start("fake")
+            runCurrent()
+            advanceTimeBy(1_000)
+
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            advanceTimeBy(701)
+
+            assertEquals(listOf(1_000L to "pendant"), rig.bookmarks.kept)
+            assertTrue(rig.pendant.haptics.isEmpty())
+        }
+
+    @Test
+    fun `a recorder without a single tap sends none, so nothing is bookmarked, and it still mutes`() =
+        runTest {
+            val rig = rig(capabilities = OmiDriver.capabilities.copy(buttons = setOf(ButtonEvent.DoubleTap)))
+            rig.controller.start("fake")
+            runCurrent()
+            advanceTimeBy(100)
+
+            rig.pendant.press(ButtonEvent.SingleTap)
+            runCurrent()
+            advanceTimeBy(1_000)
+            assertTrue(rig.bookmarks.kept.isEmpty())
+            assertFalse(rig.settings.state.value)
+
+            rig.pendant.press(ButtonEvent.DoubleTap)
+            runCurrent()
+            assertTrue(rig.settings.state.value)
+            assertEquals(listOf(Haptic.Long), rig.pendant.haptics)
+        }
+
+    @Test
+    fun `a recorder without an audio switch writes no frame while muted`() =
+        runTest {
+            val rig = rig(muted = true, capabilities = OmiDriver.capabilities.copy(audioSwitch = false))
+            rig.controller.start("fake")
+            runCurrent()
+
+            advanceTimeBy(1_000)
+
+            assertTrue(rig.sink.frames.isEmpty())
+            assertEquals(
+                false,
+                rig.controller.status.value.capabilities
+                    ?.audioSwitch,
+            )
+
+            rig.controller.setMuted(false, MuteSource.App)
+            advanceTimeBy(1_000)
+
+            assertTrue(rig.sink.frames.isNotEmpty())
         }
 
     @Test

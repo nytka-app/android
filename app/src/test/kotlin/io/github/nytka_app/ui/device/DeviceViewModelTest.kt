@@ -20,6 +20,7 @@ import io.github.nytka_app.core.settings.MuteWindow
 import io.github.nytka_app.core.settings.Settings
 import io.github.nytka_app.firmware.FirmwareNotice
 import io.github.nytka_app.pendant.FirmwareVersion
+import io.github.nytka_app.pendant.OmiDriver
 import io.github.nytka_app.pendant.PendantInfo
 import io.github.nytka_app.pendant.RecorderModel
 import io.github.nytka_app.ui.PermissionAnswer
@@ -101,7 +102,12 @@ class DeviceViewModelTest {
         DeviceViewModel(settings, {
             infoCalls++
             info
-        }, actions, sync, server, { phoneZone }, pendantSettings, { notice }, briefs, { null })
+        }, actions, sync, server, { phoneZone }, pendantSettings, { _, capabilities ->
+            notice.takeIf {
+                capabilities.firmware !=
+                    null
+            }
+        }, briefs, { null })
 
     private fun saveServerOnTheLocalNetwork() {
         settings.state.value = settings.state.value.copy(serverUrl = "http://192.168.1.10:8080/", privateNetwork = true)
@@ -161,6 +167,24 @@ class DeviceViewModelTest {
 
         assertEquals("CC:DD", settings.state.value.pendantAddress)
         assertEquals("omi", settings.state.value.pendantModel)
+        assertEquals(listOf("forget AA:BB", "restart"), actions.calls)
+    }
+
+    @Test
+    fun `pairing a different recorder forgets the old association`() {
+        val viewModel = viewModel()
+
+        viewModel.paired(PairedPendant("CC:DD", "Other", RecorderModel.Omi))
+
+        assertEquals(listOf("forget AA:BB", "restart"), actions.calls)
+    }
+
+    @Test
+    fun `pairing the same recorder again keeps its association`() {
+        val viewModel = viewModel()
+
+        viewModel.paired(PairedPendant("AA:BB", "Omi", RecorderModel.Omi))
+
         assertEquals(listOf("restart"), actions.calls)
     }
 
@@ -633,10 +657,33 @@ class DeviceViewModelTest {
         notice = FirmwareNotice(FirmwareVersion(3, 0, 20), FirmwareVersion(3, 0, 21))
         val viewModel = viewModel()
 
-        viewModel.pendantSeen(PendantInfo("Omi", model = "Omi CV 1", firmware = "3.0.20"))
+        viewModel.pendantSeen(PendantInfo("Omi", model = "Omi CV 1", firmware = "3.0.20"), OmiDriver.capabilities)
         assertEquals(notice, viewModel.state.value.firmwareNotice)
 
-        viewModel.pendantSeen(null)
+        viewModel.pendantSeen(null, OmiDriver.capabilities)
+        assertNull(viewModel.state.value.firmwareNotice)
+    }
+
+    @Test
+    fun `a recorder with no firmware stream gets no notice`() {
+        notice = FirmwareNotice(FirmwareVersion(3, 0, 20), FirmwareVersion(3, 0, 21))
+        val viewModel = viewModel()
+
+        viewModel.pendantSeen(
+            PendantInfo("Omi", model = "Omi CV 1", firmware = "3.0.20"),
+            OmiDriver.capabilities.copy(firmware = null),
+        )
+
+        assertNull(viewModel.state.value.firmwareNotice)
+    }
+
+    @Test
+    fun `no notice is asked for before capture knows what the recorder can do`() {
+        notice = FirmwareNotice(FirmwareVersion(3, 0, 20), FirmwareVersion(3, 0, 21))
+        val viewModel = viewModel()
+
+        viewModel.pendantSeen(PendantInfo("Omi", model = "Omi CV 1", firmware = "3.0.20"), null)
+
         assertNull(viewModel.state.value.firmwareNotice)
     }
 
