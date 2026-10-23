@@ -1,6 +1,7 @@
 package io.github.nytka_app.core.upload
 
 import io.github.nytka_app.core.api.UploadResult
+import io.github.nytka_app.core.queue.CaptureSource
 import io.github.nytka_app.core.queue.QueueUsage
 import io.github.nytka_app.core.queue.SealedChunk
 import io.github.nytka_app.core.settings.Settings
@@ -83,12 +84,14 @@ class UploaderTest {
 
     private val settings = MutableStateFlow(Settings(serverUrl = "https://nytka.example", token = "old"))
     private val sent = mutableListOf<Byte>()
+    private val sources = mutableListOf<String>()
 
     private fun TestScope.uploader(
         chunks: ChunkSource,
         answer: (ByteArray) -> UploadResult,
-    ) = Uploader(chunks, { body ->
+    ) = Uploader(chunks, { body, source ->
         sent += body[0]
+        sources += source
         answer(body)
     }, settings, now = { testScheduler.currentTime })
 
@@ -105,6 +108,28 @@ class UploaderTest {
             assertEquals(listOf<Byte>(1, 2), sent)
             assertEquals(0, chunks.chunks.size)
             assertEquals(2L, uploader.state.value.uploadedChunks)
+        }
+
+    @Test
+    fun `each chunk goes with its own source`() =
+        runTest {
+            val chunks = FakeChunks(1, 2)
+            chunks.chunks[1] =
+                chunks.chunks[1].let {
+                    SealedChunk(
+                        id = it.id,
+                        session = it.session,
+                        firstSeq = it.firstSeq,
+                        frameCount = it.frameCount,
+                        createdAtMs = it.createdAtMs,
+                        body = it.body,
+                        source = CaptureSource.PHONE_MIC,
+                    )
+                }
+
+            uploader(chunks) { accepted }.drain()
+
+            assertEquals(listOf(CaptureSource.PENDANT, CaptureSource.PHONE_MIC), sources)
         }
 
     @Test

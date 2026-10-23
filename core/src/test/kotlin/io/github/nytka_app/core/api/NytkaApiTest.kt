@@ -1,7 +1,7 @@
 package io.github.nytka_app.core.api
 
-import io.github.nytka_app.core.queue.CaptureSource
 import io.github.nytka_app.core.chunks.ChunkFormat
+import io.github.nytka_app.core.queue.CaptureSource
 import io.github.nytka_app.core.settings.Settings
 import kotlinx.coroutines.test.runTest
 import mockwebserver3.MockResponse

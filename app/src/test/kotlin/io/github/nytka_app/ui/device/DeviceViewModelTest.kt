@@ -374,7 +374,7 @@ class DeviceViewModelTest {
     }
 
     @Test
-    fun `the phone microphone never starts by itself, shows only on a phone-mic server, and starts after the permission`() {
+    fun `the phone mic never starts by itself, shows only on a phone-mic server, starts after the permission`() {
         val first = viewModel()
         assertEquals(PhoneMicStatus.Off, first.state.value.phoneMic)
         assertEquals(false, first.state.value.serverPhoneMic)
