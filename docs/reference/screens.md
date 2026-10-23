@@ -20,14 +20,15 @@ Addresses, tokens and signing secrets are set in a monospaced font.
   transcription provider names speakers. Speakers differ by shape, not colour: you are a **You** tag,
   a named person is a name led by one of seven marks (disc, square, triangle, diamond, ring, plus,
   bar) given in order of first appearance, and a voice nobody has named is a saffron **Voice 2** tag
-  with **Who is this?**, which opens the naming dialog. On a server that lists `auto-names`, a speaker
+  with **Who is this?**, which opens the naming dialog. A voice keeps the number the server gives it, so
+  "Voice 2" in the transcript, the player, a review card, a summary and Ask is the same voice. On a server that lists `auto-names`, a speaker
   the server named by itself carries "· named for you" and **Undo**: one tap takes the name back, reads
   the transcript again and confirms in a snackbar. The paragraph being heard gets a darker ground
   and a pause glyph. Its ⋮ menu has **Rename** (an empty title restores
   the generated one), **Regenerate summary** (not while the conversation is open) and **Delete**.
   When the server kept the audio (14 days by default, and none for imported conversations), a player
   is docked at the bottom: a plain track with a tick wherever the speaker changes, the position,
-  length and who is talking, **Follow** (the transcript scrolls to the paragraph being heard; on by
+  length and who is talking (named as in the transcript), **Follow** (the transcript scrolls to the paragraph being heard; on by
   default), −10 and +10 seconds, play or pause, and the speed (1×, 1.25×, 1.5×, 2×). Tap the time
   beside a paragraph to play from there. Pauses between speech are not stored, so they are skipped.
   If the server cannot be reached the player says so in one line and stays. Playback stops when you

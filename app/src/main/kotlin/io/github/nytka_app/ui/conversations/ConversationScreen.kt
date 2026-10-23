@@ -309,13 +309,12 @@ private fun LazyListScope.transcript(
     onKind: ((Long, String?) -> Unit)?,
     onMemory: (Paragraph) -> Unit,
 ) {
-    // "Voice 1", "Voice 2" ... by first appearance among the voices nobody has named.
-    val unknown = paragraphs.filter { it.unknownVoice }.mapNotNull { it.speaker }.distinct()
+    val voices = paragraphs.voiceNumbers()
     itemsIndexed(paragraphs) { i, paragraph ->
         ParagraphItem(
             paragraph,
             autoNamed,
-            voiceNumber = unknown.indexOf(paragraph.speaker) + 1,
+            voiceNumber = voices.of(paragraph.speaker.orEmpty()),
             playing = i == playingIndex,
             onName,
             onOpenPerson,

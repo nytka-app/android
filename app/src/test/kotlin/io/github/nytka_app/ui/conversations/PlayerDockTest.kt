@@ -33,4 +33,19 @@ class PlayerDockTest {
     fun `no ticks without a length`() {
         assertEquals(emptyList<Float>(), turnPositions(listOf(paragraph("Ann"), paragraph("Bo")), starts, 0))
     }
+
+    @Test
+    fun `the dock numbers unnamed voices as the transcript does, never by the raw label`() {
+        val paragraphs =
+            listOf(
+                Paragraph("08:00", "Hi.", "SPEAKER_1"),
+                Paragraph("08:01", "Me.", "SPEAKER_0", isUser = true),
+                Paragraph("08:02", "Yes.", "Olena", personId = "p1"),
+                Paragraph("08:03", "No.", "SPEAKER_3"),
+            )
+        val voices = paragraphs.voiceNumbers()
+
+        assertEquals(2, voices.of("SPEAKER_1"))
+        assertEquals(4, voices.of("SPEAKER_3"))
+    }
 }

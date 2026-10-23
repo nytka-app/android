@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import io.github.nytka_app.R
+import io.github.nytka_app.ui.names.VoiceNumbers
 
 /** The paragraph being heard; null before play starts and without a position map. */
 internal fun Playback?.heardParagraph(): Int? =
@@ -49,9 +50,10 @@ internal fun ConversationPlayerBar(
         remember(paragraphs, playback.paragraphStartsMs, playback.durationMs) {
             turnPositions(paragraphs, playback.paragraphStartsMs, playback.durationMs)
         }
+    val voices = remember(paragraphs) { paragraphs.voiceNumbers() }
     PlayerDock(
         playback,
-        speaker = heard?.let { paragraphs.getOrNull(it) }?.let { speakerName(it) },
+        speaker = heard?.let { paragraphs.getOrNull(it) }?.let { speakerName(it, voices) },
         turns = turns,
         follow = follow,
         onFollow = onFollow,
@@ -62,10 +64,25 @@ internal fun ConversationPlayerBar(
     )
 }
 
-/** What the player calls the speaker now: "You" for the wearer, else the name or the transcription's label. */
+/** What the player calls the speaker now, as the transcript does: "You", the person's name, or "Voice n". */
 @Composable
-internal fun speakerName(paragraph: Paragraph): String? =
-    if (paragraph.isUser == true) stringResource(R.string.speaker_you) else paragraph.speaker
+internal fun speakerName(
+    paragraph: Paragraph,
+    voices: VoiceNumbers,
+): String? =
+    when {
+        paragraph.isUser == true -> stringResource(R.string.speaker_you)
+        paragraph.unknownVoice -> stringResource(R.string.speaker_voice_format, voices.of(paragraph.speaker.orEmpty()))
+        else -> paragraph.speaker
+    }
+
+/** The numbers of the voices nobody has named in [this]. */
+internal fun List<Paragraph>.voiceNumbers(): VoiceNumbers =
+    VoiceNumbers(
+        filter {
+            it.unknownVoice
+        }.mapNotNull { it.speaker },
+    )
 
 /** A voice with no person behind it: the wearer's lines and named people are not. */
 internal val Paragraph.unknownVoice: Boolean get() = isUser != true && personId == null && speaker != null
