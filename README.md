@@ -43,7 +43,7 @@ server; this app is its phone half. [How Nytka compares](docs/explanation/compar
   from a model you copy to the phone yourself, made only while it charges unless you allow battery use.
   [Transcribe on this phone](docs/reference/device.md#transcribe-on-this-phone).
 - **Runs the server from the phone:** its settings, access tokens and webhooks, plus the pendant's LED brightness
-  and microphone gain.
+  and microphone gain (the gain in effect is sent with the audio's times; the app never changes it by itself).
 - **Tells the server what the phone was doing**, so it can tell a television or a call from a conversation:
   speaker playback, calls, the screen and headphones, as times only. Activity (walking, driving, still) and the kind
   of app that plays are separate switches, off by default; no app name, title or artist leaves the phone.

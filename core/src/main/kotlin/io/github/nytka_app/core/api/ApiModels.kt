@@ -33,6 +33,12 @@ data class ServerInfo(
 
         /** `now-playing` context ranges, with the app's category as their detail. */
         const val FEATURE_CONTEXT_NOW_PLAYING = "context-now-playing"
+
+        /** `gain` context ranges, with the pendant's microphone gain level as their detail. */
+        const val FEATURE_CONTEXT_GAIN = "context-gain"
+
+        /** `GET /audio/level`: how loud the wearer's speech was on a day. */
+        const val FEATURE_AUDIO_LEVEL = "audio-level"
         const val FEATURE_TASK_CREATE = "task-create"
         const val FEATURE_LEDGER = "ledger"
         const val FEATURE_REVIEW_CLIPS = "review-clips"

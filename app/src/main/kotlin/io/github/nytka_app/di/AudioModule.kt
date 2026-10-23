@@ -10,6 +10,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.nytka_app.core.api.AudioApi
 import io.github.nytka_app.core.api.AudioClient
+import io.github.nytka_app.core.api.AudioLevelApi
+import io.github.nytka_app.core.api.AudioLevelClient
 import io.github.nytka_app.core.api.NytkaApi
 import io.github.nytka_app.ui.conversations.AudioPlayer
 import io.github.nytka_app.ui.conversations.ExoAudioPlayer
@@ -20,6 +22,9 @@ import okhttp3.OkHttpClient
 object AudioModule {
     @Provides
     fun audioClient(api: NytkaApi): AudioClient = AudioApi(api)
+
+    @Provides
+    fun audioLevelClient(api: NytkaApi): AudioLevelClient = AudioLevelApi(api)
 
     /** Not a singleton: each conversation screen owns its player and releases it. */
     @OptIn(UnstableApi::class)

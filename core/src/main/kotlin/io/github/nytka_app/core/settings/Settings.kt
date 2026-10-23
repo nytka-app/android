@@ -45,6 +45,8 @@ data class Settings(
     val activityContext: Boolean = false,
     /** With [phoneContext]: also tell it what kind of app plays media; off until switched on (notification access). */
     val nowPlayingContext: Boolean = false,
+    /** The day (ISO date) the "quieter than usual" notice was last posted for, so it posts once a day; null before. */
+    val quietNoticeDay: String? = null,
     /** Follow the wallpaper's colours instead of linen and ink; off until switched on. */
     val wallpaperColors: Boolean = false,
     /** Tag each conversation with a coarse place (a saved place or a city-level label); off until switched on. */

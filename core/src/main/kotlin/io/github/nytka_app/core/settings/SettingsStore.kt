@@ -61,6 +61,8 @@ class SettingsStore(
             preferences[CONSENT_CHIME_MINUTES] = next.consentChimeMinutes
             preferences[PHONE_CONTEXT] = next.phoneContext
             preferences[ACTIVITY_CONTEXT] = next.activityContext
+            // Empty for none, so this adds no branch to an already long function.
+            preferences[QUIET_NOTICE_DAY] = next.quietNoticeDay.orEmpty()
             preferences[NOW_PLAYING_CONTEXT] = next.nowPlayingContext
             preferences[WALLPAPER_COLORS] = next.wallpaperColors
             preferences[LOCATION_TAGS] = next.locationTags
@@ -104,6 +106,7 @@ class SettingsStore(
             consentChimeMinutes = preferences[CONSENT_CHIME_MINUTES] ?: Settings().consentChimeMinutes,
             phoneContext = preferences[PHONE_CONTEXT] ?: true,
             activityContext = preferences[ACTIVITY_CONTEXT] ?: false,
+            quietNoticeDay = preferences[QUIET_NOTICE_DAY]?.takeIf { it.isNotEmpty() },
             nowPlayingContext = preferences[NOW_PLAYING_CONTEXT] ?: false,
             wallpaperColors = preferences[WALLPAPER_COLORS] ?: false,
             locationTags = preferences[LOCATION_TAGS] ?: false,
@@ -148,6 +151,7 @@ class SettingsStore(
         private val CONSENT_CHIME_MINUTES = intPreferencesKey("consent_chime_minutes")
         private val PHONE_CONTEXT = booleanPreferencesKey("phone_context")
         private val ACTIVITY_CONTEXT = booleanPreferencesKey("activity_context")
+        private val QUIET_NOTICE_DAY = stringPreferencesKey("quiet_notice_day")
         private val NOW_PLAYING_CONTEXT = booleanPreferencesKey("now_playing_context")
         private val WALLPAPER_COLORS = booleanPreferencesKey("wallpaper_colors")
         private val LOCATION_TAGS = booleanPreferencesKey("location_tags")

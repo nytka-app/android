@@ -38,7 +38,16 @@ and dims every status light; at 0 the link and charging lights stay dark too, an
 level 6), +30 and +40 dB, as the firmware maps them. Level 0 records silence, and the card warns
 about it. The value is written when you let go of the slider, at most once every 2 seconds for each
 slider, because the pendant saves it to its flash memory and keeps it after a restart. Nytka reads
-the current values on every connection and stores nothing on the server. A failed write shows a
+the current values on every connection. The gain level in effect goes to a server that lists `context-gain` as a
+**gain** stretch (the level, and from when to when the pendant held it while connected), so the server can compare
+how loud speech is across a change of gain; this goes out even with Phone context off. The LED brightness stays on
+the phone. Nytka never changes the gain by itself.
+
+On a server that lists `audio-level`, Nytka checks once an hour from 20:00 how loud your speech was today. When the
+server calls the day quiet (your median 10 dB or more under that of the 14 days before, or over a quarter of the
+day's speech under −45 dBFS), it posts one notification, "Speech today was much quieter than usual", with how much
+quieter and a reminder to check how the pendant is worn. At most one a day; the **Audio level** notification channel
+in Android's settings turns it off. It suggests, and changes nothing. A failed write shows a
 message and puts the slider back.
 
 ## Pendant firmware notice

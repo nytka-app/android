@@ -301,6 +301,10 @@
     <string name="location_tags_place_name">Назва місця</string>
     <string name="location_tags_add_place">Зберегти поточне місце</string>
     <string name="location_tags_remove_place">Видалити</string>
+    <string name="quiet_day_channel">Рівень звуку</string>
+    <string name="quiet_day_title">Мовлення сьогодні було значно тихішим, ніж зазвичай</string>
+    <string name="quiet_day_text_db">Приблизно на %1$d дБ тихіше, ніж зазвичай. Перевірте, як ви носите кулон: на столі, у кишені чи низько він чує вас гірше.</string>
+    <string name="quiet_day_text_share">%1$d%% сьогоднішнього мовлення було дуже тихим. Перевірте, як ви носите кулон: на столі, у кишені чи низько він чує вас гірше.</string>
     <string name="brief_channel_name">Підсумки зустрічей</string>
     <string name="brief_title">Підсумок: %1$s</string>
     <string name="brief_starts_at">Початок о %1$s</string>

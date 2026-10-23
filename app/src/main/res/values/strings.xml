@@ -296,6 +296,10 @@
     <string name="briefs_no_feed">Your server has no calendar feed</string>
     <string name="briefs_permission_denied">Without notifications Nytka cannot show a brief. Switch on again to be asked</string>
     <string name="briefs_permission_blocked">Without notifications Nytka cannot show a brief. If Android does not ask again, allow notifications in the system settings for Nytka, then switch on again</string>
+    <string name="quiet_day_channel">Audio level</string>
+    <string name="quiet_day_title">Speech today was much quieter than usual</string>
+    <string name="quiet_day_text_db">About %1$d dB quieter than your usual. Check how the pendant is worn: on a table, in a pocket or worn low, it hears you less.</string>
+    <string name="quiet_day_text_share">%1$d%% of today\'s speech was very quiet. Check how the pendant is worn: on a table, in a pocket or worn low, it hears you less.</string>
     <string name="brief_channel_name">Meeting briefs</string>
     <string name="brief_title">Brief: %1$s</string>
 
