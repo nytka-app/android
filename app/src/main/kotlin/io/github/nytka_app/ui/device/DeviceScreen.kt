@@ -132,7 +132,14 @@ fun DeviceScreen(
                 )
                 if (state.serverContext == true) {
                     HorizontalDivider()
-                    PhoneContextSection(state.phoneContext, viewModel::setPhoneContext)
+                    PhoneContextSection(
+                        state,
+                        onSwitch = viewModel::setPhoneContext,
+                        onActivity = viewModel::setActivityContext,
+                        onActivityPermission = viewModel::activityPermissionAnswered,
+                        onNowPlaying = viewModel::setNowPlayingContext,
+                        onOpenSettings = viewModel::openAppSettings,
+                    )
                     HorizontalDivider()
                     AppearanceSection(state.wallpaperColors, viewModel::setWallpaperColors)
                 }

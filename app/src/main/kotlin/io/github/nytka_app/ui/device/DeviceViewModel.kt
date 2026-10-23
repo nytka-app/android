@@ -87,6 +87,12 @@ data class DeviceUiState(
     val consentChimeMinutes: Int = 15,
     /** Whether the phone tells the server when it plays sound through its speaker or is in a call (a setting). */
     val phoneContext: Boolean = true,
+    /** Whether phone context also says when you walk, drive or sit still (a setting, off by default). */
+    val activityContext: Boolean = false,
+    /** How the user answered the activity prompt when switching it on; null until asked. */
+    val activityPermission: PermissionAnswer? = null,
+    /** Whether phone context also says what kind of app plays media (a setting, off by default). */
+    val nowPlayingContext: Boolean = false,
     /** "Match wallpaper colours" (a setting, off by default). */
     val wallpaperColors: Boolean = false,
     /** Whether /info lists `context-ranges`; null until it answers or after a failed check. */
@@ -175,6 +181,8 @@ class DeviceViewModel
                     consentChime = current.consentChime,
                     consentChimeMinutes = current.consentChimeMinutes,
                     phoneContext = current.phoneContext,
+                    activityContext = current.activityContext,
+                    nowPlayingContext = current.nowPlayingContext,
                     wallpaperColors = current.wallpaperColors,
                     briefNotifications = current.briefNotifications,
                     locationTags = current.locationTags,
@@ -396,6 +404,28 @@ class DeviceViewModel
 
         fun setPhoneContext(on: Boolean) {
             viewModelScope.launch { settings.update { it.copy(phoneContext = on) } }
+        }
+
+        /** On is asked for only after the screen has the activity permission. */
+        fun setActivityContext(on: Boolean) {
+            viewModelScope.launch {
+                settings.update { it.copy(activityContext = on) }
+                local.update { it.copy(activityPermission = null) }
+            }
+        }
+
+        /** The answer to Android's activity prompt, asked whenever the switch goes on. */
+        fun activityPermissionAnswered(answer: PermissionAnswer) {
+            if (answer == PermissionAnswer.Granted) {
+                setActivityContext(true)
+            } else {
+                local.update { it.copy(activityPermission = answer.after(it.activityPermission)) }
+            }
+        }
+
+        /** The switch only: until notification access is on, the screen shows where to allow it and nothing records. */
+        fun setNowPlayingContext(on: Boolean) {
+            viewModelScope.launch { settings.update { it.copy(nowPlayingContext = on) } }
         }
 
         fun setWallpaperColors(on: Boolean) {

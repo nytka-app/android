@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Activity context only, asked for when its switch goes on (docs/reference/device.md#phone-context). -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+</manifest>

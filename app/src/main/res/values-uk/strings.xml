@@ -644,6 +644,15 @@
     <!-- Speech kind: phone context -->
     <string name="phone_context_title">Контекст телефона</string>
     <string name="phone_context_label">Повідомляти сервер, коли телефон відтворює звук</string>
+    <string name="activity_context_label">Також повідомляти, коли я йду, їду чи сиджу</string>
+    <string name="activity_context_explanation">Розпізнавання активності Android позначає, коли починається і закінчується ходьба, біг, їзда на велосипеді, поїздка в транспорті чи спокій. Надсилаються лише активність і її часи. Потрібен дозвіл на фізичну активність.</string>
+    <string name="activity_context_denied">Для цього Nytka потрібен дозвіл на фізичну активність.</string>
+    <string name="activity_context_blocked">Android більше не питає дозволу на фізичну активність. Надайте його в налаштуваннях застосунку.</string>
+    <string name="now_playing_context_label">Також повідомляти, який застосунок відтворює</string>
+    <string name="now_playing_context_explanation">Поки застосунок відтворює медіа, повідомляти серверу його тип: відео, музика, подкаст, месенджер, браузер чи інше. Назва застосунку, заголовок і виконавець лишаються на телефоні. Потрібен доступ до сповіщень; сповіщення не читаються.</string>
+    <string name="now_playing_context_access">Доступ до сповіщень вимкнено, тож нічого ще не записується.</string>
+    <string name="now_playing_context_open">Надати доступ до сповіщень</string>
+    <string name="now_playing_listener_label">Nytka: який застосунок відтворює</string>
     <string name="phone_context_explanation">Повідомляти ваш сервер, коли телефон відтворює звук через динамік, триває дзвінок, увімкнено екран або звук іде в навушники. Надсилаються лише часи, ніколи не те, що відтворювалось.</string>
     <!-- Speech kind: review -->
     <string name="review_speech_media">Це був телевізор чи відео?</string>

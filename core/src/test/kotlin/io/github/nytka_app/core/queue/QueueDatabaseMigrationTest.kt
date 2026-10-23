@@ -197,6 +197,28 @@ class QueueDatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun `version 7 to 8 keeps the context ranges and adds their detail`() {
+        helper.createDatabase(NAME, 7).use { db ->
+            db.execSQL(
+                "insert into context_outbox (id, kind, route, startMs, endMs) values ('a', 'media', 'speaker', 1, 2)",
+            )
+        }
+
+        helper.runMigrationsAndValidate(NAME, 8, true).use { db ->
+            db.execSQL(
+                "insert into context_outbox (id, kind, route, startMs, endMs, detail) " +
+                    "values ('b', 'activity', 'other', 3, 4, 'walking')",
+            )
+            db.query("select id, detail from context_outbox order by id").use {
+                assertTrue(it.moveToFirst())
+                assertTrue(it.isNull(1))
+                assertTrue(it.moveToNext())
+                assertEquals("walking", it.getString(1))
+            }
+        }
+    }
+
     private companion object {
         const val NAME = "migration-test"
     }

@@ -27,6 +27,12 @@ data class ServerInfo(
 
         /** `screen` and `headphones` context ranges. */
         const val FEATURE_CONTEXT_DEVICE = "context-device"
+
+        /** `activity` context ranges, with the activity as their detail. */
+        const val FEATURE_CONTEXT_ACTIVITY = "context-activity"
+
+        /** `now-playing` context ranges, with the app's category as their detail. */
+        const val FEATURE_CONTEXT_NOW_PLAYING = "context-now-playing"
         const val FEATURE_TASK_CREATE = "task-create"
         const val FEATURE_LEDGER = "ledger"
         const val FEATURE_REVIEW_CLIPS = "review-clips"

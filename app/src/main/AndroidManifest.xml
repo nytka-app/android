@@ -66,6 +66,17 @@
             </intent-filter>
         </service>
 
+        <!-- Notification access lets the now-playing switch see media sessions; no notification is read. -->
+        <service
+            android:name=".capture.NowPlayingListener"
+            android:exported="true"
+            android:label="@string/now_playing_listener_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
         <receiver
             android:name=".capture.BootReceiver"
             android:exported="false">

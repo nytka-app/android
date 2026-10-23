@@ -350,6 +350,37 @@ class DeviceViewModelTest {
     }
 
     @Test
+    fun `activity context turns on only after the permission and a second refusal points to the settings`() {
+        val viewModel = viewModel()
+        assertFalse(viewModel.state.value.activityContext)
+
+        viewModel.activityPermissionAnswered(PermissionAnswer.Denied)
+        assertEquals(PermissionAnswer.Denied, viewModel.state.value.activityPermission)
+        viewModel.activityPermissionAnswered(PermissionAnswer.Denied)
+        assertEquals(PermissionAnswer.Blocked, viewModel.state.value.activityPermission)
+        assertFalse(settings.state.value.activityContext)
+
+        viewModel.activityPermissionAnswered(PermissionAnswer.Granted)
+        assertTrue(settings.state.value.activityContext)
+        assertTrue(viewModel.state.value.activityContext)
+        assertNull(viewModel.state.value.activityPermission)
+
+        viewModel.setActivityContext(false)
+        assertFalse(settings.state.value.activityContext)
+    }
+
+    @Test
+    fun `now playing is off by default and its switch is saved`() {
+        val viewModel = viewModel()
+        assertFalse(viewModel.state.value.nowPlayingContext)
+
+        viewModel.setNowPlayingContext(true)
+
+        assertTrue(settings.state.value.nowPlayingContext)
+        assertTrue(viewModel.state.value.nowPlayingContext)
+    }
+
+    @Test
     fun `your voice shows only when the server lists voice`() {
         assertEquals(false, viewModel().state.value.serverVoice)
 

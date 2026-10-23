@@ -187,6 +187,22 @@ class ContextUploaderTest {
         }
 
     @Test
+    fun `an activity range goes with its detail to a server with context-activity`() =
+        runTest {
+            features = listOf(ServerInfo.FEATURE_CONTEXT_RANGES, ServerInfo.FEATURE_CONTEXT_ACTIVITY)
+            outbox.add(ContextRow("a", "activity", "other", NOW - 60_000, NOW - 30_000, "walking"))
+            outbox.add(ContextRow("p", "now-playing", "speaker", NOW - 60_000, NOW - 30_000, "video"))
+            answer(200)
+
+            assertEquals(DrainResult.Empty, uploader.drain())
+
+            val body = server.takeRequest().body!!.utf8()
+            assertTrue(body, ""","kind":"activity","route":"other",""" in body && ""","detail":"walking"}""" in body)
+            assertTrue(body, "now-playing" !in body)
+            assertEquals(listOf("p"), outbox.oldest(10).map { it.id })
+        }
+
+    @Test
     fun `screen ranges wait for a server with context-device`() =
         runTest {
             outbox.add(row("m"))
