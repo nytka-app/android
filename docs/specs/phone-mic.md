@@ -1,6 +1,6 @@
 # Phone microphone mode: design
 
-Status: design for approval (2026-10-24). Nothing below is built until the owner approves it.
+Status: approved by the owner on 2026-10-24 ("Approve as designed": invariant 7 as worded, the same app, mute pauses both). Step 1: nytka-app/android#141.
 
 The owner asked for the phone's microphone as an option ("let's add phone micro as an option"), against the device
 research's "not now" (nytka-app/research `audio/2026-10-device-and-emotion.md`, Q3 row d). This spec says how, and what
@@ -52,7 +52,7 @@ today.
 - Frames go to the same Room queue through `FrameQueue.add`, under their own session UUID (one per run of the
   service), sequence numbers from 0 without holes, capture time = the phone's clock when the buffer was read. So
   invariant 1 ("a frame is safe once it is in Room") holds as is.
-- The queue row gets a `source` column (the next Room version after #135's 8, auto-migration, default `pendant`); the uploader sends
+- The queue row gets a `source` column (Room 8 → 9, auto-migration, default `pendant`); the uploader sends
   `X-Nytka-Source: phone-mic` for those chunks, only to a server that lists `phone-mic` in `/api/v1/info`. Until the
   server does, the switch is hidden (no audio is recorded that could not be sent).
 - The 1 GiB cap and the refusal rules of invariant 9 apply as to live pendant chunks: there is no second copy.
@@ -74,8 +74,8 @@ Using both at once for wearer identity (level difference, clock alignment by cro
 ## Battery
 
 UNKNOWN until measured on the owner's phone. Estimate: microphone capture at 16 kHz plus Opus encoding of 50 packets a
-second costs little CPU (Opus encodes far faster than real time), but the service holds a partial wake lock for as long
-as it records, which keeps the CPU out of deep sleep. Plausible range 1 to 3 % of battery per hour, so 15 to 40 % over a
+second costs little CPU (Opus encodes far faster than real time), and while a recording is active Android's audio service keeps the
+CPU awake, so the phone does not reach deep sleep (the app holds no wake lock of its own). Plausible range 1 to 3 % of battery per hour, so 15 to 40 % over a
 14-hour day, on top of the pendant's Bluetooth capture. Step 3 measures it with `dumpsys batterystats` over 2 hours and
 writes the figure into the README before release.
 
