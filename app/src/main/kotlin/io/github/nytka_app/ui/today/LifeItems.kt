@@ -337,7 +337,6 @@ fun CorrectionSnackbar(
     val currentShown by rememberUpdatedState(onShown)
     LaunchedEffect(notice) {
         notice ?: return@LaunchedEffect
-        currentShown()
         val text = notice.failure ?: done ?: return@LaunchedEffect
         val item = notice.undoable.takeIf { notice.failure == null }
         val result =
@@ -346,6 +345,8 @@ fun CorrectionSnackbar(
                 actionLabel = item?.let { undo },
                 duration = if (item != null) SnackbarDuration.Long else SnackbarDuration.Short,
             )
+        // Cleared only now: clearing it first would end this effect before the snackbar shows.
+        currentShown()
         if (result == SnackbarResult.ActionPerformed && item != null) currentUndo(item)
     }
 }
