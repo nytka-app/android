@@ -13,18 +13,23 @@ abstract class QueueDao {
     @Query("select max(id) from frames")
     abstract suspend fun lastFrameId(): Long?
 
-    /** One source at a time: live frames arriving between stored commits must not split a stored run. */
-    @Query("select * from frames where id <= :throughId and stored = :stored order by id limit :limit")
+    /**
+     * One kind at a time: live frames arriving between stored commits must not split a stored run, and phone
+     * microphone frames, written alongside live pendant frames, must not split a pendant run (or the reverse).
+     */
+    @Query("select * from frames where id <= :throughId and stored = :stored order by source, id limit :limit")
     abstract suspend fun oldestFrames(
         throughId: Long,
         stored: Boolean,
         limit: Int,
     ): List<QueuedFrame>
 
-    @Query("delete from frames where id <= :lastId and stored = :stored")
+    // The source too: a run's last id lies past frames of the other source written in between, which stay.
+    @Query("delete from frames where id <= :lastId and stored = :stored and source = :source")
     abstract suspend fun deleteFramesThrough(
         lastId: Long,
         stored: Boolean,
+        source: String,
     )
 
     @Insert
@@ -37,7 +42,7 @@ abstract class QueueDao {
         chunk: SealedChunk,
     ) {
         insertChunk(chunk)
-        deleteFramesThrough(lastFrameId, chunk.stored)
+        deleteFramesThrough(lastFrameId, chunk.stored, chunk.source)
     }
 
     /** Live chunks before stored ones, each oldest first, so a backlog never delays new speech. */

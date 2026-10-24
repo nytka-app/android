@@ -21,4 +21,6 @@ class SealedChunk(
     val ringFirst: Long? = null,
     val ringLast: Long? = null,
     @ColumnInfo(defaultValue = "0") val epoch: Long = 0,
+    /** The source of its frames; the uploader sends it to the server. */
+    @ColumnInfo(defaultValue = CaptureSource.PENDANT) val source: String = CaptureSource.PENDANT,
 )

@@ -67,6 +67,28 @@ class FrameQueueTest {
         }
 
     @Test
+    fun `phone microphone frames written between pendant frames seal into their own chunks`() =
+        runTest {
+            val queue = FrameQueue(inMemory())
+            val mic = UUID.fromString("00000000-0000-0000-0000-000000000002")
+            repeat(4) {
+                queue.add(session, it.toLong(), it * 20L, byteArrayOf(1))
+                queue.addPhoneMic(mic, it.toLong(), it * 20L + 5, byteArrayOf(2))
+            }
+
+            assertEquals(2, queue.seal())
+
+            val first = queue.oldest()!!
+            queue.remove(first.id)
+            val second = queue.oldest()!!
+            val bySource = listOf(first, second).associateBy { it.source }
+            assertEquals(4, bySource.getValue(CaptureSource.PENDANT).frameCount)
+            assertEquals(session.toString(), bySource.getValue(CaptureSource.PENDANT).session)
+            assertEquals(4, bySource.getValue(CaptureSource.PHONE_MIC).frameCount)
+            assertEquals(mic, ChunkReader.read(bySource.getValue(CaptureSource.PHONE_MIC).body).session)
+        }
+
+    @Test
     fun `splits where the clock stepped back`() =
         runTest {
             val queue = FrameQueue(inMemory())

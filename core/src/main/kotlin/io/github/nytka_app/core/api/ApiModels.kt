@@ -39,6 +39,9 @@ data class ServerInfo(
 
         /** `GET /audio/level`: how loud the wearer's speech was on a day. */
         const val FEATURE_AUDIO_LEVEL = "audio-level"
+
+        /** Chunks from the phone's microphone, told apart by `X-Nytka-Source`. */
+        const val FEATURE_PHONE_MIC = "phone-mic"
         const val FEATURE_TASK_CREATE = "task-create"
         const val FEATURE_LEDGER = "ledger"
         const val FEATURE_REVIEW_CLIPS = "review-clips"
@@ -317,7 +320,11 @@ sealed interface UploadResult {
 }
 
 fun interface UploadClient {
-    suspend fun upload(body: ByteArray): UploadResult
+    /** [source] is a [io.github.nytka_app.core.queue.CaptureSource]; the server keeps sources apart. */
+    suspend fun upload(
+        body: ByteArray,
+        source: String,
+    ): UploadResult
 }
 
 sealed interface DiagnosticsResult {

@@ -641,6 +641,19 @@
     <string name="speech_others_people">Other voices are people</string>
     <string name="speech_mark_failed">The kind could not be saved</string>
     <!-- Speech kind: phone context -->
+    <string name="phone_mic_channel">Phone microphone</string>
+    <string name="phone_mic_recording">Phone microphone is recording</string>
+    <string name="phone_mic_paused">Phone microphone is paused (muted)</string>
+    <string name="phone_mic_notification_text">Everyone near this phone is recorded. Stop turns it off.</string>
+    <string name="phone_mic_stop">Stop</string>
+    <string name="phone_mic_cannot_start">The phone microphone could not start: the permission is missing or the microphone is in use.</string>
+    <string name="phone_mic_title">Phone microphone</string>
+    <string name="phone_mic_label">Record with this phone\'s microphone</string>
+    <string name="phone_mic_explanation">Records everyone near the phone, for as long as this is on, with an ongoing notification. Off by default; Nytka never turns it on by itself, and it is off again after a restart. Its audio goes to your server apart from the pendant\'s and never joins a pendant conversation. Mute pauses it too.</string>
+    <string name="phone_mic_no_encoder">This phone has no Opus encoder, so it cannot record in the format your server takes.</string>
+    <string name="phone_mic_denied">Nytka needs the microphone and notification permissions for this.</string>
+    <string name="phone_mic_blocked">Android no longer asks for these permissions. Allow the microphone and notifications in the app\'s settings.</string>
+    <string name="phone_mic_failed">Stopped: %1$s</string>
     <string name="phone_context_title">Phone context</string>
     <string name="phone_context_label">Tell my server when this phone plays sound</string>
     <string name="activity_context_label">Also say when I walk, drive or sit still</string>

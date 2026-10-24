@@ -28,6 +28,8 @@ import io.github.nytka_app.firmware.FirmwareNotice
 import io.github.nytka_app.firmware.FirmwareNotices
 import io.github.nytka_app.pendant.Capabilities
 import io.github.nytka_app.pendant.PendantInfo
+import io.github.nytka_app.phonemic.PhoneMicControls
+import io.github.nytka_app.phonemic.PhoneMicStatus
 import io.github.nytka_app.ui.PermissionAnswer
 import io.github.nytka_app.ui.after
 import io.github.nytka_app.ui.firstrun.READ_TOKEN_REFUSED
@@ -97,6 +99,14 @@ data class DeviceUiState(
     val wallpaperColors: Boolean = false,
     /** Whether /info lists `context-ranges`; null until it answers or after a failed check. */
     val serverContext: Boolean? = null,
+    /** Whether /info lists `phone-mic`; null until it answers or after a failed check. */
+    val serverPhoneMic: Boolean? = null,
+    /** What the phone microphone does now; it is never on unless the user switched it on in this run. */
+    val phoneMic: PhoneMicStatus = PhoneMicStatus.Off,
+    /** Whether this phone has the Opus encoder the phone microphone needs. */
+    val phoneMicAvailable: Boolean = false,
+    /** How the user answered the microphone prompt; null until asked. */
+    val phoneMicPermission: PermissionAnswer? = null,
     /** Whether meeting briefs post notifications (a setting, off by default). */
     val briefNotifications: Boolean = false,
     /** How the user answered the notification prompt when switching briefs on; null until asked. */
@@ -152,6 +162,7 @@ class DeviceViewModel
         private val firmware: FirmwareNotices,
         private val briefs: BriefScheduler,
         private val location: CoarseLocationSource,
+        private val phoneMic: PhoneMicControls,
     ) : ViewModel() {
         private val local = MutableStateFlow(DeviceUiState())
 
@@ -191,6 +202,8 @@ class DeviceViewModel
             }.stateIn(viewModelScope, SharingStarted.Eagerly, DeviceUiState())
 
         init {
+            local.update { it.copy(phoneMicAvailable = phoneMic.available()) }
+            viewModelScope.launch { phoneMic.status.collect { status -> local.update { it.copy(phoneMic = status) } } }
             checkServer()
         }
 
@@ -250,6 +263,7 @@ class DeviceViewModel
                             serverSync = result.value.has(ServerInfo.FEATURE_OFFLINE_SYNC),
                             serverVoice = result.value.has(ServerInfo.FEATURE_VOICE),
                             serverContext = result.value.has(ServerInfo.FEATURE_CONTEXT_RANGES),
+                            serverPhoneMic = result.value.has(ServerInfo.FEATURE_PHONE_MIC),
                         )
                     }
 
@@ -262,6 +276,7 @@ class DeviceViewModel
                             serverSync = null,
                             serverVoice = null,
                             serverContext = null,
+                            serverPhoneMic = null,
                             serverUnreachable = result.kind == FailureKind.Network,
                         )
                     }
@@ -426,6 +441,21 @@ class DeviceViewModel
         /** The switch only: until notification access is on, the screen shows where to allow it and nothing records. */
         fun setNowPlayingContext(on: Boolean) {
             viewModelScope.launch { settings.update { it.copy(nowPlayingContext = on) } }
+        }
+
+        /** Off stops the service. On is asked for only after the screen has the permissions, and starts it now. */
+        fun setPhoneMic(on: Boolean) {
+            local.update { it.copy(phoneMicPermission = null) }
+            if (on) phoneMic.start() else phoneMic.stop()
+        }
+
+        /** The answer to Android's microphone and notification prompt, asked whenever the switch goes on. */
+        fun phoneMicPermissionAnswered(answer: PermissionAnswer) {
+            if (answer == PermissionAnswer.Granted) {
+                setPhoneMic(true)
+            } else {
+                local.update { it.copy(phoneMicPermission = answer.after(it.phoneMicPermission)) }
+            }
         }
 
         fun setWallpaperColors(on: Boolean) {

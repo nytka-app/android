@@ -13,6 +13,7 @@ object Notifier {
     const val ALERTS_CHANNEL = "alerts"
     const val BRIEFS_CHANNEL = "briefs"
     const val AUDIO_LEVEL_CHANNEL = "audio-level"
+    const val PHONE_MIC_CHANNEL = "phone-mic"
 
     /** The design system's `primary` (indigo), which Android tints the small icon and action buttons with. */
     const val ACCENT = 0xFF33427E.toInt()
@@ -34,6 +35,11 @@ object Notifier {
                     BRIEFS_CHANNEL,
                     context.getString(R.string.brief_channel_name),
                     NotificationManager.IMPORTANCE_DEFAULT,
+                ),
+                NotificationChannel(
+                    PHONE_MIC_CHANNEL,
+                    context.getString(R.string.phone_mic_channel),
+                    NotificationManager.IMPORTANCE_LOW,
                 ),
                 NotificationChannel(
                     AUDIO_LEVEL_CHANNEL,

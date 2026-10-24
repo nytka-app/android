@@ -96,6 +96,22 @@ example another language), **Forget what it learned** goes back to the enrolled 
 made from them; your own marks stay. See the
 [server docs](https://github.com/nytka-app/server/blob/main/docs/explanation/features.md#your-voice).
 
+## Phone microphone
+
+When the server lists `phone-mic` in `/api/v1/info`, the **Device** screen has a **Phone microphone** switch, off by
+default: "Record with this phone's microphone". Turning it on asks Android for the microphone (and, on Android 13 and
+later, notifications) every time it is not yet granted; a refusal keeps it off, a second one offers the settings. It
+then records for as long as the switch stays on, with an ongoing notification ("Phone microphone is recording") and
+its **Stop** action, and Android's green privacy dot. Nytka never turns it on by itself: not at boot, not from the
+companion service or a schedule, and after a restart or when Android stops the app it is off. The pendant's mute
+switch and mute windows pause it too ("paused (muted)").
+
+It reads 16 kHz mono with Android's `VOICE_RECOGNITION` source (no automatic gain or noise suppression), encodes each
+20 ms with the phone's Opus encoder into the same chunk format as the pendant's, and keeps it in the same queue under
+its own capture session. Each chunk goes to the server with `X-Nytka-Source: phone-mic`, so the server keeps it apart:
+it never joins a pendant conversation. A phone without an Opus encoder cannot use it, and the switch says so. Battery
+use is not measured yet; expect it to cost more than the pendant's Bluetooth capture.
+
 ## Phone context
 
 When the server lists `context-ranges` in `/api/v1/info`, the **Device** screen has a **Phone context** switch,

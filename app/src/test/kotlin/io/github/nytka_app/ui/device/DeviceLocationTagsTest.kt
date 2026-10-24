@@ -2,6 +2,7 @@ package io.github.nytka_app.ui.device
 
 import io.github.nytka_app.FakeDeviceActions
 import io.github.nytka_app.FakePendantSettingsControls
+import io.github.nytka_app.FakePhoneMicControls
 import io.github.nytka_app.FakeSettings
 import io.github.nytka_app.FakeSyncControls
 import io.github.nytka_app.MainDispatcherRule
@@ -52,6 +53,7 @@ class DeviceLocationTagsTest {
             { _, _ -> null },
             noBriefs,
             { location },
+            FakePhoneMicControls(),
         )
 
     @Test

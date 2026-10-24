@@ -64,7 +64,7 @@ class DeveloperViewModelTest {
             actions = actions,
             hub = CaptureHub(settings),
             queue = NoChunks,
-            uploader = Uploader(NoChunks, { UploadResult.Retry("unused") }, settings.settings),
+            uploader = Uploader(NoChunks, { _, _ -> UploadResult.Retry("unused") }, settings.settings),
             status = { ApiResult.Ok(serverStatus) },
             fixtures = fixtures,
             diagnostics = diagnostics,

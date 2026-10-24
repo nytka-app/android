@@ -48,16 +48,27 @@ server; this app is its phone half. [How Nytka compares](docs/explanation/compar
   speaker playback, calls, the screen and headphones, as times only. Activity (walking, driving, still) and the kind
   of app that plays are separate switches, off by default; no app name, title or artist leaves the phone.
   [Phone context](docs/reference/device.md#phone-context).
+- **Can record with the phone's own microphone** (off by default, only while you keep it on): for days without the
+  pendant. An ongoing notification shows while it records, it is off again after a restart, and its audio reaches
+  the server as its own source, never mixed into the pendant's conversations.
+  [Phone microphone](docs/reference/device.md#phone-microphone).
 - **Talks to your server and nothing else**, apart from a once-a-day firmware check against GitHub that you can
   switch off. No analytics, no crash reporting, no Omi cloud. [What stays on the phone](docs/explanation/privacy.md).
 
-Not here: iOS, raw audio export, firmware updates (the official Omi app does those), and the phone's microphone:
-the app never asks for `RECORD_AUDIO`.
+Not here: iOS, raw audio export, firmware updates (the official Omi app does those). The app asks for
+`RECORD_AUDIO` only when you switch Phone microphone on.
 
 > [!WARNING]
 > The pendant records the people around you, and keeps recording to its own memory while the phone is away.
 > Recording people without their consent is illegal in some places; you answer for following the law where you
 > use it.
+
+> [!WARNING]
+> Phone microphone mode records everyone near the phone, not only near the pendant, and the phone often lies on a
+> table between people. In Ukraine, recording someone's private conversation without consent can fall under Criminal
+> Code art. 182 and Civil Code art. 306 ([codes](https://zakon.rada.gov.ua/laws/show/2341-14)); keeping recordings for
+> yourself is outside the data-protection law ([art. 25](https://zakon.rada.gov.ua/laws/show/2297-17)), and the GDPR's
+> household exemption is read narrowly. Turn it on only where the people around you know. This is not legal advice.
 
 ## Quick start
 
@@ -104,7 +115,7 @@ clients; `:app` is the Compose UI and the background services. Four rules hold e
 
 - [Get started](docs/tutorial.md): what you need, install, the first run
 - [The screens](docs/reference/screens.md): every tab, search, appearance, tags
-- [The Device screen](docs/reference/device.md): pendant, its settings and firmware notice, your voice, phone
+- [The Device screen](docs/reference/device.md): pendant, its settings and firmware notice, your voice, phone microphone, phone
   context, meeting briefs, location tags, transcribe on this phone
 - [Everyday use](docs/how-to/everyday-use.md) · [When something is off](docs/how-to/troubleshooting.md)
 - [Offline sync](docs/explanation/offline-sync.md) · [What stays on the phone](docs/explanation/privacy.md) ·

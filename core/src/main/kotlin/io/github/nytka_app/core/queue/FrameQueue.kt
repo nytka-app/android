@@ -62,6 +62,26 @@ class FrameQueue(
         )
     }
 
+    /** A frame from the phone's own microphone: live, and never in a pendant session. */
+    suspend fun addPhoneMic(
+        session: UUID,
+        seq: Long,
+        capturedAtMs: Long,
+        payload: ByteArray,
+    ) {
+        dao.insertFrames(
+            listOf(
+                QueuedFrame(
+                    session = session.toString(),
+                    seq = seq,
+                    capturedAtMs = capturedAtMs,
+                    payload = payload,
+                    source = CaptureSource.PHONE_MIC,
+                ),
+            ),
+        )
+    }
+
     override suspend fun commit(
         frames: List<TimedFrame>,
         position: RingPosition,
@@ -169,6 +189,7 @@ class FrameQueue(
             val offset = next.capturedAtMs - first.capturedAtMs
             val fits =
                 next.session == first.session &&
+                    next.source == first.source &&
                     next.stored == first.stored &&
                     next.epoch == first.epoch &&
                     next.seq == previous.seq + 1 &&
@@ -203,6 +224,7 @@ class FrameQueue(
             ringFirst = ringSeqs.minOrNull(),
             ringLast = ringSeqs.maxOrNull(),
             epoch = first.epoch,
+            source = first.source,
         )
     }
 
