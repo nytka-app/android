@@ -188,7 +188,7 @@ class ConversationViewModel
         private val id: String = checkNotNull(savedState["id"]) { "The conversation route carries an id." }
 
         /** A link to a moment (`?at=`): focused, and the playhead moved there, once each ([MomentLink]). */
-        private val link = MomentLink(savedState["at"])
+        private val link = MomentLink(savedState["at"], savedState["segment"])
         private val mutableState = MutableStateFlow(ConversationUiState())
         val state: StateFlow<ConversationUiState> = mutableState.asStateFlow()
         private var index: AudioIndex? = null
@@ -229,7 +229,7 @@ class ConversationViewModel
             val loaded = (audio.audioIndex(id) as? ApiResult.Ok)?.value ?: return
             index = loaded
             mutableState.update { it.copy(playback = Playback(loaded.durationMs, paragraphStartsMs = startsMs())) }
-            link.position(segmentStarts, loaded)?.let(::seekTo)
+            link.position(segmentStarts, loaded, segments.map(Segment::id))?.let(::seekTo)
             player.state.collect { s ->
                 mutableState.update {
                     it.copy(
@@ -767,7 +767,7 @@ class ConversationViewModel
             val title = detail.title?.takeIf(String::isNotBlank)
             val paragraphs = paragraphsOf(detail.segments)
             val marks = place(detail)
-            link.position(segmentStarts, index)?.let(::seekTo)
+            link.position(segmentStarts, index, segments.map(Segment::id))?.let(::seekTo)
             return ConversationUiState(
                 title = title ?: Formatting.dayTitle(start.atZone(zone).toLocalDate(), LocalDate.now(clock)),
                 currentTitle = title,
@@ -793,7 +793,7 @@ class ConversationViewModel
                 tagProposals = mutableState.value.tagProposals,
                 speechAccess = mutableState.value.speechAccess,
                 autoNamed = mutableState.value.autoNamed,
-                focus = link.focus(segmentStarts) ?: mutableState.value.focus,
+                focus = link.focus(segmentStarts, segments.map(Segment::id)) ?: mutableState.value.focus,
             )
         }
 

@@ -928,4 +928,6 @@
     <string name="over_time_baseline_format">Зазвичай: %1$s</string>
     <string name="over_time_empty_title">Закономірностей ще немає</string>
     <string name="over_time_empty_body">Вони відкриваються, коли набирається більше днів із записом.</string>
+    <string name="item_kind_marked_format">%1$s · Ви позначили</string>
+    <string name="item_marked_at_format">Ви позначили це дотиком до кулона о %1$s.</string>
 </resources>

@@ -1,5 +1,6 @@
 package io.github.nytka_app
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -30,6 +31,8 @@ import io.github.nytka_app.ui.CaptureThread
 import io.github.nytka_app.ui.LayoutViewModel
 import io.github.nytka_app.ui.LifeNavHost
 import io.github.nytka_app.ui.LifeScreens
+import io.github.nytka_app.ui.Moment
+import io.github.nytka_app.ui.MomentUri
 import io.github.nytka_app.ui.NytkaNavHost
 import io.github.nytka_app.ui.StatusUiState
 import io.github.nytka_app.ui.StatusViewModel
@@ -49,7 +52,11 @@ import io.github.nytka_app.ui.theme.NytkaTheme
 import io.github.nytka_app.ui.timeline.TimelineScreen
 import io.github.nytka_app.ui.today.TodayLinks
 import io.github.nytka_app.ui.today.TodayScreen
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 
 /** The screens of the three-tab layout, wired to the app's view models. */
 private fun lifeScreens(
@@ -106,10 +113,20 @@ private fun lifeScreens(
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    /** Moments that `nytka://conversation/…` links ask for ([MomentUri]); the layout opens each once. */
+    private val moments = Channel<Moment>(Channel.CONFLATED)
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        MomentUri.parse(intent.dataString)?.let(moments::trySend)
+    }
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) MomentUri.parse(intent?.dataString)?.let(moments::trySend)
+        val momentFlow = moments.receiveAsFlow()
         setContent {
             val app: AppViewModel = hiltViewModel()
             val wallpaperColors by app.wallpaperColors.collectAsStateWithLifecycle()
@@ -134,6 +151,7 @@ class MainActivity : ComponentActivity() {
                                 LifeNavHost(
                                     screens = lifeScreens(status, statusViewModel::setMuted, peopleBadge),
                                     onRouteShown = { review.refresh() },
+                                    moments = momentFlow,
                                     topBar = { onOpenDevice, onSearch, onBack ->
                                         AppBar(captureState, onOpenDevice, onSearch, onBack)
                                     },
@@ -145,6 +163,7 @@ class MainActivity : ComponentActivity() {
                                     statusViewModel::setMuted,
                                     captureState,
                                     peopleBadge,
+                                    momentFlow,
                                 ) { review.refresh() }
                         }
                     }
@@ -199,10 +218,12 @@ private fun FiveTabs(
     onMute: (Boolean) -> Unit,
     captureState: CaptureState,
     peopleBadge: Int,
+    moments: Flow<Moment>,
     onRouteShown: () -> Unit,
 ) {
     NytkaNavHost(
         peopleBadge = peopleBadge,
+        conversationRequests = moments.map { it.conversationId },
         onRouteShown = { onRouteShown() },
         topBar = { onOpenDevice -> AppBar(captureState, onOpenDevice) },
         conversations = { openRequests, onOpenPerson -> ConversationsTab(status, onMute, openRequests, onOpenPerson) },

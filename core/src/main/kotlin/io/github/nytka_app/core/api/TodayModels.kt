@@ -21,6 +21,8 @@ data class LifeItem(
     val personName: String? = null,
     val due: String? = null,
     val done: Boolean = false,
+    /** When the wearer tapped the pendant on this moment; such an item is vital, and its first line is the tap's. */
+    val markedAt: String? = null,
     /** Only on `GET /today`: [DayPart] by [at] in the zone asked for. */
     val part: String? = null,
     /** The cited lines, at most 3, oldest first; empty for an item added by hand. */

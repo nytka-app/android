@@ -31,6 +31,13 @@ five tabs below; when the server cannot be reached at start the five tabs show, 
   and **Someone else said this**, which asks who among your named people. Each goes to the server's own marks, the
   same ones the transcript's "This is not me" uses, and the screen reloads with what the server now derives. A refusal
   says why and changes nothing. Needs an admin token.
+- **Marked moments.** A tap on the pendant marks the moment: the task, memory or note said then counts as vital, so it
+  shows on Today, and reads "Task · You marked this". Its sheet says when you tapped, and its first line is the one you
+  marked, with **Play from here**.
+- **Links from outside the app.** `nytka://conversation/{id}?at=<time>&segment=<line>` opens that conversation on that
+  line, with the player moved there; the server writes such links into its calendar feed, one per commitment. The time
+  may be an ISO instant or milliseconds since 1970, and both it and the line may be left out. A link whose id is not a
+  plain id is ignored. On a server without `today` the link opens the conversation from the start.
 - The top bar has a search icon on every screen and a back arrow on the screens that open over a tab.
 
 ## The tabs

@@ -35,6 +35,7 @@ import androidx.navigation.compose.rememberNavController
 import io.github.nytka_app.R
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 
 /**
@@ -59,6 +60,8 @@ fun NytkaNavHost(
     peopleBadge: Int = 0,
     /** Called with the route each time another screen shows, so the caller can refresh what the bar shows. */
     onRouteShown: (String?) -> Unit = {},
+    /** Conversations that links from outside the app ask for; each opens in the Conversations tab. */
+    conversationRequests: Flow<String> = emptyFlow(),
 ) {
     val navController = rememberNavController()
     val backStack by navController.currentBackStackEntryAsState()
@@ -81,6 +84,7 @@ fun NytkaNavHost(
         requests.trySend(id)
         select(AppTab.Conversations.route)
     }
+    LaunchedEffect(conversationRequests) { conversationRequests.collect { onOpenConversation(it) } }
     val onOpenPerson = { id: String ->
         personRequests.trySend(id)
         select(AppTab.People.route)

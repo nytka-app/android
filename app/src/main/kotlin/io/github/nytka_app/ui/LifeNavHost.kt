@@ -18,6 +18,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 /**
  * What [LifeNavHost] shows outside its three tabs. Each slot gets the navigation it needs: a conversation opens at a
@@ -50,6 +52,10 @@ class Navigation(
 
     fun openConversation(conversationId: String) = openMoment(conversationId)
 
+    /** A moment a link from outside the app asked for ([MomentUri]). */
+    fun open(moment: Moment) =
+        navController.navigate(conversationRoute(moment.conversationId, moment.atMs, moment.segmentId))
+
     fun openPerson(personId: String) = navController.navigate("person/$personId")
 
     fun openConversations(tag: String? = null) =
@@ -62,11 +68,18 @@ class Navigation(
     }
 }
 
-/** The route of a conversation, at a moment when [atMs] is given: `conversation/{id}?at=1729667642000`. */
+/**
+ * The route of a conversation, at a moment when [atMs] is given, on its line when [segmentId] is:
+ * `conversation/{id}?at=1729667642000&segment=48121`.
+ */
 fun conversationRoute(
     id: String,
     atMs: Long? = null,
-): String = if (atMs == null) "conversation/$id" else "conversation/$id?at=$atMs"
+    segmentId: Long? = null,
+): String {
+    val query = listOfNotNull(atMs?.let { "at=$it" }, segmentId?.let { "segment=$it" })
+    return if (query.isEmpty()) "conversation/$id" else "conversation/$id?${query.joinToString("&")}"
+}
 
 /**
  * The three tabs, for a server that lists `today`: Today, Timeline, Over time. Conversations, people, tasks,
@@ -78,12 +91,16 @@ fun LifeNavHost(
     topBar: @Composable (onOpenDevice: () -> Unit, onSearch: () -> Unit, onBack: (() -> Unit)?) -> Unit,
     /** Called with the route each time another screen shows, so the caller can refresh what the bar shows. */
     onRouteShown: (String?) -> Unit = {},
+    /** Moments that links from outside the app ask for; each opens over the current tab. */
+    moments: Flow<Moment> = emptyFlow(),
 ) {
     val navController = rememberNavController()
     val navigation = Navigation(navController)
     val backStack by navController.currentBackStackEntryAsState()
     val current = backStack?.destination?.route
     LaunchedEffect(current) { onRouteShown(current) }
+    // Waits for the graph: a link that started the app arrives before the first composition sets it.
+    LaunchedEffect(navController, moments) { moments.collect { moment -> navigation.open(moment) } }
     val tabs = AppTab.bar(threeTabs = true)
     val onTab = tabs.any { it.route == current }
 
@@ -130,10 +147,14 @@ fun LifeNavHost(
             composable(AppTab.Timeline.route) { screens.timeline(navigation) }
             composable(AppTab.OverTime.route) { screens.overTime(navigation) }
             composable(
-                "conversation/{id}?at={at}",
+                "conversation/{id}?at={at}&segment={segment}",
                 arguments =
                     listOf(
                         navArgument("at") {
+                            type = NavType.StringType
+                            nullable = true
+                        },
+                        navArgument("segment") {
                             type = NavType.StringType
                             nullable = true
                         },

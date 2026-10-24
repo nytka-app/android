@@ -110,4 +110,17 @@ class ConversationMomentTest {
     fun `an unreadable moment opens at the start`() {
         assertNull(MomentLink("soon").focus(starts))
     }
+
+    @Test
+    fun `the line a link names wins over its time, while the transcript still has it`() {
+        val at = ms("2026-09-29T08:03:02Z")
+
+        assertEquals(0, MomentLink(at, "1").focus(starts, listOf(1, 2)))
+        assertEquals(1, MomentLink(at, "99").focus(starts, listOf(1, 2)))
+    }
+
+    @Test
+    fun `an ISO instant works as well as epoch milliseconds`() {
+        assertEquals(1, MomentLink("2026-09-29T08:03:02Z").focus(starts))
+    }
 }

@@ -42,6 +42,8 @@ class AppTabTest {
     fun `a moment rides on the conversation route`() {
         assertEquals("conversation/c1", conversationRoute("c1"))
         assertEquals("conversation/c1?at=1729667642000", conversationRoute("c1", 1_729_667_642_000))
+        assertEquals("conversation/c1?at=1729667642000&segment=7", conversationRoute("c1", 1_729_667_642_000, 7))
+        assertEquals("conversation/c1?segment=7", conversationRoute("c1", segmentId = 7))
     }
 
     private fun label(tab: AppTab): String =
