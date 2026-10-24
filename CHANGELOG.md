@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.25.0](https://github.com/nytka-app/android/compare/v0.24.0...v0.25.0) (2026-10-24)
+
+
+### Features
+
+* **context:** activity and now-playing as opt-in phone context ([#135](https://github.com/nytka-app/android/issues/135)) ([6de4ff0](https://github.com/nytka-app/android/commit/6de4ff0443135eac7a809671b1359527fb89b6d4))
+* **context:** pendant gain with the audio, and a quiet-day notice ([#136](https://github.com/nytka-app/android/issues/136)) ([1bb5367](https://github.com/nytka-app/android/commit/1bb536704bede1b2b55bb6c2c85d4a617db4270c))
+* **context:** screen and headphones as phone-context ranges ([#133](https://github.com/nytka-app/android/issues/133)) ([d2b9d8a](https://github.com/nytka-app/android/commit/d2b9d8a8dbfe00279335695dcd4d67707a0ac7bd))
+* **phonemic:** phone microphone mode, off by default, its own capture source ([#141](https://github.com/nytka-app/android/issues/141)) ([f1146bc](https://github.com/nytka-app/android/commit/f1146bc6eab347f194a5006992083d3c601a8e33))
+* **today:** Today, Timeline and Over time, with evidence and corrections on every item ([#140](https://github.com/nytka-app/android/issues/140)) ([be0a1c8](https://github.com/nytka-app/android/commit/be0a1c863c2e703a6b2f6124d4a5e56ddfac69d2))
+
+
+### Bug Fixes
+
+* **api:** read answers off the main thread ([#139](https://github.com/nytka-app/android/issues/139)) ([8efd9e9](https://github.com/nytka-app/android/commit/8efd9e9d9ef908391fada23490d4c9fa497196fc))
+* **conversations:** unnamed voices numbered as the server numbers them, also in the player ([#134](https://github.com/nytka-app/android/issues/134)) ([5d73732](https://github.com/nytka-app/android/commit/5d737328118923fafeb2d2340c41c17313b21b0f))
+
 ## [0.24.0](https://github.com/nytka-app/android/compare/v0.23.0...v0.24.0) (2026-10-22)
 
 
