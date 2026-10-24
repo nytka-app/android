@@ -31,6 +31,19 @@ five tabs below; when the server cannot be reached at start the five tabs show, 
   and **Someone else said this**, which asks who among your named people. Each goes to the server's own marks, the
   same ones the transcript's "This is not me" uses, and the screen reloads with what the server now derives. A refusal
   says why and changes nothing. Needs an admin token.
+- **Earlier.** On a server that lists `related`, an item's sheet, a conversation (under its summary) and a Timeline
+  scene show **Earlier**: up to five earlier moments about the same thing, best first, each a card with the day, the
+  conversation's title, the line and what it shares ("Ann · lease", or "Same subject"). A card opens that conversation
+  at that line. Only earlier moments the server is confident about appear; none shows nothing.
+- **Topics.** On a server that lists `topics`, Today's **More** has **Topics**: a page for each tag and person the
+  server sees across conversations, filtered by name and by **Tags** or **People**, newest heard first, each with how
+  many moments it holds and how many commitments are still open. A topic page has its summary, its open commitments
+  and its moments, newest first (more load as you scroll), each opening its conversation at that line. Items and scenes
+  that belong to a topic show it as a chip.
+- **Summaries over time.** On a server that lists `rollups`, Over time starts with **Week**, **Month**, **Year** and
+  **All time**: the newest summary of the period with its dates, what changed since the period before, its topics (chips
+  that open them) and what it was made from ("From 12 conversations and 5 daily digests"). ‹ and › step through
+  earlier summaries. A period with too little audio says what it still needs, with a bar, as a locked insight does.
 - **Marked moments.** A tap on the pendant marks the moment: the task, memory or note said then counts as vital, so it
   shows on Today, and reads "Task · You marked this". Its sheet says when you tapped, and its first line is the one you
   marked, with **Play from here**.

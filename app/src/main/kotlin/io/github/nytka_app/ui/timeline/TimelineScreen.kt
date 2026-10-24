@@ -59,10 +59,13 @@ import io.github.nytka_app.ui.ListStateKind
 import io.github.nytka_app.ui.conversations.Formatting
 import io.github.nytka_app.ui.theme.ReadingColumn
 import io.github.nytka_app.ui.today.CorrectionSnackbar
+import io.github.nytka_app.ui.today.EarlierStrip
 import io.github.nytka_app.ui.today.EvidenceSheet
 import io.github.nytka_app.ui.today.ItemActions
 import io.github.nytka_app.ui.today.LifeItemCard
 import io.github.nytka_app.ui.today.LineActions
+import io.github.nytka_app.ui.today.TopicChips
+import java.time.LocalDate
 import java.time.ZoneId
 
 /**
@@ -76,6 +79,7 @@ fun TimelineScreen(
     onOpenMoment: (conversationId: String, atMs: Long?) -> Unit,
     onOpenPerson: (String) -> Unit,
     onOpenConversations: () -> Unit,
+    onOpenTopic: (String) -> Unit = {},
     viewModel: TimelineViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -131,7 +135,7 @@ fun TimelineScreen(
                             }
                             items(state.rows, key = ::keyOf) { row ->
                                 when (row) {
-                                    is TimelineRow.Of -> SceneItem(row.scene, zone, actions, onOpenMoment)
+                                    is TimelineRow.Of -> SceneItem(row.scene, zone, actions, onOpenMoment, onOpenTopic)
                                     is TimelineRow.Fragments -> Fragments(row.scenes, zone, onOpenMoment)
                                 }
                             }
@@ -171,6 +175,10 @@ fun TimelineScreen(
                         viewModel.otherPerson(line, person)
                     },
                 ),
+            onOpenTopic = {
+                open = null
+                onOpenTopic(it)
+            },
         )
     }
 }
@@ -218,6 +226,7 @@ private fun SceneItem(
     zone: ZoneId,
     actions: ItemActions,
     onOpenMoment: (String, Long?) -> Unit,
+    onOpenTopic: (String) -> Unit,
 ) {
     var revealed by rememberSaveable(scene.id) { mutableStateOf(scene.sensitivity == null) }
     Column(Modifier.fillMaxWidth().padding(top = 12.dp)) {
@@ -262,6 +271,15 @@ private fun SceneItem(
                     LifeItemCard(item, zone, actions, Modifier.weight(1f), dim = item.salience == Salience.NOISE)
                 }
             }
+            TopicChips(scene.topics, onOpenTopic, Modifier.padding(horizontal = 16.dp))
+            EarlierStrip(
+                scene.related,
+                zone,
+                LocalDate.now(zone),
+                onOpenMoment,
+                Modifier.padding(top = 8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+            )
         }
         HorizontalDivider(Modifier.padding(top = 8.dp))
     }

@@ -59,6 +59,7 @@ fun TodayScreen(
     onOpenMoment: (conversationId: String, atMs: Long?) -> Unit,
     onOpenPerson: (String) -> Unit,
     links: TodayLinks,
+    onOpenTopic: (String) -> Unit = {},
     viewModel: TodayViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -144,6 +145,10 @@ fun TodayScreen(
                         viewModel.otherPerson(line, person)
                     },
                 ),
+            onOpenTopic = {
+                open = null
+                onOpenTopic(it)
+            },
         )
     }
 }
@@ -175,6 +180,7 @@ private fun More(links: TodayLinks) {
     HorizontalDivider()
     MoreRow(R.drawable.ic_tab_tasks, R.string.tab_tasks, links.onOpenTasks)
     MoreRow(R.drawable.ic_tab_memories, R.string.tab_memories, links.onOpenMemories)
+    links.onOpenTopics?.let { MoreRow(R.drawable.ic_tab_timeline, R.string.topics_title, it) }
     MoreRow(R.drawable.ic_tab_people, R.string.tab_people, links.onOpenPeople, links.peopleBadge)
     MoreRow(R.drawable.ic_tab_ask, R.string.tab_ask, links.onOpenAsk)
 }

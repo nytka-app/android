@@ -44,14 +44,24 @@ import io.github.nytka_app.ui.theme.ReadingColumn
  * it still needs, with a bar; an unlocked one its summary and, with two points or more, a line against the usual value.
  */
 @Composable
-fun OverTimeScreen(viewModel: OverTimeViewModel = hiltViewModel()) {
+fun OverTimeScreen(
+    onOpenTopic: (String) -> Unit = {},
+    viewModel: OverTimeViewModel = hiltViewModel(),
+    rollups: RollupsViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val summaries by rollups.state.collectAsStateWithLifecycle()
     ReadingColumn {
         LazyColumn(
             Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            if (summaries.available) {
+                item(key = "rollups") {
+                    RollupSection(summaries, rollups::show, rollups::earlier, rollups::later, onOpenTopic)
+                }
+            }
             state.error?.let { error ->
                 item(key = "error") { ListFailure(error, state.offline, onRetry = viewModel::refresh) }
             }
@@ -151,7 +161,7 @@ private fun InsightCard(insight: Insight) {
 
 /** "Needs 6 more days"; any other unit as the server names it. */
 @Composable
-private fun needs(progress: InsightProgress): String {
+internal fun needs(progress: InsightProgress): String {
     val left = (progress.need - progress.have).coerceAtLeast(0)
     return if (progress.unit == DAYS) {
         pluralStringResource(R.plurals.over_time_needs_days, left, left)
@@ -188,7 +198,7 @@ private fun Trend(insight: Insight) {
     }
 }
 
-private fun fraction(
+internal fun fraction(
     have: Int,
     need: Int,
 ): Float = if (need <= 0) 1f else (have.toFloat() / need).coerceIn(0f, 1f)

@@ -930,4 +930,47 @@
     <string name="over_time_empty_body">Вони відкриваються, коли набирається більше днів із записом.</string>
     <string name="item_kind_marked_format">%1$s · Ви позначили</string>
     <string name="item_marked_at_format">Ви позначили це дотиком до кулона о %1$s.</string>
+    <string name="earlier_title">Раніше</string>
+    <string name="earlier_same_subject">Та сама тема</string>
+    <string name="topics_title">Теми</string>
+    <string name="topics_filter">Фільтр за назвою</string>
+    <string name="topics_kind_tags">Теги</string>
+    <string name="topics_kind_people">Люди</string>
+    <string name="topics_empty_title">Тем ще немає</string>
+    <string name="topics_empty_body">Тема зʼявляється, щойно сервер бачить той самий тег чи людину в кількох розмовах.</string>
+    <string name="topic_commitments">Відкриті обіцянки</string>
+    <string name="topic_moments_title">Моменти</string>
+    <plurals name="topic_moments">
+        <item quantity="one">%d момент</item>
+        <item quantity="few">%d моменти</item>
+        <item quantity="many">%d моментів</item>
+        <item quantity="other">%d моменту</item>
+    </plurals>
+    <plurals name="topic_open_commitments">
+        <item quantity="one">%d відкрита обіцянка</item>
+        <item quantity="few">%d відкриті обіцянки</item>
+        <item quantity="many">%d відкритих обіцянок</item>
+        <item quantity="other">%d відкритої обіцянки</item>
+    </plurals>
+    <string name="rollup_week">Тиждень</string>
+    <string name="rollup_month">Місяць</string>
+    <string name="rollup_year">Рік</string>
+    <string name="rollup_all">Увесь час</string>
+    <string name="rollup_changes">Що змінилося</string>
+    <string name="rollup_sources_format">З %1$s і %2$s</string>
+    <plurals name="rollup_conversations">
+        <item quantity="one">%d розмови</item>
+        <item quantity="few">%d розмов</item>
+        <item quantity="many">%d розмов</item>
+        <item quantity="other">%d розмови</item>
+    </plurals>
+    <plurals name="rollup_digests">
+        <item quantity="one">%d денного підсумку</item>
+        <item quantity="few">%d денних підсумків</item>
+        <item quantity="many">%d денних підсумків</item>
+        <item quantity="other">%d денного підсумку</item>
+    </plurals>
+    <string name="rollup_previous">Раніший підсумок</string>
+    <string name="rollup_next">Пізніший підсумок</string>
+    <string name="rollup_empty">Підсумку за цей період ще немає.</string>
 </resources>

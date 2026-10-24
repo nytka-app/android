@@ -27,6 +27,10 @@ data class LifeItem(
     val part: String? = null,
     /** The cited lines, at most 3, oldest first; empty for an item added by hand. */
     val evidence: List<Evidence> = emptyList(),
+    /** Earlier moments about the same thing (`related`), best first; often left out, then read from `GET /related`. */
+    val related: List<RelatedMoment> = emptyList(),
+    /** The topic pages the item belongs to (`topics`), at most 3. */
+    val topics: List<TopicRef> = emptyList(),
 ) {
     companion object {
         const val KIND_TASK = "task"
@@ -89,6 +93,8 @@ data class Scene(
     val noise: Boolean = false,
     val sensitivity: String? = null,
     val items: List<LifeItem> = emptyList(),
+    val related: List<RelatedMoment> = emptyList(),
+    val topics: List<TopicRef> = emptyList(),
 )
 
 /** Someone heard in a scene, the wearer left out; [personId] is null for a voice nobody has named. */
@@ -131,4 +137,130 @@ data class InsightProgress(
 data class InsightPoint(
     val date: String,
     val value: Double,
+)
+
+/**
+ * An earlier moment about the same thing (`related`): only moments before the one asked about, above the server's
+ * measured threshold, best first. [reasons] say why: "meaning", "person", "tag".
+ */
+@Serializable
+data class RelatedMoment(
+    val conversationId: String,
+    val at: String,
+    val kind: String = "conversation",
+    val title: String? = null,
+    val segmentId: Long? = null,
+    val quote: String? = null,
+    val score: Double = 0.0,
+    val reasons: List<String> = emptyList(),
+    val people: List<String> = emptyList(),
+    val tags: List<String> = emptyList(),
+)
+
+@Serializable
+data class RelatedList(
+    val items: List<RelatedMoment> = emptyList(),
+)
+
+/** A link to a topic page: [kind] is "tag" or "person". */
+@Serializable
+data class TopicRef(
+    val id: String,
+    val name: String,
+    val kind: String = Topic.KIND_TAG,
+)
+
+/** A topic page (`topics`): what the server knows across conversations about a tag or a person. */
+@Serializable
+data class Topic(
+    val id: String,
+    val kind: String,
+    val name: String,
+    val tagId: String? = null,
+    val personId: String? = null,
+    val summary: String? = null,
+    val moments: Int = 0,
+    val openCommitments: Int = 0,
+    val lastAt: String? = null,
+    val updatedAt: String? = null,
+) {
+    companion object {
+        const val KIND_TAG = "tag"
+        const val KIND_PERSON = "person"
+    }
+}
+
+@Serializable
+data class TopicList(
+    val items: List<Topic> = emptyList(),
+)
+
+/** One topic with its moments, newest first ([nextBefore] pages on), and the open commitments it holds. */
+@Serializable
+data class TopicPage(
+    val id: String,
+    val kind: String,
+    val name: String,
+    val tagId: String? = null,
+    val personId: String? = null,
+    val summary: String? = null,
+    val moments: Int = 0,
+    val openCommitments: Int = 0,
+    val lastAt: String? = null,
+    val timeline: List<TopicMoment> = emptyList(),
+    val commitments: List<LifeItem> = emptyList(),
+    val nextBefore: String? = null,
+)
+
+@Serializable
+data class TopicMoment(
+    val conversationId: String,
+    val at: String,
+    val title: String? = null,
+    val line: String? = null,
+    val segmentId: Long? = null,
+)
+
+/**
+ * A summary over a [period] (`rollups`): week, month, year or all time, from [start] to [end] (local dates). A
+ * [locked] one has too little audio yet: no summary, only [progress].
+ */
+@Serializable
+data class Rollup(
+    val period: String,
+    val start: String,
+    val end: String,
+    val summary: String? = null,
+    val changes: List<String> = emptyList(),
+    val topics: List<RollupTopic> = emptyList(),
+    val sources: RollupSources = RollupSources(),
+    val generatedAt: String? = null,
+    val locked: Boolean = false,
+    val progress: InsightProgress? = null,
+) {
+    companion object {
+        const val WEEK = "week"
+        const val MONTH = "month"
+        const val YEAR = "year"
+        const val ALL = "all"
+        val PERIODS = listOf(WEEK, MONTH, YEAR, ALL)
+    }
+}
+
+@Serializable
+data class RollupTopic(
+    val topicId: String,
+    val name: String,
+    val line: String? = null,
+)
+
+@Serializable
+data class RollupSources(
+    val digests: Int = 0,
+    val conversations: Int = 0,
+)
+
+@Serializable
+data class RollupPage(
+    val items: List<Rollup> = emptyList(),
 )

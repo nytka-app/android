@@ -84,6 +84,9 @@ import io.github.nytka_app.ui.tags.tagChipsItem
 import io.github.nytka_app.ui.tags.tagProposalsItem
 import io.github.nytka_app.ui.theme.NytkaTheme
 import io.github.nytka_app.ui.theme.ReadingColumn
+import io.github.nytka_app.ui.today.RelatedViewModel
+import io.github.nytka_app.ui.today.earlierItem
+import io.github.nytka_app.ui.today.rememberEarlier
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,8 +97,12 @@ fun ConversationScreen(
     onOpenPerson: (String) -> Unit,
     onOpenTag: (String) -> Unit,
     viewModel: ConversationViewModel = hiltViewModel(),
+    /** Opens another conversation at a moment; with it the screen shows the "Earlier" strip. */
+    onOpenMoment: ((conversationId: String, atMs: Long?) -> Unit)? = null,
+    related: RelatedViewModel = hiltViewModel(key = "related-conversation"),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val earlier = rememberEarlier(related, onOpenMoment != null)
     var menuOpen by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
@@ -209,6 +216,7 @@ fun ConversationScreen(
                         }
                     }
                 }
+                earlierItem(earlier, onOpenMoment)
                 if (state.tasks.isNotEmpty()) {
                     item {
                         InfoCard(stringResource(R.string.tasks_card_title)) {

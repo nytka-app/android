@@ -42,6 +42,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
 import io.github.nytka_app.core.api.Evidence
 import io.github.nytka_app.core.api.LifeItem
@@ -49,6 +51,7 @@ import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.ui.Monogram
 import io.github.nytka_app.ui.conversations.Formatting
 import io.github.nytka_app.ui.names.knownPeople
+import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.math.roundToInt
 
@@ -176,8 +179,12 @@ fun EvidenceSheet(
     onOpenMoment: (conversationId: String, atMs: Long?) -> Unit,
     onNotImportant: (LifeItem) -> Unit,
     lines: LineActions,
+    onOpenTopic: (String) -> Unit = {},
+    related: RelatedViewModel = hiltViewModel(key = "related-sheet"),
 ) {
     var picking by remember { mutableStateOf<Evidence?>(null) }
+    val earlier by related.moments.collectAsStateWithLifecycle()
+    LaunchedEffect(item.kind, item.id) { related.load(item.kind, item.id, item.related) }
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
             Modifier
@@ -215,6 +222,8 @@ fun EvidenceSheet(
                 )
                 HorizontalDivider()
             }
+            TopicChips(item.topics, onOpenTopic)
+            EarlierStrip(earlier, zone, LocalDate.now(zone), onOpenMoment)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { onNotImportant(item) }) { Text(stringResource(R.string.item_not_important)) }
                 val conversation = item.conversationId ?: item.evidence.firstOrNull()?.conversationId
