@@ -3,7 +3,6 @@ package io.github.nytka_app.ui
 import io.github.nytka_app.ui.conversations.MomentLink
 import java.net.URI
 import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
 
 /** A moment of a conversation that a link from outside the app asks for; [atMs] and [segmentId] are optional. */
 data class Moment(
@@ -37,7 +36,7 @@ object MomentUri {
             ?.split('&')
             ?.mapNotNull { part ->
                 val (name, value) = part.split('=', limit = 2).takeIf { it.size == 2 } ?: return@mapNotNull null
-                name to URLDecoder.decode(value, StandardCharsets.UTF_8)
+                name to URLDecoder.decode(value, "UTF-8")
             }?.toMap()
             .orEmpty()
 
