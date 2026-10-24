@@ -83,7 +83,7 @@ fun LifeItemCard(
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
-                kindLabel(item.kind),
+                kindTitle(item),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.secondary,
             )
@@ -135,6 +135,15 @@ private fun kindLabel(kind: String): String =
         },
     )
 
+/** "Task", or "Task · You marked this" for a moment the wearer marked with a tap on the pendant. */
+@Composable
+private fun kindTitle(item: LifeItem): String =
+    if (item.markedAt == null) {
+        kindLabel(item.kind)
+    } else {
+        stringResource(R.string.item_kind_marked_format, kindLabel(item.kind))
+    }
+
 /** "09:14 · Ann · Due 2026-10-24": what is known of when and with whom. */
 @Composable
 private fun meta(
@@ -177,11 +186,17 @@ fun EvidenceSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                kindLabel(item.kind),
+                kindTitle(item),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.secondary,
             )
             Text(item.text, style = MaterialTheme.typography.titleMedium)
+            item.markedAt?.let(Formatting::parse)?.let {
+                Text(
+                    stringResource(R.string.item_marked_at_format, Formatting.clock(it, zone)),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
             Text(
                 stringResource(R.string.item_where_from),
                 style = MaterialTheme.typography.titleSmall,

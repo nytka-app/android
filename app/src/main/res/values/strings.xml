@@ -907,4 +907,6 @@
     <string name="over_time_baseline_format">Usual: %1$s</string>
     <string name="over_time_empty_title">No patterns yet</string>
     <string name="over_time_empty_body">Patterns unlock as days with audio add up.</string>
+    <string name="item_kind_marked_format">%1$s · You marked this</string>
+    <string name="item_marked_at_format">You marked this with a tap on the pendant at %1$s.</string>
 </resources>

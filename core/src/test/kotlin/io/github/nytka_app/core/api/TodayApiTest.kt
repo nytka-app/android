@@ -53,7 +53,8 @@ class TodayApiTest {
                 "conversationId":"c1","personId":"p1","personName":"Ann","due":"2026-10-24","done":false,"part":"morning",
                 "evidence":[{"segmentId":48121,"conversationId":"c1","at":"2026-10-23T06:14:02Z","speaker":"Wearer",
                 "isUser":true,"personId":null,"quote":"I'll send it tomorrow.","wearerConfidence":0.66,"extra":1}]},
-                {"kind":"memory","id":"m1","text":"Moved to a new flat","salienceManual":true}]}""",
+                {"kind":"memory","id":"m1","text":"Moved to a new flat","salienceManual":true,
+                "markedAt":"2026-10-23T07:01:00Z"}]}""",
             )
 
             val page = ok(today.today("Europe/Kyiv"))
@@ -70,6 +71,8 @@ class TodayApiTest {
             )
             val memory = page.items[1]
             assertTrue(memory.salienceManual)
+            assertEquals("2026-10-23T07:01:00Z", memory.markedAt)
+            assertNull(task.markedAt)
             assertNull(memory.salience)
             assertEquals(emptyList<Evidence>(), memory.evidence)
         }
