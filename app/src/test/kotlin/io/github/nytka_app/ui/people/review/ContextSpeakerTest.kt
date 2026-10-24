@@ -6,7 +6,7 @@ import org.junit.Test
 
 class ContextSpeakerTest {
     @Test
-    fun `the wearer, a named person, numbered voices and a line without a speaker`() {
+    fun `the wearer, a named person, voices numbered as the server numbers them and a line without a speaker`() {
         val lines =
             listOf(
                 ReviewContextLine(speaker = "SPEAKER_4"),
@@ -19,11 +19,11 @@ class ContextSpeakerTest {
 
         assertEquals(
             listOf(
-                ContextSpeaker.Voice(1),
+                ContextSpeaker.Voice(5),
                 ContextSpeaker.You,
                 ContextSpeaker.Person("Olena"),
-                ContextSpeaker.Voice(2),
-                ContextSpeaker.Voice(1),
+                ContextSpeaker.Voice(3),
+                ContextSpeaker.Voice(5),
                 ContextSpeaker.Someone,
             ),
             ContextSpeaker.of(lines),
