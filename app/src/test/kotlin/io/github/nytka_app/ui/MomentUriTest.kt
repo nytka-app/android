@@ -18,8 +18,8 @@ class MomentUriTest {
 
     @Test
     fun `an unencoded instant, epoch milliseconds, or no moment at all`() {
-        assertEquals(1_761_208_920_000, MomentUri.parse("nytka://conversation/$id?at=2026-10-23T08:42:00Z")?.atMs)
-        assertEquals(1_761_208_920_000, MomentUri.parse("nytka://conversation/$id?at=1761208920000")?.atMs)
+        assertEquals(1_792_744_920_000, MomentUri.parse("nytka://conversation/$id?at=2026-10-23T08:42:00Z")?.atMs)
+        assertEquals(1_792_744_920_000, MomentUri.parse("nytka://conversation/$id?at=1792744920000")?.atMs)
         assertEquals(Moment(id), MomentUri.parse("nytka://conversation/$id"))
     }
 
