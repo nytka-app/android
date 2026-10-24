@@ -37,6 +37,8 @@ class LifeScreens(
     val memories: @Composable (Navigation) -> Unit,
     val ask: @Composable (Navigation) -> Unit,
     val search: @Composable (Navigation) -> Unit,
+    val topics: @Composable (Navigation) -> Unit,
+    val topic: @Composable (Navigation) -> Unit,
     val device: @Composable () -> Unit,
 )
 
@@ -57,6 +59,10 @@ class Navigation(
         navController.navigate(conversationRoute(moment.conversationId, moment.atMs, moment.segmentId))
 
     fun openPerson(personId: String) = navController.navigate("person/$personId")
+
+    fun openTopic(topicId: String) = navController.navigate("$TOPIC/$topicId")
+
+    fun openTopics() = navController.navigate(TOPICS)
 
     fun openConversations(tag: String? = null) =
         navController.navigate(if (tag == null) CONVERSATIONS else "$CONVERSATIONS?tag=$tag")
@@ -176,6 +182,8 @@ fun LifeNavHost(
             composable(AppTab.Memories.route) { screens.memories(navigation) }
             composable(AppTab.Ask.route) { screens.ask(navigation) }
             composable(SEARCH) { screens.search(navigation) }
+            composable(TOPICS) { screens.topics(navigation) }
+            composable("$TOPIC/{id}") { screens.topic(navigation) }
             composable(DEVICE_ROUTE) { screens.device() }
         }
     }
@@ -183,3 +191,5 @@ fun LifeNavHost(
 
 private const val CONVERSATIONS = "conversations"
 private const val SEARCH = "search"
+private const val TOPICS = "topics"
+private const val TOPIC = "topic"

@@ -28,9 +28,18 @@ class LayoutViewModel
         private val mutableThreeTabs = MutableStateFlow<Boolean?>(null)
         val threeTabs: StateFlow<Boolean?> = mutableThreeTabs.asStateFlow()
 
+        /** What the server can do, once it answered; empty before and without an answer. */
+        private val mutableFeatures = MutableStateFlow<Set<String>>(emptySet())
+        val features: StateFlow<Set<String>> = mutableFeatures.asStateFlow()
+
         init {
             viewModelScope.launch {
-                val answer = async { (info.info() as? ApiResult.Ok)?.value?.has(ServerInfo.FEATURE_TODAY) == true }
+                val answer =
+                    async {
+                        val server = (info.info() as? ApiResult.Ok)?.value
+                        mutableFeatures.value = server?.features.orEmpty().toSet()
+                        server?.has(ServerInfo.FEATURE_TODAY) == true
+                    }
                 val quick = withTimeoutOrNull(WAIT_MS) { answer.await() }
                 mutableThreeTabs.value = quick ?: false
                 if (quick == null && answer.await()) mutableThreeTabs.value = true

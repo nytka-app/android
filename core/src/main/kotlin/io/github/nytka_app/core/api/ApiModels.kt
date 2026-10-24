@@ -53,6 +53,15 @@ data class ServerInfo(
         /** Patterns and reports with the progress that unlocks them: the Over time tab. */
         const val FEATURE_INSIGHTS = "insights"
 
+        /** Earlier moments about the same thing, on items and conversations: the "Earlier" strip. */
+        const val FEATURE_RELATED = "related"
+
+        /** Topic pages from tags and people. */
+        const val FEATURE_TOPICS = "topics"
+
+        /** Summaries over a week, a month, a year and all time, with what changed. */
+        const val FEATURE_ROLLUPS = "rollups"
+
         const val SCOPE_ADMIN = "admin"
         const val SCOPE_READ = "read"
     }

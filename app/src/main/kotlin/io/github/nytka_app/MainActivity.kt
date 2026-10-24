@@ -25,6 +25,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.nytka_app.capture.CaptureState
+import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.ui.AppTab
 import io.github.nytka_app.ui.AppViewModel
 import io.github.nytka_app.ui.CaptureStatusIndicator
@@ -53,6 +54,8 @@ import io.github.nytka_app.ui.theme.NytkaTheme
 import io.github.nytka_app.ui.timeline.TimelineScreen
 import io.github.nytka_app.ui.today.TodayLinks
 import io.github.nytka_app.ui.today.TodayScreen
+import io.github.nytka_app.ui.topics.TopicScreen
+import io.github.nytka_app.ui.topics.TopicsScreen
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
@@ -64,6 +67,7 @@ private fun lifeScreens(
     status: StatusUiState,
     onMute: (Boolean) -> Unit,
     peopleBadge: Int,
+    features: Set<String>,
 ) = LifeScreens(
     today = { nav ->
         TodayScreen(
@@ -76,6 +80,7 @@ private fun lifeScreens(
                     onOpenPeople = { nav.open(AppTab.People.route) },
                     onOpenAsk = { nav.open(AppTab.Ask.route) },
                     peopleBadge = peopleBadge,
+                    onOpenTopics = nav::openTopics.takeIf { ServerInfo.FEATURE_TOPICS in features },
                 ),
         )
     },
@@ -84,9 +89,10 @@ private fun lifeScreens(
             onOpenMoment = nav::openMoment,
             onOpenPerson = nav::openPerson,
             onOpenConversations = { nav.openConversations() },
+            onOpenTopic = nav::openTopic,
         )
     },
-    overTime = { OverTimeScreen() },
+    overTime = { nav -> OverTimeScreen(onOpenTopic = nav::openTopic) },
     conversation = { nav ->
         ConversationScreen(
             developerMode = status.developerMode,
@@ -94,6 +100,7 @@ private fun lifeScreens(
             onDeleted = nav::back,
             onOpenPerson = nav::openPerson,
             onOpenTag = { nav.openConversations(it) },
+            onOpenMoment = nav::openMoment,
         )
     },
     conversations = { nav, tag -> ConversationsTab(status, onMute, emptyFlow(), nav::openPerson, initialTag = tag) },
@@ -110,6 +117,8 @@ private fun lifeScreens(
         SearchScreen(onOpenConversation = nav::openConversation, onOpenPerson = nav::openPerson, onBack = nav::back)
     },
     device = { DeviceTab(status, onMute) },
+    topics = { nav -> TopicsScreen(onOpenTopic = nav::openTopic) },
+    topic = { nav -> TopicScreen(onOpenMoment = nav::openMoment) },
 )
 
 @AndroidEntryPoint
@@ -145,12 +154,13 @@ class MainActivity : ComponentActivity() {
                         val reviewState by review.state.collectAsStateWithLifecycle()
                         val layout: LayoutViewModel = hiltViewModel()
                         val threeTabs by layout.threeTabs.collectAsStateWithLifecycle()
+                        val features by layout.features.collectAsStateWithLifecycle()
                         val peopleBadge = if (reviewState.available) reviewState.count else 0
                         when (threeTabs) {
                             null -> Unit
                             true ->
                                 LifeNavHost(
-                                    screens = lifeScreens(status, statusViewModel::setMuted, peopleBadge),
+                                    screens = lifeScreens(status, statusViewModel::setMuted, peopleBadge, features),
                                     onRouteShown = { review.refresh() },
                                     moments = momentFlow,
                                     topBar = { onOpenDevice, onSearch, onBack ->

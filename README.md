@@ -42,7 +42,9 @@ server; this app is its phone half. [How Nytka compares](docs/explanation/compar
 - **Puts what matters first** on a server that supports it: **Today** (at most seven vital things, never anything
   private), the **Timeline** of the day's scenes, and **Over time** (patterns that unlock as days add up). Every
   item opens the lines it came from and plays from that moment; mark it not important, not yours, or someone
-  else's in place. [The screens](docs/reference/screens.md#today-timeline-and-over-time).
+  else's in place; a tap on the pendant marks a moment as vital. Each item and conversation shows **Earlier** moments
+  about the same thing, tags and people get **topic pages**, and Over time sums up each week, month, year and all
+  time. [The screens](docs/reference/screens.md#today-timeline-and-over-time).
 - **Can transcribe on the phone too** (Google Play build, off by default): free, private and offline draft text
   from a model you copy to the phone yourself, made only while it charges unless you allow battery use.
   [Transcribe on this phone](docs/reference/device.md#transcribe-on-this-phone).

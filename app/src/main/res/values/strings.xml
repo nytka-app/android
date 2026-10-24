@@ -909,4 +909,39 @@
     <string name="over_time_empty_body">Patterns unlock as days with audio add up.</string>
     <string name="item_kind_marked_format">%1$s · You marked this</string>
     <string name="item_marked_at_format">You marked this with a tap on the pendant at %1$s.</string>
+    <string name="earlier_title">Earlier</string>
+    <string name="earlier_same_subject">Same subject</string>
+    <string name="topics_title">Topics</string>
+    <string name="topics_filter">Filter by name</string>
+    <string name="topics_kind_tags">Tags</string>
+    <string name="topics_kind_people">People</string>
+    <string name="topics_empty_title">No topics yet</string>
+    <string name="topics_empty_body">A topic appears once the server sees the same tag or person in several conversations.</string>
+    <string name="topic_commitments">Open commitments</string>
+    <string name="topic_moments_title">Moments</string>
+    <plurals name="topic_moments">
+        <item quantity="one">%d moment</item>
+        <item quantity="other">%d moments</item>
+    </plurals>
+    <plurals name="topic_open_commitments">
+        <item quantity="one">%d open commitment</item>
+        <item quantity="other">%d open commitments</item>
+    </plurals>
+    <string name="rollup_week">Week</string>
+    <string name="rollup_month">Month</string>
+    <string name="rollup_year">Year</string>
+    <string name="rollup_all">All time</string>
+    <string name="rollup_changes">What changed</string>
+    <string name="rollup_sources_format">From %1$s and %2$s</string>
+    <plurals name="rollup_conversations">
+        <item quantity="one">%d conversation</item>
+        <item quantity="other">%d conversations</item>
+    </plurals>
+    <plurals name="rollup_digests">
+        <item quantity="one">%d daily digest</item>
+        <item quantity="other">%d daily digests</item>
+    </plurals>
+    <string name="rollup_previous">Earlier summary</string>
+    <string name="rollup_next">Later summary</string>
+    <string name="rollup_empty">No summary for this period yet.</string>
 </resources>

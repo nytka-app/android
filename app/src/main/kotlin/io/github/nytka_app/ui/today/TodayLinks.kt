@@ -8,4 +8,6 @@ class TodayLinks(
     val onOpenAsk: () -> Unit,
     /** Open decisions about people; 0 shows no badge. */
     val peopleBadge: Int = 0,
+    /** The topic pages, on a server with `topics`; null shows no entry. */
+    val onOpenTopics: (() -> Unit)? = null,
 )
