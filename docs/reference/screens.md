@@ -38,8 +38,8 @@ five tabs below; when the server cannot be reached at start the five tabs show, 
 - **Topics.** On a server that lists `topics`, Today's **More** has **Topics**: a page for each tag and person the
   server sees across conversations, filtered by name and by **Tags** or **People**, newest heard first, each with how
   many moments it holds and how many commitments are still open. A topic page has its summary, its open commitments
-  and its moments, newest first (more load as you scroll), each opening its conversation at that line. Items and scenes
-  that belong to a topic show it as a chip.
+  and its moments, newest first (more load as you scroll), each opening its conversation at that line. A Timeline scene
+  shows its conversation's topics as chips.
 - **Summaries over time.** On a server that lists `rollups`, Over time starts with **Week**, **Month**, **Year** and
   **All time**: the newest summary of the period with its dates, what changed since the period before, its topics (chips
   that open them) and what it was made from ("From 12 conversations and 5 daily digests"). ‹ and › step through

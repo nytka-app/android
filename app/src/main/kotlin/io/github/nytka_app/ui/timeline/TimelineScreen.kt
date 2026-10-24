@@ -175,10 +175,6 @@ fun TimelineScreen(
                         viewModel.otherPerson(line, person)
                     },
                 ),
-            onOpenTopic = {
-                open = null
-                onOpenTopic(it)
-            },
         )
     }
 }

@@ -179,7 +179,6 @@ fun EvidenceSheet(
     onOpenMoment: (conversationId: String, atMs: Long?) -> Unit,
     onNotImportant: (LifeItem) -> Unit,
     lines: LineActions,
-    onOpenTopic: (String) -> Unit = {},
     related: RelatedViewModel = hiltViewModel(key = "related-sheet"),
 ) {
     var picking by remember { mutableStateOf<Evidence?>(null) }
@@ -222,7 +221,6 @@ fun EvidenceSheet(
                 )
                 HorizontalDivider()
             }
-            TopicChips(item.topics, onOpenTopic)
             EarlierStrip(earlier, zone, LocalDate.now(zone), onOpenMoment)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedButton(onClick = { onNotImportant(item) }) { Text(stringResource(R.string.item_not_important)) }

@@ -82,7 +82,6 @@ private fun lifeScreens(
                     peopleBadge = peopleBadge,
                     onOpenTopics = nav::openTopics.takeIf { ServerInfo.FEATURE_TOPICS in features },
                 ),
-            onOpenTopic = nav::openTopic,
         )
     },
     timeline = { nav ->

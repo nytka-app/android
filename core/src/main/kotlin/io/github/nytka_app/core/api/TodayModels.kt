@@ -29,8 +29,6 @@ data class LifeItem(
     val evidence: List<Evidence> = emptyList(),
     /** Earlier moments about the same thing (`related`), best first; often left out, then read from `GET /related`. */
     val related: List<RelatedMoment> = emptyList(),
-    /** The topic pages the item belongs to (`topics`), at most 3. */
-    val topics: List<TopicRef> = emptyList(),
 ) {
     companion object {
         const val KIND_TASK = "task"
@@ -94,6 +92,7 @@ data class Scene(
     val sensitivity: String? = null,
     val items: List<LifeItem> = emptyList(),
     val related: List<RelatedMoment> = emptyList(),
+    /** The scene's conversation's topic pages (`topics`), at most 3; an item's topics are its scene's. */
     val topics: List<TopicRef> = emptyList(),
 )
 

@@ -59,7 +59,6 @@ fun TodayScreen(
     onOpenMoment: (conversationId: String, atMs: Long?) -> Unit,
     onOpenPerson: (String) -> Unit,
     links: TodayLinks,
-    onOpenTopic: (String) -> Unit = {},
     viewModel: TodayViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -145,10 +144,6 @@ fun TodayScreen(
                         viewModel.otherPerson(line, person)
                     },
                 ),
-            onOpenTopic = {
-                open = null
-                onOpenTopic(it)
-            },
         )
     }
 }
