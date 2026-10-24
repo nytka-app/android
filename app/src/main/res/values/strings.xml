@@ -855,4 +855,56 @@
     <string name="phone_transcription_no_model_in_folder">This folder holds no model: it needs tokens.txt and the model\'s .onnx files.</string>
     <string name="phone_transcription_import_failed">The model could not be copied. Try again.</string>
     <string name="phone_transcription_benchmark_failed">The benchmark could not run this model.</string>
+    <!-- Today, Timeline, Over time (server feature "today") -->
+    <string name="tab_today">Today</string>
+    <string name="tab_timeline">Timeline</string>
+    <string name="tab_over_time">Over time</string>
+    <string name="today_part_morning">Morning</string>
+    <string name="today_part_day">Day</string>
+    <string name="today_part_evening">Evening</string>
+    <string name="today_empty_title">Nothing vital yet today</string>
+    <string name="today_empty_body">What matters from today\'s conversations shows here: seven things at most, and nothing private.</string>
+    <string name="today_more">More</string>
+    <string name="item_kind_task">Task</string>
+    <string name="item_kind_memory">Memory</string>
+    <string name="item_kind_note">Note</string>
+    <string name="item_due_format">Due %1$s</string>
+    <string name="item_actions_format">Actions for “%1$s”</string>
+    <string name="item_not_important">Not important</string>
+    <string name="item_where_from">Where this comes from</string>
+    <string name="item_no_lines">Added by hand: no lines to show.</string>
+    <string name="item_open_conversation">Open conversation</string>
+    <string name="evidence_play">Play from here</string>
+    <string name="evidence_you_sure_format">You · %1$d%% sure it is your voice</string>
+    <string name="evidence_someone">Someone</string>
+    <string name="evidence_not_me">Not me</string>
+    <string name="evidence_other_person">Someone else said this</string>
+    <string name="evidence_pick_person">Who said this?</string>
+    <string name="evidence_no_people">No named people yet. Name a voice in a conversation first.</string>
+    <string name="correction_not_important">Marked not important</string>
+    <string name="correction_not_me">Marked as not yours</string>
+    <string name="correction_other_person">Line given to them</string>
+    <string name="correction_undone">Put back</string>
+    <string name="timeline_previous">Previous day</string>
+    <string name="timeline_next">Next day</string>
+    <string name="timeline_back_to_today">Back to today</string>
+    <string name="timeline_empty_title">Nothing heard this day</string>
+    <string name="timeline_empty_body">Scenes show here once the pendant has heard something and the server has read it.</string>
+    <plurals name="timeline_fragments">
+        <item quantity="one">%d short fragment</item>
+        <item quantity="other">%d short fragments</item>
+    </plurals>
+    <string name="timeline_private_format">Private · %1$s. Tap to show.</string>
+    <string name="timeline_all_conversations">All conversations</string>
+    <string name="timeline_vital">Vital</string>
+    <string name="over_time_days_format">%1$d of %2$d days heard</string>
+    <string name="over_time_trusted_format">Patterns are trusted after %1$d days with audio. Nothing here needs you: it fills in as you wear the pendant.</string>
+    <plurals name="over_time_needs_days">
+        <item quantity="one">Needs %d more day</item>
+        <item quantity="other">Needs %d more days</item>
+    </plurals>
+    <string name="over_time_needs_format">Needs %1$d more %2$s</string>
+    <string name="over_time_baseline_format">Usual: %1$s</string>
+    <string name="over_time_empty_title">No patterns yet</string>
+    <string name="over_time_empty_body">Patterns unlock as days with audio add up.</string>
 </resources>

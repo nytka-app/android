@@ -47,6 +47,12 @@ data class ServerInfo(
         const val FEATURE_REVIEW_CLIPS = "review-clips"
         const val FEATURE_AUTO_NAMES = "auto-names"
 
+        /** Today, the Timeline, cited lines on items and the salience mark: the app's three-tab layout. */
+        const val FEATURE_TODAY = "today"
+
+        /** Patterns and reports with the progress that unlocks them: the Over time tab. */
+        const val FEATURE_INSIGHTS = "insights"
+
         const val SCOPE_ADMIN = "admin"
         const val SCOPE_READ = "read"
     }

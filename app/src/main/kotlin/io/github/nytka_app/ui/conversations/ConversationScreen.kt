@@ -116,6 +116,7 @@ fun ConversationScreen(
     val playback = state.playback
     val heard = playback.heardParagraph()
     FollowTranscript(listState, heard, follow && playback?.playing == true, state.paragraphs.size, state.raw != null)
+    ScrollToMoment(listState, state.focus, state.paragraphs.size, state.raw != null, viewModel::focusShown)
 
     Scaffold(
         topBar = {

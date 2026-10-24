@@ -38,7 +38,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 
 /**
- * The tab bar and one slot per tab. Any tab can open a conversation: [tasks], [memories] and [ask] receive
+ * The five tabs of before, for a server without `today` ([LifeNavHost] has the three). One slot per tab.
+ * Any tab can open a conversation: [tasks], [memories] and [ask] receive
  * `onOpenConversation(id)`, which selects the Conversations tab and hands the id to [conversations] as
  * `openRequests`; that tab opens `conversation/{id}` in its own NavHost. Any tab can open a person the same way
  * through `onOpenPerson(id)` and [people]'s `openRequests`; the People tab opens a conversation through its
@@ -89,20 +90,13 @@ fun NytkaNavHost(
         topBar = { topBar { select(DEVICE_ROUTE) } },
         bottomBar = {
             NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainer) {
-                AppTab.entries.forEach { tab ->
+                AppTab.bar(threeTabs = false).forEach { tab ->
                     NavigationBarItem(
                         selected = current == tab.route,
                         onClick = { select(tab.route) },
                         icon = { TabIcon(tab, if (tab == AppTab.People) peopleBadge else 0) },
                         label = { TabLabel(stringResource(tab.labelRes)) },
-                        colors =
-                            NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                                indicatorColor = MaterialTheme.colorScheme.primaryContainer,
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            ),
+                        colors = tabColors(),
                     )
                 }
             }
@@ -110,7 +104,7 @@ fun NytkaNavHost(
     ) { padding ->
         NavHost(
             navController,
-            startDestination = AppTab.start.route,
+            startDestination = AppTab.start(threeTabs = false).route,
             modifier = Modifier.padding(padding),
             enterTransition = { ScreenEnter },
             exitTransition = { ScreenExit },
@@ -134,7 +128,17 @@ private const val ENTER_MS = 300
 private const val EXIT_MS = 150
 
 @Composable
-private fun TabIcon(
+internal fun tabColors() =
+    NavigationBarItemDefaults.colors(
+        selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        selectedTextColor = MaterialTheme.colorScheme.onSurface,
+        indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+
+@Composable
+internal fun TabIcon(
     tab: AppTab,
     badge: Int,
 ) {
@@ -154,7 +158,7 @@ private fun TabIcon(
  * label too wide for its item shrinks, to 10sp at least; the Ukrainian labels fit at 12sp.
  */
 @Composable
-private fun TabLabel(text: String) {
+internal fun TabLabel(text: String) {
     Text(
         text,
         maxLines = 1,

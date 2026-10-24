@@ -76,10 +76,15 @@ fun ConversationsTab(
     onMute: (Boolean) -> Unit,
     openRequests: Flow<String>,
     onOpenPerson: (String) -> Unit,
+    /** A tag the list opens filtered by, once; null shows every conversation. */
+    initialTag: String? = null,
 ) {
     val navController = rememberNavController()
     LaunchedEffect(navController, openRequests) {
         openRequests.collect { id -> navController.navigate("conversation/$id") { popUpTo("list") } }
+    }
+    LaunchedEffect(navController, initialTag) {
+        initialTag?.let { navController.getBackStackEntry("list").savedStateHandle[TAG_REQUEST] = it }
     }
     NavHost(
         navController,

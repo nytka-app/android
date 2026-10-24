@@ -1,6 +1,37 @@
 # The screens
 
-Every tab of the app, search, appearance and tags. Back to the [README](../../README.md).
+Every tab of the app (the three of a server with `today`, then the five of before), search, appearance and tags. Back to the [README](../../README.md).
+
+## Today, Timeline and Over time
+
+On a server that lists `today` in `/api/v1/info`, the bar has three tabs instead of five. An older server keeps the
+five tabs below; when the server cannot be reached at start the five tabs show, and the three appear once it answers.
+
+- **Today.** What matters from today: at most seven items the server marked vital, under **Morning** (before 12:00),
+  **Day** and **Evening** (from 18:00), by when they were said in the phone's time zone. Each shows whether it is a
+  task, a memory or a note, its text, and the time, the person and a due date when there are some. Nothing the server
+  calls sensitive (health, therapy, intimate, money) is shown here, and the app drops such an item again if one slips
+  through. Below, **More** leads to Tasks, Memories, People (with the count of decisions waiting) and Ask.
+- **Timeline.** One day as scenes, oldest first: the time span and place, a title, who was there ("Voice 3" for a
+  voice nobody has named) and two lines of summary, then the scene's items, a dot before the vital ones and the ones
+  marked not important dimmer. Tap a scene for its conversation, with the transcript and the player. Runs of short
+  fragments fold into "2 short fragments", which open on a tap. A private scene says only "Private · therapy. Tap to
+  show." until tapped. ‹ and › step through the days (never past today), **Back to today** returns, and **All
+  conversations** at the bottom opens the full list of before.
+- **Over time.** How many days the server has heard against how many it needs before patterns count ("9 of 14 days
+  heard", with a bar), then each insight: an unlocked one with its summary, a line of its recent values and the usual
+  value dashed across it; a locked one with what it still needs ("Needs 5 more days") and a bar, never an empty chart.
+  A server without `insights` says it needs an update.
+- **Where it comes from.** Tap any item on Today or the Timeline: a sheet shows each line it was taken from, with who
+  said it ("You · 66% sure it is your voice", a name, "Voice 3" or "Someone"), the time and the quote. **Play from
+  here** opens the conversation scrolled to that line with the player moved there (`conversation/{id}?at=`, milliseconds
+  since 1970), without playing. **Open conversation** opens it from the start. An item added by hand has no lines.
+- **Corrections in place.** ⋮ on an item, or the sheet, has **Not important**: the item leaves Today at once (it stays
+  on the Timeline, dimmer) and **Undo** in the snackbar puts it back. ⋮ on a line has **Not me** (on your own lines)
+  and **Someone else said this**, which asks who among your named people. Each goes to the server's own marks, the
+  same ones the transcript's "This is not me" uses, and the screen reloads with what the server now derives. A refusal
+  says why and changes nothing. Needs an admin token.
+- The top bar has a search icon on every screen and a back arrow on the screens that open over a tab.
 
 ## The tabs
 

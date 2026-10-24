@@ -39,6 +39,10 @@ server; this app is its phone half. [How Nytka compares](docs/explanation/compar
   [Offline sync](docs/explanation/offline-sync.md) explains it.
 - **Shows what the server makes of it:** conversations with titles, summaries and transcripts, tasks, memories,
   people and their voices, search, and Ask, a question answered from your conversations with numbered sources.
+- **Puts what matters first** on a server that supports it: **Today** (at most seven vital things, never anything
+  private), the **Timeline** of the day's scenes, and **Over time** (patterns that unlock as days add up). Every
+  item opens the lines it came from and plays from that moment; mark it not important, not yours, or someone
+  else's in place. [The screens](docs/reference/screens.md#today-timeline-and-over-time).
 - **Can transcribe on the phone too** (Google Play build, off by default): free, private and offline draft text
   from a model you copy to the phone yourself, made only while it charges unless you allow battery use.
   [Transcribe on this phone](docs/reference/device.md#transcribe-on-this-phone).
