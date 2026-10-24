@@ -3,7 +3,9 @@ package io.github.nytka_app.core.api
 import io.github.nytka_app.core.chunks.ChunkFormat
 import io.github.nytka_app.core.queue.CaptureSource
 import io.github.nytka_app.core.settings.Settings
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import mockwebserver3.MockResponse
 import mockwebserver3.MockWebServer
 import okhttp3.OkHttpClient
@@ -13,6 +15,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.util.concurrent.Executors
 
 class NytkaApiTest {
     private val server = MockWebServer()
@@ -38,6 +41,20 @@ class NytkaApiTest {
             .body(body)
             .build(),
     )
+
+    @Test
+    fun `the answer is read off the caller's thread, so a screen never reads the network on Main`() =
+        runTest {
+            answer(200, """{"serverVersion":"0.34.0","apiVersion":1}""")
+            val caller = Executors.newSingleThreadExecutor { Thread(it, "caller") }.asCoroutineDispatcher()
+            var readOn = ""
+
+            caller.use {
+                withContext(it) { api.request("GET", "api/v1/info") { _ -> readOn = Thread.currentThread().name } }
+            }
+
+            assertTrue(readOn, readOn != "caller")
+        }
 
     @Test
     fun `upload sends the chunk with its media type and token`() =

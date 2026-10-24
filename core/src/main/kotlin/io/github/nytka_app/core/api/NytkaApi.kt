@@ -201,8 +201,11 @@ class NytkaApi(
                 is Target.Ready -> t
             }
         return try {
-            execute(target, method, path, body, query).use { response ->
-                read(response.code) { response.body.string() } ?: failure(response)
+            // The body is read here, not in execute: reading it blocks on the network too, so it never runs on Main.
+            withContext(Dispatchers.IO) {
+                execute(target, method, path, body, query).use { response ->
+                    read(response.code) { response.body.string() } ?: failure(response)
+                }
             }
         } catch (_: InterruptedIOException) {
             // A read or call timeout; SocketTimeoutException is one.
