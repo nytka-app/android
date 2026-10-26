@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.26.1](https://github.com/nytka-app/android/compare/v0.26.0...v0.26.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **overtime:** no update notice on a server with summaries but no insights yet ([#149](https://github.com/nytka-app/android/issues/149)) ([c3fc76a](https://github.com/nytka-app/android/commit/c3fc76a8753badacd1a2d15256eaf27cb686b73e))
+* **today:** show the server's Today pick, and scenes still open ([#147](https://github.com/nytka-app/android/issues/147)) ([5505ac2](https://github.com/nytka-app/android/commit/5505ac2c365f1f993fdc02ee42428fef63d5e347))
+
 ## [0.26.0](https://github.com/nytka-app/android/compare/v0.25.0...v0.26.0) (2026-10-24)
 
 
