@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.26.2](https://github.com/nytka-app/android/compare/v0.26.1...v0.26.2) (2026-10-26)
+
+
+### Features
+
+* **nudges:** show the server's nudges as notifications ([#153](https://github.com/nytka-app/android/issues/153)) ([c288027](https://github.com/nytka-app/android/commit/c2880275ef8785d94cb3d0b0a2db393df990e81d)), closes [#150](https://github.com/nytka-app/android/issues/150)
+* **people:** forget a person completely from the Person screen ([#154](https://github.com/nytka-app/android/issues/154)) ([f8698f3](https://github.com/nytka-app/android/commit/f8698f3aea128ce677ff9494ef2b0a16a14dadd3)), closes [#151](https://github.com/nytka-app/android/issues/151)
+
 ## [0.26.1](https://github.com/nytka-app/android/compare/v0.26.0...v0.26.1) (2026-10-26)
 
 
