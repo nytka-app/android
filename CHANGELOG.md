@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.26.0](https://github.com/nytka-app/android/compare/v0.25.0...v0.26.0) (2026-10-24)
+
+
+### Features
+
+* **today:** Earlier moments, topic pages and summaries over time ([#143](https://github.com/nytka-app/android/issues/143)) ([16d3f82](https://github.com/nytka-app/android/commit/16d3f8238394a5b0013edf355a8e7bb5c57e1375))
+* **today:** marked moments and nytka:// links to a moment ([#142](https://github.com/nytka-app/android/issues/142)) ([9fb8742](https://github.com/nytka-app/android/commit/9fb8742c0bfd35462ed4364de5486246dd102786))
+
 ## [0.25.0](https://github.com/nytka-app/android/compare/v0.24.0...v0.25.0) (2026-10-24)
 
 
