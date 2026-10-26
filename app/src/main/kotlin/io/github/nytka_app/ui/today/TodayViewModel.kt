@@ -38,14 +38,14 @@ data class TodayUiState(
 ) {
     val empty: Boolean get() = sections.isEmpty()
 
-    /** Loaded, reachable, and nothing vital: the screen says what will appear. */
+    /** Loaded, reachable, and nothing to show: the screen says what will appear. */
     val nothingYet: Boolean get() = empty && !loading && error == null && !offline
 }
 
 /**
- * Today: at most [MAX_ITEMS] vital items, in morning, day and evening sections. The server already leaves out what is
- * not vital and anything sensitive; the app drops both again, so a server mistake never puts therapy or money on the
- * first screen.
+ * Today: at most [MAX_ITEMS] items, in morning, day and evening sections. The server picks them (what is vital, open
+ * commitments with a person or a due date, what is owed to the wearer) and never sends noise or anything sensitive; the
+ * app drops those two again, so a server mistake never puts therapy or money on the first screen.
  */
 @HiltViewModel
 class TodayViewModel
@@ -144,14 +144,14 @@ class TodayViewModel
             const val MAX_ITEMS = 7
             private val PARTS = listOf(DayPart.MORNING, DayPart.DAY, DayPart.EVENING)
 
-            /** Vital, not sensitive, at most [MAX_ITEMS], grouped by the server's part or else by the hour said. */
+            /** Not noise, not sensitive, at most [MAX_ITEMS], grouped by the server's part or else by the hour said. */
             fun sections(
                 items: List<LifeItem>,
                 zone: ZoneId,
             ): List<TodaySection> {
                 val shown =
                     items
-                        .filter { it.salience == Salience.VITAL && it.sensitivity == null }
+                        .filter { it.salience != Salience.NOISE && it.sensitivity == null }
                         .take(MAX_ITEMS)
                         .groupBy { it.part?.takeIf(PARTS::contains) ?: partOf(it, zone) }
                 return PARTS.mapNotNull { part ->
