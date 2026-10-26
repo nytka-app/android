@@ -36,6 +36,10 @@ data class Settings(
     val briefNotifications: Boolean = false,
     /** Ids of the briefs already posted, so one posts once; kept to those still listed, at most 50. */
     val notifiedBriefs: List<String> = emptyList(),
+    /** Post a notification for each nudge the server makes (a due commitment, the recap, an insight); on by default. */
+    val nudgeNotifications: Boolean = true,
+    /** Ids of the nudges already posted, so one posts once; kept to those still listed, at most 50. */
+    val notifiedNudges: List<String> = emptyList(),
     /** Play a short chime every [consentChimeMinutes] while the pendant records; off until switched on. */
     val consentChime: Boolean = false,
     val consentChimeMinutes: Int = 15,

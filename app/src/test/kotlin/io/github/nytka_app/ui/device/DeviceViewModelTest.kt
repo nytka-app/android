@@ -788,6 +788,7 @@ class DeviceViewModelTest {
 
     @Test
     fun `switching briefs on saves the setting and schedules the job, off cancels it`() {
+        settings.state.value = settings.state.value.copy(nudgeNotifications = false)
         val viewModel = viewModel()
 
         viewModel.setBriefNotifications(true)
@@ -798,6 +799,22 @@ class DeviceViewModelTest {
         viewModel.setBriefNotifications(false)
         assertFalse(settings.state.value.briefNotifications)
         assertEquals(listOf("schedule", "cancel"), briefs.calls)
+    }
+
+    @Test
+    fun `the job runs while either briefs or nudges are on`() {
+        val viewModel = viewModel()
+
+        viewModel.setBriefNotifications(true)
+        viewModel.setBriefNotifications(false)
+        assertEquals(listOf("schedule", "schedule"), briefs.calls)
+
+        viewModel.setNudgeNotifications(false)
+        assertFalse(settings.state.value.nudgeNotifications)
+        assertEquals(listOf("schedule", "schedule", "cancel"), briefs.calls)
+
+        viewModel.setNudgeNotifications(true)
+        assertEquals("schedule", briefs.calls.last())
     }
 
     @Test

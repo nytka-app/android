@@ -13,6 +13,8 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.BriefsClient
+import io.github.nytka_app.core.api.InfoClient
+import io.github.nytka_app.core.api.NudgesClient
 import io.github.nytka_app.core.api.UpcomingBrief
 import io.github.nytka_app.core.settings.SettingsSource
 import java.time.Clock
@@ -67,7 +69,7 @@ class BriefPoll(
     }
 }
 
-/** Every 15 minutes while the setting is on. A failure ends the run quietly: a brief is not worth a retry storm. */
+/** Every 15 minutes while briefs or nudges are on. A failure ends the run quietly: not worth a retry storm. */
 @HiltWorker
 class BriefWorker
     @AssistedInject
@@ -75,11 +77,15 @@ class BriefWorker
         @Assisted context: Context,
         @Assisted params: WorkerParameters,
         private val client: BriefsClient,
+        private val nudges: NudgesClient,
+        private val info: InfoClient,
         private val settings: SettingsSource,
         private val clock: Clock,
     ) : CoroutineWorker(context, params) {
         override suspend fun doWork(): Result {
             BriefPoll(client, settings, { BriefNotifications.post(applicationContext, it, clock.zone) }, clock).run()
+            val nudgePoster = NudgePoster { NudgeNotifications.post(applicationContext, it) }
+            NudgePoll(nudges, info, settings, nudgePoster, clock).run()
             return Result.success()
         }
 

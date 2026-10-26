@@ -58,6 +58,9 @@ server; this app is its phone half. [How Nytka compares](docs/explanation/compar
   pendant. An ongoing notification shows while it records, it is off again after a restart, and its audio reaches
   the server as its own source, never mixed into the pendant's conversations.
   [Phone microphone](docs/reference/device.md#phone-microphone).
+- **Shows the server's nudges as notifications** (on by default): a commitment due within a day, the evening recap,
+  an unlocked insight, a day unlike your usual. One notification per nudge, a tap opens its link, and the lock
+  screen shows no text. [Nudges](docs/reference/device.md#nudges).
 - **Talks to your server and nothing else**, apart from a once-a-day firmware check against GitHub that you can
   switch off. No analytics, no crash reporting, no Omi cloud. [What stays on the phone](docs/explanation/privacy.md).
 
@@ -122,7 +125,7 @@ clients; `:app` is the Compose UI and the background services. Four rules hold e
 - [Get started](docs/tutorial.md): what you need, install, the first run
 - [The screens](docs/reference/screens.md): every tab, search, appearance, tags
 - [The Device screen](docs/reference/device.md): pendant, its settings and firmware notice, your voice, phone microphone, phone
-  context, meeting briefs, location tags, transcribe on this phone
+  context, nudges, meeting briefs, location tags, transcribe on this phone
 - [Everyday use](docs/how-to/everyday-use.md) · [When something is off](docs/how-to/troubleshooting.md)
 - [Offline sync](docs/explanation/offline-sync.md) · [What stays on the phone](docs/explanation/privacy.md) ·
   [How Nytka compares](docs/explanation/comparison.md)

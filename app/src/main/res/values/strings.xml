@@ -315,6 +315,15 @@
     <string name="brief_starts_at">Starts at %1$s</string>
     <string name="brief_public_title">A meeting brief is ready</string>
 
+    <!-- Nudges -->
+    <string name="nudges_title">Nudges</string>
+    <string name="nudges_label">Notify me of nudges</string>
+    <string name="nudges_explanation">Your server tells Nytka when a commitment is due within a day, when your evening recap is ready, when an insight unlocks and when a day differs from your usual. Nytka checks every 15 minutes. The lock screen shows no text.</string>
+    <string name="nudges_permission_denied">Without notifications Nytka cannot show a nudge. Switch on again to be asked</string>
+    <string name="nudges_permission_blocked">Without notifications Nytka cannot show a nudge. If Android does not ask again, allow notifications in the system settings for Nytka, then switch on again</string>
+    <string name="nudge_channel_name">Nudges</string>
+    <string name="nudge_public_title">A nudge from Nytka</string>
+
     <!-- People: person page -->
     <string name="person_note_title">Note</string>
     <string name="person_note_label">Your note</string>

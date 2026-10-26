@@ -109,6 +109,10 @@ data class DeviceUiState(
     val phoneMicPermission: PermissionAnswer? = null,
     /** Whether meeting briefs post notifications (a setting, off by default). */
     val briefNotifications: Boolean = false,
+    /** Whether nudges post notifications (a setting, on by default). */
+    val nudgeNotifications: Boolean = true,
+    /** How the user answered the notification prompt when switching nudges on; null until asked. */
+    val nudgePermission: PermissionAnswer? = null,
     /** How the user answered the notification prompt when switching briefs on; null until asked. */
     val briefPermission: PermissionAnswer? = null,
     /** The line under the brief switch; null when the server has a calendar feed or has not answered. */
@@ -196,6 +200,7 @@ class DeviceViewModel
                     nowPlayingContext = current.nowPlayingContext,
                     wallpaperColors = current.wallpaperColors,
                     briefNotifications = current.briefNotifications,
+                    nudgeNotifications = current.nudgeNotifications,
                     locationTags = current.locationTags,
                     savedPlaces = current.savedPlaces,
                 )
@@ -533,8 +538,30 @@ class DeviceViewModel
             viewModelScope.launch {
                 settings.update { it.copy(briefNotifications = on) }
                 local.update { it.copy(briefPermission = null) }
-                if (on) briefs.schedule() else briefs.cancel()
+                reschedule()
             }
+        }
+
+        /** Nudges ride on the brief job: it runs while either switch is on. */
+        fun setNudgeNotifications(on: Boolean) {
+            viewModelScope.launch {
+                settings.update { it.copy(nudgeNotifications = on) }
+                local.update { it.copy(nudgePermission = null) }
+                reschedule()
+            }
+        }
+
+        fun nudgePermissionAnswered(answer: PermissionAnswer) {
+            if (answer == PermissionAnswer.Granted) {
+                setNudgeNotifications(true)
+            } else {
+                local.update { it.copy(nudgePermission = answer.after(it.nudgePermission)) }
+            }
+        }
+
+        private suspend fun reschedule() {
+            val current = settings.current()
+            if (current.briefNotifications || current.nudgeNotifications) briefs.schedule() else briefs.cancel()
         }
 
         /** The answer to Android's notification prompt, asked when the switch went on without the permission. */
