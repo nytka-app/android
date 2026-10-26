@@ -5,6 +5,8 @@ import io.github.nytka_app.MainDispatcherRule
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FactPage
 import io.github.nytka_app.core.api.FailureKind
+import io.github.nytka_app.core.api.ForgetCounts
+import io.github.nytka_app.core.api.ForgetResult
 import io.github.nytka_app.core.api.NoteChange
 import io.github.nytka_app.core.api.NytkaTask
 import io.github.nytka_app.core.api.PeopleClient
@@ -80,6 +82,8 @@ class PersonViewModelTest {
         val merged = mutableListOf<Pair<String, String>>()
         val deleted = mutableListOf<String>()
         val forgotten = mutableListOf<String>()
+        var forgetAll: ApiResult<ForgetResult> = ApiResult.Ok(ForgetResult())
+        val forgottenAll = mutableListOf<String>()
 
         override suspend fun people() = people
 
@@ -103,6 +107,8 @@ class PersonViewModelTest {
         override suspend fun deletePerson(id: String) = delete.also { deleted += id }
 
         override suspend fun forgetPerson(id: String) = forget.also { forgotten += id }
+
+        override suspend fun forgetEverything(id: String) = forgetAll.also { forgottenAll += id }
     }
 
     private val pages = FakePages()
@@ -436,6 +442,57 @@ class PersonViewModelTest {
         val other = loaded()
         other.delete(forgetVoice = true)
         assertEquals(PersonNotice.DeletedVoiceModelStays("Anna"), other.state.value.notice)
+    }
+
+    @Test
+    fun `confirming forget calls the server once, shows the counts and leaves the page`() {
+        val counts = ForgetCounts(lines = 12, facts = 5)
+        people.forgetAll = ApiResult.Ok(ForgetResult(counts))
+        val vm = loaded()
+        vm.show(PersonDialog.Delete)
+
+        vm.forgetEverything()
+
+        assertEquals(listOf("p1"), people.forgottenAll)
+        assertTrue(vm.state.value.gone)
+        assertNull(vm.state.value.dialog)
+        assertEquals(PersonNotice.Forgotten("Anna", counts), vm.state.value.notice)
+    }
+
+    @Test
+    fun `cancelling the forget dialog calls nothing`() {
+        val vm = loaded()
+        vm.show(PersonDialog.Delete)
+
+        vm.dismissDialog()
+
+        assertTrue(people.forgottenAll.isEmpty())
+        assertNull(vm.state.value.dialog)
+        assertFalse(vm.state.value.gone)
+    }
+
+    @Test
+    fun `a 405 on forget says the server needs an update, a 404 too`() {
+        for (kind in listOf(FailureKind.Unsupported, FailureKind.NotFound)) {
+            people.forgetAll = failure(kind)
+            val vm = loaded()
+
+            vm.forgetEverything()
+
+            assertFalse(vm.state.value.gone)
+            assertEquals(PersonNotice.Failed(kind, "The server answered.", item = false), vm.state.value.notice)
+        }
+    }
+
+    @Test
+    fun `a refused forget without an admin token stays on the page`() {
+        people.forgetAll = failure(FailureKind.Forbidden)
+        val vm = loaded()
+
+        vm.forgetEverything()
+
+        assertFalse(vm.state.value.gone)
+        assertEquals(FailureKind.Forbidden, (vm.state.value.notice as PersonNotice.Failed).kind)
     }
 
     @Test

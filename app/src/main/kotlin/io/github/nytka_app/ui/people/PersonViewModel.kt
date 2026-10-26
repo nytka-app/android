@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
+import io.github.nytka_app.core.api.ForgetCounts
 import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.NoteChange
 import io.github.nytka_app.core.api.NytkaTask
@@ -67,6 +68,12 @@ sealed interface PersonNotice {
 
     data class DeletedVoiceModelStays(
         val name: String,
+    ) : PersonNotice
+
+    /** The person and what was built from their lines are gone; [counts] is what the server removed. */
+    data class Forgotten(
+        val name: String,
+        val counts: ForgetCounts,
     ) : PersonNotice
 
     /** [item] is a call on one fact or this person, where a 404 means it is gone and not that the server is old. */
@@ -489,6 +496,23 @@ class PersonViewModel
                     when (val result = people.deletePerson(id)) {
                         is ApiResult.Ok -> leave(PersonNotice.Deleted(name))
                         is ApiResult.Failure -> deleteFailed(result)
+                    }
+                }
+            }
+        }
+
+        /** Removes the person and what is built from their lines; a 404 here means an old server. */
+        fun forgetEverything() {
+            val name =
+                state.value.header
+                    ?.name
+                    .orEmpty()
+            viewModelScope.launch {
+                when (val result = people.forgetEverything(id)) {
+                    is ApiResult.Ok -> leave(PersonNotice.Forgotten(name, result.value.counts))
+                    is ApiResult.Failure -> {
+                        mutableState.update { it.copy(dialog = null) }
+                        notify(failed(result, item = false))
                     }
                 }
             }

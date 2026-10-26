@@ -202,7 +202,7 @@ fun PersonScreen(
                 text = { Text(stringResource(R.string.person_forget_text)) },
                 confirmButton = {
                     TextButton(
-                        onClick = { viewModel.delete(forgetVoice = true) },
+                        onClick = viewModel::forgetEverything,
                         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                     ) { Text(stringResource(R.string.person_forget_confirm)) }
                 },
