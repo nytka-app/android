@@ -63,6 +63,14 @@
                     android:scheme="nytka"
                     android:host="conversation" />
             </intent-filter>
+            <!-- nytka://today and nytka://insights[/{id}]: where a nudge points; they open the app (see NudgeNotifications). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="nytka" android:host="today" />
+                <data android:scheme="nytka" android:host="insights" />
+            </intent-filter>
         </activity>
 
         <service

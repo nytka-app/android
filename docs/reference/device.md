@@ -1,6 +1,6 @@
 # The Device screen
 
-The pendant, its settings and firmware notice, your voice, phone context, meeting briefs and location tags. Back to the [README](../../README.md).
+The pendant, its settings and firmware notice, your voice, phone context, nudges, meeting briefs and location tags. Back to the [README](../../README.md).
 
 The Device screen groups settings by where they live, in four cards: **Pendant**, **On this phone**,
 **Your server** and **Developer** (the last only while developer mode is on), then **About**.
@@ -148,6 +148,20 @@ playback, call-state and audio-device callbacks and the screen on and off broadc
 does not poll. A stretch under 3 seconds is
 dropped. Stretches wait on the phone until the server has them and are deleted after 7 days if they never go out.
 With the switch off, or on a server without `context-ranges`, nothing is recorded or sent.
+
+## Nudges
+
+A server that lists `nudges` tells the phone when to speak up: a commitment due within 24 hours, your evening
+recap, a newly unlocked insight, a day that differs from your usual. **Nudges** in the Device screen is on by
+default (Android 13 and later asks to show notifications first; if you refuse twice, the switch offers **Open
+settings**).
+
+- **When.** Nytka asks every 15 minutes, with a network, in the same job as the meeting briefs, and only a server
+  that lists `nudges`. Each nudge posts once; the server holds back quiet hours.
+- **Tap.** A commitment opens its conversation. The recap and insights open Nytka (the link is
+  `nytka://today` or `nytka://insights`).
+- **The lock screen** shows only "A nudge from Nytka". The notification channel is called "Nudges".
+- **A failed check** posts nothing and waits for the next one. Nothing about a nudge goes into the logs.
 
 ## Meeting briefs
 

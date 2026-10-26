@@ -140,6 +140,8 @@ class SettingsStoreTest {
 
         assertFalse(defaults.briefNotifications)
         assertEquals(emptyList<String>(), defaults.notifiedBriefs)
+        assertTrue(defaults.nudgeNotifications)
+        assertEquals(emptyList<String>(), defaults.notifiedNudges)
         assertFalse(defaults.consentChime)
         assertEquals(15, defaults.consentChimeMinutes)
         assertTrue(defaults.phoneContext)

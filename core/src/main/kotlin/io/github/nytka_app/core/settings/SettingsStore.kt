@@ -57,6 +57,8 @@ class SettingsStore(
             preferences[HIGH_PRIORITY_CONNECTION] = next.highPriorityConnection
             preferences[BRIEF_NOTIFICATIONS] = next.briefNotifications
             preferences[NOTIFIED_BRIEFS] = next.notifiedBriefs.joinToString(",")
+            preferences[NUDGE_NOTIFICATIONS] = next.nudgeNotifications
+            preferences[NOTIFIED_NUDGES] = next.notifiedNudges.joinToString(",")
             preferences[CONSENT_CHIME] = next.consentChime
             preferences[CONSENT_CHIME_MINUTES] = next.consentChimeMinutes
             preferences[PHONE_CONTEXT] = next.phoneContext
@@ -102,6 +104,8 @@ class SettingsStore(
             highPriorityConnection = preferences[HIGH_PRIORITY_CONNECTION] ?: false,
             briefNotifications = preferences[BRIEF_NOTIFICATIONS] ?: false,
             notifiedBriefs = preferences[NOTIFIED_BRIEFS].orEmpty().split(',').filter { it.isNotEmpty() },
+            nudgeNotifications = preferences[NUDGE_NOTIFICATIONS] ?: true,
+            notifiedNudges = preferences[NOTIFIED_NUDGES].orEmpty().split(',').filter { it.isNotEmpty() },
             consentChime = preferences[CONSENT_CHIME] ?: false,
             consentChimeMinutes = preferences[CONSENT_CHIME_MINUTES] ?: Settings().consentChimeMinutes,
             phoneContext = preferences[PHONE_CONTEXT] ?: true,
@@ -147,6 +151,8 @@ class SettingsStore(
         private val HIGH_PRIORITY_CONNECTION = booleanPreferencesKey("high_priority_connection")
         private val BRIEF_NOTIFICATIONS = booleanPreferencesKey("brief_notifications")
         private val NOTIFIED_BRIEFS = stringPreferencesKey("notified_briefs")
+        private val NUDGE_NOTIFICATIONS = booleanPreferencesKey("nudge_notifications")
+        private val NOTIFIED_NUDGES = stringPreferencesKey("notified_nudges")
         private val CONSENT_CHIME = booleanPreferencesKey("consent_chime")
         private val CONSENT_CHIME_MINUTES = intPreferencesKey("consent_chime_minutes")
         private val PHONE_CONTEXT = booleanPreferencesKey("phone_context")

@@ -12,6 +12,7 @@ object Notifier {
     const val RECORDING_CHANNEL = "recording"
     const val ALERTS_CHANNEL = "alerts"
     const val BRIEFS_CHANNEL = "briefs"
+    const val NUDGES_CHANNEL = "nudges"
     const val AUDIO_LEVEL_CHANNEL = "audio-level"
     const val PHONE_MIC_CHANNEL = "phone-mic"
 
@@ -34,6 +35,11 @@ object Notifier {
                 NotificationChannel(
                     BRIEFS_CHANNEL,
                     context.getString(R.string.brief_channel_name),
+                    NotificationManager.IMPORTANCE_DEFAULT,
+                ),
+                NotificationChannel(
+                    NUDGES_CHANNEL,
+                    context.getString(R.string.nudge_channel_name),
                     NotificationManager.IMPORTANCE_DEFAULT,
                 ),
                 NotificationChannel(

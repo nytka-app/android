@@ -62,6 +62,9 @@ data class ServerInfo(
         /** Summaries over a week, a month, a year and all time, with what changed. */
         const val FEATURE_ROLLUPS = "rollups"
 
+        /** `GET /api/v1/nudges`: due commitments, the recap, unlocked insights and deviations as notifications. */
+        const val FEATURE_NUDGES = "nudges"
+
         const val SCOPE_ADMIN = "admin"
         const val SCOPE_READ = "read"
     }

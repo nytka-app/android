@@ -310,6 +310,15 @@
     <string name="brief_starts_at">Початок о %1$s</string>
     <string name="brief_public_title">Підсумок зустрічі готовий</string>
 
+    <!-- Nudges -->
+    <string name="nudges_title">Нагадування</string>
+    <string name="nudges_label">Сповіщати про нагадування</string>
+    <string name="nudges_explanation">Сервер повідомляє Nytka, коли зобов\'язання настає протягом доби, коли готовий вечірній підсумок, коли відкривається інсайт і коли день відрізняється від звичного. Nytka перевіряє кожні 15 хвилин. На екрані блокування немає тексту.</string>
+    <string name="nudges_permission_denied">Без сповіщень Nytka не може показати нагадування. Увімкніть ще раз, щоб Android запитав знову</string>
+    <string name="nudges_permission_blocked">Без сповіщень Nytka не може показати нагадування. Якщо Android більше не питає, дозвольте сповіщення в системних налаштуваннях Nytka й увімкніть ще раз</string>
+    <string name="nudge_channel_name">Нагадування</string>
+    <string name="nudge_public_title">Нагадування від Nytka</string>
+
     <!-- People: person page -->
     <string name="person_note_title">Нотатка</string>
     <string name="person_note_label">Ваша нотатка</string>

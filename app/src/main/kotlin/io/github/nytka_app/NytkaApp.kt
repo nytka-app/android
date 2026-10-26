@@ -39,7 +39,8 @@ class NytkaApp :
         phoneTranscription.start()
         // KEEP makes this a no-op when the job is already queued.
         CoroutineScope(Dispatchers.Default).launch {
-            if (settings.current().briefNotifications) BriefWorker.schedule(this@NytkaApp)
+            val current = settings.current()
+            if (current.briefNotifications || current.nudgeNotifications) BriefWorker.schedule(this@NytkaApp)
         }
     }
 }

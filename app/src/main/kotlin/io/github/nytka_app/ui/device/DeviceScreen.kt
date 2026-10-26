@@ -160,6 +160,13 @@ fun DeviceScreen(
                     onOpenSettings = viewModel::openAppSettings,
                 )
                 HorizontalDivider()
+                NudgesSection(
+                    state,
+                    onSwitch = viewModel::setNudgeNotifications,
+                    onPermission = viewModel::nudgePermissionAnswered,
+                    onOpenSettings = viewModel::openAppSettings,
+                )
+                HorizontalDivider()
                 LocationSection(
                     state,
                     onSwitch = viewModel::setLocationTags,
