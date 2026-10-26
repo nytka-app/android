@@ -6,8 +6,10 @@ import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.Rollup
 import io.github.nytka_app.core.api.RollupsClient
 import io.github.nytka_app.core.api.ServerInfo
+import io.github.nytka_app.ui.NEEDS_UPDATE
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -52,7 +54,18 @@ class RollupsViewModelTest {
         val model = RollupsViewModel(api, info(ServerInfo.FEATURE_INSIGHTS))
 
         assertFalse(model.state.value.available)
+        assertTrue(model.state.value.checked)
         assertEquals(emptyList<String>(), asked)
+    }
+
+    @Test
+    fun `a server with summaries but no insights yet is not told it needs an update`() {
+        val needs = NEEDS_UPDATE
+
+        assertNull(shownError(needs, RollupsUiState(available = true, checked = true)))
+        assertNull(shownError(needs, RollupsUiState(checked = false)))
+        assertEquals(needs, shownError(needs, RollupsUiState(available = false, checked = true)))
+        assertEquals("Offline", shownError("Offline", RollupsUiState(available = true, checked = true)))
     }
 
     @Test

@@ -879,7 +879,7 @@
     <string name="today_part_morning">Ранок</string>
     <string name="today_part_day">День</string>
     <string name="today_part_evening">Вечір</string>
-    <string name="today_empty_title">Сьогодні ще нічого важливого</string>
+    <string name="today_empty_title">На сьогодні ще нічого</string>
     <string name="today_empty_body">Тут зʼявиться те, що важить із сьогоднішніх розмов: щонайбільше сім речей і нічого приватного.</string>
     <string name="today_more">Ще</string>
     <string name="item_kind_task">Завдання</string>

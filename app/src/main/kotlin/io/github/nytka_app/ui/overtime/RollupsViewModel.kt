@@ -19,6 +19,8 @@ import javax.inject.Inject
 data class RollupsUiState(
     /** False on a server without `rollups`: the section does not show. */
     val available: Boolean = false,
+    /** True once the server said whether it has `rollups`. */
+    val checked: Boolean = false,
     val period: String = Rollup.WEEK,
     /** The summary shown; null while loading or when the period has none yet. */
     val rollup: Rollup? = null,
@@ -49,8 +51,9 @@ class RollupsViewModel
 
         init {
             viewModelScope.launch {
-                if ((info.info() as? ApiResult.Ok)?.value?.has(ServerInfo.FEATURE_ROLLUPS) != true) return@launch
-                mutableState.update { it.copy(available = true) }
+                val on = (info.info() as? ApiResult.Ok)?.value?.has(ServerInfo.FEATURE_ROLLUPS) == true
+                mutableState.update { it.copy(available = on, checked = true) }
+                if (!on) return@launch
                 show(Rollup.WEEK)
             }
         }
