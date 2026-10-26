@@ -8,10 +8,11 @@ says what Nytka is and is not. Server problems belong in
 ## Set up
 
 You need JDK 21, the Android SDK with platform 37.0 and build-tools 37.0.0, and
-[gitleaks](https://github.com/gitleaks/gitleaks).
+[gitleaks](https://github.com/gitleaks/gitleaks), [lefthook](https://lefthook.dev) and
+[agent-checks](https://github.com/Egoushka/agent-checks).
 
 ```bash
-git config core.hooksPath .githooks
+lefthook install                           # commit hooks: agent-checks, denylist, gitleaks
 cp .private-terms.example .private-terms   # list what must never appear in this repository
 ./gradlew check
 ```
