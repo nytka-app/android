@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import io.github.nytka_app.MainDispatcherRule
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
+import io.github.nytka_app.core.api.ForgetResult
 import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.PeopleClient
 import io.github.nytka_app.core.api.Person
@@ -61,6 +62,8 @@ class PeopleViewModelTest {
         override suspend fun deletePerson(id: String) = delete.also { deleted += id }
 
         override suspend fun forgetPerson(id: String) = forget.also { forgotten += id }
+
+        override suspend fun forgetEverything(id: String): ApiResult<ForgetResult> = error("Not used.")
     }
 
     /** Only the filtered people are read from here; every other call is a test bug. */

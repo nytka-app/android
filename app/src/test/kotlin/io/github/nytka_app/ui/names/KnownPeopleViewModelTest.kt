@@ -3,6 +3,7 @@ package io.github.nytka_app.ui.names
 import io.github.nytka_app.MainDispatcherRule
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FailureKind
+import io.github.nytka_app.core.api.ForgetResult
 import io.github.nytka_app.core.api.PeopleClient
 import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.core.api.UnnamedVoice
@@ -42,6 +43,8 @@ class KnownPeopleViewModelTest {
         override suspend fun deletePerson(id: String): ApiResult<Unit> = error("unused")
 
         override suspend fun forgetPerson(id: String): ApiResult<Boolean> = error("unused")
+
+        override suspend fun forgetEverything(id: String): ApiResult<ForgetResult> = error("Not used.")
     }
 
     @Test

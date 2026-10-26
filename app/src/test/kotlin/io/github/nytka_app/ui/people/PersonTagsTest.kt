@@ -5,6 +5,7 @@ import io.github.nytka_app.MainDispatcherRule
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.FactPage
 import io.github.nytka_app.core.api.FailureKind
+import io.github.nytka_app.core.api.ForgetResult
 import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.NoteChange
 import io.github.nytka_app.core.api.PeopleClient
@@ -90,6 +91,8 @@ class PersonTagsTest {
             override suspend fun deletePerson(id: String): ApiResult<Unit> = error("Not used.")
 
             override suspend fun forgetPerson(id: String): ApiResult<Boolean> = error("Not used.")
+
+            override suspend fun forgetEverything(id: String): ApiResult<ForgetResult> = error("Not used.")
         }
 
     private val tags = FakeTags()

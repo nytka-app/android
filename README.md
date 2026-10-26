@@ -38,7 +38,9 @@ server; this app is its phone half. [How Nytka compares](docs/explanation/compar
   said, and frees the pendant's storage only after the server accepted the audio.
   [Offline sync](docs/explanation/offline-sync.md) explains it.
 - **Shows what the server makes of it:** conversations with titles, summaries and transcripts, tasks, memories,
-  people and their voices, search, and Ask, a question answered from your conversations with numbered sources.
+  people and their voices (**Forget this person**, with an admin token, removes the person, their facts, voiceprints,
+  tags and topic page and everything built only from their lines; the conversations and other people's lines stay),
+  search, and Ask, a question answered from your conversations with numbered sources.
 - **Puts what matters first** on a server that supports it: **Today** (at most seven things: what matters and what
   you owe or are owed, never anything private), the **Timeline** of the day's scenes, and **Over time** (patterns that unlock as days add up). Every
   item opens the lines it came from and plays from that moment; mark it not important, not yours, or someone

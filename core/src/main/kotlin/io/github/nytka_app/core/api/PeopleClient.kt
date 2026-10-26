@@ -47,6 +47,33 @@ private data class ForgetAnswer(
     val forgotten: Boolean = false,
 )
 
+/** What forgetting a person removed, one number per kind; [conversations] are the ones queued for a new summary. */
+@Serializable
+data class ForgetCounts(
+    val lines: Int = 0,
+    val facts: Int = 0,
+    val memories: Int = 0,
+    val tasks: Int = 0,
+    val notes: Int = 0,
+    val voiceprints: Int = 0,
+    val voiceMatches: Int = 0,
+    val voiceGroups: Int = 0,
+    val nameSuggestions: Int = 0,
+    val tags: Int = 0,
+    val tagSuggestions: Int = 0,
+    val topicPages: Int = 0,
+    val events: Int = 0,
+    val briefs: Int = 0,
+    val conversations: Int = 0,
+)
+
+/** The answer of the forget call; [voiceprintsForgotten]: the transcription service dropped the voiceprints too. */
+@Serializable
+data class ForgetResult(
+    val counts: ForgetCounts = ForgetCounts(),
+    val voiceprintsForgotten: Boolean = false,
+)
+
 /** The people endpoints of v0.7; a server before them answers [FailureKind.NotFound] or [FailureKind.Unsupported]. */
 interface PeopleClient {
     suspend fun people(): ApiResult<List<Person>>
@@ -75,6 +102,9 @@ interface PeopleClient {
 
     /** Deletes the person and asks the transcription service to drop their voiceprints; true when it did. */
     suspend fun forgetPerson(id: String): ApiResult<Boolean>
+
+    /** Removes the person and what is built from their lines (server 0.36.6 and later, admin token). */
+    suspend fun forgetEverything(id: String): ApiResult<ForgetResult>
 }
 
 class PeopleApi(
@@ -109,4 +139,7 @@ class PeopleApi(
         api.request("DELETE", "api/v1/people/$id", mapOf("forget" to "true")) {
             api.json.decodeFromString<ForgetAnswer>(it).forgotten
         }
+
+    override suspend fun forgetEverything(id: String): ApiResult<ForgetResult> =
+        api.request("POST", "api/v1/people/$id/forget") { api.json.decodeFromString<ForgetResult>(it) }
 }

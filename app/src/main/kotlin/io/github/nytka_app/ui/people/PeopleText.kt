@@ -110,6 +110,16 @@ internal fun personNoticeText(
         is PersonNotice.DeletedVoiceModelStays ->
             context.getString(R.string.people_deleted_voice_model_stays_format, notice.name)
 
+        is PersonNotice.Forgotten ->
+            context.getString(
+                R.string.person_forgotten_format,
+                notice.name,
+                notice.counts.lines,
+                notice.counts.facts,
+                notice.counts.memories + notice.counts.tasks + notice.counts.notes,
+                notice.counts.voiceprints,
+            )
+
         is PersonNotice.Failed -> personFailureText(context, notice)
     }
 

@@ -340,7 +340,8 @@
     <string name="people_needs_answer">Чекає на вас</string>
     <string name="person_forget_action">Забути цю людину</string>
     <string name="person_forget_title_format">Забути %1$s?</string>
-    <string name="person_forget_text">Буде видалено відбиток голосу, тут і в службі транскрипції, факти, які Nytka зберігає про людину, та її імʼя. Репліки залишаться, але знову покажуть невідомий голос. Це не можна скасувати.</string>
+    <string name="person_forget_text">Буде видалено людину та все, що Nytka побудувала з її реплік: хто говорив (репліки знову покажуть невідомий голос), факти про неї, памʼять, завдання й нотатки, що посилаються лише на неї, відбитки голосу тут і в службі транскрипції, теги та її сторінку теми. Розмови та репліки інших людей залишаться. Це не можна скасувати.</string>
+    <string name="person_forgotten_format">%1$s забуто. Реплік без автора: %2$d · фактів: %3$d · памʼяті, завдань і нотаток: %4$d · відбитків голосу: %5$d</string>
     <string name="person_forget_confirm">Забути</string>
     <string name="person_voice_print_none">Відбитка голосу ще немає. Він зберігатиметься на вашому сервері</string>
     <plurals name="person_voice_print">

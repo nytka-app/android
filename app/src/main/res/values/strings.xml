@@ -345,7 +345,8 @@
     <string name="people_needs_answer">Needs you</string>
     <string name="person_forget_action">Forget this person</string>
     <string name="person_forget_title_format">Forget %1$s?</string>
-    <string name="person_forget_text">This deletes their voice print, here and in the transcription service, the facts Nytka holds about them, and their name. Their lines stay, but show an unknown voice again. This cannot be undone.</string>
+    <string name="person_forget_text">This removes the person and what Nytka built from their lines: who spoke (their lines show an unknown voice again), the facts about them, memories, tasks and notes that cite only them, voiceprints here and in the transcription service, tags, and their topic page. Conversations and other people\'s lines stay. This cannot be undone.</string>
+    <string name="person_forgotten_format">Forgot %1$s. Lines unattributed: %2$d · facts: %3$d · memories, tasks and notes: %4$d · voiceprints: %5$d</string>
     <string name="person_forget_confirm">Forget</string>
     <string name="person_voice_print_none">No voice print yet. It will stay on your server</string>
     <plurals name="person_voice_print">
