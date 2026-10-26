@@ -862,7 +862,7 @@
     <string name="today_part_morning">Morning</string>
     <string name="today_part_day">Day</string>
     <string name="today_part_evening">Evening</string>
-    <string name="today_empty_title">Nothing vital yet today</string>
+    <string name="today_empty_title">Nothing for today yet</string>
     <string name="today_empty_body">What matters from today\'s conversations shows here: seven things at most, and nothing private.</string>
     <string name="today_more">More</string>
     <string name="item_kind_task">Task</string>

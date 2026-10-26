@@ -37,6 +37,7 @@ import io.github.nytka_app.core.api.Insights
 import io.github.nytka_app.ui.ListFailure
 import io.github.nytka_app.ui.ListState
 import io.github.nytka_app.ui.ListStateKind
+import io.github.nytka_app.ui.NEEDS_UPDATE
 import io.github.nytka_app.ui.theme.ReadingColumn
 
 /**
@@ -62,7 +63,7 @@ fun OverTimeScreen(
                     RollupSection(summaries, rollups::show, rollups::earlier, rollups::later, onOpenTopic)
                 }
             }
-            state.error?.let { error ->
+            shownError(state.error, summaries)?.let { error ->
                 item(key = "error") { ListFailure(error, state.offline, onRetry = viewModel::refresh) }
             }
             if (state.offline) {
@@ -197,6 +198,16 @@ private fun Trend(insight: Insight) {
         drawPath(path, line, style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round))
     }
 }
+
+/**
+ * The failure Over time shows. A server with summaries but no insights yet (`rollups` without `insights`) is not out
+ * of date for this screen: its summaries show and nothing else does. Until the summaries' check answered, nothing
+ * shows either, so the notice never flashes.
+ */
+internal fun shownError(
+    insightsError: String?,
+    summaries: RollupsUiState,
+): String? = insightsError?.takeUnless { it == NEEDS_UPDATE && (summaries.available || !summaries.checked) }
 
 internal fun fraction(
     have: Int,
