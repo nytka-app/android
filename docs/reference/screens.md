@@ -7,10 +7,12 @@ Every tab of the app (the three of a server with `today`, then the five of befor
 On a server that lists `today` in `/api/v1/info`, the bar has three tabs instead of five. An older server keeps the
 five tabs below; when the server cannot be reached at start the five tabs show, and the three appear once it answers.
 
-- **Today.** What matters from today: at most seven items the server marked vital, under **Morning** (before 12:00),
-  **Day** and **Evening** (from 18:00), by when they were said in the phone's time zone. Each shows whether it is a
-  task, a memory or a note, its text, and the time, the person and a due date when there are some. Nothing the server
-  calls sensitive (health, therapy, intimate, money) is shown here, and the app drops such an item again if one slips
+- **Today.** What matters from today: at most seven items the server picks (what it marked vital, open commitments
+  to a named person or with a due date, and what someone owes you, due or overdue tasks first), under **Morning**
+  (before 12:00), **Day** and **Evening** (from 18:00), by when they were said in the phone's time zone. Each shows
+  whether it is a task, a memory or a note, its text, and the time, the person and a due date when there are some.
+  Nothing marked not important and nothing the server calls sensitive (health, therapy, intimate, money) is shown
+  here, and the app drops such an item again if one slips
   through. Below, **More** leads to Tasks, Memories, People (with the count of decisions waiting) and Ask.
 - **Timeline.** One day as scenes, oldest first: the time span and place, a title, who was there ("Voice 3" for a
   voice nobody has named) and two lines of summary, then the scene's items, a dot before the vital ones and the ones

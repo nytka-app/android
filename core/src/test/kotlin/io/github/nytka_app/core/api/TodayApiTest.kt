@@ -85,7 +85,8 @@ class TodayApiTest {
                 """{"date":"2026-10-22","scenes":[{"id":"s1","conversationId":"c1","startedAt":"2026-10-22T07:00:00Z",
                 "endedAt":"2026-10-22T07:20:00Z","title":"Standup","people":[{"name":"Voice 2"},{"name":"Ann","personId":"p1"}],
                 "items":[]},{"id":"s2","conversationId":"c2","startedAt":"2026-10-22T08:00:00Z",
-                "endedAt":"2026-10-22T08:00:40Z","noise":true}]}""",
+                "endedAt":"2026-10-22T08:00:40Z","noise":true},{"id":"s3","conversationId":"c3",
+                "startedAt":"2026-10-22T09:00:00Z","endedAt":null}]}""",
             )
 
             val timeline = ok(today.timeline("2026-10-22", "Europe/Kyiv"))
@@ -96,6 +97,7 @@ class TodayApiTest {
             assertEquals(listOf(ScenePerson("Voice 2"), ScenePerson("Ann", "p1")), timeline.scenes[0].people)
             assertFalse(timeline.scenes[0].noise)
             assertTrue(timeline.scenes[1].noise)
+            assertNull(timeline.scenes[2].endedAt)
         }
 
     @Test

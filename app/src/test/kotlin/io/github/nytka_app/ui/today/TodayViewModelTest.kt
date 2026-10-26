@@ -76,20 +76,23 @@ class TodayViewModelTest {
     }
 
     @Test
-    fun `nothing sensitive, nothing but vital and seven at most reach Today`() {
-        val vital = (1..9).map { item("v$it", "2026-10-23T0$it:00:00Z") }
+    fun `the server's pick shows, but never noise, nothing sensitive and seven at most`() {
+        val vital = (1..8).map { item("v$it", "2026-10-23T0$it:00:00Z") }
         api.today =
             ApiResult.Ok(
                 TodayPage(
                     "2026-10-23",
-                    listOf(item("therapy", sensitivity = "therapy"), item("plain", salience = Salience.ORDINARY)) +
-                        vital,
+                    listOf(
+                        item("owed", "2026-10-23T00:30:00Z", salience = Salience.ORDINARY),
+                        item("therapy", sensitivity = "therapy"),
+                        item("noise", salience = Salience.NOISE),
+                    ) + vital,
                 ),
             )
 
         val shown = ids(newViewModel())
 
-        assertEquals((1..7).map { "v$it" }, shown)
+        assertEquals(listOf("owed") + (1..6).map { "v$it" }, shown)
     }
 
     @Test

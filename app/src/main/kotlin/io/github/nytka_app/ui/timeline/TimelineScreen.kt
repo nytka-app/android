@@ -339,6 +339,6 @@ private fun timeRange(
     zone: ZoneId,
 ): String? {
     val start = Formatting.parse(scene.startedAt) ?: return null
-    val end = Formatting.parse(scene.endedAt) ?: return Formatting.clock(start, zone)
+    val end = scene.endedAt?.let(Formatting::parse) ?: return Formatting.clock(start, zone)
     return Formatting.timeRange(start, end, zone)
 }

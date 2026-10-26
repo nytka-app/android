@@ -83,7 +83,8 @@ data class Scene(
     val id: String,
     val conversationId: String,
     val startedAt: String,
-    val endedAt: String,
+    /** Null while the conversation is still open. */
+    val endedAt: String? = null,
     val title: String? = null,
     val summary: String? = null,
     val people: List<ScenePerson> = emptyList(),
