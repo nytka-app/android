@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.3](https://github.com/nytka-app/android/compare/v0.26.2...v0.26.3) (2026-10-27)
+
+
+### Features
+
+* **timeline:** show the server's day events between the scenes ([#161](https://github.com/nytka-app/android/issues/161)) ([e821351](https://github.com/nytka-app/android/commit/e821351cf38a02c7270938d283aa773fb7c151bf))
+
 ## [0.26.2](https://github.com/nytka-app/android/compare/v0.26.1...v0.26.2) (2026-10-26)
 
 
