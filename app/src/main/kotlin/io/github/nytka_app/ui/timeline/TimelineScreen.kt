@@ -71,7 +71,8 @@ import java.time.ZoneId
 /**
  * The Timeline: one day as scenes, oldest first, each with when, who and where, two lines of summary and its items.
  * A scene opens its conversation (audio and transcript); an item opens where it comes from. Short fragments fold into
- * one line; a private scene shows only that it is private until tapped.
+ * one line; a private scene shows only that it is private until tapped. Day events are muted one-line rows
+ * between them.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -137,6 +138,7 @@ fun TimelineScreen(
                                 when (row) {
                                     is TimelineRow.Of -> SceneItem(row.scene, zone, actions, onOpenMoment, onOpenTopic)
                                     is TimelineRow.Fragments -> Fragments(row.scenes, zone, onOpenMoment)
+                                    is TimelineRow.Event -> EventLine(row.event, zone, onOpenPerson)
                                 }
                             }
                             item(key = "all") {
@@ -183,6 +185,7 @@ private fun keyOf(row: TimelineRow): String =
     when (row) {
         is TimelineRow.Of -> row.scene.id
         is TimelineRow.Fragments -> "fragments-${row.scenes.first().id}"
+        is TimelineRow.Event -> "event-${row.event.id}"
     }
 
 @Composable

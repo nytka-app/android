@@ -65,6 +65,9 @@ data class ServerInfo(
         /** `GET /api/v1/nudges`: due commitments, the recap, unlocked insights and deviations as notifications. */
         const val FEATURE_NUDGES = "nudges"
 
+        /** `GET /api/v1/events`: a day's derived events (people joining and leaving, media, calls, silence). */
+        const val FEATURE_EVENTS = "events"
+
         const val SCOPE_ADMIN = "admin"
         const val SCOPE_READ = "read"
     }
