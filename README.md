@@ -42,7 +42,7 @@ server; this app is its phone half. [How Nytka compares](docs/explanation/compar
   tags and topic page and everything built only from their lines; the conversations and other people's lines stay),
   search, and Ask, a question answered from your conversations with numbered sources.
 - **Puts what matters first** on a server that supports it: **Today** (at most seven things: what matters and what
-  you owe or are owed, never anything private), the **Timeline** of the day's scenes, and **Over time** (patterns that unlock as days add up). Every
+  you owe or are owed, never anything private), the **Timeline** of the day's scenes (with quiet lines for who joined or left, media, calls and long silences), and **Over time** (patterns that unlock as days add up). Every
   item opens the lines it came from and plays from that moment; mark it not important, not yours, or someone
   else's in place; a tap on the pendant marks a moment as vital. Each item and conversation shows **Earlier** moments
   about the same thing, tags and people get **topic pages**, and Over time sums up each week, month, year and all

@@ -4,12 +4,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.nytka_app.core.api.ApiResult
+import io.github.nytka_app.core.api.DayEvent
+import io.github.nytka_app.core.api.EventsClient
 import io.github.nytka_app.core.api.Evidence
+import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.ItemMarksClient
 import io.github.nytka_app.core.api.LifeItem
 import io.github.nytka_app.core.api.Salience
 import io.github.nytka_app.core.api.Scene
+import io.github.nytka_app.core.api.ServerInfo
 import io.github.nytka_app.core.api.TodayClient
+import io.github.nytka_app.ui.conversations.Formatting
 import io.github.nytka_app.ui.notice
 import io.github.nytka_app.ui.today.CorrectionNotice
 import io.github.nytka_app.ui.today.ItemCorrections
@@ -25,7 +30,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import javax.inject.Inject
 
-/** A row of the day: a scene, or a run of fragments folded into one line. */
+/** A row of the day: a scene, a run of fragments folded into one line, or a quiet line for a day event. */
 sealed interface TimelineRow {
     data class Of(
         val scene: Scene,
@@ -33,6 +38,10 @@ sealed interface TimelineRow {
 
     data class Fragments(
         val scenes: List<Scene>,
+    ) : TimelineRow
+
+    data class Event(
+        val event: DayEvent,
     ) : TimelineRow
 }
 
@@ -51,13 +60,18 @@ data class TimelineUiState(
     val nothingHeard: Boolean get() = rows.isEmpty() && !loading && error == null && !offline
 }
 
-/** The Timeline: one day as scenes with their items, from today back; a scene opens its conversation. */
+/**
+ * The Timeline: one day as scenes with their items, from today back; a scene opens its conversation. On a server that
+ * lists `events`, the day's events sit between the scenes by time; they come after the scenes and never hold them back.
+ */
 @HiltViewModel
 class TimelineViewModel
     @Inject
     constructor(
         private val api: TodayClient,
         marks: ItemMarksClient,
+        private val events: EventsClient,
+        private val info: InfoClient,
         private val clock: Clock,
     ) : ViewModel() {
         private val corrections = ItemCorrections(marks)
@@ -98,7 +112,7 @@ class TimelineViewModel
             loadJob =
                 viewModelScope.launch {
                     when (val result = api.timeline(date.toString(), clock.zone.id)) {
-                        is ApiResult.Ok ->
+                        is ApiResult.Ok -> {
                             mutableState.update {
                                 it.copy(
                                     rows = rows(result.value.scenes),
@@ -107,6 +121,8 @@ class TimelineViewModel
                                     offline = false,
                                 )
                             }
+                            loadEvents(date)
+                        }
 
                         is ApiResult.Failure ->
                             mutableState.update {
@@ -118,6 +134,14 @@ class TimelineViewModel
                             }
                     }
                 }
+        }
+
+        /** Day events are extra: a server without them, or a failed call, leaves the scenes as they are. */
+        private suspend fun loadEvents(date: LocalDate) {
+            val server = info.info()
+            if (server !is ApiResult.Ok || !server.value.has(ServerInfo.FEATURE_EVENTS)) return
+            val day = events.events(date.toString(), clock.zone.id) as? ApiResult.Ok ?: return
+            mutableState.update { it.copy(rows = withEvents(it.rows, day.value.events)) }
         }
 
         /** The item stays on the Timeline, now as noise; a refusal says so. */
@@ -174,12 +198,50 @@ class TimelineViewModel
                 return rows
             }
 
+            /**
+             * [events] among [rows] by time, an event before a row that starts with it. Unknown kinds and events
+             * tied to a private scene are dropped, so a name never shows past "Private".
+             */
+            fun withEvents(
+                rows: List<TimelineRow>,
+                events: List<DayEvent>,
+            ): List<TimelineRow> {
+                val scenes =
+                    rows.flatMap {
+                        if (it is TimelineRow.Of) listOf(it.scene) else (it as? TimelineRow.Fragments)?.scenes.orEmpty()
+                    }
+                val private = scenes.filter { it.sensitivity != null }.map { it.conversationId }.toSet()
+                val pending =
+                    events
+                        .filter { it.kind in DayEvent.KINDS && it.conversationId !in private }
+                        .mapNotNull { event -> Formatting.parse(event.at)?.let { event to it } }
+                        .sortedBy { it.second }
+                        .toMutableList()
+                val merged = mutableListOf<TimelineRow>()
+                rows.filterNot { it is TimelineRow.Event }.forEach { row ->
+                    val start = startOf(row)
+                    while (start != null && pending.isNotEmpty() && pending.first().second <= start) {
+                        merged += TimelineRow.Event(pending.removeAt(0).first)
+                    }
+                    merged += row
+                }
+                pending.forEach { merged += TimelineRow.Event(it.first) }
+                return merged
+            }
+
+            private fun startOf(row: TimelineRow) =
+                when (row) {
+                    is TimelineRow.Of -> Formatting.parse(row.scene.startedAt)
+                    is TimelineRow.Fragments -> Formatting.parse(row.scenes.first().startedAt)
+                    is TimelineRow.Event -> null
+                }
+
             private fun marked(
                 row: TimelineRow,
                 item: LifeItem,
             ): TimelineRow =
                 when (row) {
-                    is TimelineRow.Fragments -> row
+                    is TimelineRow.Fragments, is TimelineRow.Event -> row
                     is TimelineRow.Of ->
                         TimelineRow.Of(
                             row.scene.copy(

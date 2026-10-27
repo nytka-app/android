@@ -1,6 +1,8 @@
 package io.github.nytka_app.ui.today
 
 import io.github.nytka_app.core.api.ApiResult
+import io.github.nytka_app.core.api.DayEvents
+import io.github.nytka_app.core.api.EventsClient
 import io.github.nytka_app.core.api.Evidence
 import io.github.nytka_app.core.api.Insights
 import io.github.nytka_app.core.api.InsightsClient
@@ -25,6 +27,20 @@ class FakeToday : TodayClient {
     ): ApiResult<Timeline> {
         calls += "timeline $date $zone"
         return timelines[date] ?: ApiResult.Ok(Timeline(date))
+    }
+}
+
+/** Answers what the test set per date; records every call as `"events 2026-10-23 UTC"`. */
+class FakeEvents : EventsClient {
+    val days = mutableMapOf<String, ApiResult<DayEvents>>()
+    val calls = mutableListOf<String>()
+
+    override suspend fun events(
+        date: String,
+        zone: String,
+    ): ApiResult<DayEvents> {
+        calls += "events $date $zone"
+        return days[date] ?: ApiResult.Ok(DayEvents(date))
     }
 }
 

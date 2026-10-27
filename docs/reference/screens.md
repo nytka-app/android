@@ -20,6 +20,10 @@ five tabs below; when the server cannot be reached at start the five tabs show, 
   fragments fold into "2 short fragments", which open on a tap. A private scene says only "Private · therapy. Tap to
   show." until tapped. ‹ and › step through the days (never past today), **Back to today** returns, and **All
   conversations** at the bottom opens the full list of before.
+- **Day events.** On a server that lists `events`, the Timeline also shows the day's events as muted one-line rows
+  between the scenes, by time: "Olena joined", "Olena left" (tap one with a named person to open them), "Media started
+  · video", "Call started", "Quiet for 30 min" and "You were alone", each with its clock time. An event of a private
+  scene is not shown. A server without `events`, or a failed call, shows the scenes alone, with no error.
 - **Over time.** How many days the server has heard against how many it needs before patterns count ("9 of 14 days
   heard", with a bar), then each insight: an unlocked one with its summary, a line of its recent values and the usual
   value dashed across it; a locked one with what it still needs ("Needs 5 more days") and a bar, never an empty chart.
