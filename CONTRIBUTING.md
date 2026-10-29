@@ -8,17 +8,17 @@ says what Nytka is and is not. Server problems belong in
 ## Set up
 
 You need JDK 21, the Android SDK with platform 37.0 and build-tools 37.0.0, and
-[gitleaks](https://github.com/gitleaks/gitleaks), [lefthook](https://lefthook.dev) and
+[betterleaks](https://betterleaks.com), [lefthook](https://lefthook.dev) and
 [agent-checks](https://github.com/Egoushka/agent-checks).
 
 ```bash
-lefthook install                           # commit hooks: agent-checks, denylist, gitleaks
+lefthook install                           # commit hooks: agent-checks, denylist, betterleaks
 cp .private-terms.example .private-terms   # list what must never appear in this repository
 ./gradlew check
 ```
 
 The hooks refuse commits whose author or committer is not a GitHub noreply address, scan staged
-files and messages for the terms in `.private-terms`, and run gitleaks. Without a pendant, turn on
+files and messages for the terms in `.private-terms`, and run betterleaks. Without a pendant, turn on
 developer mode and its fake pendant, which replays `app/src/main/assets/fake_pendant.nytk`.
 
 ## Rules
