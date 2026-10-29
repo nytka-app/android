@@ -1,5 +1,5 @@
 #!/bin/sh
-# Self-check for the hooks: ./.githooks/selftest.sh (needs gitleaks, like the hooks).
+# Self-check for the hooks: ./.githooks/selftest.sh (needs betterleaks, like the hooks).
 # Builds a throwaway repo and asserts each guard blocks what it should and passes a clean commit.
 set -eu
 hooks=$(cd "$(dirname "$0")" && pwd)

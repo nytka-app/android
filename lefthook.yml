@@ -6,7 +6,7 @@ pre-commit:
   jobs:
     - name: agent-checks
       run: agent-checks check --staged
-    # The denylist and gitleaks; .githooks/ keeps the scripts (and their selftest).
+    # The denylist and betterleaks; .githooks/ keeps the scripts (and their selftest).
     - name: repo-pre-commit
       run: .githooks/pre-commit
     - name: zizmor
