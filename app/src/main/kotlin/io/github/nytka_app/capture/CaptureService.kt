@@ -22,6 +22,7 @@ import io.github.nytka_app.alerts.Notifier
 import io.github.nytka_app.core.api.ApiResult
 import io.github.nytka_app.core.api.InfoClient
 import io.github.nytka_app.core.api.ServerInfo
+import io.github.nytka_app.core.chunks.ChunkFormat
 import io.github.nytka_app.core.diagnostics.AppLog
 import io.github.nytka_app.core.diagnostics.DiagnosticsSink
 import io.github.nytka_app.core.diagnostics.DiagnosticsUploader
@@ -175,6 +176,10 @@ class CaptureService : LifecycleService() {
         scope.launch { GainRecorder(contextOutbox, applicationScope).record(pendantSettings.state.map { it.gain }) }
     }
 
+    /** A server that cannot be asked is taken to read Opus FS320 only, as one without the field does. */
+    private suspend fun serverReads(codec: Byte): Boolean =
+        (infoClient.info() as? ApiResult.Ok)?.value?.reads(codec) ?: (codec == ChunkFormat.OPUS_FS320)
+
     @OptIn(FlowPreview::class)
     private suspend fun begin() {
         val current = settings.current()
@@ -195,6 +200,7 @@ class CaptureService : LifecycleService() {
                 log = appLog,
                 muteLog = muteLog,
                 bookmarks = bookmarkOutbox,
+                serverReads = ::serverReads,
             )
         val storageSync =
             StorageSyncController(
@@ -219,7 +225,6 @@ class CaptureService : LifecycleService() {
         scope.launch { uploader.run() }
         startSideUploads()
         recorder = startRecorder(capture, storageSync)
-        scope.launch { diagnosticsUploader.run() }
         watchCapture(capture)
         scope.launch { capture.status.sample(STATUS_SAMPLE_MS).collect(hub::publish) }
         scope.launch { storageSync.status.sample(STATUS_SAMPLE_MS).collect(hub::publishSync) }
@@ -250,6 +255,7 @@ class CaptureService : LifecycleService() {
         scope.launch { contextUploader.run() }
         scope.launch { recordPhoneContext() }
         scope.launch { recordSessionPlace() }
+        scope.launch { diagnosticsUploader.run() }
     }
 
     /**

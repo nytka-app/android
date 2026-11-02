@@ -108,6 +108,8 @@ class CaptureController(
     private val muteLog: MuteLogRecorder? = null,
     private val zone: () -> ZoneId = ZoneId::systemDefault,
     private val bookmarks: BookmarkSink? = null,
+    /** Whether the server decodes a recorder's codec; a recorder it cannot read is refused before it records. */
+    private val serverReads: suspend (Byte) -> Boolean = { true },
 ) {
     private val mutableStatus = MutableStateFlow(CaptureStatus())
     val status: StateFlow<CaptureStatus> = mutableStatus.asStateFlow()
@@ -134,6 +136,12 @@ class CaptureController(
 
     /** What the pendant was last told about audio; null before the first call of a start. */
     private var intent: Boolean? = null
+
+    /** True once the server has been seen to read the recorder's codec; a refusal is asked again on each change. */
+    private var codecRead = false
+
+    @Volatile
+    private var refused = false
 
     /**
      * The manual mute or a schedule window: what decides the pendant's audio. The schedule is checked against [now]
@@ -164,6 +172,8 @@ class CaptureController(
         session = UUID.randomUUID()
         nextSeq = 0
         intent = null
+        codecRead = false
+        refused = false
         val job = SupervisorJob(scope.coroutineContext[Job])
         jobs = job
         val inner = CoroutineScope(scope.coroutineContext + job)
@@ -171,32 +181,17 @@ class CaptureController(
 
         inner.launch {
             val inputs = combine(pendant.connection, effectiveMuted) { connection, isMuted -> connection to isMuted }
-            inputs.collect { (connection, isMuted) ->
-                muted = isMuted
-                mutableStatus.update {
-                    it.copy(
-                        connection = connection,
-                        muted = isMuted,
-                        disconnectedSinceMs =
-                            when {
-                                connection is PendantConnection.Connected -> null
-                                else -> it.disconnectedSinceMs ?: now()
-                            },
-                    )
-                }
-                // The pendant keeps the intent across a lost link, so only a change needs telling.
-                if (connection is PendantConnection.Connected && intent != !isMuted) setIntent(!isMuted)
-            }
+            inputs.collect { (reported, isMuted) -> admit(reported, isMuted) }
         }
         inner.launch {
             pendant.frames.collect { frame ->
                 val divert = diversion
-                if (!muted && divert != null) {
+                if (!muted && !refused && divert != null) {
                     divert(frame)
                     return@collect
                 }
                 // A full disk must not crash the service; the sequence advances only for stored frames.
-                if (!muted && stored { sink.add(session, nextSeq, frame.capturedAtMs, frame.payload) }) {
+                if (!muted && !refused && stored { sink.add(session, nextSeq, frame.capturedAtMs, frame.payload) }) {
                     nextSeq++
                     mutableCaptured.tryEmit(CapturedFrame(session, nextSeq - 1, frame.capturedAtMs, frame.payload))
                     mutableStatus.update { it.copy(framesQueued = it.framesQueued + 1) }
@@ -219,6 +214,33 @@ class CaptureController(
             }
         }
         inner.launch { connectWithIntent(address) }
+    }
+
+    /** Applies a connection or mute change; a connected recorder whose codec the server cannot read becomes Refused. */
+    private suspend fun admit(
+        reported: PendantConnection,
+        isMuted: Boolean,
+    ) {
+        muted = isMuted
+        if (reported is PendantConnection.Connected && !codecRead) {
+            codecRead = serverReads(pendant.capabilities.codec)
+        }
+        refused = reported is PendantConnection.Connected && !codecRead
+        val connection = if (refused) PendantConnection.Refused(CODEC_REFUSAL) else reported
+        mutableStatus.update {
+            it.copy(
+                connection = connection,
+                muted = isMuted,
+                disconnectedSinceMs =
+                    when {
+                        connection is PendantConnection.Connected -> null
+                        else -> it.disconnectedSinceMs ?: now()
+                    },
+            )
+        }
+        // The pendant keeps the intent across a lost link, so only a change needs telling.
+        if (connection is PendantConnection.Connected && intent != !isMuted) setIntent(!isMuted)
+        if (refused && intent == true) setIntent(false)
     }
 
     /**
@@ -361,6 +383,7 @@ class CaptureController(
 
     private companion object {
         const val TAG = "CaptureController"
+        const val CODEC_REFUSAL = "This server cannot read this recorder's audio yet. Update the server."
         const val LIVE_BUZZ_GAP_MS = 150L
         const val TAP_WAIT_MS = 700L
         const val SCHEDULE_RECHECK_MS = 60_000L

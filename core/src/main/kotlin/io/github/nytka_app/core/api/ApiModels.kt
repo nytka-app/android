@@ -10,10 +10,16 @@ data class ServerInfo(
     val scope: String = SCOPE_ADMIN,
     /** What the server can do beyond v0.1; a server without the field lists nothing. */
     val features: List<String> = emptyList(),
+    /** The chunk codec values the server decodes; a server without the field reads Opus FS320 only. */
+    val codecs: List<Int> = listOf(CODEC_OPUS_FS320),
 ) {
     fun has(feature: String) = feature in features
 
+    fun reads(codec: Byte) = codec.toInt() in codecs
+
     companion object {
+        private const val CODEC_OPUS_FS320 = 21
+
         const val FEATURE_OFFLINE_SYNC = "offline-sync"
         const val FEATURE_VOICE = "voice"
         const val FEATURE_PEOPLE = "people"

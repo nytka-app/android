@@ -9,6 +9,10 @@ The Device screen groups settings by where they live, in four cards: **Pendant**
   red and says to charge the pendant), the firmware, the pendant storage and the pendant settings.
   **Pendant details** opens a screen with its name and address, where **Forget** asks first and the
   dialog names the pendant that is removed. Forgetting a pendant is only possible there.
+- A recorder whose audio the server cannot read is not used: the card says "This server cannot read this
+  recorder's audio yet. Update the server." and nothing is recorded until the server lists the recorder's
+  codec in `/api/v1/info` (`codecs`; a server without the field reads the Omi codec only). Omi sends that codec,
+  so nothing changes for it.
 - **How people nearby know** (Device → Pendant, and the *People near you* step of the first run) says
   what the Omi pendant shows the people around you, on firmware 3.0.x. It never shows that the pendant is
   recording or muted: the light means connected (blue), not connected (red), clock not set (blinking
