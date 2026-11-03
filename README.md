@@ -91,6 +91,18 @@ Not here: iOS, raw audio export, firmware updates (the official Omi app does tho
 > yourself is outside the data-protection law ([art. 25](https://zakon.rada.gov.ua/laws/show/2297-17)), and the GDPR's
 > household exemption is read narrowly. Turn it on only where the people around you know. This is not legal advice.
 
+## Install
+
+| From | How | Updates |
+|---|---|---|
+| GitHub Releases | download `nytka-<version>.apk` from [Releases](https://github.com/nytka-app/android/releases/latest) and open it | install the next APK over it |
+| [Obtainium](https://github.com/ImranR98/Obtainium) | on Add App, paste `https://github.com/nytka-app/android`, or tap `obtainium://add/https://github.com/nytka-app/android` on the phone | Obtainium checks Releases and offers each new version |
+| F-Droid, IzzyOnDroid | not listed; [what each needs](docs/fdroid/README.md) | |
+
+Obtainium finds the one APK attached to each release and compares the release tag (`v0.26.3`) with the
+installed version, so no filter or token is needed for a single app. Every channel must serve the APK signed
+with the project's key; Android refuses an update signed with another one.
+
 ## Quick start
 
 You need a phone on Android 12 or later, an Omi pendant on firmware 3.0.x, and a Nytka server with an `admin`
@@ -145,7 +157,7 @@ clients; `:app` is the Compose UI and the background services. Four rules hold e
   [How Nytka compares](docs/explanation/comparison.md)
 - [Developer mode](docs/reference/developer-mode.md): measurements, server settings, tokens, webhooks
 - [Build from source](docs/how-to/build-from-source.md) · [Contributing](CONTRIBUTING.md) ·
-  [F-Droid draft](docs/fdroid/README.md)
+  [F-Droid, IzzyOnDroid, Obtainium](docs/fdroid/README.md)
 - Specs and plans: [people](docs/specs/people.md), [speech kind](docs/specs/speech-kind.md),
   [tags](docs/specs/tags.md), [plans](docs/plans/); what each version must do is in the
   [server's specs](https://github.com/nytka-app/server/tree/main/docs/specs)
