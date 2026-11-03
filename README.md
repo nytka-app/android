@@ -91,18 +91,6 @@ Not here: iOS, raw audio export, firmware updates (the official Omi app does tho
 > yourself is outside the data-protection law ([art. 25](https://zakon.rada.gov.ua/laws/show/2297-17)), and the GDPR's
 > household exemption is read narrowly. Turn it on only where the people around you know. This is not legal advice.
 
-## Install
-
-| From | How | Updates |
-|---|---|---|
-| GitHub Releases | download `nytka-<version>.apk` from [Releases](https://github.com/nytka-app/android/releases/latest) and open it | install the next APK over it |
-| [Obtainium](https://github.com/ImranR98/Obtainium) | on Add App, paste `https://github.com/nytka-app/android`, or tap `obtainium://add/https://github.com/nytka-app/android` on the phone | Obtainium checks Releases and offers each new version |
-| F-Droid, IzzyOnDroid | not listed; [what each needs](docs/fdroid/README.md) | |
-
-Obtainium finds the one APK attached to each release and compares the release tag (`v0.26.3`) with the
-installed version, so no filter or token is needed for a single app. Every channel must serve the APK signed
-with the project's key; Android refuses an update signed with another one.
-
 ## Quick start
 
 You need a phone on Android 12 or later, an Omi pendant on firmware 3.0.x, and a Nytka server with an `admin`
@@ -120,6 +108,22 @@ Uninstall the maker's app first (for the Omi pendant, the official Omi app): two
 minutes: server address and token (or scan the server's QR code), two permissions, a consent screen, pairing.
 [Get started](docs/tutorial.md) walks through it, and covers [Obtainium](https://github.com/ImranR98/Obtainium)
 for automatic updates.
+
+## Install without Google Play
+
+The APK on [Releases](https://github.com/nytka-app/android/releases) is the `oss` build: it has no Google Play
+services, so it runs on a phone without them. Each release has one file, `nytka-<version>.apk` (for example
+`nytka-0.26.3.apk`), signed with the project's key.
+
+- **Obtainium** installs it and offers every new release. In [Obtainium](https://github.com/ImranR98/Obtainium) tap
+  **Add app**, paste `https://github.com/nytka-app/android` and tap **Add**; the default settings pick the one APK.
+  To pin the file, set the APK filter to `^nytka-.*\.apk$`. On the phone, `obtainium://add/https://github.com/nytka-app/android` opens Add app with the address filled in. The tutorial has the [details](docs/tutorial.md#install-with-obtainium).
+- **IzzyOnDroid** reads the same APK from Releases. Nytka is not listed there yet; the
+  [request](docs/fdroid/izzyondroid-request.md) is drafted and not sent.
+- **F-Droid** builds apps from source. Nytka is not on F-Droid yet; the [draft](docs/fdroid/README.md) is not sent.
+
+To check what you downloaded, `apksigner verify --print-certs nytka-<version>.apk` prints the signing
+certificate, which stays the same from release to release; Android refuses an update signed with another key.
 
 ## How it works
 

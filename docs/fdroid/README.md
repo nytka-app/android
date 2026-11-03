@@ -3,13 +3,13 @@
 Where Nytka can be installed from besides a downloaded APK, and what each channel needs. Nothing here is
 submitted. Checked against each channel's own documentation on 2026-11-03; their rules change, so
 re-read the linked page before submitting. Store text and changelogs live in
-`fastlane/metadata/android/en-US/` (and `uk/`).
+`fastlane/metadata/android/` (`en-US` and `uk`). Back to the [README](../../README.md).
 
 | Channel | Source of the APK | Status | Blocker |
 |---|---|---|---|
 | Obtainium | GitHub Releases, `nytka-<version>.apk` | works today, nothing to submit | none |
-| F-Droid | built from this repository | draft in `io.github.nytka_app.yml`, never built with fdroidserver | unknown build, screenshots, store text (below) |
-| IzzyOnDroid | GitHub Releases, `nytka-<version>.apk` | request text in `izzyondroid-request.md` | its AI policy (below); the 42.5 MB APK is over its 30 MB rule of thumb |
+| F-Droid | built from this repository | draft in [`io.github.nytka_app.yml`](io.github.nytka_app.yml), never built with fdroidserver | unknown build, screenshots (below) |
+| IzzyOnDroid | GitHub Releases, `nytka-<version>.apk` | request text in [`izzyondroid-request.md`](izzyondroid-request.md) | its AI policy (below); the 42.5 MB APK is over its 30 MB rule of thumb |
 
 ## Read this first: IzzyOnDroid's AI policy
 
@@ -58,7 +58,10 @@ What the repository already has:
 
 - Apache-2.0 licence, public source, no analytics or ads.
 - The `oss` flavor, which has no Google services; `play` adds Play services location and a prebuilt native
-  library and is not what F-Droid builds (`gradle: - oss`).
+  library and is not what F-Droid builds (`gradle: - oss`). Two checks keep `oss` free: `./gradlew
+  :app:checkOssNoGoogleServices` (part of `./gradlew check`) fails if its release runtime classpath holds Play
+  services, Firebase, ML Kit or billing, and `scripts/check-oss-apk.py <apk>` scans an APK's dex files and manifest
+  for the same libraries; CI runs it on the debug APK (`ci.yml`) and on the signed release APK (`release.yml`).
 - Fastlane text: title, short and full description, per-version changelogs, in English and Ukrainian.
 - `dependenciesInfo` off, so the APK has no signing-block blob (`app/build.gradle.kts`).
 - Release tags `v<version>` created by release-please.
@@ -82,12 +85,11 @@ Open items before step 2:
 - **No screenshots.** The guide asks for phone screenshots in `fastlane/metadata/android/en-US/images/phoneScreenshots/`
   and an icon; the repository has neither as fastlane files. Use the fake pendant, never real voices
   (CLAUDE.md invariant 8).
-- **The store text is out of date.** `full_description.txt` says the app "never uses the phone's microphone or
-  location", but Phone microphone mode and location tags exist and are off by default. Reword it before
-  submission, in Ukrainian too; a listing must not understate what the app can do.
 - **Changelogs stop at 0.17.0** (`changelogs/1700.txt`); versions after it show no changelog in a store.
 - **versionCode is computed**, so `fdroid checkupdates` cannot read it; each release needs a hand-written
   `Builds` entry. Making `versionCode` a literal that release-please also updates would allow `AutoUpdateMode: Version`.
+- **JitPack.** `settings.gradle.kts` lists JitPack (only for sherpa-onnx, which `oss` does not use). The F-Droid
+  scanner may still ask about the repository; the `oss` build never contacts it.
 - **Anti-features.** F-Droid's policy asks that anti-features be disclosed. The app depends on a server the user
   runs; that server is Apache-2.0 too, so `NonFreeNet` should not apply, but the reviewers decide.
   `fdroid scanner` on the build tells whether any dependency needs one.
@@ -135,13 +137,16 @@ private-network switch is on (CLAUDE.md invariant 5); say so in the request.
 ## Per release
 
 Add `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt` (at most 500 bytes; versionCode is
-`major*10000 + minor*100 + patch`, so 0.26.3 is 2603) before release-please merges, or the store shows
-no changelog for that version. For F-Droid also add a `Builds` entry to its metadata file.
+`major*10000 + minor*100 + patch`, so 0.26.3 is 2603) in the PR a release should show text for, before
+release-please merges, or the store shows no changelog for that version. These stay hand-written:
+release-please's `CHANGELOG.md` is built from commit titles, too technical and too long for a store page.
+For F-Droid also add a `Builds` entry to its metadata file (`versionName`, `versionCode`, `commit`,
+`CurrentVersion`, `CurrentVersionCode`).
 
 ## What only the owner can do
 
 1. Decide whether to file the IzzyOnDroid request, given its AI policy.
 2. Create the accounts: GitLab (for the fdroiddata fork and merge request), Codeberg (for the IzzyOnDroid issue).
-3. Take the screenshots and, if wanted, a feature graphic; reword the store text.
+3. Take the screenshots and, if wanted, a feature graphic.
 4. Run step 3 of F-Droid, and the reproducible-build test, on a machine with the SDK or the build container.
 5. Submit: the fdroiddata merge request, and the IzzyOnDroid issue if step 1 says yes.
