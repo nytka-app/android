@@ -19,9 +19,9 @@ RepoType: git
 Repo: https://github.com/nytka-app/android.git
 
 Builds:
-  - versionName: 0.10.0
-    versionCode: 1000
-    commit: v0.10.0
+  - versionName: 0.26.3
+    versionCode: 2603
+    commit: v0.26.3
     subdir: app
     sudo:
       - apt-get update
@@ -33,7 +33,7 @@ Builds:
 # Reproducible build: F-Droid builds the unsigned oss release, compares it with the APK that
 # GitHub Releases holds (signed by the project's key) and publishes the project's signed APK.
 # Enable after a local `fdroid build` matched the release APK byte for byte, and fill in the
-# SHA-256 of the signing certificate (apksigner verify --print-certs nytka-0.10.0.apk).
+# SHA-256 of the signing certificate (apksigner verify --print-certs nytka-0.26.3.apk).
 #Binaries: https://github.com/nytka-app/android/releases/download/v%v/nytka-%v.apk
 #AllowedAPKSigningKeys: <sha256 of the release certificate, lower case, no colons>
 
@@ -42,5 +42,5 @@ Builds:
 # AutoUpdateMode off.
 AutoUpdateMode: None
 UpdateCheckMode: Tags ^v[0-9.]+$
-CurrentVersion: 0.10.0
-CurrentVersionCode: 1000
+CurrentVersion: 0.26.3
+CurrentVersionCode: 2603

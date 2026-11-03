@@ -13,6 +13,6 @@ Nytka is the phone half of a self-hosted replacement for Omi's cloud. It takes t
 • Android 12 or later.
 
 <b>Privacy</b>
-The app talks only to the server address you enter and to the pendant. It never uses the phone's microphone or location, and it keeps no audio, transcript text or token in its logs. Recording other people without their consent is illegal in some places; you are responsible for following the law.
+The app talks to the server address you enter and to the pendant; the one other call is a firmware check on GitHub that you can switch off. The phone's microphone records only while you switch Phone microphone on, and location is read only if you switch on Location tags. Nothing is switched on by itself, and the app keeps no audio, transcript text or token in its logs. Recording other people without their consent is illegal in some places; you are responsible for following the law.
 
 Nytka is not affiliated with Based Hardware or Omi.

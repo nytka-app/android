@@ -131,3 +131,34 @@ dependencies {
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.glance.appwidget.testing)
 }
+
+// F-Droid and IzzyOnDroid refuse Google's closed-source libraries. The oss flavor must resolve none of them;
+// scripts/check-oss-apk.py checks the built APK as well.
+val checkOssNoGoogleServices =
+    tasks.register("checkOssNoGoogleServices") {
+        group = "verification"
+        description = "Fails if the oss release runtime classpath holds Google Play services, Firebase or similar."
+        val ossRuntime = configurations.named("ossReleaseRuntimeClasspath")
+        val root = ossRuntime.flatMap { it.incoming.resolutionResult.rootComponent }
+        val banned =
+            listOf(
+                "com.google.android.gms",
+                "com.google.android.play",
+                "com.google.firebase",
+                "com.google.mlkit",
+                "com.android.billingclient",
+            )
+        doLast {
+            val seen = mutableSetOf<ResolvedComponentResult>()
+
+            fun walk(c: ResolvedComponentResult) {
+                if (!seen.add(c)) return
+                c.dependencies.filterIsInstance<ResolvedDependencyResult>().forEach { walk(it.selected) }
+            }
+            walk(root.get())
+            val hits = seen.mapNotNull { it.moduleVersion }.filter { m -> banned.any { m.group.startsWith(it) } }
+            check(hits.isEmpty()) { "The oss flavor depends on Google services: ${hits.joinToString()}" }
+        }
+    }
+
+tasks.named("check") { dependsOn(checkOssNoGoogleServices) }

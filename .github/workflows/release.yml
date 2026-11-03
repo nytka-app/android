@@ -54,6 +54,8 @@ jobs:
           NYTKA_KEY_ALIAS: ${{ secrets.NYTKA_KEY_ALIAS }}
           NYTKA_KEY_PASSWORD: ${{ secrets.NYTKA_KEY_PASSWORD }}
         run: ./gradlew check assembleOssRelease assemblePlayRelease
+      - name: The oss APK has no Google services
+        run: python3 scripts/check-oss-apk.py app/build/outputs/apk/oss/release/app-oss-release.apk
       - name: Verify the signature and attach the APK
         env:
           GH_TOKEN: ${{ github.token }}

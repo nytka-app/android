@@ -109,6 +109,22 @@ minutes: server address and token (or scan the server's QR code), two permission
 [Get started](docs/tutorial.md) walks through it, and covers [Obtainium](https://github.com/ImranR98/Obtainium)
 for automatic updates.
 
+## Install without Google Play
+
+The APK on [Releases](https://github.com/nytka-app/android/releases) is the `oss` build: it has no Google Play
+services, so it runs on a phone without them. Each release has one file, `nytka-<version>.apk` (for example
+`nytka-0.26.3.apk`), signed with the project's key.
+
+- **Obtainium** installs it and offers every new release. In [Obtainium](https://github.com/ImranR98/Obtainium) tap
+  **Add app**, paste `https://github.com/nytka-app/android` and tap **Add**; the default settings pick the one APK.
+  To pin the file, set the APK filter to `^nytka-.*\.apk$`. The tutorial has the [details](docs/tutorial.md#install-with-obtainium).
+- **IzzyOnDroid** reads the same APK from Releases. Nytka is not listed there yet; the
+  [request](docs/fdroid/izzyondroid-request.md) is drafted and not sent.
+- **F-Droid** builds apps from source. Nytka is not on F-Droid yet; the [draft](docs/fdroid/README.md) is not sent.
+
+To check what you downloaded, `apksigner verify --print-certs nytka-<version>.apk` prints the signing
+certificate, which stays the same from release to release; Android refuses an update signed with another key.
+
 ## How it works
 
 The app has three modules. `:pendant` holds one driver per recorder model (today Omi) behind one `Pendant`
