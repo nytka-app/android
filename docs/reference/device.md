@@ -1,6 +1,7 @@
 # The Device screen
 
 The pendant, its settings and firmware notice, your voice, phone context, nudges, meeting briefs and location tags. Back to the [README](../../README.md).
+Which recorders work and what each can do: [Recorders](../devices.md).
 
 The Device screen groups settings by where they live, in four cards: **Pendant**, **On this phone**,
 **Your server** and **Developer** (the last only while developer mode is on), then **About**.

@@ -23,6 +23,16 @@ flowchart LR
   server -- "transcripts, summaries, tasks, memories" --> app
 ```
 
+## Recorders
+
+| Recorder | Status | Stored audio while the phone is away | Mute / bookmark on the device |
+|---|---|---|---|
+| Omi pendant | Supported | Yes, firmware 3.0.20 or later | Double tap / single tap |
+| Limitless Pendant | Driver in progress, untested on hardware, in no release | Planned | Planned: double press only |
+
+Any other recorder has no driver. A recorder that cannot hand over stored audio loses what is said while the phone is
+away. Pairing, what to uninstall first and what each model can do: [Recorders](docs/devices.md).
+
 ## Why
 
 The Omi pendant records all day, and its official app sends that audio to Omi's cloud, with Omi's models and a
@@ -32,10 +42,10 @@ server; this app is its phone half. [How Nytka compares](docs/explanation/compar
 
 ## What it does
 
-- **Captures the pendant over Bluetooth** and keeps every frame in a queue on the phone until the server has it:
+- **Captures the recorder over Bluetooth** (today the Omi pendant) and keeps every frame in a queue on the phone until the server has it:
   up to 1 GiB, about 60 hours offline. Mute with a double tap on the pendant, bookmark with a single tap.
-- **Copies what the pendant stored while the phone was away** (firmware 3.0.20 or later), with the times it was
-  said, and frees the pendant's storage only after the server accepted the audio.
+- **Copies what the recorder stored while the phone was away** (for the Omi pendant, firmware 3.0.20 or later), with
+  the times it was said, and frees the recorder's storage only after the server accepted the audio.
   [Offline sync](docs/explanation/offline-sync.md) explains it.
 - **Shows what the server makes of it:** conversations with titles, summaries and transcripts, tasks, memories,
   people and their voices (**Forget this person**, with an admin token, removes the person, their facts, voiceprints,
@@ -94,21 +104,22 @@ git clone https://github.com/nytka-app/android.git && cd android
 adb install app/build/outputs/apk/oss/debug/app-oss-debug.apk
 ```
 
-Uninstall the official Omi app first: two apps cannot hold the pendant at once. The first run takes about five
+Uninstall the maker's app first (for the Omi pendant, the official Omi app): two apps cannot hold the recorder at once. The first run takes about five
 minutes: server address and token (or scan the server's QR code), two permissions, a consent screen, pairing.
 [Get started](docs/tutorial.md) walks through it, and covers [Obtainium](https://github.com/ImranR98/Obtainium)
 for automatic updates.
 
 ## How it works
 
-The app has three modules. `:pendant` speaks the pendant's Bluetooth protocol and reassembles its Opus audio
-frames; `:core` holds the queue (a Room database), the upload format shared with the server, and the server
+The app has three modules. `:pendant` holds one driver per recorder model (today Omi) behind one `Pendant`
+interface with its `Capabilities`, and reassembles the Opus audio frames; `:core` holds the queue (a Room database), the upload format shared with the server, and the server
 clients; `:app` is the Compose UI and the background services. Four rules hold everywhere:
 
 - **A frame is safe once it is in the queue.** Each live frame is written as it arrives; stored frames from the
-  pendant are written in one transaction with the pendant's read position.
+  recorder are written in one transaction with its read position.
 - **Nothing is deleted before the server answers.** Only a `200` or `202` removes audio from the queue, and the
-  pendant's copy is freed only past what the server accepted, a mute dropped or you chose to discard.
+  recorder's copy is freed only past what the server accepted, a mute dropped or you chose to discard. The app also
+  records only from a recorder whose audio format the server lists.
 - **HTTPS is enforced in code.** Plain `http://` works only with the private-network switch on, for a server on a
   VPN.
 - **Nothing sensitive in logs:** no audio, transcript, token or server address in log events or the debug report.
@@ -126,6 +137,7 @@ clients; `:app` is the Compose UI and the background services. Four rules hold e
 
 - [Get started](docs/tutorial.md): what you need, install, the first run
 - [The screens](docs/reference/screens.md): every tab, search, appearance, tags
+- [Recorders](docs/devices.md): which recorders work, what each can do, what you do first
 - [The Device screen](docs/reference/device.md): pendant, its settings and firmware notice, your voice, phone microphone, phone
   context, nudges, meeting briefs, location tags, transcribe on this phone
 - [Everyday use](docs/how-to/everyday-use.md) · [When something is off](docs/how-to/troubleshooting.md)
@@ -138,5 +150,5 @@ clients; `:app` is the Compose UI and the background services. Four rules hold e
   [tags](docs/specs/tags.md), [plans](docs/plans/); what each version must do is in the
   [server's specs](https://github.com/nytka-app/server/tree/main/docs/specs)
 
-Nytka is an independent project, not affiliated with or endorsed by Based Hardware; "Omi" is a trademark of its
-owner. Apache-2.0, see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Nytka is an independent project, not affiliated with or endorsed by Based Hardware or any other recorder maker;
+"Omi" is a trademark of Based Hardware, and "Limitless", "Plaud", "Fieldy", "Friend" and "Bee" belong to their owners. Apache-2.0, see [LICENSE](LICENSE) and [NOTICE](NOTICE).
