@@ -111,6 +111,14 @@ not offer it yet. Known gaps, all from what the source does not say:
 
 Uninstall Limitless's own app first: two apps cannot hold the pendant at once.
 
+## Accessibility
+
+Home, Timeline, Conversations, Device with its settings and the capture status are checked on every change for
+TalkBack names and roles, 48 dp touch targets, text at 130% and 200% font size without clipping, and WCAG AA contrast
+of the theme in light and dark. The checks run on the JVM; nobody has yet gone through the app on a phone with
+TalkBack, and the other screens are not covered yet. What is checked and what is not:
+[accessibility spec](docs/specs/accessibility.md).
+
 ## Quick start
 
 You need a phone on Android 12 or later, an Omi pendant on firmware 3.0.x, and a Nytka server with an `admin`
@@ -183,7 +191,7 @@ clients; `:app` is the Compose UI and the background services. Four rules hold e
 - [Build from source](docs/how-to/build-from-source.md) · [Contributing](CONTRIBUTING.md) ·
   [F-Droid, IzzyOnDroid, Obtainium](docs/fdroid/README.md)
 - Specs and plans: [people](docs/specs/people.md), [speech kind](docs/specs/speech-kind.md),
-  [tags](docs/specs/tags.md), [plans](docs/plans/); what each version must do is in the
+  [tags](docs/specs/tags.md), [accessibility](docs/specs/accessibility.md), [plans](docs/plans/); what each version must do is in the
   [server's specs](https://github.com/nytka-app/server/tree/main/docs/specs)
 
 Nytka is an independent project, not affiliated with or endorsed by Based Hardware or any other recorder maker;

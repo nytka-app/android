@@ -106,6 +106,7 @@ dependencies {
     implementation(libs.glance.appwidget)
     implementation(libs.glance.material3)
     debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.ui.test.manifest)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
@@ -129,6 +130,8 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.androidx.test.core)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
     testImplementation(libs.glance.appwidget.testing)
 }
 

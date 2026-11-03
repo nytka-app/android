@@ -8,7 +8,7 @@ Android's own rules (48 dp touch targets, TalkBack, font scale).
 
 Verified against app `main` at `6aa146a` on 2026-11-03. Nothing here was run on a phone with TalkBack: every
 check below runs on the JVM under Robolectric. A short manual pass with a real TalkBack is listed at the end and is
-not a gate.
+not a gate. The checks landed in the second pull request; the "Result of the first pass" section says what they found.
 
 ## Done when
 
@@ -18,14 +18,13 @@ not a gate.
 2. **Roles and state.** A switch, checkbox, radio button, tab, button, slider and text field exposes the matching
    `Role`, and a toggle exposes its `ToggleableState` (a selected tab or chip exposes `selected`). No node has a
    click action and no role unless it is a list row that opens something, which reads as a button.
-3. **Touch targets.** Every node with a click, toggle or long-press action has a touch target of at least 48 dp by
-   48 dp (`assertTouchHeightIsAtLeast`, `assertTouchWidthIsAtLeast`), counting the padding Compose adds around a
-   control. The visible shape may be smaller.
-4. **Font scale 2.0.** With `fontScale = 2.0` (and again at 1.3), each covered screen: clips no text whose
-   `maxLines` is unset (`TextLayoutResult.didOverflowHeight` and `didOverflowWidth` false); never needs sideways
-   scrolling (no node wider than the screen); keeps every action reachable (`performScrollTo` then
-   `assertIsDisplayed` for each node of check 3); and keeps the top bar's capture status and the bottom bar's tab
-   names readable (text, not an icon alone).
+3. **Touch targets.** Every node with a click, toggle or long-press action has a touch target
+   (`SemanticsNode.touchBoundsInRoot`) of at least 48 dp by 48 dp, counting the space Compose adds around a control
+   (the platform's minimum touch target). The visible shape may be smaller.
+4. **Font scale 2.0.** With `fontScale = 2.0` (and again at 1.3), each covered screen, in a window tall enough to
+   place every lazy item: clips no text whose `maxLines` is unset (`didOverflowHeight`, or a line wider than its
+   box); never pushes an action past the screen's right edge; and meets checks 1 to 3 at that scale, so every action
+   is still there, named and large enough. The capture status (top bar) says its state in words at every scale.
 5. **Contrast, text.** A unit test computes the WCAG contrast ratio of every foreground/background token pair in
    `NytkaLight`, `NytkaDark`, `NytkaLightExtras` and `NytkaDarkExtras`, and fails under 4.5:1:
    each `onX` over `X` (primary, secondary, tertiary, error, their containers, background, surface, inverse,
@@ -37,21 +36,22 @@ not a gate.
    `outlineVariant` is a divider and is exempt. The wallpaper (dynamic) scheme is the system's; only the four
    reserved meanings (`keepingMeanings`) are checked, with the same rules.
 7. **Colour is never the only signal.** The capture state, a decision badge, an error and a muted line each have
-   words in the node's merged text or description, not only a colour or an icon. A per-state test lists the
-   expected spoken text for each `CaptureStatus` and `ListStateKind`.
-8. **Traversal.** For each covered screen and fixture state, the merged semantics tree read top to bottom,
-   start to end (what TalkBack swipes through) equals an expected list of spoken labels kept in the test. A change
-   to order shows up as a failing, reviewable diff. Section titles have `heading()`; the screen's top-level
-   container is a `isTraversalGroup`; `traversalIndex` is used only to fix a visual order that differs from the
-   reading order.
+   words in the node's merged text or description, not only a colour or an icon. For the capture state, a test lists
+   the spoken sentence of each `CaptureState` (`ChromeA11yTest`); the others are read through checks 1 and 8.
+8. **Traversal.** The merged semantics tree read top to bottom, start to end (what TalkBack swipes through),
+   equals an expected list of spoken labels kept in the test, with each node's role and heading mark. A change to
+   order shows up as a failing, reviewable diff. Kept as golden lists for the Timeline day and the tag-filtered
+   Conversations list; every other screen test prints its order when it fails. Section titles have `heading()`.
 9. **No gesture-only actions.** A long-press, swipe or drag that does something has the same action as a
-   `customActions` entry on the node or as a visible control. A test performs each through the semantics action,
-   not the gesture.
+   semantics action or a visible control. `combinedClickable` publishes its long-press as `OnLongClick`, which
+   TalkBack offers in its actions menu, and check 3 counts such a node as actionable. The app has no `pointerInput`
+   gesture and no swipe; a new one needs a `customActions` entry and a test in the same pull request.
 10. **Announcements.** A status, notice or error that appears without the user acting (connection lost, a failed
-    upload, a correction snackbar) is in a `liveRegion` or posted through a snackbar, so TalkBack says it. A test
-    asserts the live region on each state change in the fixtures.
-11. **Coverage cannot rot.** A test lists every `AppTab` route and `DEVICE_ROUTE` against the coverage table below
-    and fails when a route is missing from both the covered and the not-yet-covered column, so a new screen is
+    upload, a correction snackbar) is in a `liveRegion` or posted through a snackbar, so TalkBack says it. The
+    capture status, the one such element on a screen, has a test that finds its polite live region for every state
+    (`ChromeA11yTest`).
+11. **Coverage cannot rot.** `CoverageA11yTest` lists every `AppTab` route and `DEVICE_ROUTE` against the coverage
+    table below and fails when a route is missing from both the covered and the debt list, so a new screen is
     either covered or named as a debt.
 12. No new permission, no new dependency in the shipped app (the test libraries are `testImplementation` and
     `debugImplementation` only), no Room schema change, and every new string is in `values/strings.xml` and
@@ -61,17 +61,16 @@ not a gate.
 
 | Screen | Composable | Fixture states | Covered by |
 |---|---|---|---|
-| Home | `TodayScreen` | empty, a few items, an item needing a decision, offline | step 2 |
-| Timeline | `TimelineScreen` | empty, a day with scenes and fragments, error | step 2 |
-| Conversations | `ConversationsScreen`, `ConversationCard` | empty, rows with chips (AI, Media, speech), tag filter on | step 2 |
-| Device | `DeviceScreen` pendant block, `StatusCard` | not paired, connected, muted, reconnecting, refused | step 2 |
-| Settings | the sections of `DeviceScreen` (capture, briefs, location, language, appearance, phone microphone) | each section expanded | step 2 |
-| Chrome | top bar capture status, tab bar | each connection state, three tabs and five tabs | step 2 |
-| Not yet covered | conversation page and player, search, tasks, ask, people and review, memories, topics, over time, voice, developer, first run | | later, named here so the debt is visible |
+| Home | `TodayScreen` | empty, a few items; light and dark; 1.0, 1.3, 2.0 | `HomeA11yTest` |
+| Timeline | `TimelineScreen` | empty, a day with scenes, fragments and an event; same variants; golden order | `TimelineA11yTest` |
+| Conversations | `ConversationsScreen` | empty, rows with chips (AI, media, failed), tag filter on; same variants; golden order | `ConversationsA11yTest` |
+| Device and settings | `DeviceScreen`, which holds every settings section | paired, not paired; same variants | `DeviceA11yTest` |
+| Capture status | `CaptureStatusIndicator`, the top-bar pill and the strip | every `CaptureState`; 1.0 and 2.0, light and dark | `ChromeA11yTest` |
+| Not yet covered | the tab bar (inline in `LifeNavHost` and `NytkaNavHost`), Over time, Tasks, Ask, People, Memories, the conversation page and player, search, review, topics, voice, developer, first run, the home-screen widget | | later, named here so the debt is visible |
 
-Steps: this spec ships first. The second pull request adds the test base and the checks above, then fixes what they
-find on the covered screens; each fix comes with the test that failed. The not-yet-covered screens follow in later
-pull requests, one or two at a time, each moving a row into the covered column.
+Steps: this spec ships first. The second pull request adds the test base and the checks above and fixes what they
+find on the covered screens. The not-yet-covered screens follow in later pull requests, one or two at a time, each
+moving a row into the covered column and its route from the debt list to the covered map in `CoverageA11yTest`.
 
 ## How the checks are built
 
@@ -82,27 +81,33 @@ pull requests, one or two at a time, each moving a row into the covered column.
   tests build the view model with the fakes the view model tests use (`FakeToday`, `FakeSettings`,
   `FakePendant`, the client fakes) and pass it in. A screen that cannot be tested this way is a finding: split
   its stateless part out.
-- **Shared helpers** in `app/src/test/.../ui/a11y/`: `assertNamed()` (check 1), `assertRoles()` (2),
-  `assertTouchTargets()` (3), `withFontScale(2f) { }` (4), `spokenOrder()` returning the merged labels in order (8)
-  and `Contrast.ratio(a, b)` (5, 6). Each helper has its own test, including a negative one that proves it fails
-  on a node that breaks the rule.
+- **Shared helpers** in `app/src/test/.../ui/a11y/`: `A11yChecks.kt` has `unnamed()` (check 1), `badRoles()` (2),
+  `smallTargets()` (3), `clipped()` (4), `spokenOrder()` (8), `liveRegions()` (10), `setScreen(fontScale, dark)` and
+  `assertClean()`, which fails with every finding and the spoken order; `Contrast.kt` has the WCAG ratio (5, 6).
+  Each has its own test, including a negative one that proves it fails on a node that breaks the rule
+  (`A11yChecksTest`, `ContrastTest`).
+- **Real text, tall window.** Tests use `@GraphicsMode(NATIVE)` so text is measured, and a window tall enough for the
+  lazy lists (`h3000dp`; `h16000dp` for the Device screen at 2.0), or a lazy item is composed but not placed.
 - **Theme under test.** Every screen test runs in `NytkaTheme` with the light and the dark scheme; a screen that
   hard-codes a colour outside the tokens is a finding.
 - **Files.** `docs/specs/accessibility.md` (this), `docs/reference/screens.md` gets an "Accessibility" note per
   covered screen when the pass lands, and the README gets an "Accessibility" section saying what the app supports
   (TalkBack, font scale to 200%, 48 dp targets, contrast) in the same pull request as the first visible fix.
 
-## Known gaps before the pass
+## Result of the first pass
 
-Read from the code at `6aa146a`, to be confirmed by the checks rather than trusted:
+The gaps this spec expected from reading the code did not show up when the checks ran, on 2026-11-03:
 
-- No Compose UI test exists; nothing guards labels, roles, targets or font scale today.
-- Close buttons on tag chips use `IconButton(Modifier.size(32.dp))` in `ui/tags/TagChips.kt` and
-  `ui/tags/TagFilter.kt`, under the 48 dp target of check 3.
-- The theme tokens already pass checks 5 and 6 (computed on 2026-11-03, lowest text pair `onSurfaceVariant` over
-  `surfaceContainerHighest` at 6.35:1 light and 6.83:1 dark; lowest part-of-control pair `outline` over `surface`
-  at 4.19:1 light), so the contrast test starts as a guard, not a fix.
-- 18 icons are set to `contentDescription = null`; which of them are decorative is for the check to decide.
+- The 32 dp close buttons on tag chips are `IconButton`s; Material gives them a 48 dp touch target, so check 3 passes
+  (the Conversations tag-filter state is under test). The Compose layer widens any pointer-input node to the
+  platform minimum, which is why `A11yChecksTest` proves check 3 with that minimum switched off.
+- The capture pill is 40 dp tall and tappable; `Surface(onClick)` widens it to 48 dp. Passes.
+- Home, Timeline, Conversations and Device (paired and not) pass checks 1 to 4 at 1.0, 1.3 and 2.0, light and dark.
+- The theme tokens pass checks 5 and 6 (lowest text pair `onSurfaceVariant` over `surfaceContainerHighest` at 6.35:1
+  light and 6.83:1 dark; lowest part-of-control pair `outline` over `surface` at 4.19:1 light).
+- The pass found no defect in the covered screens, so it changes no behaviour: it adds the tests that keep it so.
+  What the checks cannot see is for the manual TalkBack pass below, and the 18 `contentDescription = null` icons were
+  not reviewed one by one: a decorative icon next to text is correct, and one that acts alone would fail check 1.
 
 ## Not machine-checkable (manual, not a gate)
 
