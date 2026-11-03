@@ -142,7 +142,7 @@ clients; `:app` is the Compose UI and the background services. Four rules hold e
   context, nudges, meeting briefs, location tags, transcribe on this phone
 - [Everyday use](docs/how-to/everyday-use.md) · [When something is off](docs/how-to/troubleshooting.md)
 - [Offline sync](docs/explanation/offline-sync.md) · [What stays on the phone](docs/explanation/privacy.md) ·
-  [How Nytka compares](docs/explanation/comparison.md)
+  [How Nytka compares](docs/explanation/comparison.md) · [Why the link drops](docs/explanation/link-drops.md)
 - [Developer mode](docs/reference/developer-mode.md): measurements, server settings, tokens, webhooks
 - [Build from source](docs/how-to/build-from-source.md) · [Contributing](CONTRIBUTING.md) ·
   [F-Droid draft](docs/fdroid/README.md)
