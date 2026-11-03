@@ -15,8 +15,8 @@ import io.github.nytka_app.pendant.FakePendant
 import io.github.nytka_app.pendant.FakeRing
 import io.github.nytka_app.pendant.LinkStats
 import io.github.nytka_app.pendant.Pendant
-import io.github.nytka_app.pendant.PendantStorage
-import io.github.nytka_app.pendant.RingEvent
+import io.github.nytka_app.pendant.RecorderStorage
+import io.github.nytka_app.pendant.StoredEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -117,15 +117,15 @@ class StorageSyncControllerTest {
 
         override val stats: StateFlow<LinkStats> = steeredStats
 
-        override val storage: PendantStorage =
-            object : PendantStorage by inner.storage {
+        override val storage: RecorderStorage =
+            object : RecorderStorage by inner.storage {
                 override fun read(
-                    fromSeq: Long,
+                    from: Long,
                     count: Int,
-                ): Flow<RingEvent> =
-                    inner.storage.read(fromSeq, count).onEach {
-                        if (it is RingEvent.Begin) reads += it.startSeq
-                        if (it is RingEvent.Done) {
+                ): Flow<StoredEvent> =
+                    inner.storage.read(from, count).onEach {
+                        if (it is StoredEvent.Begin) reads += it.start
+                        if (it is StoredEvent.Done) {
                             steeredStats.value =
                                 steeredStats.value.let { s ->
                                     s.copy(

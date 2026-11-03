@@ -11,6 +11,8 @@ import java.util.UUID
  */
 data class RingPosition(
     val pendant: String,
+    /** The model that wrote this position (`RecorderModel.id`); a position of another model is not followed. */
+    val model: String = DEFAULT_MODEL,
     val committedNext: Long,
     val epoch: Long = 0,
     /** The last `ADVANCE` the pendant answered. */
@@ -78,4 +80,9 @@ data class RingPosition(
             clock = null,
             staleClock = false,
         )
+
+    companion object {
+        /** The model of every position saved before positions carried one: `RecorderModel.Omi.id`. */
+        const val DEFAULT_MODEL = "omi"
+    }
 }

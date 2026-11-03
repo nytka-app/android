@@ -7,7 +7,7 @@ import io.github.nytka_app.core.upload.UploadState
 import io.github.nytka_app.pendant.LinkStats
 import io.github.nytka_app.pendant.PendantConnection
 import io.github.nytka_app.pendant.PendantInfo
-import io.github.nytka_app.pendant.RingInfo
+import io.github.nytka_app.pendant.StoredRange
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
@@ -90,13 +90,13 @@ class DiagnosticsRecorderTest {
             sync.value =
                 StorageSyncStatus(
                     state = SyncState.Retrying(status = 9, retryInMs = 30_000),
-                    ring =
-                        RingInfo(
-                            readSeq = 10,
-                            writeSeq = 500,
-                            capacityPackets = 1_000,
-                            droppedPackets = 3,
-                            packetBytes = 444,
+                    range =
+                        StoredRange(
+                            first = 10,
+                            end = 500,
+                            capacity = 1_000,
+                            dropped = 3,
+                            blockBytes = 444,
                         ),
                     lastDoneStatus = 9,
                     syncedPackets = 200,

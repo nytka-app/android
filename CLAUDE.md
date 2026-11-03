@@ -15,7 +15,7 @@ Robolectric, MockWebServer, Turbine · ktlint, detekt.
 
 | Module | Holds |
 |---|---|
-| `:pendant` | `Pendant` with its `Capabilities` (storage, buttons, haptic, audio switch, settings, firmware stream, codec; the app reads haptic, audio switch and firmware stream so far, the rest are declared but not wired yet), `RecorderModel`, `FrameAssembler`, `OmiPendant` (Bluetooth) and `OmiDriver` (Omi's capabilities, button codes, haptic codes), the storage service (`OmiStorage`, `RingProtocol`, `RingRecords`), the settings service (`OmiSettings`: LED brightness, mic gain), `FirmwareVersion`, `FirmwareStream`, `FakePendant` with `FakeRing`; no UI |
+| `:pendant` | `Pendant` with its `Capabilities` (storage, buttons, haptic, audio switch, settings, firmware stream, codec; the app reads haptic, audio switch and firmware stream so far, the rest are declared but not wired yet), `RecorderModel`, `FrameAssembler`, `OmiPendant` (Bluetooth) and `OmiDriver` (Omi's capabilities, button codes, haptic codes), `RecorderStorage` (stored audio read and freed by position; `StoredRange`, `StoredBlock`), the storage service behind it for Omi (`OmiStorage`, `RingProtocol`, `RingRecords`), the settings service (`OmiSettings`: LED brightness, mic gain), `FirmwareVersion`, `FirmwareStream`, `FakePendant` with `FakeRing`; no UI |
 | `:core` | chunk format, `FrameQueue` (Room), capture times and the mute filter (`ring/`), settings, `NytkaApi` and its clients, `Uploader`, `diagnostics/` (event log, samples, upload), `location/` (saved places, location tags), `context/` (context ranges), `transcribe/` (on-device draft text: the `OnDeviceTranscriber` seam, `DraftAudioTap`, `SpeechSegments`, `DraftTranscription`); tested on the JVM |
 | `:app` | Hilt wiring, `CaptureController`, `StorageSyncController`, `PendantSettingsController`, `firmware/` (release check) and the services; `capture/` also holds the home-screen widget, the companion-device service, the phone-context recorder, `MuteLogRecorder` and `DiagnosticsRecorder`; `briefs/` (morning brief notifications), `phonemic/` (Phone microphone: `PhoneMicService`, `PhoneMicRecorder`, `OpusEncoder`), `quiet/` (quiet-day notice), `transcribe/` (model import, Opus decoder, worker, benchmark), alerts, Compose screens; `src/play` holds the sherpa-onnx engine, `src/oss` a stand-in without it |
 
@@ -115,7 +115,7 @@ or flash firmware.
   a feature, not a release, so a missing route still answers `404`: show "This server needs an update",
   never "This item no longer exists".
 - Room schemas under `core/schemas/` are committed. A schema change bumps the database version (now
-  9) and adds a migration, never a destructive fallback: the queue holds audio nobody can record
+  10) and adds a migration, never a destructive fallback: the queue holds audio nobody can record
   again.
 - Pendant facts (UUIDs, packet header, button codes, the storage service) come from
   `BasedHardware/omi` at a pinned commit; name the file when adding one.

@@ -42,7 +42,7 @@ class FakePendant(
     /** The pendant's stored audio; fill it with [FakeRing.store], and pick the firmware it behaves as. */
     val ring = FakeRing(scope)
     private val omiStorage = OmiStorage(ring).also { ring.listener = it::onNotification }
-    override val storage: PendantStorage = omiStorage
+    override val storage: RecorderStorage = omiStorage
     private val omiSettings = OmiSettings(ring)
     override val settings: PendantSettings = omiSettings
 

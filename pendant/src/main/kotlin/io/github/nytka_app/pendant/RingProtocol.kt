@@ -4,7 +4,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 /** The ring's answer to INFO (`storage.c` `send_ring_info_response`). */
-data class RingInfo(
+internal data class RingInfo(
     val readSeq: Long,
     val writeSeq: Long,
     val capacityPackets: Long,
@@ -12,8 +12,8 @@ data class RingInfo(
     val packetBytes: Int,
 )
 
-/** What one [PendantStorage.read] window yields; [Done] also reports a READ the firmware refused. */
-sealed interface RingEvent {
+/** What one [OmiStorage.readRing] window yields; [Done] also reports a READ the firmware refused. */
+internal sealed interface RingEvent {
     class Begin(
         val startSeq: Long,
         val count: Long,
@@ -30,24 +30,18 @@ sealed interface RingEvent {
 }
 
 /** Statuses the firmware sends (`storage.c`), plus the ones only this app produces (negative). */
-object RingStatus {
-    const val OK = 0
+internal object RingStatus {
+    const val OK = StorageStatus.OK
     const val INVALID_COMMAND = 6
-    const val NOT_READY = 9
-    const val OUT_OF_RANGE = 10
-
-    /** Nothing answered in time. */
-    const val TIMEOUT = -1
-
-    /** The link dropped while waiting. */
-    const val LINK_LOST = -2
-
-    /** Nothing was sent: the firmware is unsupported or the control notifications could not be enabled. */
-    const val UNAVAILABLE = -3
+    const val NOT_READY = StorageStatus.NOT_READY
+    const val OUT_OF_RANGE = StorageStatus.OUT_OF_RANGE
+    const val TIMEOUT = StorageStatus.TIMEOUT
+    const val LINK_LOST = StorageStatus.LINK_LOST
+    const val UNAVAILABLE = StorageStatus.UNAVAILABLE
 }
 
 /** A notification on the control characteristic, parsed by [RingProtocol.parse]. */
-sealed interface RingNotification {
+internal sealed interface RingNotification {
     class Ack(
         val status: Int,
     ) : RingNotification
@@ -78,7 +72,7 @@ sealed interface RingNotification {
 }
 
 /** The 16-byte read of the status characteristic: four u32 little-endian (`storage_read_characteristic`). */
-data class RingStatusRead(
+internal data class RingStatusRead(
     val usedBytes: Long,
     val unreadPackets: Long,
     val freeBytes: Long,
@@ -91,7 +85,7 @@ data class RingStatusRead(
  * are big-endian; the status read, the clock and the features are little-endian. A READ the firmware refuses
  * (status 9 or 10) answers with an ACK carrying the status, never with DONE.
  */
-object RingProtocol {
+internal object RingProtocol {
     const val RECORD_BYTES = 444
     const val STAMP_BYTES = 4
     const val AUDIO_BYTES = RECORD_BYTES - STAMP_BYTES

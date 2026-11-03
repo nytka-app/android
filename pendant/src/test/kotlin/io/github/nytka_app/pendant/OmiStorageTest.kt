@@ -77,7 +77,7 @@ class OmiStorageTest {
         count: Int = 2_000,
     ): Pair<Job, MutableList<RingEvent>> {
         val events = mutableListOf<RingEvent>()
-        val job = backgroundScope.launch { storage.read(from, count).collect { events += it } }
+        val job = backgroundScope.launch { storage.readRing(from, count).collect { events += it } }
         runCurrent()
         return job to events
     }
@@ -91,7 +91,7 @@ class OmiStorageTest {
             assertEquals(StorageSupport.Unsupported::class, storage.support.value::class)
             assertNull(storage.info())
             assertEquals(RingStatus.UNAVAILABLE, storage.advance(5))
-            val events = storage.read(0, 10).toList()
+            val events = storage.readRing(0, 10).toList()
             assertEquals(RingStatus.UNAVAILABLE, (events.single() as RingEvent.Done).status)
             assertTrue(link.written.isEmpty())
             assertEquals(0, link.subscriptions)
@@ -311,7 +311,7 @@ class OmiStorageTest {
         runTest {
             supported()
             link.onWrite = { if (it[0].toInt() == 0x11) link.notify(ack(10)) }
-            val events = storage.read(999_999, 2_000).toList()
+            val events = storage.readRing(999_999, 2_000).toList()
             val end = events.single() as RingEvent.Done
             assertEquals(10, end.status)
             assertEquals(999_999L, end.nextSeq)
@@ -323,7 +323,7 @@ class OmiStorageTest {
         runTest {
             supported()
             link.onWrite = { if (it[0].toInt() == 0x11) link.notify(ack(9)) }
-            assertEquals(9, (storage.read(5, 10).toList().single() as RingEvent.Done).status)
+            assertEquals(9, (storage.readRing(5, 10).toList().single() as RingEvent.Done).status)
         }
 
     @Test

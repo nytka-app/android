@@ -23,9 +23,11 @@ fun storageDetails(status: StorageSyncStatus): StorageSection? {
     if (status.serverUnsupported() || status.state is SyncState.Unsupported) return null
     return StorageSection(
         buildList {
-            status.ring?.let { ring ->
-                val (read, write) = ring.readSeq to ring.writeSeq
-                add("Ring: read $read, write $write, capacity ${ring.capacityPackets}, dropped ${ring.droppedPackets}")
+            status.range?.let { range ->
+                add(
+                    "Ring: read ${range.first}, write ${range.end}, " +
+                        "capacity ${range.capacity}, dropped ${range.dropped}",
+                )
             }
             add("Last DONE status: ${status.lastDoneStatus ?: "none"}")
             val rate = status.kbPerSecond?.let { String.format(Locale.ROOT, "%.1f KB/s", it) }

@@ -238,6 +238,25 @@ class QueueDatabaseMigrationTest {
         }
     }
 
+    @Test
+    fun `version 9 to 10 marks the saved sync position as Omi's`() {
+        helper.createDatabase(NAME, 9).use { db ->
+            db.execSQL(
+                "insert into ring_position (id, pendant, committedNext, epoch, advanced, nextFrame, lastDropped, " +
+                    "staleClock) values (1, 'AA:BB', 7, 2, 5, 0, 0, 0)",
+            )
+        }
+
+        helper.runMigrationsAndValidate(NAME, 10, true).use { db ->
+            db.query("select pendant, committedNext, model from ring_position").use {
+                assertTrue(it.moveToFirst())
+                assertEquals("AA:BB", it.getString(0))
+                assertEquals(7L, it.getLong(1))
+                assertEquals("omi", it.getString(2))
+            }
+        }
+    }
+
     private companion object {
         const val NAME = "migration-test"
     }

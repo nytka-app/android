@@ -33,7 +33,7 @@ class FakeRingTest {
             records(ring)
             assertEquals(2L, ring.writeSeq)
 
-            val events = storage.read(0, 0).toList()
+            val events = storage.readRing(0, 0).toList()
             val got = events.filterIsInstance<RingEvent.Records>().flatMap { it.records }
             assertEquals(listOf(0L, 1L), got.map { it.seq })
             assertEquals(listOf(4, 4), got.map { it.frames.size })
@@ -53,7 +53,7 @@ class FakeRingTest {
 
             val got =
                 storage
-                    .read(0, 0)
+                    .readRing(0, 0)
                     .toList()
                     .filterIsInstance<RingEvent.Records>()
                     .flatMap { it.records }
@@ -67,12 +67,12 @@ class FakeRingTest {
         runTest {
             val (old, oldStorage) = setUp(firmware = "3.0.20", autoAdvance = false)
             records(old)
-            oldStorage.read(0, 0).toList()
+            oldStorage.readRing(0, 0).toList()
             assertEquals(0L, old.readSeq)
 
             val (new, newStorage) = setUp()
             records(new)
-            newStorage.read(0, 0).toList()
+            newStorage.readRing(0, 0).toList()
             assertEquals(2L, new.readSeq)
         }
 
@@ -87,7 +87,7 @@ class FakeRingTest {
                     val got = mutableListOf<RingRecord>()
                     val job =
                         backgroundScope.launch {
-                            storage.read(0, 0).collect { if (it is RingEvent.Records) got += it.records }
+                            storage.readRing(0, 0).collect { if (it is RingEvent.Records) got += it.records }
                         }
                     runCurrent()
                     assertEquals(listOf(0L, 1L, 2L), got.map { it.seq })
@@ -121,7 +121,7 @@ class FakeRingTest {
         runTest {
             val (ring, storage) = setUp()
             records(ring)
-            assertEquals(RingStatus.OUT_OF_RANGE, (storage.read(5, 0).toList().single() as RingEvent.Done).status)
+            assertEquals(RingStatus.OUT_OF_RANGE, (storage.readRing(5, 0).toList().single() as RingEvent.Done).status)
             ring.notReadyAnswers = 1
             assertNull(storage.info())
             assertEquals(RingStatus.NOT_READY, storage.lastStatus.value)
@@ -135,14 +135,14 @@ class FakeRingTest {
             ring.strayDataAfterStop = 3
             ring.stallAfterBytes = 454
             records(ring)
-            val job = backgroundScope.launch { storage.read(0, 0).collect { } }
+            val job = backgroundScope.launch { storage.readRing(0, 0).collect { } }
             runCurrent()
             job.cancel()
             runCurrent()
             ring.stallAfterBytes = null
             val got =
                 storage
-                    .read(0, 0)
+                    .readRing(0, 0)
                     .toList()
                     .filterIsInstance<RingEvent.Records>()
                     .flatMap { it.records }

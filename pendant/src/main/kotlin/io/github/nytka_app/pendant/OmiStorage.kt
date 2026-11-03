@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.FlowCollector
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -30,13 +31,14 @@ interface StorageLink {
 }
 
 /**
- * The storage protocol over a [StorageLink]: the link hands every control notification to [onNotification] and
+ * The Omi driver's [RecorderStorage]: a position is a ring sequence number and a block is one 444-byte record.
+ * The storage protocol runs over a [StorageLink], which hands every control notification to [onNotification] and
  * calls [linkLost] when the connection ends.
  */
-class OmiStorage(
+internal class OmiStorage(
     private val link: StorageLink,
     private val log: (String) -> Unit = {},
-) : PendantStorage {
+) : RecorderStorage {
     private val mutableSupport = MutableStateFlow<StorageSupport>(StorageSupport.Unknown)
     private val mutableSkew = MutableStateFlow<Long?>(null)
     private val mutableStatus = MutableStateFlow<Int?>(null)
@@ -86,9 +88,24 @@ class OmiStorage(
         return setTime(nowS())
     }
 
-    override suspend fun setTime(epochS: Long): Boolean = link.writeClock(epochS)
+    /** Writes the phone's time to the pendant clock. */
+    suspend fun setTime(epochS: Long): Boolean = link.writeClock(epochS)
 
-    override suspend fun info(): RingInfo? =
+    override suspend fun status(): StoredRange? {
+        val ring = info() ?: return null
+        if (ring.packetBytes != RingProtocol.RECORD_BYTES) {
+            mutableStatus.value = StorageStatus.UNAVAILABLE
+            mutableSupport.value =
+                StorageSupport.Unsupported(
+                    "This pendant stores ${ring.packetBytes}-byte records; Nytka reads ${RingProtocol.RECORD_BYTES}.",
+                )
+            return null
+        }
+        return StoredRange(ring.readSeq, ring.writeSeq, ring.capacityPackets, ring.droppedPackets, ring.packetBytes)
+    }
+
+    /** Sends stop, then INFO; null when it failed, with [lastStatus] telling why. */
+    suspend fun info(): RingInfo? =
         operations.withLock {
             val box = open() ?: return@withLock fail(RingStatus.UNAVAILABLE)
             try {
@@ -112,6 +129,22 @@ class OmiStorage(
         }
 
     override fun read(
+        from: Long,
+        count: Int,
+    ): Flow<StoredEvent> =
+        readRing(from, count).map { event ->
+            when (event) {
+                is RingEvent.Begin -> StoredEvent.Begin(event.startSeq, event.count)
+                is RingEvent.Records ->
+                    StoredEvent.Blocks(
+                        event.records.map { StoredBlock(it.seq, it.stampS, StampUnit.Seconds, it.frames) },
+                    )
+                is RingEvent.Done -> StoredEvent.Done(event.status, event.nextSeq)
+            }
+        }
+
+    /** One window as the ring sends it; [read] turns it into blocks. */
+    fun readRing(
         fromSeq: Long,
         count: Int,
     ): Flow<RingEvent> =
@@ -206,11 +239,11 @@ class OmiStorage(
         return false
     }
 
-    override suspend fun advance(seq: Long): Int =
+    override suspend fun advance(through: Long): Int =
         operations.withLock {
             val box = open() ?: return@withLock RingStatus.UNAVAILABLE
             try {
-                if (!link.writeControl(RingProtocol.advance(seq))) return@withLock RingStatus.TIMEOUT
+                if (!link.writeControl(RingProtocol.advance(through))) return@withLock RingStatus.TIMEOUT
                 statusOf(box.await(ACK_TIMEOUT_MS) { it is RingNotification.Ack })
             } finally {
                 inbox = null

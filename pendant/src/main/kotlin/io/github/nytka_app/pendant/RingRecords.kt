@@ -3,14 +3,14 @@ package io.github.nytka_app.pendant
 import java.io.ByteArrayOutputStream
 
 /** One ring record: its sequence number, the pendant clock in whole seconds when it was written, its Opus frames. */
-class RingRecord(
+internal class RingRecord(
     val seq: Long,
     val stampS: Long,
     val frames: List<ByteArray>,
 )
 
 /** Splits a 444-byte record into its stamp and Opus frames (`sd_card.c`, `transport.c` `write_to_storage`). */
-object RingRecords {
+internal object RingRecords {
     /**
      * `[stamp u32 big-endian][440 bytes of [length u8][frame]...]`. A zero length byte is padding. The firmware
      * writes a frame's length byte after the last frame that fits and leaves stale bytes behind it, so parsing
@@ -45,7 +45,7 @@ object RingRecords {
  * Turns DATA notifications, which do not line up with records, back into records. [restart] at every READ_BEGIN:
  * DATA can still arrive after a STOP ACK, and its bytes belong to no window. Not thread-safe.
  */
-class RingRecordReassembler {
+internal class RingRecordReassembler {
     private val pending = ByteArrayOutputStream()
     private var nextSeq = 0L
 

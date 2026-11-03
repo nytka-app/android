@@ -17,12 +17,11 @@ import io.github.nytka_app.core.ring.TimeState
 import io.github.nytka_app.pendant.LinkStats
 import io.github.nytka_app.pendant.Pendant
 import io.github.nytka_app.pendant.PendantConnection
-import io.github.nytka_app.pendant.RingEvent
-import io.github.nytka_app.pendant.RingInfo
-import io.github.nytka_app.pendant.RingProtocol
-import io.github.nytka_app.pendant.RingRecord
-import io.github.nytka_app.pendant.RingStatus
+import io.github.nytka_app.pendant.StorageStatus
 import io.github.nytka_app.pendant.StorageSupport
+import io.github.nytka_app.pendant.StoredBlock
+import io.github.nytka_app.pendant.StoredEvent
+import io.github.nytka_app.pendant.StoredRange
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -71,7 +70,7 @@ sealed interface SyncState {
         val reason: PauseReason,
     ) : SyncState
 
-    /** The pendant did not answer well ([status] is a `RingStatus` value); the next try is in [retryInMs]. */
+    /** The pendant did not answer well ([status] is a `StorageStatus` value); the next try is in [retryInMs]. */
     data class Retrying(
         val status: Int,
         val retryInMs: Long,
@@ -99,7 +98,7 @@ sealed interface SyncState {
  */
 data class StorageSyncStatus(
     val state: SyncState = SyncState.Idle,
-    /** Packets the pendant holds that this phone has not read yet, as of the last INFO and commit. */
+    /** Packets the pendant holds that this phone has not read yet, as of the last range and commit. */
     val storedPackets: Long = 0,
     val runDone: Long = 0,
     val runTotal: Long = 0,
@@ -107,7 +106,7 @@ data class StorageSyncStatus(
     /** Packets the pendant freed or overwrote before this phone read them. */
     val lostPackets: Long = 0,
     val skewS: Long? = null,
-    val ring: RingInfo? = null,
+    val range: StoredRange? = null,
     val lastDoneStatus: Int? = null,
     /** Share of the live stream's notifications lost during the last window, when there were enough of them. */
     val liveLoss: Double? = null,
@@ -317,7 +316,7 @@ class StorageSyncController(
                     @Suppress("TooGenericExceptionCaught") e: Exception,
                 ) {
                     Outcome.Retry("the sync failed: ${e.javaClass.simpleName}") {
-                        SyncState.Retrying(RingStatus.TIMEOUT, it)
+                        SyncState.Retrying(StorageStatus.TIMEOUT, it)
                     }
                 }
             if (progressed) failures = 0
@@ -348,24 +347,17 @@ class StorageSyncController(
         quietWindows = 0
         setState(SyncState.Checking)
         serverGate()?.let { return it }
-        val ring = readInfo() ?: return infoFailed()
-        if (ring.packetBytes != RingProtocol.RECORD_BYTES) {
-            return Outcome.Stop(
-                SyncState.Unsupported(
-                    "This pendant stores ${ring.packetBytes}-byte records; Nytka reads ${RingProtocol.RECORD_BYTES}.",
-                ),
-            )
-        }
-        val first = openPosition(ring)
-        if (first && ring.writeSeq - ring.readSeq > tuning.backlogPackets) askAboutBacklog(ring)
+        val range = readRange() ?: return rangeFailed()
+        val first = openPosition(range)
+        if (first && range.end - range.first > tuning.backlogPackets) askAboutBacklog(range)
 
         val committed = requireNotNull(position).committedNext
-        mutableStatus.update { it.copy(runDone = 0, runTotal = ring.writeSeq - committed) }
-        log.i(TAG, "sync starts: ${ring.writeSeq - committed} packets, pendant battery ${pendant.battery.value}%")
+        mutableStatus.update { it.copy(runDone = 0, runTotal = range.end - committed) }
+        log.i(TAG, "sync starts: ${range.end - committed} packets, pendant battery ${pendant.battery.value}%")
         setState(SyncState.Syncing)
-        while (requireNotNull(position).committedNext < ring.writeSeq) {
+        while (requireNotNull(position).committedNext < range.end) {
             waitForQueue()
-            window(ring)?.let { return it }
+            window(range)?.let { return it }
         }
         mutableStatus.update { it.copy(storedPackets = 0) }
         log.i(TAG, "sync done: pendant battery ${pendant.battery.value}%, lost ${status.value.lostPackets} packets")
@@ -373,38 +365,39 @@ class StorageSyncController(
     }
 
     /**
-     * Loads or creates the sync position for INFO's [ring], settles the clock pair and stores what changed. True
-     * for a first sync: no position, or one of another pendant (whose epoch the new one follows).
+     * Loads or creates the sync position for the recorder's [range], settles the clock pair and stores what
+     * changed. True for a first sync: no position, or one of another pendant (whose epoch the new one follows).
      */
-    private suspend fun openPosition(ring: RingInfo): Boolean {
+    private suspend fun openPosition(range: StoredRange): Boolean {
         val loaded = sink.position()
-        val first = loaded == null || loaded.pendant != address
+        val first = loaded == null || loaded.pendant != address || loaded.model != pendant.model.id
         var current =
             if (first) {
                 RingPosition(
                     pendant = address,
-                    committedNext = ring.readSeq,
+                    model = pendant.model.id,
+                    committedNext = range.first,
                     epoch = loaded?.let { it.epoch + 1 } ?: 0,
-                    advanced = ring.readSeq,
-                    lastDropped = ring.droppedPackets,
+                    advanced = range.first,
+                    lastDropped = range.dropped,
                 )
             } else {
-                reconcile(requireNotNull(loaded), ring)
+                reconcile(requireNotNull(loaded), range)
             }
-        connectionClock = storage.clockSkew.value?.let { ClockPair(ring.writeSeq, it) }
+        connectionClock = storage.clockSkew.value?.let { ClockPair(range.end, it) }
         // The old pair stays while records below its writeSeq are unread (see the KDoc on RingCaptureTimes).
         val old = current.clock
         clock = if (old != null && current.committedNext < old.writeSeq) old else connectionClock ?: old
-        current = current.copy(clock = clock, lastDropped = ring.droppedPackets)
+        current = current.copy(clock = clock, lastDropped = range.dropped)
         if (current != loaded) sink.commit(emptyList(), current)
         position = current
         // Sequence numbers restart with a new epoch or pendant, so nothing carries over from the last one.
-        lastAdvanced = maxOf(current.advanced, ring.readSeq)
+        lastAdvanced = maxOf(current.advanced, range.first)
         if (timeState == null) timeState = current.newRun()
         mutableStatus.update {
             it.copy(
-                ring = ring,
-                storedPackets = ring.writeSeq - current.committedNext,
+                range = range,
+                storedPackets = range.end - current.committedNext,
                 skewS = clock?.skewS ?: storage.clockSkew.value,
             )
         }
@@ -421,41 +414,46 @@ class StorageSyncController(
         return Outcome.Retry("the server does not list offline-sync") { SyncState.ServerOutdated(it) }
     }
 
-    /** INFO, retried every 2 s for 20 s while the pendant says its storage is not ready (status 9). */
-    private suspend fun readInfo(): RingInfo? {
+    /** The range, retried every 2 s for 20 s while the recorder says its storage is not ready (status 9). */
+    private suspend fun readRange(): StoredRange? {
         var waited = 0L
         while (true) {
-            storage.info()?.let { return it }
-            if (storage.lastStatus.value != RingStatus.NOT_READY || waited >= tuning.notReadyGiveUpMs) return null
+            storage.status()?.let { return it }
+            if (storage.lastStatus.value != StorageStatus.NOT_READY || waited >= tuning.notReadyGiveUpMs) return null
             delay(tuning.notReadyRetryMs)
             waited += tuning.notReadyRetryMs
         }
     }
 
-    private fun infoFailed(): Outcome {
-        val status = storage.lastStatus.value ?: RingStatus.TIMEOUT
-        return if (status == RingStatus.LINK_LOST) {
+    private fun rangeFailed(): Outcome {
+        (storage.support.value as? StorageSupport.Unsupported)?.let {
+            return Outcome.Stop(
+                SyncState.Unsupported(it.reason),
+            )
+        }
+        val status = storage.lastStatus.value ?: StorageStatus.TIMEOUT
+        return if (status == StorageStatus.LINK_LOST) {
             Outcome.Stop(SyncState.Paused(PauseReason.LinkDropped))
         } else {
-            Outcome.Retry("INFO failed with status $status") { SyncState.Retrying(status, it) }
+            Outcome.Retry("the storage range failed with status $status") { SyncState.Retrying(status, it) }
         }
     }
 
     /** A cleared ring starts a new epoch; audio the pendant no longer holds (freed early, overwritten) is lost. */
     private fun reconcile(
         loaded: RingPosition,
-        ring: RingInfo,
+        range: StoredRange,
     ): RingPosition {
-        if (loaded.wasCleared(ring.writeSeq, ring.droppedPackets)) {
-            log.w(TAG, "the pendant's ring was cleared: a new epoch starts at ${ring.readSeq}")
+        if (loaded.wasCleared(range.end, range.dropped)) {
+            log.w(TAG, "the pendant's ring was cleared: a new epoch starts at ${range.first}")
             timeState = null
-            return loaded.newEpoch(ring.readSeq, ring.droppedPackets)
+            return loaded.newEpoch(range.first, range.dropped)
         }
-        if (ring.readSeq > loaded.committedNext) {
-            val lost = ring.readSeq - loaded.committedNext
+        if (range.first > loaded.committedNext) {
+            val lost = range.first - loaded.committedNext
             log.w(TAG, "lost $lost packets (about ${lost * PACKET_MS / MS}s): the pendant freed them before reading")
             mutableStatus.update { it.copy(lostPackets = it.lostPackets + lost) }
-            return loaded.copy(committedNext = ring.readSeq)
+            return loaded.copy(committedNext = range.first)
         }
         return loaded
     }
@@ -464,8 +462,8 @@ class StorageSyncController(
      * Ask once. The position is already stored, so a restart before an answer imports (the default); an answer of
      * "discard" moves the position to `writeSeq` and the ordinary `ADVANCE` frees the ring.
      */
-    private suspend fun askAboutBacklog(ring: RingInfo) {
-        val unread = ring.writeSeq - ring.readSeq
+    private suspend fun askAboutBacklog(range: StoredRange) {
+        val unread = range.end - range.first
         setState(SyncState.AwaitingBacklog(unread))
         log.i(TAG, "first sync finds $unread packets: asking whether to import")
         val answer = CompletableDeferred<Boolean>()
@@ -473,7 +471,7 @@ class StorageSyncController(
         val import = answer.await()
         backlogAnswer = null
         if (import) return
-        val discarded = requireNotNull(position).copy(committedNext = ring.writeSeq)
+        val discarded = requireNotNull(position).copy(committedNext = range.end)
         sink.commit(emptyList(), discarded)
         position = discarded
         log.i(TAG, "first sync: $unread packets discarded on request")
@@ -489,27 +487,27 @@ class StorageSyncController(
 
     /** One window. Null means carry on with the next; anything else ends the attempt. */
     @Suppress("CyclomaticComplexMethod", "LongMethod")
-    private suspend fun window(ring: RingInfo): Outcome? {
+    private suspend fun window(range: StoredRange): Outcome? {
         val from = requireNotNull(position).committedNext
         val mute = MuteFilter(sink.muteChanges())
         val statsBefore = pendant.stats.value
         val startedAt = now()
-        val pending = mutableListOf<RingRecord>()
+        val pending = mutableListOf<StoredBlock>()
         var flushedAt = startedAt
-        var done: RingEvent.Done? = null
+        var done: StoredEvent.Done? = null
         var refilled = false
         var checked = false
         var packets = 0L
 
         suspend fun flush() {
             if (pending.isEmpty()) return
-            val records = pending.map { StoredRecord(it.seq, it.stampS, it.frames) }
-            val next = pending.last().seq + 1
+            val records = pending.map { StoredRecord(it.position, it.stampS, it.frames) }
+            val next = pending.last().position + 1
             pending.clear()
             val before = checkNotNull(timeState)
             val timed = mute.apply(times.assign(records, before, clock, now()), before)
             val committed =
-                requireNotNull(position).after(timed, next).copy(clock = clock, lastDropped = ring.droppedPackets)
+                requireNotNull(position).after(timed, next).copy(clock = clock, lastDropped = range.dropped)
             sink.commit(timed.frames, committed)
             position = committed
             timeState = timed.state
@@ -519,7 +517,7 @@ class StorageSyncController(
                 it.copy(
                     runDone = it.runDone + records.size,
                     syncedPackets = it.syncedPackets + records.size,
-                    storedPackets = ring.writeSeq - next,
+                    storedPackets = range.end - next,
                     mutedFrames = it.mutedFrames + timed.mutedFrames,
                     badStampRecords = it.badStampRecords + timed.futureRecords,
                     segments = it.segments + timed.segments,
@@ -533,17 +531,17 @@ class StorageSyncController(
                 .read(from, tuning.windowPackets)
                 .takeWhile { event ->
                     when (event) {
-                        is RingEvent.Begin -> Unit
-                        is RingEvent.Records -> {
-                            if (!checked && event.records.isNotEmpty()) {
+                        is StoredEvent.Begin -> Unit
+                        is StoredEvent.Blocks -> {
+                            if (!checked && event.blocks.isNotEmpty()) {
                                 checked = true
                                 // A clear and a refill past committedNext shows only in the stamps.
-                                if (requireNotNull(position).wasRefilled(event.records.first().stampS)) {
+                                if (requireNotNull(position).wasRefilled(event.blocks.first().stampS)) {
                                     refilled = true
                                     return@takeWhile false
                                 }
                             }
-                            pending += event.records
+                            pending += event.blocks
                             if (pending.size >= tuning.commitRecords || now() - flushedAt >= tuning.commitMs) {
                                 flush()
                                 flushedAt = now()
@@ -551,7 +549,7 @@ class StorageSyncController(
                             yield() // live capture shares the dispatcher
                         }
 
-                        is RingEvent.Done -> done = event
+                        is StoredEvent.Done -> done = event
                     }
                     true
                 }.collect()
@@ -562,7 +560,7 @@ class StorageSyncController(
 
         val elapsedMs = now() - startedAt
         val kbPerSecond =
-            if (elapsedMs > 0) packets * RingProtocol.RECORD_BYTES / KIB / (elapsedMs / MS.toDouble()) else null
+            if (elapsedMs > 0) packets * range.blockBytes / KIB / (elapsedMs / MS.toDouble()) else null
         val status = done?.status
         mutableStatus.update { it.copy(kbPerSecond = kbPerSecond ?: it.kbPerSecond, lastDoneStatus = status) }
         log.i(
@@ -576,13 +574,15 @@ class StorageSyncController(
             } KB/s, status $status",
         )
 
-        if (refilled) return restartEpoch(ring)
+        if (refilled) return restartEpoch(range)
         return when (status) {
-            RingStatus.OK -> if (packets == 0L) noProgress() else liveLoss(statsBefore)
-            RingStatus.LINK_LOST -> Outcome.Stop(SyncState.Paused(PauseReason.LinkDropped))
-            RingStatus.TIMEOUT -> quiet(packets)
+            StorageStatus.OK -> if (packets == 0L) noProgress() else liveLoss(statsBefore)
+            StorageStatus.LINK_LOST -> Outcome.Stop(SyncState.Paused(PauseReason.LinkDropped))
+            StorageStatus.TIMEOUT -> quiet(packets)
             else ->
-                Outcome.Retry("READ ended with status $status") { SyncState.Retrying(status ?: RingStatus.TIMEOUT, it) }
+                Outcome.Retry(
+                    "READ ended with status $status",
+                ) { SyncState.Retrying(status ?: StorageStatus.TIMEOUT, it) }
         }
     }
 
@@ -595,8 +595,8 @@ class StorageSyncController(
     private fun quiet(packets: Long): Outcome? {
         quietWindows = if (packets > 0) 0 else quietWindows + 1
         if (quietWindows > tuning.timeoutRereads) {
-            return Outcome.Retry("READ ended with status ${RingStatus.TIMEOUT}") {
-                SyncState.Retrying(RingStatus.TIMEOUT, it)
+            return Outcome.Retry("READ ended with status ${StorageStatus.TIMEOUT}") {
+                SyncState.Retrying(StorageStatus.TIMEOUT, it)
             }
         }
         log.w(TAG, "READ went quiet after $packets packets: reading again from the committed position")
@@ -604,12 +604,12 @@ class StorageSyncController(
     }
 
     private fun noProgress(): Outcome =
-        Outcome.Retry("READ answered ok but delivered nothing") { SyncState.Retrying(RingStatus.OK, it) }
+        Outcome.Retry("READ answered ok but delivered nothing") { SyncState.Retrying(StorageStatus.OK, it) }
 
     /** The first record read is older than the last committed one: the ring was cleared and refilled. */
-    private suspend fun restartEpoch(ring: RingInfo): Outcome {
-        log.w(TAG, "the first record read is older than the last committed one: a new epoch starts at ${ring.readSeq}")
-        val fresh = requireNotNull(position).newEpoch(ring.readSeq, ring.droppedPackets).copy(clock = connectionClock)
+    private suspend fun restartEpoch(range: StoredRange): Outcome {
+        log.w(TAG, "the first record read is older than the last committed one: a new epoch starts at ${range.first}")
+        val fresh = requireNotNull(position).newEpoch(range.first, range.dropped).copy(clock = connectionClock)
         sink.commit(emptyList(), fresh)
         position = fresh
         timeState = null
@@ -664,7 +664,7 @@ class StorageSyncController(
         lastAdvanceAtMs = now()
         when (status) {
             // Status 10: the firmware is already past that point (3.0.21 advances on its own).
-            RingStatus.OK, RingStatus.OUT_OF_RANGE -> {
+            StorageStatus.OK, StorageStatus.OUT_OF_RANGE -> {
                 lastAdvanced = target
                 try {
                     sink.markAdvanced(target)
@@ -674,7 +674,7 @@ class StorageSyncController(
                 log.i(TAG, "advanced the ring to $target (status $status)")
             }
 
-            RingStatus.LINK_LOST, RingStatus.UNAVAILABLE -> return false
+            StorageStatus.LINK_LOST, StorageStatus.UNAVAILABLE -> return false
             else -> log.w(TAG, "ADVANCE($target) answered $status, trying again later")
         }
         return true

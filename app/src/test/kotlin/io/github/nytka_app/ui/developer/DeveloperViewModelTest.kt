@@ -20,7 +20,7 @@ import io.github.nytka_app.core.queue.SealedChunk
 import io.github.nytka_app.core.settings.Settings
 import io.github.nytka_app.core.upload.ChunkSource
 import io.github.nytka_app.core.upload.Uploader
-import io.github.nytka_app.pendant.RingInfo
+import io.github.nytka_app.pendant.StoredRange
 import io.github.nytka_app.sample
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -221,13 +221,13 @@ class DeveloperViewModelTest {
             StorageSyncStatus(
                 SyncState.Syncing,
                 kbPerSecond = 38.0,
-                ring =
-                    RingInfo(
-                        readSeq = 10,
-                        writeSeq = 900,
-                        capacityPackets = 1_000_000,
-                        droppedPackets = 3,
-                        packetBytes = 444,
+                range =
+                    StoredRange(
+                        first = 10,
+                        end = 900,
+                        capacity = 1_000_000,
+                        dropped = 3,
+                        blockBytes = 444,
                     ),
                 lastDoneStatus = 0,
                 liveLoss = 0.02,

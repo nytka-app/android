@@ -71,7 +71,7 @@ class OmiPendant(
     override val buttons: Flow<ButtonEvent> = mutableButtons
 
     private val omiStorage = OmiStorage(GattLink(), ::warn)
-    override val storage: PendantStorage = omiStorage
+    override val storage: RecorderStorage = omiStorage
     private val omiSettings = OmiSettings(GattLink(), ::warn)
     override val settings: PendantSettings = omiSettings
 

@@ -176,8 +176,8 @@ interface RecorderStorage {
 from a stamp and the measured clock skew; Limitless gives a millisecond stamp per page, Omi a second stamp
 per record, so the stamp unit becomes part of `StoredBlock`.
 
-**Room.** `ring_position` gains a `model` column (default `omi`); the database goes from version 6 to 7 with
-a migration, never a destructive fallback. A position whose model differs from the paired one is
+**Room.** `ring_position` gains a `model` column (default `omi`); the database goes from version 9 to 10 with
+an `AutoMigration` (the column has a default, so installed apps keep their position), never a destructive fallback. A position whose model differs from the paired one is
 discarded the same way a position for another address is today. `frames` and `chunks` need no change: a
 frame's `ringSeq` and `epoch` already mean "position in the recorder's storage".
 
@@ -231,7 +231,7 @@ One PR each. App and server PRs are separate; none needs the others merged first
 |---|---|---|---|---|
 | 1 | NYTKA-117 | app | Models and pairing: `RecorderModel`, `Settings.pendantModel`, model picker, filtered chooser, factory by model (Omi only) | None |
 | 2 | NYTKA-118 | app | Capabilities: `Capabilities` on `Pendant`; buttons, haptic, settings, firmware and the Device screen read them; `FakePendant` takes a model | None |
-| 3 | NYTKA-119 | app | Storage custody contract: `RecorderStorage`, Omi behind it, `ring_position.model`, Room 7, contract tests with `FakeRing` | None |
+| 3 | NYTKA-119 | app | Storage custody contract: `RecorderStorage`, Omi behind it, `ring_position.model`, Room 10, contract tests with `FakeRing` | None |
 | 4 | NYTKA-120 | server | Codec registry and `codecs` in `/api/v1/info` (accepts 21 only) | None |
 | 5 | NYTKA-121 | app | Codec gate: codec from the driver, `Refused` when the server does not list it | None |
 | 6 | NYTKA-123 | app | Limitless live: port `LimitlessProtocol`, driver with streaming, battery, double press, LED; `FakeFlash`; check frame length on a real pendant | Limitless Pendant |

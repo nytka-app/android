@@ -1,5 +1,6 @@
 package io.github.nytka_app.core.queue
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import io.github.nytka_app.core.ring.ClockPair
@@ -21,10 +22,12 @@ data class RingPositionRow(
     val clockWriteSeq: Long?,
     val clockSkewS: Long?,
     val staleClock: Boolean,
+    @ColumnInfo(defaultValue = RingPosition.DEFAULT_MODEL) val model: String = RingPosition.DEFAULT_MODEL,
 ) {
     fun toPosition() =
         RingPosition(
             pendant = pendant,
+            model = model,
             committedNext = committedNext,
             epoch = epoch,
             advanced = advanced,
@@ -42,6 +45,7 @@ data class RingPositionRow(
         fun of(position: RingPosition) =
             RingPositionRow(
                 pendant = position.pendant,
+                model = position.model,
                 committedNext = position.committedNext,
                 epoch = position.epoch,
                 advanced = position.advanced,
