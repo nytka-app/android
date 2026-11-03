@@ -22,6 +22,15 @@ enum class RecorderModel(
         source = "BasedHardware/omi at 2e34261, omi/firmware/omi/src/lib/core/transport.c",
         capabilities = OmiDriver.capabilities,
     ),
+
+    /** Untested on real hardware: no Limitless pendant has been in reach. */
+    Limitless(
+        id = "limitless",
+        displayName = "Limitless",
+        serviceUuid = LimitlessUuids.SERVICE,
+        source = "BasedHardware/omi at afad3b7, app/android/.../limitless/LimitlessProtocol.kt",
+        capabilities = LimitlessDriver.capabilities,
+    ),
     ;
 
     companion object {

@@ -91,6 +91,26 @@ Not here: iOS, raw audio export, firmware updates (the official Omi app does tho
 > yourself is outside the data-protection law ([art. 25](https://zakon.rada.gov.ua/laws/show/2297-17)), and the GDPR's
 > household exemption is read narrowly. Turn it on only where the people around you know. This is not legal advice.
 
+## Other recorders
+
+| Recorder | Live audio | Audio stored while the phone is away | Mute on the pendant | Bookmark | Settings | Status |
+|---|---|---|---|---|---|---|
+| Omi (firmware 3.0.x) | yes | yes, from firmware 3.0.20 | double tap | single tap | LED, microphone gain | in daily use |
+| Limitless Pendant | yes | yes, copied from its flash and freed only after the server accepted it | double press | not available | LED | **untested on real hardware** |
+
+The Limitless driver is written from the source of `BasedHardware/omi` (commit `afad3b7`, MIT) and tested only
+against `FakeLimitless`, a stand-in that answers the way that source reads. No Limitless pendant has been in reach,
+so treat it as unproven until someone runs it on a real one, and tell us what happens. The app's pairing screen does
+not offer it yet. Known gaps, all from what the source does not say:
+
+- The size of a flash page is unknown, so the transfer rate shown while copying is an estimate.
+- The pendant's own clock is not compared with the phone's, so times of stored audio are the pendant's.
+- Whether the pendant records to its flash while it streams live, and whether it accepts a free command outside a
+  copy, is unknown. If it does not record to flash, audio said while the phone is away is lost.
+- No haptic, no firmware notice, and the app cannot tell a stalled live stream from a quiet room.
+
+Uninstall Limitless's own app first: two apps cannot hold the pendant at once.
+
 ## Quick start
 
 You need a phone on Android 12 or later, an Omi pendant on firmware 3.0.x, and a Nytka server with an `admin`

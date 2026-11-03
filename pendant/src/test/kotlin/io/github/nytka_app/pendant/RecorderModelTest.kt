@@ -19,4 +19,19 @@ class RecorderModelTest {
     fun `Omi pairs on its audio service`() {
         assertEquals(OmiUuids.AUDIO_SERVICE, RecorderModel.Omi.serviceUuid)
     }
+
+    @Test
+    fun `Limitless reads back from its id and pairs on its own service`() {
+        assertEquals(RecorderModel.Limitless, RecorderModel.of(RecorderModel.Limitless.id))
+        assertEquals(LimitlessUuids.SERVICE, RecorderModel.Limitless.serviceUuid)
+    }
+
+    @Test
+    fun `Limitless keeps its audio on the phone until the app says so`() {
+        val capabilities = RecorderModel.Limitless.capabilities
+        assertEquals(StorageKind.Custody, capabilities.storage)
+        assertEquals(setOf(ButtonEvent.DoubleTap), capabilities.buttons)
+        assertEquals(false, capabilities.haptic)
+        assertEquals(true, capabilities.audioSwitch)
+    }
 }

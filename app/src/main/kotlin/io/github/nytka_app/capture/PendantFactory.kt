@@ -5,6 +5,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.nytka_app.core.chunks.ChunkReader
 import io.github.nytka_app.core.diagnostics.EventLog
 import io.github.nytka_app.pendant.FakePendant
+import io.github.nytka_app.pendant.LimitlessPendant
 import io.github.nytka_app.pendant.OmiPendant
 import io.github.nytka_app.pendant.Pendant
 import io.github.nytka_app.pendant.PendantLogger
@@ -33,6 +34,7 @@ class PendantFactory
                 when (model) {
                     RecorderModel.Omi ->
                         OmiPendant(context, scope, logger = PendantLogger(log::log), highPriority = highPriority)
+                    RecorderModel.Limitless -> LimitlessPendant(context, scope, logger = PendantLogger(log::log))
                 }
             }
 
