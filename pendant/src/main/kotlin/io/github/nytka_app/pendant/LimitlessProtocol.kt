@@ -206,10 +206,11 @@ object LimitlessProtocol {
         }
 
         fun packet(): LimitlessPacket? {
-            val i = index
-            val f = fragments
-            val p = payload
-            return if (!broken && i != null && f != null && p != null) LimitlessPacket(i, seq, f, p) else null
+            if (broken) return null
+            val i = index ?: return null
+            val f = fragments ?: return null
+            val p = payload ?: return null
+            return LimitlessPacket(i, seq, f, p)
         }
     }
 }
