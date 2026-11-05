@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.26.4](https://github.com/nytka-app/android/compare/v0.26.3...v0.26.4) (2026-11-05)
+
+
+### Features
+
+* **capture:** refuse a recorder whose codec the server cannot read ([#166](https://github.com/nytka-app/android/issues/166)) ([e983a75](https://github.com/nytka-app/android/commit/e983a75cc2574b4b605b893aad32b90d240e3d6a))
+* **pendant:** Limitless driver, untested on real hardware ([#178](https://github.com/nytka-app/android/issues/178)) ([158f3d3](https://github.com/nytka-app/android/commit/158f3d3df971c13b285bed89f4cdfc7686bd851b))
+* **pendant:** storage custody contract over positions ([#168](https://github.com/nytka-app/android/issues/168)) ([5a9d59e](https://github.com/nytka-app/android/commit/5a9d59efd21feab89089102376e5bb77f0d05024))
+
 ## [0.26.3](https://github.com/nytka-app/android/compare/v0.26.2...v0.26.3) (2026-10-27)
 
 
