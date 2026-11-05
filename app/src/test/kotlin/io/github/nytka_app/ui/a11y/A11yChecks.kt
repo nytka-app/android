@@ -98,7 +98,7 @@ fun ComposeContentTestRule.clipped(): List<String> {
     return failures
 }
 
-/** A word too long for its box overflows sideways; `didOverflowWidth` is also true for any text shorter than its box. */
+/** A word too long for its box overflows sideways; `didOverflowWidth` is also true for text shorter than its box. */
 private fun TextLayoutResult.widestLine(): Float =
     (0 until lineCount).maxOfOrNull { getLineRight(it) - getLineLeft(it) } ?: 0f
 
