@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.6](https://github.com/nytka-app/android/compare/v0.26.5...v0.26.6) (2026-11-05)
+
+
+### Bug Fixes
+
+* **a11y:** check the Ask and Memories screens and fix what they found ([#184](https://github.com/nytka-app/android/issues/184)) ([c15b26b](https://github.com/nytka-app/android/commit/c15b26b457c0f8ffafa9325e3892903210ee7313))
+
 ## [0.26.5](https://github.com/nytka-app/android/compare/v0.26.4...v0.26.5) (2026-11-05)
 
 
