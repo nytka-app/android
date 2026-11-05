@@ -7,15 +7,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
  * A person's first letter in a quiet disc. One colour for everyone: a person's colour would be a speaker
  * colour, which the design forbids. A name that is not a name yet shows `?`; an [unknown] voice gets the same
- * mark on the tertiary container, so it reads as a question and not as a person.
+ * mark on the tertiary container, so it reads as a question and not as a person. The disc is a fixed size, so its
+ * letter ignores the font scale, and a screen reader skips it: the name beside it says the same.
  */
 @Composable
 fun Monogram(
@@ -25,7 +30,7 @@ fun Monogram(
     unknown: Boolean = false,
 ) {
     Surface(
-        modifier.size(size),
+        modifier.size(size).clearAndSetSemantics { },
         shape = CircleShape,
         color =
             if (unknown) {
@@ -41,17 +46,19 @@ fun Monogram(
             },
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Text(
-                if (unknown) "?" else initialOf(name),
-                style =
-                    if (size >=
-                        LARGE
-                    ) {
-                        MaterialTheme.typography.headlineSmall
-                    } else {
-                        MaterialTheme.typography.titleMedium
-                    },
-            )
+            CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density)) {
+                Text(
+                    if (unknown) "?" else initialOf(name),
+                    style =
+                        if (size >=
+                            LARGE
+                        ) {
+                            MaterialTheme.typography.headlineSmall
+                        } else {
+                            MaterialTheme.typography.titleMedium
+                        },
+                )
+            }
         }
     }
 }

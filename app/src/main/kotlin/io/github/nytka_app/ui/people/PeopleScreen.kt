@@ -36,6 +36,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -54,6 +56,7 @@ import io.github.nytka_app.ui.people.cards.CardsViewModel
 import io.github.nytka_app.ui.people.cards.ClipState
 import io.github.nytka_app.ui.people.cards.cardsSection
 import io.github.nytka_app.ui.people.review.ReviewInboxAction
+import io.github.nytka_app.ui.people.review.ReviewViewModel
 import io.github.nytka_app.ui.tags.ListEmpty
 import io.github.nytka_app.ui.tags.TagFilterAction
 import io.github.nytka_app.ui.tags.tagFilterChipItem
@@ -74,6 +77,7 @@ fun PeopleScreen(
     onTagRequestHandled: () -> Unit = {},
     viewModel: PeopleViewModel = hiltViewModel(),
     cardsViewModel: CardsViewModel = hiltViewModel(),
+    reviewViewModel: ReviewViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val cards by cardsViewModel.state.collectAsStateWithLifecycle()
@@ -96,7 +100,7 @@ fun PeopleScreen(
                 title = { Text(stringResource(R.string.people_title)) },
                 actions = {
                     if (state.tagFilter) TagFilterAction(count = { it.people }, onPick = viewModel::showTag)
-                    ReviewInboxAction(onOpenReview)
+                    ReviewInboxAction(onOpenReview, reviewViewModel)
                     SettingsMenu(onOpenSettings)
                 },
             )
@@ -242,7 +246,7 @@ private fun SectionTitle(text: String) {
         text,
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).semantics { heading() },
     )
 }
 

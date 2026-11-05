@@ -25,6 +25,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -98,6 +99,7 @@ fun NytkaNavHost(
                     NavigationBarItem(
                         selected = current == tab.route,
                         onClick = { select(tab.route) },
+                        modifier = Modifier.tabBadgeState(if (tab == AppTab.People) peopleBadge else 0),
                         icon = { TabIcon(tab, if (tab == AppTab.People) peopleBadge else 0) },
                         label = { TabLabel(stringResource(tab.labelRes)) },
                         colors = tabColors(),
@@ -155,6 +157,14 @@ internal fun TabIcon(
     } else {
         icon()
     }
+}
+
+/** The bar item clears its icon's semantics, so the badge's words go on the item itself. */
+@Composable
+internal fun Modifier.tabBadgeState(badge: Int): Modifier {
+    if (badge <= 0) return this
+    val needsYou = pluralStringResource(R.plurals.needs_you_format, badge, badge)
+    return semantics { stateDescription = needsYou }
 }
 
 /**
