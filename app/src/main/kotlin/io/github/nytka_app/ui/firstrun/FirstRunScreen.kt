@@ -40,6 +40,7 @@ import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import io.github.nytka_app.R
 import io.github.nytka_app.core.settings.FirstRunStep
+import io.github.nytka_app.pendant.RecorderModel
 import io.github.nytka_app.ui.ErrorLine
 import io.github.nytka_app.ui.LocalNetworkHint
 import io.github.nytka_app.ui.LocalNetworkPrompt
@@ -47,6 +48,7 @@ import io.github.nytka_app.ui.NytkaSwitch
 import io.github.nytka_app.ui.NytkaTextField
 import io.github.nytka_app.ui.PairButton
 import io.github.nytka_app.ui.PermissionAnswer
+import io.github.nytka_app.ui.RecorderChoice
 import io.github.nytka_app.ui.device.PendantSignalsScreen
 import io.github.nytka_app.ui.rememberPermissionRequest
 
@@ -268,12 +270,14 @@ private fun PairingStep(
     state: FirstRunUiState,
     viewModel: FirstRunViewModel,
 ) {
+    var recorder by rememberSaveable { mutableStateOf(RecorderModel.of(null).id) }
     SetupStep(
         step = FirstRunStep.Pairing.ordinal,
         title = stringResource(R.string.setup_pairing_title),
         body = stringResource(R.string.pairing_step_description),
         primary = {
             PairButton(
+                model = RecorderModel.of(recorder),
                 label = stringResource(R.string.setup_pair),
                 onPaired = viewModel::paired,
                 onError = viewModel::pairingFailed,
@@ -283,6 +287,7 @@ private fun PairingStep(
             TextButton(onClick = viewModel::skipPairing) { Text(stringResource(R.string.set_up_later)) }
         },
     ) {
+        RecorderChoice(RecorderModel.of(recorder), onSelect = { recorder = it.id })
         state.pairError?.let { ErrorLine(it) }
     }
 }

@@ -84,15 +84,16 @@ Not here: iOS, raw audio export, firmware updates (the official Omi app does tho
 | Recorder | Status | Live audio | Stored audio while the phone is away | Mute | Bookmark | Settings |
 |---|---|---|---|---|---|---|
 | Omi pendant (firmware 3.0.x) | **Supported**, in daily use | yes | yes, from firmware 3.0.20 | double tap | single tap | LED, microphone gain |
-| Limitless Pendant | **Not verified on real hardware**, not offered by the pairing screen yet | yes | yes, copied from its flash and freed only after the server accepted it | double press | not available | LED |
+| Limitless Pendant | Pairable, still **not verified on real hardware** | yes | yes, copied from its flash and freed only after the server accepted it | double press | not available | LED |
 
 Any other recorder has no driver. A recorder that cannot hand over stored audio loses what is said while the phone is
 away. Pairing, what to uninstall first and what each model can do: [Recorders](docs/devices.md).
 
 **Limitless is unproven.** Its driver is written from the source of `BasedHardware/omi` (commit `afad3b7`, MIT) and
 tested only against `FakeLimitless`, a stand-in that answers the way that source reads; no Limitless pendant has been
-in reach. Nobody can pair one from the app yet. If you own one and want to be its first tester, open an issue: the
-test needs a build that offers it. Known gaps, all from what the source does not say:
+in reach. The pairing screen offers it as a second choice next to Omi (Omi stays the default), with the words "Not
+verified on real hardware" once you pick it. If you own one and want to be its first tester, open an issue. Known
+gaps, all from what the source does not say:
 
 - The size of a flash page is unknown, so the transfer rate shown while copying is an estimate.
 - The pendant's own clock is not compared with the phone's, so times of stored audio are the pendant's.

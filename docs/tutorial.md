@@ -56,7 +56,8 @@ Charge the pendant and keep it next to the phone. Open Nytka: the setup has four
    recording people without their consent is illegal in some places and you answer for following the
    law (and the pendant also records while the phone is away), and where your recordings live. Tick
    **I understand**, which starts unticked, and tap **Continue**.
-4. **Pairing.** Turn the pendant on, tap **Pair** and pick it in the list that opens.
+4. **Pairing.** Turn the pendant on, tap **Pair** and pick it in the list that opens. **Omi** is selected; a
+   Limitless Pendant needs **Limitless** picked first, and Nytka then says it is not verified on real hardware.
    **Set up later** skips this; the **Device** screen has the same **Pair pendant** button.
 
 Nytka now opens on **Conversations**. The capture status at the top reads **Waiting for pendant**,

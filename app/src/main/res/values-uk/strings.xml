@@ -140,6 +140,8 @@
     <string name="battery_percent_format">Батарея %d%%</string>
     <string name="firmware_format">Прошивка %s</string>
     <string name="pair_pendant">Спарити кулон</string>
+    <string name="limitless_unverified">Не перевірено на справжньому пристрої</string>
+    <string name="limitless_unverified_explanation">Підтримку Limitless у Nytka перевіряли лише на імітованому кулоні, тож запис чи синхронізація можуть ще не працювати</string>
     <string name="forget">Забути</string>
     <string name="mute">Без звуку</string>
     <string name="people">Люди</string>

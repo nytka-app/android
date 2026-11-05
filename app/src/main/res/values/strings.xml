@@ -138,6 +138,8 @@
     <string name="battery_percent_format">Battery %d%%</string>
     <string name="firmware_format">Firmware %s</string>
     <string name="pair_pendant">Pair pendant</string>
+    <string name="limitless_unverified">Not verified on real hardware</string>
+    <string name="limitless_unverified_explanation">Limitless support in Nytka has only been tested against a simulated pendant, so it may not record or sync yet</string>
     <string name="forget">Forget</string>
     <string name="mute">Mute</string>
     <string name="people">People</string>

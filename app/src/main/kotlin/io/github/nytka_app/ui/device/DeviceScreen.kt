@@ -37,10 +37,12 @@ import io.github.nytka_app.capture.PairedPendant
 import io.github.nytka_app.core.api.NytkaApi
 import io.github.nytka_app.firmware.FirmwareNotice
 import io.github.nytka_app.pendant.PendantConnection
+import io.github.nytka_app.pendant.RecorderModel
 import io.github.nytka_app.ui.BatteryMeter
 import io.github.nytka_app.ui.LocalNetworkHint
 import io.github.nytka_app.ui.LocalNetworkPrompt
 import io.github.nytka_app.ui.PairButton
+import io.github.nytka_app.ui.RecorderChoice
 import io.github.nytka_app.ui.SettingsBlock
 import io.github.nytka_app.ui.SettingsCard
 import io.github.nytka_app.ui.SettingsRow
@@ -283,7 +285,14 @@ private fun PendantBlock(
         state.firmwareNotice?.let { FirmwareNoticeText(it) }
         pairError?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         if (state.pendantAddress == null) {
-            PairButton(label = stringResource(R.string.pair_pendant), onPaired = onPaired, onError = onPairError)
+            var recorder by rememberSaveable { mutableStateOf(RecorderModel.of(null).id) }
+            RecorderChoice(RecorderModel.of(recorder), onSelect = { recorder = it.id })
+            PairButton(
+                model = RecorderModel.of(recorder),
+                label = stringResource(R.string.pair_pendant),
+                onPaired = onPaired,
+                onError = onPairError,
+            )
         } else {
             FilledTonalButton(
                 onClick = { onMute(!status.muted) },

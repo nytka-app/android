@@ -4,15 +4,15 @@ Which wearable recorders Nytka for Android works with, what each can do, and wha
 [README](../README.md). The plan behind this page is [the multi-device spec](specs/multi-device.md).
 
 Today one recorder is supported: the Omi pendant. A second, the Limitless Pendant, has a driver that has **not
-been verified on real hardware**: it ran only against a stand-in (`FakeLimitless`), and the pairing screen does not
-offer it. Nothing here claims it works.
+been verified on real hardware**: it ran only against a stand-in (`FakeLimitless`). The pairing screen offers it as a
+choice, so a first tester can try it. Nothing here claims it works.
 
 ## At a glance
 
 | Recorder | Status | Stored audio while the phone is away | Buttons | Buzz | Audio on/off | LED and gain | Firmware notice |
 |---|---|---|---|---|---|---|---|
 | Omi pendant (consumer, "Omi CV 1") | **Supported** | Yes, from firmware 3.0.20 | Single tap, double tap, release | Yes | Yes | LED brightness and mic gain | Yes |
-| Limitless Pendant | **Driver written, not verified on real hardware.** Not offered by the pairing screen | Yes, from its flash; freed only past what the server accepted | Double press only | Not known | Not known | LED only | No |
+| Limitless Pendant | **Pairable, still not verified on real hardware.** Driver written; a choice on the pairing screen | Yes, from its flash; freed only past what the server accepted | Double press only | Not known | Not known | LED only | No |
 | Plaud NotePin, Fieldy, Friend, Bee | Not supported, no driver | | | | | | |
 
 The Omi row is the `Capabilities` of `OmiDriver` (`pendant/.../OmiDriver.kt`). The Limitless row is the
@@ -51,9 +51,9 @@ and never run on a pendant. It will change when the driver is tested.
 
 **Status:** the driver is written and **not verified on real hardware**. It has not been run on a Limitless Pendant;
 it is tested only against `FakeLimitless`, a stand-in that answers the way its source reads. It is in the code (from
-release 0.26.4) but the pairing screen offers only Omi, so nobody can pair one from the app yet. Do not buy a
-Limitless Pendant for Nytka. If you own one and want to be its first tester, open an issue: the test needs a build
-that offers it.
+release 0.26.4) and the pairing screen lets you choose it, so it can be paired, but pairing it proves nothing about
+recording. Do not buy a Limitless Pendant for Nytka. If you own one and want to be its first tester, open an issue
+and say what happened.
 
 The Limitless Pendant is no longer sold (since 5 Dec 2025, per the spec's survey), and its maker promised support only through 2026.
 Nytka's driver would follow the open connector Omi wrote for it; the protocol is not published by the maker.
@@ -66,8 +66,10 @@ What the driver is built to do, to be confirmed on a real pendant:
 - The frame length (10 ms or 20 ms) is not known. If it is 10 ms, the driver joins pairs into 20 ms packets so
   the server needs no change.
 
-What you do: nothing yet. The steps to pair and to retire the Limitless app go here when the driver has run for a
-day on a pendant. Known gaps are listed in the [README](../README.md#recorders).
+What you do to pair it: on **Pair pendant** (or the Pairing step of first run), pick **Limitless** above the button.
+Nytka then says "Not verified on real hardware"; Omi stays selected until you change it. Turn the pendant on and pick
+it in the list that opens. The steps to retire the Limitless app go here when the driver has run for a day on a
+pendant. Known gaps are listed in the [README](../README.md#recorders).
 
 ## Recorders without a driver
 
