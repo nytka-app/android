@@ -32,7 +32,10 @@ A newer APK installs over the old one the same way and keeps the queue and the s
 [Obtainium](https://github.com/ImranR98/Obtainium) installs and updates Android apps straight from
 their GitHub releases. Add this repository, `nytka-app/android`, as an app in Obtainium: it finds
 `nytka-<version>.apk` under [Releases](https://github.com/nytka-app/android/releases/latest), the
-same file the manual install step above uses, and offers the next one as it is published.
+same file the manual install step above uses, and offers the next one as it is published. In Obtainium tap
+**Add app**, paste the address `https://github.com/nytka-app/android` and tap **Add**; the default settings pick
+the one APK, and to pin the file you set the APK filter to `^nytka-.*\.apk$`. On the phone,
+`obtainium://add/https://github.com/nytka-app/android` opens Add app with the address filled in.
 
 ## First run (about 5 minutes)
 

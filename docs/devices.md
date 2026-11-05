@@ -3,20 +3,21 @@
 Which wearable recorders Nytka for Android works with, what each can do, and what you do to use it. Back to the
 [README](../README.md). The plan behind this page is [the multi-device spec](specs/multi-device.md).
 
-Today one recorder is supported: the Omi pendant. A second, the Limitless Pendant, has a driver in progress that
-has not run on a pendant yet. Nothing here claims it works.
+Today one recorder is supported: the Omi pendant. A second, the Limitless Pendant, has a driver that has **not
+been verified on real hardware**: it ran only against a stand-in (`FakeLimitless`), and the pairing screen does not
+offer it. Nothing here claims it works.
 
 ## At a glance
 
 | Recorder | Status | Stored audio while the phone is away | Buttons | Buzz | Audio on/off | LED and gain | Firmware notice |
 |---|---|---|---|---|---|---|---|
 | Omi pendant (consumer, "Omi CV 1") | **Supported** | Yes, from firmware 3.0.20 | Single tap, double tap, release | Yes | Yes | LED brightness and mic gain | Yes |
-| Limitless Pendant | **Driver in progress, untested on hardware.** Not in any release | Planned | Planned: double press only | Not known | Not known | Planned: LED only | No |
+| Limitless Pendant | **Driver written, not verified on real hardware.** Not offered by the pairing screen | Yes, from its flash; freed only past what the server accepted | Double press only | Not known | Not known | LED only | No |
 | Plaud NotePin, Fieldy, Friend, Bee | Not supported, no driver | | | | | | |
 
-The Omi row is the `Capabilities` of `OmiDriver` (`pendant/.../OmiDriver.kt`). The Limitless row is the plan in the
-[spec](specs/multi-device.md#the-recorders), read from Omi's reverse-engineered connector and never run on a
-pendant. It will change when a driver is tested.
+The Omi row is the `Capabilities` of `OmiDriver` (`pendant/.../OmiDriver.kt`). The Limitless row is the
+`Capabilities` of `LimitlessDriver`, read from Omi's reverse-engineered connector ([spec](specs/multi-device.md#the-recorders))
+and never run on a pendant. It will change when the driver is tested.
 
 ## Omi pendant
 
@@ -48,13 +49,16 @@ pendant. It will change when a driver is tested.
 
 ## Limitless Pendant
 
-**Status:** a driver is being written. It has not been run on a Limitless Pendant, and no release contains it.
-Do not buy or pair one for Nytka yet. This section is a plan, not a promise.
+**Status:** the driver is written and **not verified on real hardware**. It has not been run on a Limitless Pendant;
+it is tested only against `FakeLimitless`, a stand-in that answers the way its source reads. It is in the code (from
+release 0.26.4) but the pairing screen offers only Omi, so nobody can pair one from the app yet. Do not buy a
+Limitless Pendant for Nytka. If you own one and want to be its first tester, open an issue: the test needs a build
+that offers it.
 
 The Limitless Pendant is no longer sold (since 5 Dec 2025, per the spec's survey), and its maker promised support only through 2026.
 Nytka's driver would follow the open connector Omi wrote for it; the protocol is not published by the maker.
 
-What the plan expects, to be confirmed on a real pendant:
+What the driver is built to do, to be confirmed on a real pendant:
 
 - Live audio and stored audio (flash pages, freed only past what the server accepted).
 - A double press for mute; no single press, so no bookmark from the pendant.
@@ -63,7 +67,7 @@ What the plan expects, to be confirmed on a real pendant:
   the server needs no change.
 
 What you do: nothing yet. The steps to pair and to retire the Limitless app go here when the driver has run for a
-day on a pendant.
+day on a pendant. Known gaps are listed in the [README](../README.md#recorders).
 
 ## Recorders without a driver
 
@@ -77,7 +81,7 @@ The app reads what a recorder can do from its `Capabilities`; outside its driver
 
 | Part | What it is |
 |---|---|
-| `RecorderModel` (`:pendant`) | The kinds of recorder Nytka can pair with: id, name, service UUID, the source its protocol was read from, and its `Capabilities`. Only `Omi` exists. A missing or unknown id reads as Omi, so installs from before models keep working. |
+| `RecorderModel` (`:pendant`) | The kinds of recorder Nytka can pair with: id, name, service UUID, the source its protocol was read from, and its `Capabilities`. `Omi` and `Limitless` exist. A missing or unknown id reads as Omi, so installs from before models keep working. |
 | `Settings.pendantModel` | The paired recorder's `RecorderModel.id`, stored next to the address. Pairing filters the system chooser on the model's service UUID only; the app never guesses the model from an advertisement. |
 | `Pendant` | One driver per model. It exposes `model` and `capabilities` besides the connection, battery, link statistics, `frames`, `buttons`, `storage`, `settings`, `connect`, `setAudio` and `buzz`. |
 | `Capabilities` | `storage` (`None`, or `Custody`: read, then free up to a position), `buttons` (events it can send), `haptic`, `audioSwitch`, `settings` (LED, gain), `firmware` (release stream, or null for no notice) and `codec` (the chunk codec its frames are in). The app reads `haptic`, `audioSwitch`, `firmware` and `codec` today; `storage`, `buttons` and `settings` are declared and not wired yet. |
