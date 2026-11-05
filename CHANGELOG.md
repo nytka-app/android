@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.5](https://github.com/nytka-app/android/compare/v0.26.4...v0.26.5) (2026-11-05)
+
+
+### Features
+
+* **app:** let the pairing screens choose Omi or Limitless ([#181](https://github.com/nytka-app/android/issues/181)) ([058fafd](https://github.com/nytka-app/android/commit/058fafdc1a40709409bc7446a959bcdd5dd6273e))
+
 ## [0.26.4](https://github.com/nytka-app/android/compare/v0.26.3...v0.26.4) (2026-11-05)
 
 
