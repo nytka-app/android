@@ -46,6 +46,6 @@ class CoverageA11yTest {
     @Test
     fun `a covered route has its test`() {
         val here = javaClass.packageName
-        covered.values.forEach { name -> Class.forName("$here.$name") }
+        covered.values.forEach { name -> assertEquals(name, Class.forName("$here.$name").simpleName) }
     }
 }
