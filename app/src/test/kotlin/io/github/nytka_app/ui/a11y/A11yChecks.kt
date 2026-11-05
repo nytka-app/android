@@ -72,12 +72,15 @@ fun ComposeContentTestRule.smallTargets(minimum: Int = 48): List<String> {
     }
 }
 
-/** Check 4: text without a line limit that does not fit its box, and actionable nodes pushed past the screen's edge. */
-fun ComposeContentTestRule.clipped(): List<String> {
+/**
+ * Check 4: text without a line limit that does not fit its box, and actionable nodes pushed past the screen's edge.
+ * [unmerged] also reads text a screen reader skips, such as a monogram letter.
+ */
+fun ComposeContentTestRule.clipped(unmerged: Boolean = false): List<String> {
     val failures = mutableListOf<String>()
     runOnIdle {
         val width = onRootWidth()
-        val texts = onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult))
+        val texts = onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsActions.GetTextLayoutResult), unmerged)
         texts.fetchSemanticsNodes().forEach { node ->
             val results = mutableListOf<TextLayoutResult>()
             node.config

@@ -6,7 +6,7 @@ every pull request, so it stays true as screens change. The wider track it belon
 [`multi-device.md`](multi-device.md). The target is WCAG 2.2 level AA where it applies to a native app, plus
 Android's own rules (48 dp touch targets, TalkBack, font scale).
 
-Verified against app `main` at `6aa146a` on 2026-11-03. Nothing here was run on a phone with TalkBack: every
+Verified against app `main` at `058fafd` on 2026-11-05. Nothing here was run on a phone with TalkBack: every
 check below runs on the JVM under Robolectric. A short manual pass with a real TalkBack is listed at the end and is
 not a gate. The checks landed in the second pull request; the "Result of the first pass" section says what they found.
 
@@ -41,7 +41,7 @@ not a gate. The checks landed in the second pull request; the "Result of the fir
 8. **Traversal.** The merged semantics tree read top to bottom, start to end (what TalkBack swipes through),
    equals an expected list of spoken labels kept in the test, with each node's role and heading mark. A change to
    order shows up as a failing, reviewable diff. Kept as golden lists for the Timeline day and the tag-filtered
-   Conversations list; every other screen test prints its order when it fails. Section titles have `heading()`.
+   Conversations list; every other screen test prints its order when it fails. Section titles have `heading()`; the golden lists are kept for the tab bar, Tasks and People as well.
 9. **No gesture-only actions.** A long-press, swipe or drag that does something has the same action as a
    semantics action or a visible control. `combinedClickable` publishes its long-press as `OnLongClick`, which
    TalkBack offers in its actions menu, and check 3 counts such a node as actionable. The app has no `pointerInput`
@@ -66,7 +66,10 @@ not a gate. The checks landed in the second pull request; the "Result of the fir
 | Conversations | `ConversationsScreen` | empty, rows with chips (AI, media, failed), tag filter on; same variants; golden order | `ConversationsA11yTest` |
 | Device and settings | `DeviceScreen`, which holds every settings section | paired, not paired; same variants | `DeviceA11yTest` |
 | Capture status | `CaptureStatusIndicator`, the top-bar pill and the strip | every `CaptureState`; 1.0 and 2.0, light and dark | `ChromeA11yTest` |
-| Not yet covered | the tab bar (inline in `LifeNavHost` and `NytkaNavHost`), Over time, Tasks, Ask, People, Memories, the conversation page and player, search, review, topics, voice, developer, first run, the home-screen widget | | later, named here so the debt is visible |
+| Tab bar | the bar inline in `LifeNavHost` (3 tabs) and `NytkaNavHost` (5 tabs), each run with a line of text for the screen | 3 and 5 tabs; 1.0, 1.3, 2.0, light and dark; People badge on; golden order | `TabBarA11yTest` |
+| Tasks | `TasksTab` | open tasks (overdue, no conversation, with a due date), done list open, empty, failed; 1.0, 1.3, 2.0, light and dark; golden order | `TasksA11yTest` |
+| People | `PeopleScreen` with its cards and review inbox | people (one named by role only), unnamed voices, cards, review badge, empty, failed; same variants; golden order; the monogram on its own | `PeopleA11yTest` |
+| Not yet covered | Over time, Ask, Memories, the conversation page and player, search, review, topics, voice, developer, first run, the home-screen widget | | later, named here so the debt is visible |
 
 Steps: this spec ships first. The second pull request adds the test base and the checks above and fixes what they
 find on the covered screens. The not-yet-covered screens follow in later pull requests, one or two at a time, each
@@ -109,9 +112,33 @@ The gaps this spec expected from reading the code did not show up when the check
   What the checks cannot see is for the manual TalkBack pass below, and the 18 `contentDescription = null` icons were
   not reviewed one by one: a decorative icon next to text is correct, and one that acts alone would fail check 1.
 
+## Result of the second pass
+
+The tab bar, Tasks and People were added on 2026-11-05. The bar itself passes checks 1 to 4 with three and five tabs.
+The checks found four defects in the shipped screens, each fixed with the smallest change:
+
+- **Tasks:** the checkbox of each task had no name of its own. It now
+  carries the task's text as its description.
+- **People tab badge:** the bar item clears its icon's semantics when it shows a label, so the badge's "N need you"
+  was never spoken. The item now has it as its `stateDescription`.
+- **People section titles:** "People" and "Unnamed voices" were not marked as headings. They are now (check 8).
+- **Monogram:** the letter in the round avatar was read out as well as the name next to it, and at font scale 2.0
+  it outgrew its disc. The avatar is now silent and its letter ignores font scale, as the disc has a fixed size.
+
+Two things are known and not fixed here:
+
+- An overdue task is told apart from the others only by the error colour of its due line, which reads "Due Sunday,
+  27 September" either way. Check 7 asks for words, so this is a gap; the fix needs a new string and its Ukrainian
+  translation and is left for its own change.
+- On People the top-bar actions (Tag, Review inbox, More) come after the list in the tree. The JVM cannot say whether
+  TalkBack reads them in that order on a phone; the manual pass should.
+
+`PeopleScreen` got a `reviewViewModel` parameter (default `hiltViewModel()`) so the test can pass a fake: a seam for
+testing, not a behaviour change.
+
 ## Not machine-checkable (manual, not a gate)
 
-A person with TalkBack on a phone walks Home, Timeline, Conversations and Device once per release: every control is
+A person with TalkBack on a phone walks Home, Timeline, Conversations, Tasks, People and Device once per release: every control is
 found by swiping, nothing is announced twice, nothing important is silent. The same with Switch Access, with
 "Remove animations" on and with the display size at the largest. Findings become issues, and a finding that a
 machine could have caught becomes a check here.

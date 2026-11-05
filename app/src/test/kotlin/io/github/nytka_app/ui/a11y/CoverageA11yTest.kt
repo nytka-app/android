@@ -13,15 +13,15 @@ class CoverageA11yTest {
             AppTab.Today.route to "HomeA11yTest",
             AppTab.Timeline.route to "TimelineA11yTest",
             AppTab.Conversations.route to "ConversationsA11yTest",
+            AppTab.Tasks.route to "TasksA11yTest",
+            AppTab.People.route to "PeopleA11yTest",
             DEVICE_ROUTE to "DeviceA11yTest",
         )
 
     private val debt =
         setOf(
             AppTab.OverTime.route,
-            AppTab.Tasks.route,
             AppTab.Ask.route,
-            AppTab.People.route,
             AppTab.Memories.route,
         )
 
