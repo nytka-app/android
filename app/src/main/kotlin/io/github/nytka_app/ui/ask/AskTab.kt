@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -35,10 +36,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
@@ -50,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
+import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.ui.ListFailure
 import io.github.nytka_app.ui.ListState
 import io.github.nytka_app.ui.ListStateKind
@@ -68,10 +72,10 @@ import io.github.nytka_app.ui.theme.TABULAR
 fun AskTab(
     onOpenConversation: (String) -> Unit,
     viewModel: AskViewModel = hiltViewModel(),
+    people: List<Person> = knownPeople(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     var question by rememberFieldValue(state.question)
-    val people = knownPeople()
     val onQuestion = { value: TextFieldValue ->
         question = value
         viewModel.setQuestion(value.text)
@@ -159,32 +163,50 @@ fun AskTab(
                     }
                 } else {
                     item(key = "answer") { AnswerText(result.parts, onOpenConversation) }
-                    item { Text(stringResource(R.string.sources), style = MaterialTheme.typography.titleSmall) }
-                    items(result.sources, key = { it.n }) { row ->
-                        ListItem(
-                            leadingContent = { CitationPill(row.n, onClick = null) },
-                            overlineContent = row.title?.let { title -> { Text(title) } },
-                            headlineContent = {
-                                Text(
-                                    stringResource(R.string.source_quote, row.snippet),
-                                    style = NytkaTheme.typography.readingQuote,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 3,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            },
-                            supportingContent = { Text(row.date) },
-                            modifier =
-                                row.openId?.let { id ->
-                                    Modifier.clickable(role = Role.Button) { onOpenConversation(id) }
-                                } ?: Modifier,
+                    item {
+                        Text(
+                            stringResource(R.string.sources),
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.semantics { heading() },
                         )
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                    }
+                    items(result.sources, key = { it.n }) { row ->
+                        SourceRow(row, onOpenConversation)
                     }
                 }
             }
         }
     }
+}
+
+/** One numbered source: its title, a quote and the day; a button when it opens a conversation. */
+@Composable
+private fun SourceRow(
+    row: AskSourceRow,
+    onOpen: (String) -> Unit,
+) {
+    ListItem(
+        leadingContent = {
+            // The pill fills its box; without a size it would take the whole row.
+            val density = LocalDensity.current
+            Box(Modifier.size(with(density) { PILL_WIDTH_WIDE.toDp() }, with(density) { PILL_HEIGHT.toDp() })) {
+                CitationPill(row.n, onClick = null)
+            }
+        },
+        overlineContent = row.title?.let { title -> { Text(title) } },
+        headlineContent = {
+            Text(
+                stringResource(R.string.source_quote, row.snippet),
+                style = NytkaTheme.typography.readingQuote,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        supportingContent = { Text(row.date) },
+        modifier = row.openId?.let { id -> Modifier.clickable(role = Role.Button) { onOpen(id) } } ?: Modifier,
+    )
+    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 }
 
 /** The owner's question, right-aligned on a raised surface. */

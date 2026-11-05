@@ -151,10 +151,10 @@ services. Four rules hold everywhere:
 
 ## Accessibility
 
-Home, Timeline, Conversations, Tasks, People, the tab bar, Device with its settings and the capture status are checked on every change for
+Home, Timeline, Conversations, Tasks, People, Ask, Memories, the tab bar, Device with its settings and the capture status are checked on every change for
 TalkBack names and roles, 48 dp touch targets, text at 130% and 200% font size without clipping, and WCAG AA contrast
 of the theme in light and dark. The checks run on the JVM; nobody has yet gone through the app on a phone with
-TalkBack, and the other screens (Over time, Ask, Memories and the rest) are not covered yet. What is checked and what is not:
+TalkBack, and the other screens (Over time and the rest) are not covered yet. What is checked and what is not:
 [accessibility spec](docs/specs/accessibility.md).
 
 ## Numbers

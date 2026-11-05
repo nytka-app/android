@@ -24,6 +24,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -85,7 +86,7 @@ private fun SourceLink(
             Modifier
                 .heightIn(min = 48.dp)
                 .padding(end = 8.dp)
-                .then(if (onOpen != null) Modifier.clickable(onClick = onOpen) else Modifier)
+                .then(if (onOpen != null) Modifier.clickable(role = Role.Button, onClick = onOpen) else Modifier)
                 .padding(vertical = 14.dp),
     )
 }

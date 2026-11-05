@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.nytka_app.R
+import io.github.nytka_app.core.api.Person
 import io.github.nytka_app.ui.ListFailure
 import io.github.nytka_app.ui.ListState
 import io.github.nytka_app.ui.ListStateKind
@@ -56,6 +57,7 @@ import io.github.nytka_app.ui.theme.ReadingColumn
 fun MemoriesTab(
     onOpenConversation: (String) -> Unit,
     viewModel: MemoriesViewModel = hiltViewModel(),
+    people: List<Person> = knownPeople(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
@@ -121,7 +123,7 @@ fun MemoriesTab(
     }
 
     state.editor?.let { editor ->
-        MemoryDialog(editor, onSave = viewModel::save, onDismiss = viewModel::dismissEditor)
+        MemoryDialog(editor, people, onSave = viewModel::save, onDismiss = viewModel::dismissEditor)
     }
 }
 
@@ -145,6 +147,7 @@ private fun GroupTitle(group: MemoryGroup) {
 @Composable
 private fun MemoryDialog(
     editor: MemoryEditor,
+    people: List<Person>,
     onSave: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -152,7 +155,6 @@ private fun MemoryDialog(
         mutableStateOf(filled(editor.target?.text.orEmpty()))
     }
     val text = field.text
-    val people = knownPeople()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {

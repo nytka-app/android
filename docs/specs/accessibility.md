@@ -69,7 +69,9 @@ not a gate. The checks landed in the second pull request; the "Result of the fir
 | Tab bar | the bar inline in `LifeNavHost` (3 tabs) and `NytkaNavHost` (5 tabs), each run with a line of text for the screen | 3 and 5 tabs; 1.0, 1.3, 2.0, light and dark; People badge on; golden order | `TabBarA11yTest` |
 | Tasks | `TasksTab` | open tasks (overdue, no conversation, with a due date), done list open, empty, failed; 1.0, 1.3, 2.0, light and dark; golden order | `TasksA11yTest` |
 | People | `PeopleScreen` with its cards and review inbox | people (one named by role only), unnamed voices, cards, review badge, empty, failed; same variants; golden order; the monogram on its own | `PeopleA11yTest` |
-| Not yet covered | Over time, Ask, Memories, the conversation page and player, search, review, topics, voice, developer, first run, the home-screen widget | | later, named here so the debt is visible |
+| Ask | `AskTab` | the ideas, an answer with sources, an answer no source supports, a failure, a question being asked; 1.0, 1.3, 2.0; light and dark; golden order | `AskA11yTest` |
+| Memories | `MemoriesTab` | a list in three groups, empty, a failed load; same variants; golden order | `MemoriesA11yTest` |
+| Not yet covered | Over time, the conversation page and player, search, review, topics, voice, developer, first run, the home-screen widget | | later, named here so the debt is visible |
 
 Steps: this spec ships first. The second pull request adds the test base and the checks above and fixes what they
 find on the covered screens. The not-yet-covered screens follow in later pull requests, one or two at a time, each
@@ -135,6 +137,29 @@ Two things are known and not fixed here:
 
 `PeopleScreen` got a `reviewViewModel` parameter (default `hiltViewModel()`) so the test can pass a fake: a seam for
 testing, not a behaviour change.
+
+## Result of the Ask and Memories pass
+
+Run on 2026-11-05. The checks found three defects, fixed in the same pull request:
+
+- **Ask, source rows.** The number pill in a source row (`ListItem` leading slot) filled its box without a size, so it
+  took the whole row and the quote and date were laid out 0 px wide (check 4). The slot now gives it the pill's size.
+- **Ask, "Sources" title.** It was plain text; it is now a heading (check 8).
+- **Memories, source link.** A memory's source ("Lunch · Today") opens its conversation but read as plain text; it now
+  has `Role.Button` (check 2).
+
+Both screens take the people for name suggestions as a parameter with `knownPeople()` as the default, so a test
+passes its own list and needs no Hilt.
+
+**Known gaps** (named, not fixed here):
+
+- The add and edit memory dialog (`MemoryDialog`) is not under test: with a Compose dialog on screen Robolectric
+  never reports idle in this setup (60 s timeout, with the clock paused too), so the dialog's field, its counter and
+  its two buttons are left to the manual pass. A later pull request can look for a way, or split the dialog's body
+  out as a plain composable.
+- The undo snackbar after "Forget" (check 10) is not exercised; the effect that posts it is shared with Tasks.
+- The inline `[n]` pills in an answer read as "Source 1" buttons after the answer text, not at the place they stand
+  in the sentence; the whole answer is also spoken with its `[n]` markers. Not wrong, but worth hearing with TalkBack.
 
 ## Not machine-checkable (manual, not a gate)
 
